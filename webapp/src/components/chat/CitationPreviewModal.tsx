@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, ExternalLink, ArrowRight, BookOpen, MessageSquare, Globe, Sparkles, FileText, Bell, Layers } from 'lucide-react';
+import { X, ExternalLink, ArrowRight, BookOpen, MessageSquare, Globe, Sparkles, FileText, Bell, Layers, Paperclip } from 'lucide-react';
 import type { ChatCitation, ChatSourceType } from '../../types/chat';
 import { citationRoute, citationUrl, CHAT_SOURCE_LABEL_KEYS } from '../../lib/chatCitations';
 import { fixBoldPunctuationSpacing, markdownToPlainText, prepareMath } from '../../lib/markdownText';
@@ -25,6 +25,7 @@ const SOURCE_ICONS: Record<ChatSourceType, React.ReactNode> = {
   keyword: <Sparkles size={16} />,
   chat_turn: <MessageSquare size={16} />,
   web: <Globe size={16} />,
+  chat_attachment: <Paperclip size={16} />,
   course: <BookOpen size={16} />,
   topic_summary: <BookOpen size={16} />,
   lecture_summary: <BookOpen size={16} />,

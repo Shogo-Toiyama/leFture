@@ -7,6 +7,7 @@ import { getChatThread } from '../../lib/chat';
 import { ChatConversation } from '../../components/chat/ChatConversation';
 import { ChatThreadList } from '../../components/chat/ChatThreadList';
 import { ChatPlanNotice } from '../../components/chat/ChatPlanNotice';
+import { AttachmentListButton } from '../../components/chat/AttachmentListModal';
 
 /**
  * 会話の置き場(専用ページ)。
@@ -114,6 +115,10 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [title, setTitle] = useState<string | null>(null);
+  // この会話の資料の数(1本以上あるときだけクリップのボタンを出す)と、一覧を開いているか
+  const [attachmentCount, setAttachmentCount] = useState(0);
+  const [attachmentListOpen, setAttachmentListOpen] = useState(false);
+  useEffect(() => setAttachmentListOpen(false), [threadId]);
 
   const refreshTitle = useCallback(() => {
     if (!threadId) {
@@ -148,6 +153,9 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
         </div>
 
         <div className="chat-fullscreen-topbar-right">
+          {attachmentCount > 0 && (
+            <AttachmentListButton count={attachmentCount} onClick={() => setAttachmentListOpen(true)} />
+          )}
           {threadId && (
             <Link
               to="/chat/new"
@@ -182,6 +190,9 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
           screen={null}
           onOpenCitation={(route) => navigate(route)}
           variant="page"
+          attachmentListOpen={attachmentListOpen}
+          onAttachmentListClose={() => setAttachmentListOpen(false)}
+          onAttachmentCountChange={setAttachmentCount}
         />
       </main>
     </div>

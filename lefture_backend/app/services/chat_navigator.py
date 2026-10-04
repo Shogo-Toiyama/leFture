@@ -35,6 +35,7 @@ from datetime import date
 from typing import Any, Awaitable, Callable, Optional, Union
 from urllib.parse import urlparse
 
+from app.services.chat_attachments import Attachment, Visibility, render_for_navigator
 from app.services.chat_lecture_source import LectureSource, first_sentence
 from app.services.chat_map import ChatMap, MapLecture, StudentMap
 from app.services.chat_materials import Material, material_from_chunk
@@ -100,6 +101,7 @@ CAPABILITIES = {
     "CAN_BY_DATE": True,   # 講義を日付で引く
     "CAN_CHAT": True,      # この会話の畳んだ部分・過去のチャット
     "CAN_WEB": True,       # Web検索
+    "CAN_ATTACHMENTS": True,  # このスレッドに添付された資料(目次・節を開く。ロードマップ10章)
 }
 
 STATUSES = ["nothing_needed", "enough_now", "need_more"]
@@ -109,7 +111,7 @@ STATUSES = ["nothing_needed", "enough_now", "need_more"]
 NEEDS = ["explicit", "implied", "maybe", "none"]
 FETCH_NEEDS = ("explicit", "implied")
 # 出どころ → 操作の行き先。選んだ出どころの外への操作(例: classだけなのにweb.search)はコードで捨てる。
-_SOURCE_KINDS: dict[str, str] = {"class": "lecture", "web": "web", "past_chat": "chat"}
+_SOURCE_KINDS: dict[str, str] = {"class": "lecture", "web": "web", "past_chat": "chat", "attachment": "attachment"}
 
 # 講義の材料の種類(knowledge_chunks.source_type)。layer → 種類の組。
 # allも講義の種類だけに絞る(チャットのチャンクが入ったときに講義の検索へ混ざらないように、3-14)。
@@ -143,6 +145,8 @@ _HANDLE_RE = re.compile(r"^(C\d+)(?:/(L\d+)(?:/(?:T(\d+)|s(\d+)(?:-(\d+))?))?)?$
 _CHAT_HANDLE_RE = re.compile(r"^(S|P|H)(\d+)(?:/(?:S(\d+)|T(\d+)|H(\d+)))?$")
 # W{n}(このターンのWeb検索で当たったページ。周をまたいで通し番号)
 _WEB_HANDLE_RE = re.compile(r"^W\d+$")
+# A{n}(このスレッドに添付された資料。開くと目次) / A{n}/S{k}(その資料の節の本文)
+_ATTACHMENT_HANDLE_RE = re.compile(r"^A(\d+)(?:/S(\d+))?$")
 
 
 def available_ops() -> list[str]:
@@ -160,6 +164,8 @@ def available_fetch_sources() -> list[str]:
         sources.append("web")
     if CAPABILITIES["CAN_CHAT"]:
         sources.append("past_chat")
+    if CAPABILITIES["CAN_ATTACHMENTS"]:
+        sources.append("attachment")
     return sources
 
 
@@ -293,10 +299,23 @@ class NavigatorInput:
     screen_page_excerpt: Optional[str] = None
     # 今のプランで使えない材料の種類(plan_features.blocked_knowledge_source_types)
     blocked_source_types: frozenset[str] = frozenset()
+    # このスレッドに添付された資料(呼び名A1…を振ったもの)と、回答役に全文で見せている資料
+    attachments: list[Attachment] = field(default_factory=list)
+    attachment_visibility: Optional[Visibility] = None
 
     @property
     def can_transcript(self) -> bool:
         return "transcript_topic" not in self.blocked_source_types
+
+    def attachment(self, handle: str) -> Optional[Attachment]:
+        return next((a for a in self.attachments if a.handle == handle), None)
+
+    def attachment_scope_handles(self) -> list[str]:
+        """1周目から開ける資料: 回答役に全文で見せていないものだけ(全文で見えているものは開く意味が無い)。"""
+        if not CAPABILITIES["CAN_ATTACHMENTS"]:
+            return []
+        vis = self.attachment_visibility
+        return [a.handle for a in self.attachments if vis is None or not vis.is_full(a)]
 
     def screen_topic_handle(self) -> Optional[str]:
         lec = self.student_map.lecture_handle(self.screen_lecture_id)
@@ -628,6 +647,7 @@ def build_system_prompt(can_transcript: bool = True) -> str:
         "CAN_OPEN_NO_TRANSCRIPT": CAPABILITIES["CAN_OPEN"] and not can_transcript,
         "CAN_OPEN_CHAT": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_CHAT"],
         "CAN_OPEN_WEB": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_WEB"],
+        "CAN_OPEN_ATTACHMENTS": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_ATTACHMENTS"],
     })
     return template.replace("${MAX_LAPS}", str(MAX_LAPS)).replace("${MAX_OPS_PER_LAP}", str(MAX_OPS_PER_LAP))
 
@@ -638,7 +658,8 @@ def openable_handles(nav_input: NavigatorInput, state: NavState) -> list[str]:
     m = nav_input.student_map
     screen_topic = [nav_input.screen_topic_handle()] if nav_input.screen_topic_handle() else []
     chat_scope = nav_input.chat_map.scope_handles() if nav_input.chat_map and CAPABILITIES["CAN_CHAT"] else []
-    handles = m.scope_handles() + chat_scope + screen_topic + state.previous_turn_handles + state.surfaced_not_opened()
+    handles = (m.scope_handles() + chat_scope + nav_input.attachment_scope_handles() + screen_topic
+               + state.previous_turn_handles + state.surfaced_not_opened())
     return [h for h in _dedupe(handles) if h not in state.opened and _plan_allows_handle(nav_input, h)]
 
 
@@ -715,6 +736,8 @@ def _op_kind(raw: dict) -> Optional[str]:
         handle = raw.get("handle") or ""
         if _WEB_HANDLE_RE.match(handle):
             return "web"
+        if _ATTACHMENT_HANDLE_RE.match(handle):
+            return "attachment"
         return "chat" if handle[:1] in ("S", "P", "H") else "lecture"
     return None
 
@@ -778,9 +801,10 @@ def validate_operations(
             parsed = parse_handle(handle or "")
             parsed_chat = parse_chat_handle(handle or "") if CAPABILITIES["CAN_CHAT"] else None
             is_web = bool(_WEB_HANDLE_RE.match(handle or "")) and handle in state.web_pages
+            is_attachment = CAPABILITIES["CAN_ATTACHMENTS"] and bool(_ATTACHMENT_HANDLE_RE.match(handle or ""))
             if not _plan_allows_handle(nav_input, handle or ""):
                 reason = "transcript_not_in_plan"
-            elif handle not in openable or (parsed is None and parsed_chat is None and not is_web):
+            elif handle not in openable or (parsed is None and parsed_chat is None and not is_web and not is_attachment):
                 reason = "handle_not_openable"
             elif parsed and parsed.kind == "transcript" and parsed.sid_end - parsed.sid_start + 1 > TRANSCRIPT_MAX_SENTENCES:
                 reason = "transcript_range_too_long"
@@ -830,6 +854,9 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
         map_text = "Courses:\n" + m.render_courses()
         if CAPABILITIES["CAN_CHAT"] and nav_input.chat_map is not None and nav_input.chat_map.has_anything:
             map_text += "\n\n" + nav_input.chat_map.render()
+        if CAPABILITIES["CAN_ATTACHMENTS"] and nav_input.attachments:
+            map_text += "\n\n" + render_for_navigator(
+                nav_input.attachments, nav_input.attachment_visibility or Visibility(full=set()))
         parts.append(f"<map>\n{map_text}\n</map>")
         if state.previous_turn_text and CAPABILITIES["CAN_OPEN"]:
             parts.append(f"<previous_turn_opened>\n{state.previous_turn_text}\n</previous_turn_opened>")
@@ -908,6 +935,8 @@ async def open_handle(
 ) -> Opened:
     if handle[:1] in ("S", "P", "H") and chat_source is not None:
         return await chat_open_handle(handle, nav_input, chat_source)
+    if _ATTACHMENT_HANDLE_RE.match(handle):
+        return attachment_open_handle(handle, nav_input)
     m = nav_input.student_map
     parsed = parse_handle(handle)
     course = m.course(parsed.course) if parsed else None
@@ -992,6 +1021,50 @@ async def open_handle(
                           source_type="transcript_topic", lecture_id=lec.id, course_id=course.id,
                           metadata={"sid_start": parsed.sid_start, "sid_end": parsed.sid_end}, handle=handle),
         ref={"type": "transcript", "lecture_id": lec.id, "sid_start": parsed.sid_start, "sid_end": parsed.sid_end},
+    )
+
+
+def attachment_open_handle(handle: str, nav_input: NavigatorInput) -> Opened:
+    """
+    添付資料を開く。A2 → 目次(節ごとの呼び名・名前・何が書いてあるか)、A2/S3 → その節の本文と、
+    前後の節の呼び名(「続き」を読めるように)。本文は資料の行にあるので、DBは読まない。
+    """
+    m = _ATTACHMENT_HANDLE_RE.match(handle)
+    a = nav_input.attachment(f"A{m.group(1)}") if m else None
+    if a is None:
+        return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+    label = a.title or "Attached material"
+    if m.group(2) is None:
+        lines = [f"{a.handle}/S{s.index} {s.title}" + (f" — {s.description}" if s.description else "") for s in a.sections]
+        toc = "\n".join(lines) or "(no sections)"
+        return Opened(
+            handle=handle,
+            text=f"Material {a.handle}: {label} ({a.char_count:,} characters)\nSummary: {a.summary or '(none)'}\n"
+                 f"Sections:\n{toc}",
+            material=Material(key=f"attachment:{a.id}", kind="attachment_toc", label=f"{label} / Contents",
+                              content=f"Summary: {a.summary or '(none)'}\nSections:\n"
+                                      + "\n".join(f"{s.index}. {s.title}" + (f" — {s.description}" if s.description else "")
+                                                   for s in a.sections),
+                              source_type="chat_attachment", source_id=a.id, thread_id=nav_input.current_thread_id,
+                              metadata={"attachment_id": a.id}, handle=handle),
+            surfaced=[f"{a.handle}/S{s.index}" for s in a.sections],
+            ref={"type": "attachment", "id": a.id},
+        )
+    k = int(m.group(2))
+    sec = a.section(k)
+    if sec is None:
+        return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
+    body = a.section_text(sec)
+    neighbors = [f"{a.handle}/S{i}" for i in (k - 1, k + 1) if a.section(i)]
+    return Opened(
+        handle=handle,
+        text=f"Material {handle}: {label} — section {k} of {len(a.sections)}: {sec.title}\n{body}",
+        material=Material(key=f"attachment:{a.id}:{k}", kind="attachment_section", label=f"{label} / {sec.title}",
+                          content=body, source_type="chat_attachment", source_id=a.id,
+                          thread_id=nav_input.current_thread_id,
+                          metadata={"attachment_id": a.id, "section": k}, handle=handle),
+        surfaced=neighbors,
+        ref={"type": "attachment_section", "id": a.id, "index": k},
     )
 
 
@@ -1240,6 +1313,21 @@ async def prepare_previous_turn(
             rows = [f"  {p_handle}/T{t['number']} Student: {t['user_content'][:80]}" for t in turns]
             blocks.append(f"{p_handle} — {t_ref.title} ({t_ref.date or 'no date'})" + ("\n" + "\n".join(rows) if rows else ""))
             handles += [p_handle] + [f"{p_handle}/T{t['number']}" for t in turns]
+            continue
+        if kind in ("attachment", "attachment_section") and CAPABILITIES["CAN_ATTACHMENTS"]:
+            a = next((x for x in nav_input.attachments if x.id == ref.get("id")), None)
+            # 全文で回答役に見えている資料は、前のターンで開いていても見せない(開く意味が無い)
+            if a is None or a.handle not in nav_input.attachment_scope_handles():
+                continue
+            if kind == "attachment":
+                blocks.append(f"{a.handle} — the table of contents of the attached material \"{a.title}\"")
+                handles.append(a.handle)
+            elif isinstance(ref.get("index"), int) and a.section(ref["index"]):
+                k = ref["index"]
+                nxt = f", next: {a.handle}/S{k + 1}" if a.section(k + 1) else " (the last section)"
+                blocks.append(f"{a.handle}/S{k} — section {k} of {len(a.sections)} of the attached material "
+                              f"\"{a.title}\": {a.section(k).title}{nxt}")
+                handles += [a.handle, f"{a.handle}/S{k}"] + ([f"{a.handle}/S{k + 1}"] if a.section(k + 1) else [])
             continue
         if kind == "chat_section" and CAPABILITIES["CAN_CHAT"] and chat_source is not None:
             h = await chat_section_owner_handle(nav_input, chat_source, ref.get("thread_id"), ref.get("section_handle"))
@@ -1652,14 +1740,23 @@ def _ms_since(t0: float) -> int:
     return round((time.perf_counter() - t0) * 1000)
 
 
+def _open_kind(handle: str) -> str:
+    """開く呼び名の種類(画面の表示用): web / attachments / chats / lectures。"""
+    if _WEB_HANDLE_RE.match(handle):
+        return "web"
+    if _ATTACHMENT_HANDLE_RE.match(handle):
+        return "attachments"
+    return "chats" if handle[:1] in ("S", "P", "H") else "lectures"
+
+
 def fetch_kinds(requests: list[Request]) -> list[str]:
-    """この周で何を探すか(画面の「〜を検索中」用): web / chats / lectures。"""
+    """この周で何を探すか(画面の「〜を検索中」用): web / attachments / chats / lectures。"""
     kinds: list[str] = []
     for r in requests:
         if isinstance(r, FindRequest):
             kind = "web" if r.target == "web.search" else "chats" if r.target.startswith("chat.") else "lectures"
         elif isinstance(r, OpenRequest):
-            kind = "web" if _WEB_HANDLE_RE.match(r.handle) else "chats" if r.handle[:1] in ("S", "P", "H") else "lectures"
+            kind = _open_kind(r.handle)
         else:
             kind = "lectures"
         if kind not in kinds:
@@ -1695,7 +1792,7 @@ def fetch_info(requests: list[Request]) -> dict:
         info["target"] = "web" if selected_r.target == "web.search" else "chats" if selected_r.target.startswith("chat.") else "lectures"
         info["layer"] = selected_r.layer
     elif isinstance(selected_r, OpenRequest):
-        info["target"] = "web" if _WEB_HANDLE_RE.match(selected_r.handle) else "chats" if selected_r.handle[:1] in ("S", "P", "H") else "lectures"
+        info["target"] = _open_kind(selected_r.handle)
         info["handle"] = selected_r.handle
 
     return info

@@ -17,11 +17,13 @@ export type ChatMessageStatus = 'streaming' | 'complete' | 'error' | 'blocked' |
  * courseだけは例外で、探索役がコースの講義一覧を開いたときの出典(knowledge_chunksには無い)。
  * chat_turnは過去のチャット(スレッド・節・往復のどれを開いても同じ種類で、押すとそのスレッドへ)。
  * webはWebのページ(押すと元のページを新しいタブで開く)。
+ * chat_attachmentはこの会話に添付した資料の目次・節(押すと引用箇所のプレビューだけ)。
  */
 export type ChatSourceType =
   | 'course'
   | 'chat_turn'
   | 'web'
+  | 'chat_attachment'
   | 'review_card'
   | 'deep_note'
   | 'keyword'
@@ -115,11 +117,11 @@ export interface ChatMessage {
   created_at: string;
 }
 
-/** 生成中に「どの段階か」を画面に出すための状態。 */
-export type ChatStage = 'thinking' | 'searching' | 'reasoning' | 'writing';
+/** 生成中に「どの段階か」を画面に出すための状態。reading_attachmentsは添付した資料の確認・目次づくり。 */
+export type ChatStage = 'reading_attachments' | 'thinking' | 'searching' | 'reasoning' | 'writing';
 
-/** 探索中に何を探しているか(探索役の1周ごと)。 */
-export type ChatSearchDetail = 'lectures' | 'chats' | 'web';
+/** 探索中に何を探しているか(探索役の1周ごと)。attachmentsは添付資料の目次・節を開いている。 */
+export type ChatSearchDetail = 'lectures' | 'chats' | 'web' | 'attachments';
 
 /** POST /chat/messages のSSEイベント(バックエンドのrun_chat_turnと1対1)。 */
 export type ChatStreamEvent =
@@ -147,6 +149,10 @@ export type ChatRequestErrorCode =
   | 'EMPTY_MESSAGE'
   | 'MESSAGE_TOO_LONG'
   | 'SELECTED_TEXT_TOO_LONG'
+  | 'EMPTY_ATTACHMENT'
+  | 'ATTACHMENT_TOO_LONG'
+  | 'TOO_MANY_ATTACHMENTS'
+  | 'THREAD_ATTACHMENT_LIMIT'
   | 'INSUFFICIENT_CREDITS'
   | 'CHAT_RATE_LIMITED'
   | 'CHAT_BLOCKED_COOLDOWN'
@@ -160,3 +166,51 @@ export type ChatRequestErrorCode =
 /** バックエンドの MAX_MESSAGE_CHARS / MAX_SELECTED_TEXT_CHARS と揃える(送信前に画面側でも止める)。 */
 export const CHAT_MAX_MESSAGE_CHARS = 4000;
 export const CHAT_MAX_SELECTED_TEXT_CHARS = 2000;
+
+// ---------------------------------------------------------------------------
+// 添付資料(バックエンド: lefture_backend/app/services/chat_attachments.py、DB: chat_attachments)
+// 資料はスレッドごと。送信と一緒に届き、そのターンの最初に審査・要約・目次づくりをする。
+// 送った後は中身を変えられない(外すことはできる)。
+// ---------------------------------------------------------------------------
+
+/** バックエンドの MAX_ATTACHMENT_CHARS / MAX_ATTACHMENTS_PER_MESSAGE / MAX_ATTACHMENTS_PER_THREAD と揃える。 */
+export const CHAT_MAX_ATTACHMENT_CHARS = 100_000;
+export const CHAT_MAX_ATTACHMENTS_PER_MESSAGE = 5;
+export const CHAT_MAX_ATTACHMENTS_PER_THREAD = 30;
+export const CHAT_MAX_ATTACHMENT_TITLE_CHARS = 100;
+
+/** processing: 確認・目次づくりの途中 / ready: 使える / blocked: 断った / failed: 処理に失敗した */
+export type ChatAttachmentStatus = 'processing' | 'ready' | 'blocked' | 'failed';
+
+/** 目次の1節。start/endは本文(content)の文字位置。 */
+export interface ChatAttachmentSection {
+  index: number;
+  title: string;
+  description: string;
+  start: number;
+  end: number;
+}
+
+/** 送った資料(DBの行)。 */
+export interface ChatAttachment {
+  id: string;
+  thread_id: string;
+  /** 添付したuserメッセージ */
+  message_id: string | null;
+  kind: 'text' | 'pdf' | 'image';
+  status: ChatAttachmentStatus;
+  title: string | null;
+  content: string;
+  char_count: number;
+  summary: string | null;
+  sections: ChatAttachmentSection[];
+  created_at: string;
+}
+
+/** 送る前の資料(入力欄の下書き)。送るまでは何度でも直せる。 */
+export interface ChatDraftAttachment {
+  localId: string;
+  kind: 'text';
+  title: string;
+  content: string;
+}

@@ -13,6 +13,12 @@ ${GOAL}
 </goal>
 
 <!--END_IF-->
+<!--IF:HAS_ATTACHMENTS-->
+<attached_materials>
+${ATTACHMENTS}
+</attached_materials>
+
+<!--END_IF-->
 <!--IF:HAS_SCREEN_CONTEXT-->
 <screen_context>
 ${SCREEN_CONTEXT}

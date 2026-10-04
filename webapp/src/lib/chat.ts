@@ -2,6 +2,8 @@ import { supabase } from './supabase';
 import { BACKEND_API_URL } from './env';
 import { ApiError, apiFetch, extractErrorCode } from './api';
 import type {
+  ChatAttachment,
+  ChatDraftAttachment,
   ChatMessage,
   ChatMessageContext,
   ChatRequestErrorCode,
@@ -83,6 +85,32 @@ function normalizeMessage(row: Record<string, unknown>): ChatMessage {
   };
 }
 
+const ATTACHMENT_COLUMNS =
+  'id, thread_id, message_id, kind, status, title, content, char_count, summary, sections, created_at';
+
+/**
+ * スレッドの資料(外したものを除く)。添付順。断った・失敗した資料も返す(送ったメッセージの横に
+ * 「使えなかった」と出すため)。一覧に出すのは呼び出し側でreadyに絞る。
+ */
+export async function listChatAttachments(threadId: string): Promise<ChatAttachment[]> {
+  const { data, error } = await supabase
+    .from('chat_attachments')
+    .select(ATTACHMENT_COLUMNS)
+    .eq('thread_id', threadId)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    ...(row as unknown as ChatAttachment),
+    sections: Array.isArray(row.sections) ? (row.sections as ChatAttachment['sections']) : [],
+  }));
+}
+
+/** 資料を外す(以降のターンでAIに渡らなくなる)。 */
+export async function removeChatAttachment(attachmentId: string): Promise<void> {
+  await apiFetch(`/chat/attachments/${attachmentId}`, { method: 'DELETE' });
+}
+
 export async function renameChatThread(threadId: string, title: string): Promise<void> {
   await apiFetch(`/chat/threads/${threadId}`, {
     method: 'PATCH',
@@ -103,6 +131,8 @@ export interface SendChatMessageParams {
   clientMessageId: string;
   content: string;
   context?: ChatMessageContext;
+  /** この送信で添付する資料(下書き)。 */
+  attachments?: ChatDraftAttachment[];
 }
 
 /**
@@ -152,6 +182,9 @@ export async function sendChatMessage(
         client_message_id: params.clientMessageId,
         content: params.content,
         context: params.context ?? null,
+        attachments: params.attachments?.length
+          ? params.attachments.map((a) => ({ kind: a.kind, title: a.title.trim() || null, content: a.content }))
+          : null,
         // 「昨日の授業」「今学期」を端末の日付で解決するため(バックエンドは無ければUTC)
         timezone: deviceTimeZone(),
       }),

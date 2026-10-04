@@ -5,12 +5,19 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import type { TranslationKey } from '../../i18n/translations';
 import { useChatConversation, type LocalChatMessage } from '../../hooks/useChatConversation';
 import {
+  CHAT_MAX_ATTACHMENT_CHARS,
+  CHAT_MAX_ATTACHMENTS_PER_MESSAGE,
+  CHAT_MAX_ATTACHMENTS_PER_THREAD,
   CHAT_MAX_MESSAGE_CHARS,
   CHAT_MAX_SELECTED_TEXT_CHARS,
+  type ChatAttachment,
+  type ChatDraftAttachment,
   type ChatMessageContext,
   type ChatScreenRef,
   type ChatSelection,
 } from '../../types/chat';
+import { AttachmentListModal } from './AttachmentListModal';
+import { AttachmentViewerModal, viewableFromAttachment, type ViewableAttachment } from './AttachmentViewerModal';
 import { ChatComposer } from './ChatComposer';
 import { ChatMessageItem } from './ChatMessageItem';
 
@@ -30,6 +37,11 @@ interface ChatConversationProps {
   screen: ChatScreenRef | null;
   onOpenCitation: (route: string) => void;
   variant: 'panel' | 'page';
+  /** この会話の資料の一覧を開いているか(ボタンはヘッダー側にある)。 */
+  attachmentListOpen?: boolean;
+  onAttachmentListClose?: () => void;
+  /** 一覧に出す資料の数が変わったとき(ヘッダーのボタンの表示と件数に使う)。 */
+  onAttachmentCountChange?: (count: number) => void;
 }
 
 /** 送る前に止められたときの文言と、次にとれる行動。 */
@@ -52,6 +64,14 @@ function failureCopy(
       return { key: 'chatErrorTooLong', params: { max: CHAT_MAX_MESSAGE_CHARS } };
     case 'SELECTED_TEXT_TOO_LONG':
       return { key: 'chatErrorSelectedTooLong', params: { max: CHAT_MAX_SELECTED_TEXT_CHARS } };
+    case 'EMPTY_ATTACHMENT':
+      return { key: 'chatErrorEmptyAttachment' };
+    case 'ATTACHMENT_TOO_LONG':
+      return { key: 'chatErrorAttachmentTooLong', params: { max: CHAT_MAX_ATTACHMENT_CHARS } };
+    case 'TOO_MANY_ATTACHMENTS':
+      return { key: 'chatErrorTooManyAttachments', params: { max: CHAT_MAX_ATTACHMENTS_PER_MESSAGE } };
+    case 'THREAD_ATTACHMENT_LIMIT':
+      return { key: 'chatErrorThreadAttachmentLimit', params: { max: CHAT_MAX_ATTACHMENTS_PER_THREAD } };
     case 'THREAD_BUSY':
       return { key: 'chatErrorThreadBusy' };
     case 'THREAD_NOT_FOUND':
@@ -80,14 +100,39 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   screen,
   onOpenCitation,
   variant,
+  attachmentListOpen = false,
+  onAttachmentListClose,
+  onAttachmentCountChange,
 }) => {
   const { t } = useLanguage();
-  const { messages, loading, loadError, sending, send, retry, discard, reload } = useChatConversation(threadId, {
-    onThreadCreated,
-  });
+  const { messages, attachments, loading, loadError, sending, send, retry, discard, reload, removeAttachment } =
+    useChatConversation(threadId, { onThreadCreated });
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
-  const [prefill, setPrefill] = useState<{ text: string; nonce: number } | null>(null);
+  const [prefill, setPrefill] = useState<{ text: string; attachments?: ChatDraftAttachment[]; nonce: number } | null>(
+    null
+  );
+  /** 読んでいる資料(送った資料ならidがあり、外せる)。 */
+  const [viewing, setViewing] = useState<{ attachment: ViewableAttachment; id?: string } | null>(null);
+
+  // 一覧に出す資料: 使えるもの(ready)と確認中のもの。断った・失敗した資料はメッセージの上のチップにだけ出す
+  const listedAttachments = useMemo(
+    () => attachments.filter((a) => a.status === 'ready' || a.status === 'processing'),
+    [attachments]
+  );
+  useEffect(() => {
+    onAttachmentCountChange?.(listedAttachments.length);
+  }, [listedAttachments.length, onAttachmentCountChange]);
+
+  // 送ったメッセージごとの資料(会話の中でチップとして見せる)
+  const attachmentsByMessage = useMemo(() => {
+    const map = new Map<string, ChatAttachment[]>();
+    for (const a of attachments) {
+      if (!a.message_id) continue;
+      map.set(a.message_id, [...(map.get(a.message_id) ?? []), a]);
+    }
+    return map;
+  }, [attachments]);
 
   // 1往復が終わった(sending: true → false)ことを親に知らせる
   const wasSendingRef = useRef(false);
@@ -111,7 +156,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   const selectedTooLong = (selectedText?.length ?? 0) > CHAT_MAX_SELECTED_TEXT_CHARS;
 
   const handleSend = useCallback(
-    (content: string) => {
+    (content: string, drafts: ChatDraftAttachment[] = []) => {
       stickToBottomRef.current = true;
       const context: ChatMessageContext = {};
       if (lectureId) context.lecture_id = lectureId;
@@ -123,7 +168,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
         if (selection.before) context.selection_before = selection.before;
         if (selection.after) context.selection_after = selection.after;
       }
-      void send(content, context);
+      void send(content, context, drafts);
       // 選択テキストは1回の質問にだけ添える
       if (selection) onClearSelection?.();
     },
@@ -174,7 +219,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
             className="chat-banner-btn"
             onClick={() => {
               discard(message.id);
-              setPrefill({ text: message.content, nonce: Date.now() });
+              setPrefill({ text: message.content, attachments: message.localAttachments, nonce: Date.now() });
             }}
           >
             {t('chatDismiss')}
@@ -226,6 +271,8 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
               <React.Fragment key={message.id}>
                 <ChatMessageItem
                   message={message}
+                  attachments={attachmentsByMessage.get(message.id)}
+                  onOpenAttachment={(attachment, id) => setViewing({ attachment, id })}
                   onOpenCitation={onOpenCitation}
                   onResend={message.status === 'error' && !sending ? resendFor(index) : undefined}
                 />
@@ -253,6 +300,22 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
         />
         <p className="chat-disclaimer">{t('chatAiDisclaimer')}</p>
       </div>
+
+      <AttachmentListModal
+        open={attachmentListOpen && !viewing}
+        attachments={listedAttachments}
+        onOpen={(a) => setViewing({ attachment: viewableFromAttachment(a), id: a.id })}
+        onClose={() => onAttachmentListClose?.()}
+      />
+      <AttachmentViewerModal
+        attachment={viewing?.attachment ?? null}
+        onRemove={
+          viewing?.id && attachments.some((a) => a.id === viewing.id && a.status === 'ready')
+            ? () => removeAttachment(viewing.id!)
+            : undefined
+        }
+        onClose={() => setViewing(null)}
+      />
     </div>
   );
 };

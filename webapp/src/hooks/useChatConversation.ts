@@ -2,12 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ChatSendError,
   getChatMessage,
+  listChatAttachments,
   listChatMessages,
   newClientMessageId,
+  removeChatAttachment,
   sendChatMessage,
 } from '../lib/chat';
 import type {
+  ChatAttachment,
   ChatCitation,
+  ChatDraftAttachment,
   ChatSearchDetail,
   ChatMessage,
   ChatMessageContext,
@@ -32,6 +36,11 @@ export interface LocalChatMessage extends ChatMessage {
   pendingSources?: ChatCitation[];
   /** 受信中に通信が切れ、サーバー側で生成が終わるのを待っている */
   reconnecting?: boolean;
+  /**
+   * この送信で添付した資料の下書き(userのみ)。サーバーの資料一覧(attachments)が読み直されるまでの
+   * 表示と、送れなかったときの再送に使う。
+   */
+  localAttachments?: ChatDraftAttachment[];
 }
 
 interface Options {
@@ -52,6 +61,8 @@ export function useChatConversation(threadId: string | null, options: Options = 
   const [loading, setLoading] = useState(Boolean(threadId));
   const [loadError, setLoadError] = useState<unknown>(null);
   const [sending, setSending] = useState(false);
+  /** このスレッドの資料(外したものを除く、添付順)。 */
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
 
   // 送信中にサーバーが作ったスレッドid。onThreadCreatedでURLが変わっても
   // (=threadId propが同じ値に変わっても)、会話を読み直して表示中の
@@ -103,10 +114,25 @@ export function useChatConversation(threadId: string | null, options: Options = 
     [patchMessage]
   );
 
+  /** 資料の一覧を読み直す。読めなくても会話は使えるので、失敗は今の一覧のままにする。 */
+  const refreshAttachments = useCallback(async (id: string | null) => {
+    if (!id) {
+      setAttachments([]);
+      return;
+    }
+    try {
+      const rows = await listChatAttachments(id);
+      if (mountedRef.current && activeThreadIdRef.current === id) setAttachments(rows);
+    } catch {
+      // 次の往復の後にもう一度読む
+    }
+  }, []);
+
   const load = useCallback(
     async (id: string) => {
       setLoading(true);
       setLoadError(null);
+      void refreshAttachments(id);
       try {
         const rows = await listChatMessages(id);
         if (!mountedRef.current) return;
@@ -121,7 +147,7 @@ export function useChatConversation(threadId: string | null, options: Options = 
         if (mountedRef.current) setLoading(false);
       }
     },
-    [waitForServerCompletion]
+    [waitForServerCompletion, refreshAttachments]
   );
 
   useEffect(() => {
@@ -134,10 +160,13 @@ export function useChatConversation(threadId: string | null, options: Options = 
     // 切り替え先で入力欄が使えないままになる。
     abortRef.current?.abort();
     activeThreadIdRef.current = threadId;
+    // 前の会話の資料を、切り替え先の会話で一瞬でも見せない
+    setAttachments([]);
     if (threadId) {
       void load(threadId);
     } else {
       setMessages([]);
+      setAttachments([]);
       setLoading(false);
       setLoadError(null);
     }
@@ -145,9 +174,11 @@ export function useChatConversation(threadId: string | null, options: Options = 
   }, [threadId, load]);
 
   const send = useCallback(
-    async (rawContent: string, context?: ChatMessageContext) => {
+    async (rawContent: string, context?: ChatMessageContext, drafts?: ChatDraftAttachment[]) => {
       const content = rawContent.trim();
-      if (!content || sending) return;
+      const localAttachments = drafts?.length ? drafts : undefined;
+      // 資料だけを送るのは許す
+      if ((!content && !localAttachments) || sending) return;
 
       const clientMessageId = newClientMessageId();
       const now = new Date().toISOString();
@@ -168,6 +199,7 @@ export function useChatConversation(threadId: string | null, options: Options = 
           context: context ?? {},
           credits_charged_micro: null,
           created_at: now,
+          localAttachments,
         },
         {
           id: assistantId,
@@ -246,7 +278,7 @@ export function useChatConversation(threadId: string | null, options: Options = 
 
       try {
         await sendChatMessage(
-          { threadId: activeThreadIdRef.current, clientMessageId, content, context },
+          { threadId: activeThreadIdRef.current, clientMessageId, content, context, attachments: localAttachments },
           onEvent,
           controller.signal
         );
@@ -270,9 +302,11 @@ export function useChatConversation(threadId: string | null, options: Options = 
       } finally {
         if (abortRef.current === controller) abortRef.current = null;
         if (mountedRef.current) setSending(false);
+        // 添付した資料の状態(確認済み・断った)と、AIが付けた名前を読み直す
+        if (localAttachments && receivedMeta) void refreshAttachments(activeThreadIdRef.current);
       }
     },
-    [sending, patchMessage, waitForServerCompletion]
+    [sending, patchMessage, waitForServerCompletion, refreshAttachments]
   );
 
   /** 送れなかったuserメッセージを取り除き、同じ内容でもう一度送る。 */
@@ -281,7 +315,7 @@ export function useChatConversation(threadId: string | null, options: Options = 
       const target = messages.find((m) => m.id === failedMessageId);
       if (!target || !target.failedCode || sending) return;
       setMessages((prev) => prev.filter((m) => m.id !== failedMessageId));
-      void send(target.content, target.context);
+      void send(target.content, target.context, target.localAttachments);
     },
     [messages, sending, send]
   );
@@ -295,5 +329,25 @@ export function useChatConversation(threadId: string | null, options: Options = 
     if (activeThreadIdRef.current) void load(activeThreadIdRef.current);
   }, [load]);
 
-  return { messages, loading, loadError, sending, send, retry, discard, reload };
+  /** 資料を外す。外したらAIにはもう渡らない(会話の中の「添付した」印は残る)。 */
+  const removeAttachment = useCallback(
+    async (attachmentId: string) => {
+      await removeChatAttachment(attachmentId);
+      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    },
+    []
+  );
+
+  return {
+    messages,
+    attachments,
+    loading,
+    loadError,
+    sending,
+    send,
+    retry,
+    discard,
+    reload,
+    removeAttachment,
+  };
 }

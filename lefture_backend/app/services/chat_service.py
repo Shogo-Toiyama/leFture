@@ -3,9 +3,11 @@
 横断チャットボット: 1メッセージを受けてから返答を返し終えるまで。
 
 処理の順番(2026-09-28に合意、2026-09-30に仕分け役と探索役を分けた):
-  0. 事前チェック(prepare_chat_turn): 文字数上限 / 最低残高 / 送信頻度 /
+  0. 事前チェック(prepare_chat_turn): 文字数上限 / 資料の数・長さの上限 / 最低残高 / 送信頻度 /
      断られた回数 / スレッドの所有権 / 生成中の二重送信 / 再送の重複
-  1. 保存: スレッド作成 or 読み込み → userメッセージ → 返答用の空行(streaming)
+  1. 保存: スレッド作成 or 読み込み → userメッセージ → 添付された資料(processing) → 返答用の空行(streaming)
+  1.5 添付された資料があれば、審査・要約・目次を作る(chat_attachments.py)。どれかを断ったら
+     そのターンごと断る(課金なし・断られた回数に数える)
   2. 仕分け役(Gemini 2.5 Flash-Lite, 構造化出力):
      {intent, needs_retrieval, needs_reasoning, reply_language, thread_title}
   3. 分岐(ここはLLMではなく普通のコード):
@@ -19,6 +21,8 @@
 
 会話履歴: 古い往復は要約ブロック(chat_summary_blocks)として回答役のsystemの末尾に、
 まだ畳んでいない往復(通常5〜14往復)は原文のまま渡す。
+添付資料: 合計1万字以内なら全文、超えたら最後の1本だけ全文+残りは一覧を、最新のメッセージに入れる
+(chat_attachments.plan_visibility)。確かめ役もsystem以外は同じメッセージを受け取るので、同じものが見える。
 
 回答役が自由に何度も検索する形(エージェント型)にしていない理由:
 - 危険/危機の判定は回答を作る前に確実に行いたい(仕分け役に残す)
@@ -61,6 +65,22 @@ from app.services.chat_navigator import (
     summarize_for_log,
 )
 from app.services.chat_reasoning import REASONING_CONFIG, CheckedWork, check_work, with_checked_work
+from app.services.chat_attachments import (
+    MAX_ATTACHMENT_CHARS,
+    MAX_ATTACHMENT_TITLE_CHARS,
+    MAX_ATTACHMENTS_PER_MESSAGE,
+    MAX_ATTACHMENTS_PER_THREAD,
+    READ_MAX_CONCURRENT_CALLS,
+    Attachment,
+    ReadResult,
+    Visibility,
+    assign_handles,
+    history_marker,
+    plan_visibility,
+    read_attachment,
+    render_for_answer,
+    render_for_router,
+)
 from app.services.chat_screen import (
     MAX_SELECTION_CONTEXT_CHARS,
     SELECTED_CLOSE,
@@ -325,13 +345,18 @@ def merge_search_results(result_lists: list[list[dict]], top_k: int = RETRIEVAL_
     return ranked[:top_k]
 
 
-def build_history_messages(rows: list[dict], max_turns: int, max_chars: int) -> list[Message]:
+def build_history_messages(
+    rows: list[dict], max_turns: int, max_chars: int,
+    attachment_titles: Optional[dict[str, list[str]]] = None,
+) -> list[Message]:
     """
     まだ要約に畳んでいない会話を回答役に渡す形に変換する。完了した往復だけを使い、
     断った(blocked)・危機対応(crisis)・失敗(error)・生成中(streaming)の
     返答と、それに対応するuserメッセージは含めない(悪意ある長文で以降の
     入力トークンが膨らまないようにするため、および危機対応の文脈を
     通常の会話に持ち込まないため)。往復の数え方は要約側(pair_turns)と共通。
+    attachment_titles(userメッセージのID → そのとき添付した資料の名前)があれば、
+    「ここで資料を添付した」印を付ける(本文は資料の枠で渡るので、履歴には入れない)。
     """
     messages = []
     for t in pair_turns(rows)[-max_turns:]:
@@ -340,6 +365,9 @@ def build_history_messages(rows: list[dict], max_turns: int, max_chars: int) -> 
         # 続いたときに、選択が外れていても何を指していたか分かるようにする)
         if t.user_selected_text:
             user_content = f"[Selected: {t.user_selected_text[:MAX_SELECTED_TEXT_CHARS_IN_HISTORY]}] {user_content}"
+        titles = (attachment_titles or {}).get(t.user_message_id)
+        if titles:
+            user_content = f"{history_marker(titles)}{user_content}"
         messages.append(Message(role="user", content=user_content))
         messages.append(Message(role="assistant", content=t.assistant_content[:max_chars]))
     return messages
@@ -432,6 +460,17 @@ class TurnTimer:
 
 
 @dataclass
+class NewAttachment:
+    """この送信で添付された資料(審査の前)。titleは本人が付けた名前(無ければNone)。"""
+    title: Optional[str]
+    content: str
+
+
+# 本文を書かずに資料だけ送ったときに、振り分け役・探索役・回答役へ渡す本文の代わり
+ATTACHMENT_ONLY_MESSAGE = "(The student attached material without writing a message.)"
+
+
+@dataclass
 class PreparedTurn:
     user_id: str
     thread_id: str
@@ -460,6 +499,18 @@ class PreparedTurn:
     screen_ref: Optional[ScreenRef] = None
     screen_task: "Optional[asyncio.Task[Optional[ScreenPage]]]" = None
     screen_page: Optional[ScreenPage] = None
+    # このスレッドの使える資料(審査を通ったもの、添付順)と、この送信で添付された資料の行(processing)
+    attachments: list[Attachment] = field(default_factory=list)
+    new_attachment_rows: list[dict] = field(default_factory=list)
+
+    @property
+    def message_for_prompt(self) -> str:
+        """LLMに渡す本文(資料だけ送ったときは、その旨の一文)。"""
+        return self.content or ATTACHMENT_ONLY_MESSAGE
+
+    def language_hint(self) -> str:
+        """振り分け役を通る前に返答言語を推すための文(本文、無ければ添付した資料の冒頭)。"""
+        return self.content or " ".join((r.get("content") or "")[:200] for r in self.new_attachment_rows)
 
 
 def _now_iso(delta: timedelta = timedelta(0)) -> str:
@@ -531,6 +582,17 @@ def _fetch_history_rows(admin_client, thread_id: str) -> list[dict]:
     return list(reversed(h.data or []))
 
 
+ATTACHMENT_COLUMNS = "id, title, content, summary, sections, message_id, created_at, status"
+
+
+def _fetch_thread_attachments(admin_client, thread_id: str) -> list[dict]:
+    """このスレッドの資料(外していないもの)。使えるのはreadyだけだが、上限はprocessingも含めて数える。"""
+    res = admin_client.table("chat_attachments").select(ATTACHMENT_COLUMNS) \
+        .eq("thread_id", thread_id).is_("deleted_at", "null").in_("status", ["ready", "processing"]) \
+        .order("created_at").limit(MAX_ATTACHMENTS_PER_THREAD + MAX_ATTACHMENTS_PER_MESSAGE).execute()
+    return res.data or []
+
+
 def _write_turn_rows(
     admin_client,
     is_new_thread: bool,
@@ -541,8 +603,12 @@ def _write_turn_rows(
     context_lecture_id: Optional[str],
     selected_text: Optional[str],
     screen_ref: Optional[ScreenRef] = None,
-) -> tuple[str, str, str]:
-    """スレッド作成(新規のみ) → userメッセージ → 返答用の空行。3つとも書き込みなので逐次。"""
+    attachments: Optional[list[NewAttachment]] = None,
+) -> tuple[str, str, str, list[dict]]:
+    """
+    スレッド作成(新規のみ) → userメッセージ → 添付された資料(processing) → 返答用の空行。
+    どれも書き込みなので逐次。資料の行(審査前)も返す。
+    """
     if is_new_thread:
         t = admin_client.table("chat_threads").insert({
             "user_id": user_id,
@@ -585,6 +651,24 @@ def _write_turn_rows(
         raise
     user_message_id = u.data[0]["id"]
 
+    attachment_rows: list[dict] = []
+    if attachments:
+        # 同じ送信の資料は、添付した順に1msずつずらした時刻にする(同じ時刻だと「最後に添付した1本」と
+        # 呼び名A1…の順が決まらない。2026-10-04の通しテストで、後に添付した方を最後と判定しなかった)
+        base = datetime.now(timezone.utc)
+        res = admin_client.table("chat_attachments").insert([{
+            "user_id": user_id,
+            "thread_id": thread_id,
+            "message_id": user_message_id,
+            "kind": "text",
+            "status": "processing",
+            "title": att.title,
+            "content": att.content,
+            "char_count": len(att.content),
+            "created_at": (base + timedelta(milliseconds=i)).isoformat(),
+        } for i, att in enumerate(attachments)]).execute()
+        attachment_rows = res.data or []
+
     a = admin_client.table("chat_messages").insert({
         "thread_id": thread_id,
         "user_id": user_id,
@@ -594,7 +678,7 @@ def _write_turn_rows(
     }).execute()
     assistant_message_id = a.data[0]["id"]
 
-    return thread_id, user_message_id, assistant_message_id
+    return thread_id, user_message_id, assistant_message_id, attachment_rows
 
 
 async def prepare_chat_turn(
@@ -609,6 +693,7 @@ async def prepare_chat_turn(
     screen_ref: Optional[ScreenRef] = None,
     selection_before: Optional[str] = None,
     selection_after: Optional[str] = None,
+    attachments: Optional[list[NewAttachment]] = None,
 ) -> PreparedTurn:
     """
     事前チェック→保存。お互いに依存しない読み取り(残高・送信頻度・断られた
@@ -620,10 +705,25 @@ async def prepare_chat_turn(
     """
     content = (content or "").strip()
     selected_text = (selected_text or "").strip() or None
+    attachments = [
+        NewAttachment(title=((a.title or "").strip()[:MAX_ATTACHMENT_TITLE_CHARS] or None), content=(a.content or "").strip())
+        for a in attachments or []
+    ]
 
     # --- 入力の上限(LLMはおろかDBも呼ぶ前に弾く) ---
-    if not content:
+    # 資料だけを送るのは許す(「これを一緒に読みたい」と書かずに貼ることもある)
+    if not content and not attachments:
         raise ChatRequestError(400, "EMPTY_MESSAGE", "Message is empty.")
+    if len(attachments) > MAX_ATTACHMENTS_PER_MESSAGE:
+        raise ChatRequestError(413, "TOO_MANY_ATTACHMENTS",
+                               f"At most {MAX_ATTACHMENTS_PER_MESSAGE} attachments per message.",
+                               {"max_attachments": MAX_ATTACHMENTS_PER_MESSAGE})
+    for att in attachments:
+        if not att.content:
+            raise ChatRequestError(400, "EMPTY_ATTACHMENT", "An attachment is empty.")
+        if len(att.content) > MAX_ATTACHMENT_CHARS:
+            raise ChatRequestError(413, "ATTACHMENT_TOO_LONG", f"An attachment exceeds {MAX_ATTACHMENT_CHARS} characters.",
+                                   {"max_chars": MAX_ATTACHMENT_CHARS})
     if len(content) > MAX_MESSAGE_CHARS:
         raise ChatRequestError(413, "MESSAGE_TOO_LONG", f"Message exceeds {MAX_MESSAGE_CHARS} characters.",
                                {"max_chars": MAX_MESSAGE_CHARS})
@@ -681,7 +781,7 @@ async def prepare_chat_turn(
 
     (
         balance_micro, rate_count, blocked_count, dup_row, lecture_label,
-        thread_row, is_busy, history_rows, summary_blocks, summary_level2,
+        thread_row, is_busy, history_rows, summary_blocks, summary_level2, attachment_rows,
     ) = await asyncio.gather(
         to_thread(_fetch_balance_micro, admin_client, user_id),
         to_thread(_fetch_rate_limit_count, admin_client, user_id),
@@ -693,6 +793,7 @@ async def prepare_chat_turn(
         to_thread(_fetch_history_rows, admin_client, thread_id) if not is_new_thread else none(),
         to_thread(fetch_active_blocks, admin_client, thread_id) if not is_new_thread else none(),
         to_thread(fetch_active_blocks, admin_client, thread_id, 2) if not is_new_thread else none(),
+        to_thread(_fetch_thread_attachments, admin_client, thread_id) if not is_new_thread else none(),
     )
     timer.mark("prep_checks")
     summary_blocks = summary_blocks or []
@@ -733,11 +834,17 @@ async def prepare_chat_turn(
         if is_busy:
             raise ChatRequestError(409, "THREAD_BUSY", "A reply is still being generated in this thread.")
 
+    attachment_rows = attachment_rows or []
+    if attachments and len(attachment_rows) + len(attachments) > MAX_ATTACHMENTS_PER_THREAD:
+        raise ChatRequestError(409, "THREAD_ATTACHMENT_LIMIT",
+                               f"A conversation can hold at most {MAX_ATTACHMENTS_PER_THREAD} attachments.",
+                               {"max_attachments": MAX_ATTACHMENTS_PER_THREAD})
+
     timer.mark("prep_thread")
 
-    thread_id, user_message_id, assistant_message_id = await to_thread(
+    thread_id, user_message_id, assistant_message_id, new_attachment_rows = await to_thread(
         _write_turn_rows, admin_client, is_new_thread, thread_id, user_id, content,
-        client_message_id, context_lecture_id, selected_text, screen_ref,
+        client_message_id, context_lecture_id, selected_text, screen_ref, attachments,
     )
     timer.mark("prep_saved")
 
@@ -761,6 +868,8 @@ async def prepare_chat_turn(
         blocked_task=blocked_task,
         screen_ref=screen_ref,
         screen_task=screen_task,
+        attachments=[Attachment.from_row(r) for r in attachment_rows if r.get("status") == "ready"],
+        new_attachment_rows=new_attachment_rows,
     )
 
 
@@ -805,6 +914,7 @@ async def _run_router(
     memory: "ConversationMemory",
     history: list[Message],
     courses_text: str = "(unknown)",
+    attachments_text: str = "(none)",
 ) -> RouterDecision:
     is_first_message = turn.is_new_thread or not turn.thread_has_title
     # 指示文は毎ターン同じsystemに置き、変わる入力はすべて後ろのuserに入れる
@@ -815,8 +925,9 @@ async def _run_router(
         "SCREEN_CONTEXT": format_screen_context(
             turn.lecture_label, turn.selected_text, turn.screen_page, full_page=False) or "(none)",
         "COURSES": courses_text,
+        "ATTACHMENTS": attachments_text,
         "IS_FIRST_MESSAGE": "true" if is_first_message else "false",
-        "NEW_MESSAGE": turn.content,
+        "NEW_MESSAGE": turn.message_for_prompt,
     })
     options = LLMOptions(output_type="json", json_schema=ROUTER_SCHEMA, temperature=0.0)
     messages = [
@@ -838,14 +949,14 @@ async def _run_router(
         if result.finish_reason == "content_filter":
             decision = RouterDecision(
                 intent="blocked", needs_retrieval=False,
-                reply_language=guess_language(turn.content),
+                reply_language=guess_language(turn.language_hint()),
                 thread_title=None, provider_blocked=True,
             )
             return decision
         if isinstance(result.output_json, dict) and result.output_json.get("intent") in INTENTS:
-            return normalize_router_output(result.output_json, turn.content, is_first_message)
+            return normalize_router_output(result.output_json, turn.language_hint(), is_first_message)
 
-    return fallback_router_decision(turn.content)
+    return fallback_router_decision(turn.language_hint())
 
 
 def _search_sync(user_client, embedding: list[float], lecture_id: Optional[str], source_types: list[str]) -> list[dict]:
@@ -923,6 +1034,7 @@ async def _gather_materials(
     chat_map_task: "asyncio.Task[ChatMap]",
     blocked_source_types: frozenset[str],
     on_fetch: Optional[Callable[[dict], Awaitable[None]]] = None,
+    attachment_visibility: Optional[Visibility] = None,
 ) -> tuple[list[Material], Optional[NavigationResult]]:
     """
     探索役(chat_navigator.py)で回答役に渡す材料を集める。探索役が1周目から動かない
@@ -951,7 +1063,7 @@ async def _gather_materials(
         admin_client = get_supabase_client()
         chat_source = DbChatThreadSource(admin_client, turn.user_id)
         nav_input = NavigatorInput(
-            message=turn.content,
+            message=turn.message_for_prompt,
             selected_text=turn.selected_text,
             screen_lecture_id=turn.context_lecture_id,
             recent_conversation=history,
@@ -964,6 +1076,8 @@ async def _gather_materials(
             screen_topic_index=_screen_topic_index(turn),
             screen_page_title=turn.screen_page.title if turn.screen_page else None,
             screen_page_excerpt=turn.screen_page.excerpt() if turn.screen_page else None,
+            attachments=turn.attachments,
+            attachment_visibility=attachment_visibility,
         )
         # 速度の計測: ベクトル化1回ごと・検索RPC1本ごとの所要時間(ユーザー用クライアントの
         # 1本目が接続の張り直しで遅いかどうかも、rpc_msの先頭で分かる)
@@ -998,6 +1112,8 @@ async def _gather_materials(
         except Exception as e:
             print(f"⚠️ [chat] navigator failed, falling back to plain search: {e}")
 
+    if not turn.content:
+        return [], navigation  # 資料だけの送信: 本文で検索するものが無い
     try:
         chunks = await _retrieve(user_client, billing, [turn.content[:200]], turn.context_lecture_id, blocked_source_types)
     except Exception as e:
@@ -1059,13 +1175,14 @@ def _build_answer_messages(
     goal: Optional[list[str]] = None,
     student_memos: Optional[list[dict]] = None,
     open_questions: Optional[list[str]] = None,
+    attachment_visibility: Optional[Visibility] = None,
 ) -> list[Message]:
     """
     並びは「system(固定の指示+プロフィール → 要約 → 会話の前提) → 原文の履歴 → 今回の文脈+質問」。
     student_memos / open_questions は自分像プロフィール(ロードマップ9章)の覚え書きと確かめたい仮説。
     どちらもまとめ役が動いたときにしか変わらないので、プロフィールと同じくキャッシュされる先頭に置く。
     プロンプトキャッシュは先頭が完全一致する部分にだけ効くので、毎ターン変わる
-    出典・画面の文脈・返答言語はすべて最後のuserメッセージに入れる。要約はsystemの
+    出典・画面の文脈・添付資料・返答言語はすべて最後のuserメッセージに入れる。要約はsystemの
     末尾にあり、変わるのは畳んだときだけ。履歴に残るuserメッセージは本人が打った
     本文だけなので、次のターンでも先頭がずれない。
     """
@@ -1083,17 +1200,22 @@ def _build_answer_messages(
         "CONVERSATION_NOTES": memory.notes,
     })
     screen_context = format_screen_context(turn.lecture_label, turn.selected_text, turn.screen_page)
+    # 資料は毎ターン変わりうる(添付・外す・全文で渡す1本の入れ替わり)ので最後のメッセージに置く。
+    # 確かめ役(chat_reasoning)はsystemだけ差し替えるので、同じ資料が見える
+    attachments_text = render_for_answer(turn.attachments, attachment_visibility or plan_visibility(turn.attachments))
     turn_template = _render_conditional_sections(_load_prompt("chat_answer_turn_prompt.txt"), {
         "HAS_SOURCES": bool(materials),
         "HAS_GOAL": bool(goal),
+        "HAS_ATTACHMENTS": bool(attachments_text),
         "HAS_SCREEN_CONTEXT": bool(screen_context),
     })
     turn_message = fill_placeholders(turn_template, {
         "SOURCES": format_sources_block(materials),
         "GOAL": "\n".join(f"- {g}" for g in goal or []),
+        "ATTACHMENTS": attachments_text,
         "SCREEN_CONTEXT": screen_context,
         "REPLY_LANGUAGE": decision.reply_language,
-        "MESSAGE": turn.content,
+        "MESSAGE": turn.message_for_prompt,
     })
     return [Message(role="system", content=system), *history, Message(role="user", content=turn_message)]
 
@@ -1156,6 +1278,72 @@ async def _finalize(
     return charged_micro
 
 
+async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTurn) -> tuple[bool, list[dict]]:
+    """
+    この送信で添付された資料を読み(審査・目次・要約)、行を確定する。
+    返り値は(断ったか, 1本ごとの原価の記録)。どれかを断ったら、断った資料はblocked、
+    ほかはfailed(このターンごと断るので使わない)にする。
+    読むのに失敗したら、全部failedにして例外を出す(呼び出し側がそのターンをerrorにする)。
+    通った資料はturn.attachmentsの後ろに足す。
+    資料どうしも並列に読み、Lunaへの同時呼び出しはREAD_MAX_CONCURRENT_CALLSまでに抑える
+    (2026-10-04の通しテストで、9千字と5.4万字の2本を1本ずつ読むと約19秒かかった)。
+    """
+    rows = turn.new_attachment_rows
+    limiter = asyncio.Semaphore(READ_MAX_CONCURRENT_CALLS)
+    results: list[ReadResult] = list(await asyncio.gather(
+        *[read_attachment(llm, row["content"], limiter) for row in rows]))
+    usage = [res.usage_json() for res in results]
+    blocked = any(res.blocked for res in results)
+    error = next((res.error for res in results if res.error), None)
+
+    if blocked or error:
+        def mark_unusable() -> None:
+            for i, row in enumerate(rows):
+                res = results[i] if i < len(results) else None
+                admin_client.table("chat_attachments").update({
+                    "status": "blocked" if res and res.blocked else "failed",
+                    "usage": res.usage_json() if res else None,
+                }).eq("id", row["id"]).execute()
+        await asyncio.to_thread(mark_unusable)
+        if blocked:
+            return True, usage
+        raise RuntimeError(f"failed to read an attachment: {error}")
+
+    def save() -> None:
+        for row, res in zip(rows, results):
+            admin_client.table("chat_attachments").update({
+                "status": "ready",
+                # 本人が付けた名前を優先し、無ければ要約役が付けた名前
+                "title": row.get("title") or res.title or None,
+                "summary": res.summary,
+                "sections": [sec.to_json() for sec in res.sections],
+                "usage": res.usage_json(),
+            }).eq("id", row["id"]).execute()
+    await asyncio.to_thread(save)
+    for row, res in zip(rows, results):
+        turn.attachments.append(Attachment(
+            id=row["id"], title=row.get("title") or res.title, content=row["content"], summary=res.summary,
+            sections=res.sections, message_id=row.get("message_id"), created_at=row.get("created_at") or "",
+        ))
+    return False, usage
+
+
+def _mark_new_attachments_failed(admin_client, turn: PreparedTurn) -> None:
+    """ターンが途中で失敗したとき、processingのまま残った資料をfailedにする(上限の数に入り続けないように)。"""
+    ids = [r["id"] for r in turn.new_attachment_rows]
+    if ids:
+        admin_client.table("chat_attachments").update({"status": "failed"}) \
+            .in_("id", ids).eq("status", "processing").execute()
+
+
+def _attachment_titles_by_message(attachments: list[Attachment]) -> dict[str, list[str]]:
+    out: dict[str, list[str]] = {}
+    for a in attachments:
+        if a.message_id:
+            out.setdefault(a.message_id, []).append(a.title)
+    return out
+
+
 EnqueueSummary = Callable[[str, int], Awaitable[None]]
 
 
@@ -1188,7 +1376,7 @@ async def run_chat_turn(
     エンドポイントとは別のasyncioタスクで動かすので、途中でクライアントが
     切断しても締め処理(保存・課金)まで走り切る。最後に必ずNoneを積む。
 
-    イベント: meta → status(thinking/searching/writing) → sources → delta… →
+    イベント: meta → status(reading_attachments/thinking/searching/reasoning/writing) → sources → delta… →
               (replace) → done  /  失敗時は error
     """
     admin_client = get_supabase_client()
@@ -1206,9 +1394,32 @@ async def run_chat_turn(
             "user_message_id": turn.user_message_id,
             "assistant_message_id": turn.assistant_message_id,
         })
+        # --- 1.5 添付された資料を読む(審査・目次・要約)。断ったらそのターンごと断る(課金なし) ---
+        attachments_read: list[dict] = []
+        if turn.new_attachment_rows:
+            await emit("status", {"stage": "reading_attachments"})
+            attachments_blocked, attachments_read = await _read_new_attachments(llm, admin_client, turn)
+            timer.mark("attachments_read")
+            if attachments_blocked:
+                decision = RouterDecision(intent="blocked", needs_retrieval=False,
+                                          reply_language=guess_language(turn.language_hint()), thread_title=None)
+                text = blocked_text(decision.reply_language)
+                await emit("delta", {"text": text})
+                await _finalize(
+                    admin_client, turn, content=text, status="blocked", decision=decision, citations=[], billing=billing,
+                    usage_extra={"attachments_blocked": True, "attachments_read": attachments_read,
+                                 "timings": timer.to_json()}, charge=False,
+                )
+                await emit("done", {"status": "blocked", "credits_charged": 0})
+                return
+
         await emit("status", {"stage": "thinking"})
 
-        history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, HISTORY_MAX_CHARS_PER_MESSAGE)
+        # 資料の呼び名(A1…)と、このターンに全文で渡す資料
+        turn.attachments = assign_handles(turn.attachments)
+        attachment_visibility = plan_visibility(turn.attachments)
+        history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, HISTORY_MAX_CHARS_PER_MESSAGE,
+                                         _attachment_titles_by_message(turn.attachments))
         memory = ConversationMemory.from_blocks(turn.summary_blocks, turn.summary_level2)
         # 地図(コース一覧)とプランはprepare_chat_turnで事前チェックと並行に読み始めている。
         # 無い場合(テスト等で直接PreparedTurnを作ったとき)だけここで読む。
@@ -1256,7 +1467,8 @@ async def run_chat_turn(
         except Exception as e:
             print(f"⚠️ [chat] failed to load the student map for the router: {e}")
             router_map = None
-        decision = await _run_router(llm, turn, memory, history, router_courses_text(router_map))
+        decision = await _run_router(llm, turn, memory, history, router_courses_text(router_map),
+                                     render_for_router(turn.attachments, attachment_visibility))
         timer.mark("router_done")
 
         # --- 3. 分岐: 断る / 危機対応(LLMの回答は作らない、課金しない) ---
@@ -1291,7 +1503,8 @@ async def run_chat_turn(
                 await emit("status", payload)
 
             materials, navigation = await _gather_materials(
-                llm, billing, user_client, turn, history, map_task, chat_map_task, await blocked_task, on_fetch)
+                llm, billing, user_client, turn, history, map_task, chat_map_task, await blocked_task, on_fetch,
+                attachment_visibility)
             timer.mark("retrieval_done")
             await emit("sources", {"sources": sources_event(materials)})
 
@@ -1299,6 +1512,7 @@ async def run_chat_turn(
         messages = _build_answer_messages(
             turn, decision, memory, history, profile, materials, navigation.goal if navigation else None,
             student_memos=student_memos, open_questions=open_questions,
+            attachment_visibility=attachment_visibility,
         )
         answer_model, answer_effort = ANSWER_MODEL, ANSWER_REASONING_EFFORT
         checked: Optional[CheckedWork] = None
@@ -1341,6 +1555,11 @@ async def run_chat_turn(
             "answer_cache_write_tokens": state.cache_write_tokens,
             "usage_estimated": state.usage_estimated,
             "materials": [{"key": m.key, "handle": m.handle} for m in materials],
+            "attachments": {
+                "count": len(turn.attachments),
+                "full": [a.handle for a in turn.attachments if attachment_visibility.is_full(a)],
+                "read": attachments_read,
+            } if turn.attachments else None,
             "timings": timer.to_json(),
         }
 
@@ -1383,6 +1602,10 @@ async def run_chat_turn(
 
     except Exception as e:
         print(f"❌ [chat] turn failed for message {turn.assistant_message_id}: {e}")
+        try:
+            await asyncio.to_thread(_mark_new_attachments_failed, admin_client, turn)
+        except Exception as mark_error:
+            print(f"⚠️ [chat] failed to mark attachments as failed for message {turn.assistant_message_id}: {mark_error}")
         try:
             await _finalize(
                 admin_client, turn, content="", status="error",

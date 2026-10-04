@@ -37,6 +37,8 @@ PRIORITY = {
     "chat_thread": 4,
     "web_page": 1,  # 探索役が開いたWebのページ(断片すべて)
     "web": 2,       # Web検索で当たったページ(最初の断片)
+    "attachment_section": 1,  # 添付資料の節(本文)
+    "attachment_toc": 3,      # 添付資料の目次
 }
 
 WEB_KINDS = ("web", "web_page")
@@ -45,7 +47,7 @@ WEB_KINDS = ("web", "web_page")
 @dataclass
 class Material:
     key: str
-    kind: str  # course / lecture / topic / transcript / chunk / chat_* / web / web_page
+    kind: str  # course / lecture / topic / transcript / chunk / chat_* / web / web_page / attachment_*
     label: str
     content: str
     source_type: str = ""
@@ -202,6 +204,9 @@ _PROTECTED_SPLIT_RE = re.compile(
 _CITE_RE = re.compile(
     r"(?P<space>[ \t]?)(?:⟦(?P<double>[^⟦⟧\n]{1,60})⟧|(?<![A-Za-z0-9_])\[(?P<legacy>[^\[\]\n]{1,60})\](?!\())"
 )
+# 添付資料の呼び名(A1 / A1.3 / A1/S3)での引用。回答役が全文で渡した資料を引用しようとして書くことがある
+# (2026-10-04)。資料の本文には区切りの番号が無いので、出典としては扱わずに消す
+_ATTACHMENT_CITE_RE = re.compile(r"^\s*A\d{1,2}(?:[./]S?\d{1,3}(?:\s*[-–]\s*\d{1,3})?)?\s*$")
 _CITE_ITEM_RE = re.compile(
     r"^\s*(W?\d{1,2})(?:\s*\.\s*(\d{1,3})(?:\s*[-–]\s*(?:W?\d{1,2}\s*\.\s*)?(\d{1,3}))?)?\s*$"
 )
@@ -219,6 +224,8 @@ def _rewrite_citations(answer_text: str, refs: dict[str, int]) -> tuple[str, lis
         legacy = m.group("double") is None
         inner = m.group("legacy") if legacy else m.group("double")
         items = re.split(r"[,、，]", inner)
+        if not legacy and all(_ATTACHMENT_CITE_RE.match(x) for x in items):
+            return ""
         parsed = [_CITE_ITEM_RE.match(x) for x in items]
         if not all(parsed):
             return m.group(0)  # 引用ではない括弧

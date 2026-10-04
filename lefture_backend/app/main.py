@@ -4149,7 +4149,7 @@ async def _hard_delete_user_data(admin_client, uid: str) -> None:
         await asyncio.to_thread(
             lambda t=profile_table: admin_client.table(t).delete().eq("user_id", uid).execute()
         )
-    for chat_table in ("chat_summary_blocks", "chat_messages", "chat_threads", "knowledge_chunks"):
+    for chat_table in ("chat_summary_blocks", "chat_attachments", "chat_messages", "chat_threads", "knowledge_chunks"):
         await asyncio.to_thread(
             lambda t=chat_table: admin_client.table(t).delete().eq("user_id", uid).execute()
         )
@@ -4427,7 +4427,16 @@ async def _patrol_fail_stale_chat_messages() -> dict:
             .lt("created_at", cutoff)
             .execute()
     )
-    return {"failed_stale": len(res.data or [])}
+    # 同じ理由で、審査の途中(processing)のまま残った添付資料もfailedにする
+    # (processingはスレッドの資料の上限の数に入るので、残り続けると添付できる数が減る)
+    att = await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments")
+            .update({"status": "failed"})
+            .eq("status", "processing")
+            .lt("created_at", cutoff)
+            .execute()
+    )
+    return {"failed_stale": len(res.data or []), "failed_stale_attachments": len(att.data or [])}
 
 
 async def _patrol_enqueue_profile_extraction() -> dict:
@@ -5793,11 +5802,20 @@ class ChatMessageContext(BaseModel):
     screen: Optional[ChatScreenRef] = None
 
 
+class ChatAttachmentRequest(BaseModel):
+    """送信と一緒に添付する資料(今はテキストだけ)。上限はchat_attachments.pyとprepare_chat_turnが確かめる。"""
+    kind: str = "text"
+    title: Optional[str] = None
+    content: str
+
+
 class ChatMessageRequest(BaseModel):
     thread_id: Optional[str] = None
     client_message_id: str
-    content: str
+    # 資料だけを送るときは空でよい
+    content: str = ""
     context: Optional[ChatMessageContext] = None
+    attachments: Optional[list[ChatAttachmentRequest]] = None
     # 端末のIANAタイムゾーン名(例: Asia/Tokyo)。「昨日の授業」「今学期」をユーザーの日付で
     # 解決するため。古いクライアントは送らないので任意(無ければUTC、不正な名前もUTC)。
     timezone: Optional[str] = None
@@ -5839,9 +5857,9 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
     """
     チャットに1メッセージ送り、返答をSSE(text/event-stream)で返す。
 
-    事前チェックで弾くもの(文字数超過413 / 残高不足402 / 送信頻度429 /
-    断られ過ぎ429 / 再送の重複409 / 生成中の二重送信409 / スレッド無し404)は
-    ストリームを開く前に通常のHTTPエラーとして返す。
+    事前チェックで弾くもの(文字数超過413 / 資料の数・長さの超過413 / スレッドの資料の上限409 /
+    残高不足402 / 送信頻度429 / 断られ過ぎ429 / 再送の重複409 / 生成中の二重送信409 /
+    スレッド無し404)はストリームを開く前に通常のHTTPエラーとして返す。
 
     イベント: meta / status / sources / delta / replace / done / error
     (EventSourceはPOSTとAuthorizationヘッダを扱えないため、クライアントは
@@ -5866,6 +5884,11 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
             topic_number=context.screen.topic_number,
         )
 
+    attachments = payload.attachments or []
+    if any(a.kind != "text" for a in attachments):
+        raise HTTPException(status_code=422, detail={"error_code": "UNSUPPORTED_ATTACHMENT",
+                                                     "message": "Only text attachments are supported."})
+
     try:
         turn = await prepare_chat_turn(
             uid, thread_id, client_message_id, payload.content,
@@ -5873,6 +5896,7 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
             screen_ref=screen_ref,
             selection_before=context.selection_before,
             selection_after=context.selection_after,
+            attachments=attachments,
         )
     except ChatRequestError as e:
         raise HTTPException(
@@ -5941,6 +5965,10 @@ async def delete_chat_thread(thread_id: str, request: Request):
             .eq("thread_id", thread_id).is_("deleted_at", "null").execute()
     )
     await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments").update({"deleted_at": now_iso})
+            .eq("thread_id", thread_id).is_("deleted_at", "null").execute()
+    )
+    await asyncio.to_thread(
         lambda: admin_client.table("chat_threads").update({"deleted_at": now_iso}).eq("id", thread_id).execute()
     )
     # 自分像プロフィール: このスレッドの観察も消し、根拠が無くなったAI由来の項目は使わないようにする
@@ -5948,6 +5976,29 @@ async def delete_chat_thread(thread_id: str, request: Request):
         await profile_store.on_thread_deleted(uid, thread_id)
     except Exception as e:
         print(f"⚠️ [profile] failed to follow the deletion of thread {thread_id}: {e}")
+    return {"success": True}
+
+
+@app.delete("/chat/attachments/{attachment_id}")
+async def remove_chat_attachment(attachment_id: str, request: Request):
+    """
+    資料を外す(論理削除)。以降のターンでは回答役・探索役に渡らない。送った後の中身の編集はできない
+    (審査を通った中身だけを使うため)。中身は一覧から読める(本人のみSELECT可)。
+    """
+    uid = await _get_authenticated_user_id(request)
+    attachment_id = _parse_uuid_or_422(attachment_id, "attachment_id")
+    admin_client = get_supabase_client()
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments").select("id, user_id, deleted_at")
+            .eq("id", attachment_id).maybe_single().execute()
+    )
+    row = res.data if res else None
+    if not row or row.get("user_id") != uid or row.get("deleted_at"):
+        raise HTTPException(status_code=404, detail={"error_code": "ATTACHMENT_NOT_FOUND", "message": "Attachment not found."})
+    await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments")
+            .update({"deleted_at": datetime.now(timezone.utc).isoformat()}).eq("id", attachment_id).execute()
+    )
     return {"success": True}
 
 

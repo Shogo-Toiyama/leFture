@@ -16736,3 +16736,718 @@ a.lecture-tile-card:hover {
   }
 }
 
+
+/* ==========================================================================
+   チャットの資料添付(＋メニュー・下書きのチップ・送った資料・編集/閲覧モーダル)
+   バックエンド: lefture_backend/app/services/chat_attachments.py
+   ========================================================================== */
+
+.chat-input-row {
+  padding-left: 6px;
+}
+
+.chat-attach-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.chat-attach-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--comet);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.chat-attach-btn:hover,
+.chat-attach-btn.is-open {
+  background: var(--glass-high);
+  color: var(--starlight);
+}
+
+.chat-attach-btn.is-open svg {
+  transform: rotate(45deg);
+}
+
+.chat-attach-btn svg {
+  transition: transform 0.15s ease;
+}
+
+.chat-attach-menu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 10px);
+  z-index: 30;
+  width: 250px;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--void-raised, #171b2e);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+  animation: modalPopIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chat-attach-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--starlight);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-attach-menu button:hover:not(:disabled) {
+  background: var(--glass-high);
+}
+
+.chat-attach-menu button:disabled {
+  cursor: default;
+  color: var(--comet);
+}
+
+.chat-attach-menu-label {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.chat-attach-menu-label small {
+  color: var(--comet);
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.chat-attach-soon {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--glass-low);
+  border: 1px solid var(--glass-border);
+  color: var(--comet);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+/* 入力欄の上の下書きのチップ(押すと編集、×で外す) */
+.chat-attachment.is-file {
+  border-color: rgba(255, 179, 0, 0.35);
+}
+
+.chat-attachment .chat-attachment-open {
+  width: auto;
+  height: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  border-radius: 999px;
+  color: inherit;
+  font: inherit;
+}
+
+.chat-attachment .chat-attachment-open:hover {
+  background: transparent;
+  color: var(--starlight);
+}
+
+.chat-attachment.is-file svg {
+  flex-shrink: 0;
+  color: var(--gold);
+}
+
+.chat-attachment-meta {
+  color: var(--comet);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
+.chat-counter .chat-link-btn {
+  margin-left: 8px;
+  font-size: 0.74rem;
+}
+
+/* 送ったメッセージの資料 */
+.chat-msg-attachments {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  max-width: 85%;
+}
+
+.chat-msg-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 7px 11px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 179, 0, 0.3);
+  background: rgba(255, 179, 0, 0.06);
+  color: var(--starlight);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.chat-msg-attachment:hover {
+  background: rgba(255, 179, 0, 0.12);
+}
+
+.chat-msg-attachment > svg {
+  flex-shrink: 0;
+  color: var(--gold);
+}
+
+.chat-msg-attachment.is-blocked,
+.chat-msg-attachment.is-failed {
+  border-color: var(--glass-border);
+  background: var(--glass-low);
+  color: var(--comet);
+}
+
+.chat-msg-attachment-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.chat-msg-attachment-meta {
+  flex-shrink: 0;
+  color: var(--comet);
+  font-size: 0.72rem;
+}
+
+.chat-attachment-status {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: var(--glass-high);
+  color: var(--comet);
+}
+
+.chat-attachment-status.is-blocked,
+.chat-attachment-status.is-failed {
+  background: rgba(229, 57, 53, 0.15);
+  color: #ff8a80;
+}
+
+/* 編集・閲覧のモーダル(出典のモーダルの形を使い、幅だけ広げる) */
+.citation-modal-card.chat-attachment-modal {
+  max-width: 760px;
+  max-height: 88vh;
+}
+
+.chat-attachment-modal .citation-modal-body {
+  max-height: none;
+}
+
+.chat-attachment-editor {
+  display: grid;
+  gap: 10px;
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.chat-attachment-editor-notice {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 179, 0, 0.1);
+  color: var(--gold);
+  font-size: 0.84rem;
+}
+
+.chat-attachment-editor-title,
+.chat-attachment-editor-content {
+  width: 100%;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--starlight);
+  font: inherit;
+  outline: none;
+}
+
+.chat-attachment-editor-title {
+  padding: 9px 12px;
+  font-size: 0.92rem;
+}
+
+.chat-attachment-editor-content {
+  min-height: 42vh;
+  padding: 12px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.chat-attachment-editor-title:focus,
+.chat-attachment-editor-content:focus {
+  border-color: rgba(255, 179, 0, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 179, 0, 0.12);
+}
+
+.chat-attachment-editor-content.is-over {
+  border-color: rgba(229, 57, 53, 0.6);
+}
+
+.chat-attachment-editor-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--comet);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.chat-attachment-editor-meta .chat-counter {
+  flex-shrink: 0;
+}
+
+.citation-modal-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: default;
+  filter: none;
+  box-shadow: none;
+}
+
+.citation-modal-btn-danger {
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  border: none;
+  background: #e53935;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.citation-modal-btn-danger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.chat-attachment-remove-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--comet);
+}
+
+.chat-attachment-remove-confirm > span {
+  flex-basis: 100%;
+  text-align: right;
+}
+
+.chat-attachment-remove-error {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: auto;
+  color: #ff8a80;
+  font-size: 0.8rem;
+}
+
+.chat-attachment-viewer-summary {
+  margin: 0 0 1rem;
+  color: #cfd4dc;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.chat-attachment-toc {
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.chat-attachment-toc h4,
+.chat-attachment-viewer-heading {
+  margin: 0 0 0.5rem;
+  color: var(--comet);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.chat-attachment-toc ol {
+  margin: 0;
+  padding-left: 1.3rem;
+  display: grid;
+  gap: 4px;
+}
+
+.chat-attachment-toc button {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  padding: 4px 6px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--starlight);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-attachment-toc button:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.chat-attachment-toc-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.chat-attachment-toc-desc {
+  color: var(--comet);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.chat-attachment-viewer-section {
+  scroll-margin-top: 0.5rem;
+}
+
+.chat-attachment-viewer-section + .chat-attachment-viewer-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.chat-attachment-viewer-section-label {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--gold);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.chat-attachment-viewer-text {
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Paperテーマ */
+.chat-fullscreen.is-paper .chat-attach-btn,
+.chat-page.is-paper .chat-attach-btn,
+.chat-panel.is-paper .chat-attach-btn {
+  border-color: var(--paper-line, #e6ded0);
+  color: #8a7a6c;
+}
+
+.chat-fullscreen.is-paper .chat-attach-btn:hover,
+.chat-fullscreen.is-paper .chat-attach-btn.is-open,
+.chat-page.is-paper .chat-attach-btn:hover,
+.chat-page.is-paper .chat-attach-btn.is-open,
+.chat-panel.is-paper .chat-attach-btn:hover,
+.chat-panel.is-paper .chat-attach-btn.is-open {
+  background: #f5eedf;
+  color: var(--ink, #3e3228);
+}
+
+.chat-fullscreen.is-paper .chat-attach-menu,
+.chat-page.is-paper .chat-attach-menu,
+.chat-panel.is-paper .chat-attach-menu {
+  background: #ffffff;
+  border-color: #dfd5c2;
+  box-shadow: 0 14px 36px rgba(62, 50, 40, 0.18);
+}
+
+.chat-fullscreen.is-paper .chat-attach-menu button,
+.chat-page.is-paper .chat-attach-menu button,
+.chat-panel.is-paper .chat-attach-menu button {
+  color: var(--ink, #3e3228);
+}
+
+.chat-fullscreen.is-paper .chat-attach-menu button:hover:not(:disabled),
+.chat-page.is-paper .chat-attach-menu button:hover:not(:disabled),
+.chat-panel.is-paper .chat-attach-menu button:hover:not(:disabled) {
+  background: #faf6ee;
+}
+
+.chat-fullscreen.is-paper .chat-attach-menu button:disabled,
+.chat-fullscreen.is-paper .chat-attach-menu-label small,
+.chat-page.is-paper .chat-attach-menu button:disabled,
+.chat-page.is-paper .chat-attach-menu-label small,
+.chat-panel.is-paper .chat-attach-menu button:disabled,
+.chat-panel.is-paper .chat-attach-menu-label small {
+  color: #9e8e80;
+}
+
+.chat-fullscreen.is-paper .chat-attach-soon,
+.chat-page.is-paper .chat-attach-soon,
+.chat-panel.is-paper .chat-attach-soon {
+  background: #f5eedf;
+  border-color: #e6ded0;
+  color: #8a7a6c;
+}
+
+.chat-fullscreen.is-paper .chat-attachment.is-file svg,
+.chat-fullscreen.is-paper .chat-msg-attachment > svg,
+.chat-page.is-paper .chat-attachment.is-file svg,
+.chat-page.is-paper .chat-msg-attachment > svg,
+.chat-panel.is-paper .chat-attachment.is-file svg,
+.chat-panel.is-paper .chat-msg-attachment > svg {
+  color: #d97706;
+}
+
+.chat-fullscreen.is-paper .chat-msg-attachment,
+.chat-page.is-paper .chat-msg-attachment,
+.chat-panel.is-paper .chat-msg-attachment {
+  background: #fdf6e7;
+  border-color: #ecd9b0;
+  color: var(--ink, #3e3228);
+}
+
+.chat-fullscreen.is-paper .chat-msg-attachment:hover,
+.chat-page.is-paper .chat-msg-attachment:hover,
+.chat-panel.is-paper .chat-msg-attachment:hover {
+  background: #faefd6;
+}
+
+.chat-fullscreen.is-paper .chat-msg-attachment-meta,
+.chat-fullscreen.is-paper .chat-attachment-meta,
+.chat-page.is-paper .chat-msg-attachment-meta,
+.chat-page.is-paper .chat-attachment-meta,
+.chat-panel.is-paper .chat-msg-attachment-meta,
+.chat-panel.is-paper .chat-attachment-meta {
+  color: #9e8e80;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-editor-title,
+.chat-fullscreen.is-paper .chat-attachment-editor-content,
+.chat-page.is-paper .chat-attachment-editor-title,
+.chat-page.is-paper .chat-attachment-editor-content,
+.chat-panel.is-paper .chat-attachment-editor-title,
+.chat-panel.is-paper .chat-attachment-editor-content {
+  background: #fffdf8;
+  border-color: #e6ded0;
+  color: var(--ink, #3e3228);
+}
+
+.chat-fullscreen.is-paper .chat-attachment-editor-notice,
+.chat-page.is-paper .chat-attachment-editor-notice,
+.chat-panel.is-paper .chat-attachment-editor-notice {
+  background: #fdf3df;
+  color: #b45309;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-viewer-summary,
+.chat-fullscreen.is-paper .chat-attachment-viewer-text,
+.chat-fullscreen.is-paper .chat-attachment-toc button,
+.chat-page.is-paper .chat-attachment-viewer-summary,
+.chat-page.is-paper .chat-attachment-viewer-text,
+.chat-page.is-paper .chat-attachment-toc button,
+.chat-panel.is-paper .chat-attachment-viewer-summary,
+.chat-panel.is-paper .chat-attachment-viewer-text,
+.chat-panel.is-paper .chat-attachment-toc button {
+  color: var(--ink, #3e3228);
+}
+
+.chat-fullscreen.is-paper .chat-attachment-toc,
+.chat-page.is-paper .chat-attachment-toc,
+.chat-panel.is-paper .chat-attachment-toc {
+  background: #faf6ee;
+  border-color: #ece4d4;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-toc button:hover,
+.chat-page.is-paper .chat-attachment-toc button:hover,
+.chat-panel.is-paper .chat-attachment-toc button:hover {
+  background: #f3ebdb;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-viewer-section-label,
+.chat-page.is-paper .chat-attachment-viewer-section-label,
+.chat-panel.is-paper .chat-attachment-viewer-section-label {
+  color: #b45309;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-viewer-section + .chat-attachment-viewer-section,
+.chat-page.is-paper .chat-attachment-viewer-section + .chat-attachment-viewer-section,
+.chat-panel.is-paper .chat-attachment-viewer-section + .chat-attachment-viewer-section {
+  border-top-color: #e6ded0;
+}
+
+/* この会話の資料: ヘッダーのクリップのボタン(件数つき)と一覧 */
+.chat-attachments-btn {
+  position: relative;
+}
+
+.chat-attachments-btn-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #111422;
+  font-size: 0.62rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.chat-attachment-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.chat-attachment-list-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--starlight);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.chat-attachment-list-row:hover {
+  background: rgba(255, 179, 0, 0.06);
+  border-color: rgba(255, 179, 0, 0.3);
+}
+
+.chat-attachment-list-row:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.chat-attachment-list-icon {
+  flex-shrink: 0;
+  color: var(--gold);
+}
+
+.chat-attachment-list-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.chat-attachment-list-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-attachment-list-summary {
+  color: #cfd4dc;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.chat-attachment-list-meta {
+  color: var(--comet);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chat-attachment-list-chevron {
+  flex-shrink: 0;
+  color: var(--comet);
+}
+
+.chat-attachment-list-empty {
+  margin: 0;
+  color: var(--comet);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.chat-fullscreen.is-paper .chat-attachments-btn-count,
+.chat-page.is-paper .chat-attachments-btn-count,
+.chat-panel.is-paper .chat-attachments-btn-count {
+  background: #d97706;
+  color: #ffffff;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-list-row,
+.chat-page.is-paper .chat-attachment-list-row,
+.chat-panel.is-paper .chat-attachment-list-row {
+  background: #ffffff;
+  border-color: #e6ded0;
+  color: var(--ink, #3e3228);
+}
+
+.chat-fullscreen.is-paper .chat-attachment-list-row:hover,
+.chat-page.is-paper .chat-attachment-list-row:hover,
+.chat-panel.is-paper .chat-attachment-list-row:hover {
+  background: #fdf6e7;
+  border-color: #ecd9b0;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-list-icon,
+.chat-page.is-paper .chat-attachment-list-icon,
+.chat-panel.is-paper .chat-attachment-list-icon {
+  color: #d97706;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-list-summary,
+.chat-page.is-paper .chat-attachment-list-summary,
+.chat-panel.is-paper .chat-attachment-list-summary {
+  color: #5c4d40;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-list-meta,
+.chat-fullscreen.is-paper .chat-attachment-list-chevron,
+.chat-fullscreen.is-paper .chat-attachment-list-empty,
+.chat-page.is-paper .chat-attachment-list-meta,
+.chat-page.is-paper .chat-attachment-list-chevron,
+.chat-page.is-paper .chat-attachment-list-empty,
+.chat-panel.is-paper .chat-attachment-list-meta,
+.chat-panel.is-paper .chat-attachment-list-chevron,
+.chat-panel.is-paper .chat-attachment-list-empty {
+  color: #9e8e80;
+}

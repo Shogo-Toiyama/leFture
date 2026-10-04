@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import { AlertCircle, HeartHandshake, RotateCw } from 'lucide-react';
+import { AlertCircle, HeartHandshake, Paperclip, RotateCw } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import {
   CHAT_SOURCE_LABEL_KEYS,
@@ -17,31 +17,95 @@ import {
 } from '../../lib/chatCitations';
 import { fixBoldPunctuationSpacing, prepareMath } from '../../lib/markdownText';
 import type { LocalChatMessage } from '../../hooks/useChatConversation';
-import type { ChatCitation } from '../../types/chat';
+import type { ChatAttachment, ChatCitation } from '../../types/chat';
+import { AttachmentStatusBadge, viewableFromAttachment, type ViewableAttachment } from './AttachmentViewerModal';
 import { CitationPreviewModal } from './CitationPreviewModal';
 
 interface ChatMessageItemProps {
   message: LocalChatMessage;
+  /** このメッセージで添付した資料(userのみ。サーバーの一覧から)。 */
+  attachments?: ChatAttachment[];
+  /** 資料のチップを押したとき。idは送った資料のとき(外せる)。 */
+  onOpenAttachment?: (attachment: ViewableAttachment, id?: string) => void;
   /** 出典を押したとき。画面遷移は呼び出し側(パネルなら狭い画面で閉じる等)。 */
   onOpenCitation: (route: string) => void;
   /** 返答の生成に失敗したとき、直前の質問をもう一度送る。 */
   onResend?: () => void;
 }
 
-export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message, onOpenCitation, onResend }) => {
-  if (message.role === 'user') return <UserMessage message={message} />;
+export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
+  message,
+  attachments,
+  onOpenAttachment,
+  onOpenCitation,
+  onResend,
+}) => {
+  if (message.role === 'user') {
+    return <UserMessage message={message} attachments={attachments} onOpenAttachment={onOpenAttachment} />;
+  }
   return <AssistantMessage message={message} onOpenCitation={onOpenCitation} onResend={onResend} />;
 };
 
-const UserMessage: React.FC<{ message: LocalChatMessage }> = ({ message }) => {
-  const { t } = useLanguage();
+/** 送ったメッセージの資料のチップ。サーバーの一覧に載るまでは、送ったときの下書きで見せる。 */
+interface AttachmentChip {
+  key: string;
+  title: string;
+  chars: number;
+  status?: ChatAttachment['status'];
+  viewable: ViewableAttachment;
+  id?: string;
+}
+
+const UserMessage: React.FC<{
+  message: LocalChatMessage;
+  attachments?: ChatAttachment[];
+  onOpenAttachment?: (attachment: ViewableAttachment, id?: string) => void;
+}> = ({ message, attachments, onOpenAttachment }) => {
+  const { t, formatNumber } = useLanguage();
   const selected = message.context?.selected_text;
+  const chips: AttachmentChip[] = attachments?.length
+    ? attachments.map((a) => ({
+        key: a.id,
+        title: a.title || t('chatAttachmentUntitled'),
+        chars: a.char_count,
+        status: a.status,
+        viewable: viewableFromAttachment(a),
+        id: a.id,
+      }))
+    : (message.localAttachments ?? []).map((d) => ({
+        key: d.localId,
+        title: d.title || d.content.split('\n').find((line) => line.trim())?.trim() || t('chatAttachmentUntitled'),
+        chars: d.content.length,
+        viewable: { title: d.title || null, content: d.content },
+      }));
   return (
     <div className={`chat-msg is-user ${message.failedCode ? 'is-failed' : ''}`}>
-      <div className="chat-bubble">
-        {selected && <blockquote className="chat-bubble-quote">{selected}</blockquote>}
-        <p className="chat-bubble-text">{message.content}</p>
-      </div>
+      {chips.length > 0 && (
+        <div className="chat-msg-attachments">
+          {chips.map((chip) => (
+            <button
+              key={chip.key}
+              type="button"
+              className={`chat-msg-attachment ${chip.status && chip.status !== 'ready' ? `is-${chip.status}` : ''}`}
+              onClick={() => onOpenAttachment?.(chip.viewable, chip.id)}
+              title={chip.title}
+            >
+              <Paperclip size={13} />
+              <span className="chat-msg-attachment-title">{chip.title}</span>
+              <span className="chat-msg-attachment-meta">
+                {t('chatAttachmentChars', { count: formatNumber(chip.chars) })}
+              </span>
+              {chip.status && <AttachmentStatusBadge status={chip.status} />}
+            </button>
+          ))}
+        </div>
+      )}
+      {(message.content || selected) && (
+        <div className="chat-bubble">
+          {selected && <blockquote className="chat-bubble-quote">{selected}</blockquote>}
+          {message.content && <p className="chat-bubble-text">{message.content}</p>}
+        </div>
+      )}
       {message.failedCode && (
         <span className="chat-msg-failed">
           <AlertCircle size={13} />
@@ -114,8 +178,12 @@ const AssistantMessage: React.FC<{
   const truncatedQuery = query ? (query.length > 25 ? `${query.slice(0, 24)}…` : query) : undefined;
 
   let stageLabel = t('chatStageThinking');
-  if (message.stage === 'searching') {
-    if (message.searchTarget === 'web' || detail.includes('web')) {
+  if (message.stage === 'reading_attachments') {
+    stageLabel = t('chatStageReadingAttachments');
+  } else if (message.stage === 'searching') {
+    if (message.searchTarget === 'attachments' || detail.includes('attachments')) {
+      stageLabel = t('chatStageReadingAttachment');
+    } else if (message.searchTarget === 'web' || detail.includes('web')) {
       stageLabel = truncatedQuery
         ? t('chatStageSearchingWebWithQuery', { query: truncatedQuery })
         : t('chatStageSearchingWeb');

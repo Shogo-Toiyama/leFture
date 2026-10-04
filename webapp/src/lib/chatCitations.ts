@@ -7,6 +7,7 @@ export const CHAT_SOURCE_LABEL_KEYS: Record<ChatSourceType, TranslationKey> = {
   course: 'chatSourceCourse',
   chat_turn: 'chatSourceChat',
   web: 'chatSourceWeb',
+  chat_attachment: 'chatSourceAttachment',
   deep_note: 'chatSourceDeepNote',
   review_card: 'chatSourceReviewCard',
   keyword: 'chatSourceKeyword',
@@ -36,7 +37,8 @@ export function citationUrl(citation: ChatCitation): string | null {
  * あるので、そのトピックまで直接開く。
  */
 export function citationRoute(citation: ChatCitation): string | null {
-  if (citation.source_type === 'web') return null;
+  // Webは外のページ(citationUrl)、添付資料は引用箇所のプレビューだけ(資料の一覧から全文を読める)
+  if (citation.source_type === 'web' || citation.source_type === 'chat_attachment') return null;
   if (citation.source_type === 'course') {
     return citation.course_id ? `/courses/${citation.course_id}` : null;
   }

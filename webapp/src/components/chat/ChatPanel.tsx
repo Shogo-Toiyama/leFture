@@ -7,6 +7,7 @@ import { useChatThreads } from '../../hooks/useChatThreads';
 import { getChatThread } from '../../lib/chat';
 import { getLecture } from '../../lib/lectures';
 import { lectureDisplayTitle } from '../../types/lecture';
+import { AttachmentListButton } from './AttachmentListModal';
 import { ChatConversation } from './ChatConversation';
 import { ChatPlanNotice } from './ChatPlanNotice';
 import { ChatThreadList } from './ChatThreadList';
@@ -37,6 +38,10 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
   }, [routeLectureId, setLectureDetached]);
 
   const [threadTitle, setThreadTitle] = useState<string | null>(null);
+  // この会話の資料の数(1本以上あるときだけヘッダーにクリップのボタンを出す)と、一覧を開いているか
+  const [attachmentCount, setAttachmentCount] = useState(0);
+  const [attachmentListOpen, setAttachmentListOpen] = useState(false);
+  useEffect(() => setAttachmentListOpen(false), [panel.threadId, panel.view]);
   const refreshThreadTitle = useCallback(() => {
     if (!panel.threadId) {
       setThreadTitle(null);
@@ -99,6 +104,9 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
           <span className="chat-panel-title">
             {isHistory ? t('chatHistory') : threadTitle || (panel.threadId ? t('chatThreadUntitled') : t('chatNewConversation'))}
           </span>
+          {!isHistory && attachmentCount > 0 && (
+            <AttachmentListButton count={attachmentCount} onClick={() => setAttachmentListOpen(true)} />
+          )}
           <button
             type="button"
             className="chat-icon-btn"
@@ -142,6 +150,9 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
             screen={panel.lectureDetached ? null : panel.pageScreen}
             onOpenCitation={openCitation}
             variant="panel"
+            attachmentListOpen={attachmentListOpen}
+            onAttachmentListClose={() => setAttachmentListOpen(false)}
+            onAttachmentCountChange={setAttachmentCount}
           />
         )}
       </aside>

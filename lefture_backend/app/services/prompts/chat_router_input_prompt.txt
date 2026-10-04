@@ -14,6 +14,10 @@ ${SCREEN_CONTEXT}
 ${COURSES}
 </courses>
 
+<attached_materials>
+${ATTACHMENTS}
+</attached_materials>
+
 <is_first_message>${IS_FIRST_MESSAGE}</is_first_message>
 
 <new_message>
