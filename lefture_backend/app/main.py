@@ -6015,6 +6015,41 @@ def _profile_item_not_found() -> HTTPException:
     return HTTPException(status_code=404, detail={"error_code": "PROFILE_ITEM_NOT_FOUND", "message": "Item not found."})
 
 
+@app.get("/profile/self-portrait")
+async def get_self_portrait(request: Request):
+    """自分像ページ: いまのわたし(表紙)・書き直し案・カテゴリと項目(確認待ちを含む)・最近わかったこと。"""
+    uid = await _get_authenticated_user_id(request)
+    return await asyncio.to_thread(profile_store.self_portrait, uid)
+
+
+@app.get("/profile/items/{item_id}")
+async def get_profile_item(item_id: str, request: Request):
+    """項目を開いたとき: 根拠になった会話と、書き直しの履歴。"""
+    uid = await _get_authenticated_user_id(request)
+    item_id = _parse_uuid_or_422(item_id, "item_id")
+    detail = await asyncio.to_thread(profile_store.item_detail, uid, item_id)
+    if detail is None:
+        raise _profile_item_not_found()
+    return detail
+
+
+@app.get("/profile/ai-memory")
+async def get_ai_memory(request: Request):
+    """AIチャット設定: 覚え書きと、会話ごとのAIのメモ(観察)。仮説は返さない。"""
+    uid = await _get_authenticated_user_id(request)
+    return await asyncio.to_thread(profile_store.ai_memory, uid)
+
+
+@app.delete("/profile/observations/{observation_id}")
+async def delete_profile_observation(observation_id: str, request: Request):
+    """AIのメモを1件消す。"""
+    uid = await _get_authenticated_user_id(request)
+    observation_id = _parse_uuid_or_422(observation_id, "observation_id")
+    if not await profile_store.delete_observation(uid, observation_id):
+        raise HTTPException(status_code=404, detail={"error_code": "OBSERVATION_NOT_FOUND", "message": "Not found."})
+    return {"success": True}
+
+
 @app.post("/profile/items/{item_id}/reject")
 async def reject_profile_item(item_id: str, payload: ProfileItemRejectRequest, request: Request):
     """「違う」: 項目を rejected にし、同じ意味の項目を作り直させない。"""

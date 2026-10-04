@@ -50,6 +50,7 @@ const OnboardingWizard = lazy(() =>
 );
 const AccountPage = lazy(() => import('./pages/account/AccountPage').then((m) => ({ default: m.AccountPage })));
 const ProfilePage = lazy(() => import('./pages/account/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const AiMemoryPage = lazy(() => import('./pages/account/AiMemoryPage').then((m) => ({ default: m.AiMemoryPage })));
 const CreditsPage = lazy(() => import('./pages/account/CreditsPage').then((m) => ({ default: m.CreditsPage })));
 const PurchaseCreditsPage = lazy(() =>
   import('./pages/account/PurchaseCreditsPage').then((m) => ({ default: m.PurchaseCreditsPage }))
@@ -113,6 +114,7 @@ export const App: React.FC = () => {
                         <Route path="lectures/:lectureId" element={<LectureViewerPage />} />
                         <Route path="account" element={<AccountPage />} />
                         <Route path="account/profile" element={<ProfilePage />} />
+                        <Route path="account/ai-memory" element={<AiMemoryPage />} />
                         <Route path="account/credits" element={<CreditsPage />} />
                         <Route path="account/credits/purchase" element={<PurchaseCreditsPage />} />
                         <Route path="account/plans" element={<PlansPage />} />

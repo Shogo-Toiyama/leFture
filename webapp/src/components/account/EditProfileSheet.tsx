@@ -5,11 +5,15 @@ import { updateProfileFields } from '../../lib/profile';
 import { useLanguage } from '../../i18n/LanguageContext';
 import type { UserProfile } from '../../types/profile';
 
+type ProfileField = 'bio' | 'interests' | 'future_goals';
+
 interface EditProfileSheetProps {
   open: boolean;
   onClose: () => void;
   profile: UserProfile | null;
   onUpdated: () => Promise<void>;
+  /** 指定すると、その欄だけを編集する(自分像ページの「いまのわたし」のタイルごとの編集) */
+  only?: ProfileField;
 }
 
 export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
@@ -17,8 +21,10 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
   onClose,
   profile,
   onUpdated,
+  only,
 }) => {
   const { t } = useLanguage();
+  const shows = (field: ProfileField) => !only || only === field;
 
   const initialBio = profile?.bio ?? '';
   const initialInterests = profile?.interests ?? '';
@@ -68,11 +74,13 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
     setSaving(true);
     setError(null);
     try {
-      await updateProfileFields({
-        bio,
-        interests,
-        future_goals: futureGoals,
-      });
+      // 変えた欄だけを送る(送った欄はDBのトリガが「本人が書いた」にするため、
+      // 触っていないAIの文まで本人のものにしない)
+      const changes: { bio?: string; interests?: string; future_goals?: string } = {};
+      if (shows('bio') && bio !== initialBio) changes.bio = bio;
+      if (shows('interests') && interests !== initialInterests) changes.interests = interests;
+      if (shows('future_goals') && futureGoals !== initialGoals) changes.future_goals = futureGoals;
+      await updateProfileFields(changes);
       await onUpdated();
       onClose();
     } catch (err) {
@@ -93,7 +101,7 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
         <form className="edit-profile-sheet-form" onSubmit={handleSubmit}>
           {error && <p className="auth-error">{error}</p>}
 
-          <div className="sheet-form-field">
+          {shows('bio') && <div className="sheet-form-field">
             <label htmlFor="sheet-bio" className="sheet-field-label">
               {t('aboutYou')}
             </label>
@@ -103,14 +111,14 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
             <textarea
               id="sheet-bio"
               className="sheet-textarea"
-              rows={3}
+              rows={only ? 7 : 3}
               placeholder={t('aboutYouPlaceholder')}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
             />
-          </div>
+          </div>}
 
-          <div className="sheet-form-field">
+          {shows('interests') && <div className="sheet-form-field">
             <label htmlFor="sheet-interests" className="sheet-field-label">
               {t('interests')}
             </label>
@@ -120,14 +128,14 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
             <textarea
               id="sheet-interests"
               className="sheet-textarea"
-              rows={3}
+              rows={only ? 7 : 3}
               placeholder={t('interestsPlaceholder')}
               value={interests}
               onChange={(e) => setInterests(e.target.value)}
             />
-          </div>
+          </div>}
 
-          <div className="sheet-form-field">
+          {shows('future_goals') && <div className="sheet-form-field">
             <label htmlFor="sheet-goals" className="sheet-field-label">
               {t('futureGoals')}
             </label>
@@ -137,12 +145,12 @@ export const EditProfileSheet: React.FC<EditProfileSheetProps> = ({
             <textarea
               id="sheet-goals"
               className="sheet-textarea"
-              rows={3}
+              rows={only ? 7 : 3}
               placeholder={t('futureGoalsPlaceholder')}
               value={futureGoals}
               onChange={(e) => setFutureGoals(e.target.value)}
             />
-          </div>
+          </div>}
 
           <div className="sheet-actions" style={{ marginTop: '1.5rem' }}>
             <button

@@ -1,0 +1,73 @@
+▶ p1_precision_ja
+  [p1_precision_ja] thread t1
+▶ p2_bridge_ja
+  [p2_bridge_ja] thread t1
+▶ p3_culture_en
+  [p3_culture_en] thread t1
+  [p1_precision_ja] thread t2
+  [p3_culture_en] thread t2
+  [p2_bridge_ja] thread t2
+  [p1_precision_ja] consolidate c1
+  [p3_culture_en] thread t3
+  [p2_bridge_ja] thread t3
+  [p2_bridge_ja] consolidate c1
+  [p3_culture_en] thread t4
+  [p1_precision_ja] thread t3
+  [p3_culture_en] consolidate c1
+  [p1_precision_ja] thread t4
+  [p1_precision_ja] consolidate c2
+  [p2_bridge_ja] thread t4
+  [p1_precision_ja] thread t5
+  [p1_precision_ja] thread t6
+  [p3_culture_en] thread t5
+  [p2_bridge_ja] thread t5
+  [p2_bridge_ja] thread t6
+  [p1_precision_ja] consolidate c3
+  [p3_culture_en] thread t6
+  [p3_culture_en] consolidate c2
+  [p2_bridge_ja] consolidate c2
+  [p1_precision_ja] cover cov1
+▶ p4_traps_ja
+  [p4_traps_ja] thread t1
+  [p4_traps_ja] thread t2
+  [p4_traps_ja] thread t3
+▶ p5_memos_en
+  [p5_memos_en] thread t1
+▶ p6_actions_ja
+  [p6_actions_ja] thread t1
+  [p5_memos_en] thread t2
+  [p4_traps_ja] thread t4
+  [p5_memos_en] thread t3
+  [p5_memos_en] thread t4
+  [p4_traps_ja] thread t5
+  [p6_actions_ja] thread t2
+  [p4_traps_ja] thread t6
+  [p5_memos_en] thread t5
+  [p6_actions_ja] thread t3
+  [p4_traps_ja] consolidate c1
+  [p6_actions_ja] consolidate c1
+  [p5_memos_en] consolidate c1
+  [p4_traps_ja] cover cov1
+  [p6_actions_ja] user_action a1
+  [p6_actions_ja] user_action a2
+  [p6_actions_ja] thread t4
+  [p6_actions_ja] thread t5
+  [p6_actions_ja] consolidate c2
+  [p6_actions_ja] thread t6
+  [p6_actions_ja] consolidate c3
+  [p6_actions_ja] user_action a3
+  [p6_actions_ja] thread t7
+  [p6_actions_ja] consolidate c4
+  [p6_actions_ja] thread t8
+  [p6_actions_ja] consolidate c5
+  [p6_actions_ja] cover cov1
+
+=== summary ===
+models: {'observer': 'gpt-6-luna', 'observer_reasoning': 'none', 'consolidator': 'gpt-6-luna', 'consolidator_reasoning': 'medium', 'cover': 'gpt-6-luna', 'cover_reasoning': 'low'}
+p1_precision_ja        passed 39/41  false_promotions=0  missed=1  obs_violations=0  obs_misses=0  mechanical=1  unexplained=0  cost=$0.0034
+p2_bridge_ja           passed 24/27  false_promotions=0  missed=2  obs_violations=0  obs_misses=1  mechanical=0  unexplained=4  cost=$0.0040
+p3_culture_en          passed 31/32  false_promotions=0  missed=0  obs_violations=0  obs_misses=1  mechanical=0  unexplained=0  cost=$0.0038
+p4_traps_ja            passed 21/21  false_promotions=0  missed=0  obs_violations=0  obs_misses=0  mechanical=0  unexplained=0  cost=$0.0016
+p5_memos_en            passed 15/18  false_promotions=0  missed=2  obs_violations=0  obs_misses=1  mechanical=0  unexplained=0  cost=$0.0013
+p6_actions_ja          passed 31/34  false_promotions=0  missed=1  obs_violations=0  obs_misses=1  mechanical=1  unexplained=1  cost=$0.0044
+TOTAL                  passed 161/173  false_promotions=0  missed=6

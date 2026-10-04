@@ -18,7 +18,7 @@ metadata.kind 付きで記録し、管理画面の原価の集計に入るよう
 
 import asyncio
 import json
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Optional
 
 from app.core.supabase import get_supabase_client
@@ -783,3 +783,154 @@ def load_chat_memory(admin_client, user_id: str) -> tuple[list[dict], list[str]]
         .eq("user_id", user_id).eq("status", "open").order("created_at", desc=True) \
         .limit(HYPOTHESES_FOR_CHAT_MAX).execute().data or []
     return memos, [h["content"] for h in hyps]
+
+
+# =========================================================
+# 🪞 画面用の読み出し(webappの /account/profile とAIチャット設定)
+# 根拠のつながりと観察メモには本人向けのRLSを置いていないので、組み立てはバックエンドで行う
+# =========================================================
+
+RECENT_DAYS = 14
+RECENT_MAX = 3
+
+
+def _thread_titles(admin_client, thread_ids: list[str]) -> dict[str, str]:
+    if not thread_ids:
+        return {}
+    rows = admin_client.table("chat_threads").select("id, title").in_("id", thread_ids).execute().data or []
+    return {r["id"]: r.get("title") or "" for r in rows}
+
+
+def self_portrait(user_id: str) -> dict:
+    """自分像ページに必要なものを一度に返す(同期関数。APIからto_threadで呼ぶ)。"""
+    admin_client = get_supabase_client()
+    prof = admin_client.table("user_profiles") \
+        .select("bio, interests, future_goals, bio_written_by, interests_written_by, future_goals_written_by") \
+        .eq("id", user_id).maybe_single().execute()
+    p = (prof.data if prof else None) or {}
+    cover = {f: {"text": p.get(f), "written_by": p.get(f"{f}_written_by")} for f in COVER_FIELDS}
+
+    proposals = admin_client.table("profile_cover_proposals").select("id, field, proposed_text, created_at") \
+        .eq("user_id", user_id).eq("status", "pending").order("created_at").execute().data or []
+    categories = admin_client.table("profile_categories").select("id, name, description, kind, parent_id") \
+        .eq("user_id", user_id).is_("merged_into", "null").order("created_at").execute().data or []
+    items = admin_client.table("profile_items") \
+        .select("id, category_id, kind, content, origin, status, sensitive, first_seen_at, last_seen_at, occurred_at, "
+                "seen_by_user_at, created_at") \
+        .eq("user_id", user_id).in_("status", ["active", "pending_confirm"]).execute().data or []
+    item_ids = [it["id"] for it in items]
+
+    evidence_rows = []
+    versions = []
+    if item_ids:
+        evidence_rows = admin_client.table("profile_item_evidence").select("item_id, observation_id") \
+            .in_("item_id", item_ids).execute().data or []
+        versions = admin_client.table("profile_item_versions").select("item_id, replaced_at") \
+            .in_("item_id", item_ids).execute().data or []
+    obs_ids = sorted({r["observation_id"] for r in evidence_rows})
+    obs = {}
+    if obs_ids:
+        for r in admin_client.table("profile_observations").select("id, thread_id, topic, quote, observed_at") \
+                .in_("id", obs_ids).is_("deleted_at", "null").execute().data or []:
+            obs[r["id"]] = r
+
+    ev_by_item: dict[str, list[dict]] = {}
+    for r in evidence_rows:
+        o = obs.get(r["observation_id"])
+        if o:
+            ev_by_item.setdefault(r["item_id"], []).append(o)
+    last_rewrite: dict[str, str] = {}
+    for v in versions:
+        if v["replaced_at"] > last_rewrite.get(v["item_id"], ""):
+            last_rewrite[v["item_id"]] = v["replaced_at"]
+
+    out_items = []
+    for it in items:
+        ev = ev_by_item.get(it["id"], [])
+        changed_at = max(it["created_at"], last_rewrite.get(it["id"], ""))
+        out_items.append({
+            "id": it["id"], "category_id": it["category_id"], "kind": it["kind"], "content": it["content"],
+            "origin": it["origin"], "status": it["status"], "sensitive": it["sensitive"],
+            "first_seen_at": it["first_seen_at"], "last_seen_at": it["last_seen_at"], "occurred_at": it["occurred_at"],
+            "is_new": it["seen_by_user_at"] is None,
+            "changed_at": changed_at,
+            "evidence_threads": len({o["thread_id"] for o in ev}),
+        })
+
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=RECENT_DAYS)).isoformat()
+    recent_candidates = sorted(
+        (i for i in out_items if i["status"] == "active" and i["kind"] == "trait" and i["changed_at"] >= cutoff),
+        key=lambda i: i["changed_at"], reverse=True,
+    )[:RECENT_MAX]
+    recent = []
+    for i in recent_candidates:
+        ev = sorted(ev_by_item.get(i["id"], []), key=lambda o: o["observed_at"])
+        # 「つながった話」は別々の会話から来たときだけ出す(1つの会話の中の話題を並べても、束ねた理由にならない)
+        topic_by_thread: dict[str, str] = {}
+        for o in ev:
+            t = (o.get("topic") or "").strip()
+            if t and o["thread_id"] not in topic_by_thread:
+                topic_by_thread[o["thread_id"]] = t
+        topics = list(topic_by_thread.values())
+        quote = next((o["quote"] for o in reversed(ev) if o.get("quote")), None)
+        recent.append({"item_id": i["id"], "topics": topics[:3] if len(topics) >= 2 else [], "quote": quote})
+
+    return {
+        "cover": cover,
+        "proposals": proposals,
+        "categories": categories,
+        "items": out_items,
+        "recent": recent,
+    }
+
+
+def item_detail(user_id: str, item_id: str) -> Optional[dict]:
+    """項目を開いたとき: 根拠になった会話(本人の言葉)と、書き直しの履歴。"""
+    admin_client = get_supabase_client()
+    res = admin_client.table("profile_items").select("id, content, origin, status, kind, created_at") \
+        .eq("id", item_id).eq("user_id", user_id).maybe_single().execute()
+    item = res.data if res else None
+    if not item or item["status"] not in ("active", "pending_confirm"):
+        return None
+    links = admin_client.table("profile_item_evidence").select("observation_id").eq("item_id", item_id).execute().data or []
+    evidence = []
+    if links:
+        rows = admin_client.table("profile_observations").select("id, thread_id, note, quote, observed_at") \
+            .in_("id", [r["observation_id"] for r in links]).is_("deleted_at", "null") \
+            .order("observed_at").execute().data or []
+        titles = _thread_titles(admin_client, sorted({r["thread_id"] for r in rows}))
+        evidence = [{"observation_id": r["id"], "thread_id": r["thread_id"], "thread_title": titles.get(r["thread_id"], ""),
+                     "note": r["note"], "quote": r.get("quote"), "observed_at": r["observed_at"]} for r in rows]
+    versions = admin_client.table("profile_item_versions").select("content, origin, replaced_at") \
+        .eq("item_id", item_id).order("replaced_at", desc=True).execute().data or []
+    return {"item": item, "evidence": evidence, "versions": versions}
+
+
+def ai_memory(user_id: str) -> dict:
+    """AIチャット設定: 覚え書き(有効なもの)と、会話ごとにまとめた観察メモ。仮説は見せない。"""
+    admin_client = get_supabase_client()
+    today = date.today().isoformat()
+    memos = admin_client.table("ai_memos").select("id, kind, content, expires_at, created_at") \
+        .eq("user_id", user_id).order("created_at").execute().data or []
+    memos = [m for m in memos if not m.get("expires_at") or m["expires_at"] >= today]
+    rows = admin_client.table("profile_observations").select("id, thread_id, note, observed_at") \
+        .eq("user_id", user_id).is_("deleted_at", "null").order("observed_at", desc=True) \
+        .order("created_at").execute().data or []
+    titles = _thread_titles(admin_client, sorted({r["thread_id"] for r in rows}))
+    groups: dict[str, dict] = {}
+    for r in rows:
+        g = groups.setdefault(r["thread_id"], {"thread_id": r["thread_id"], "thread_title": titles.get(r["thread_id"], ""),
+                                                "last_observed_at": r["observed_at"], "observations": []})
+        g["observations"].append({"id": r["id"], "note": r["note"], "observed_at": r["observed_at"]})
+    return {"memos": memos, "observation_groups": list(groups.values()), "observation_count": len(rows)}
+
+
+async def delete_observation(user_id: str, observation_id: str) -> bool:
+    """
+    AIのメモを1件消す。根拠のつながりも消えるが、項目そのものは残す(本人が見えているものは、
+    本人が画面で個別に消す)。
+    """
+    admin_client = get_supabase_client()
+    res = await _db(lambda: admin_client.table("profile_observations").delete()
+                    .eq("id", observation_id).eq("user_id", user_id).execute())
+    return bool(res.data)

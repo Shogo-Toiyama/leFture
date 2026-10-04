@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { matchPath, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Maximize2, MessagesSquare, SquarePen, X } from 'lucide-react';
+import { ChevronLeft, Maximize2, MessagesSquare, SlidersHorizontal, SquarePen, X } from 'lucide-react';
 import { useChatPanel } from '../../context/ChatPanelContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useChatThreads } from '../../hooks/useChatThreads';
 import { getChatThread } from '../../lib/chat';
 import { getLecture } from '../../lib/lectures';
 import { lectureDisplayTitle } from '../../types/lecture';
+import { AiSettingsSheet } from './AiSettingsSheet';
 import { AttachmentListButton } from './AttachmentListModal';
 import { ChatConversation } from './ChatConversation';
 import { ChatPlanNotice } from './ChatPlanNotice';
@@ -41,6 +42,8 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
   // この会話の資料の数(1本以上あるときだけヘッダーにクリップのボタンを出す)と、一覧を開いているか
   const [attachmentCount, setAttachmentCount] = useState(0);
   const [attachmentListOpen, setAttachmentListOpen] = useState(false);
+  // AIチャット設定(覚え書き・AIのメモ・自分像への入口)のシート
+  const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
   useEffect(() => setAttachmentListOpen(false), [panel.threadId, panel.view]);
   const refreshThreadTitle = useCallback(() => {
     if (!panel.threadId) {
@@ -118,6 +121,16 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
           </button>
           <button
             type="button"
+            className={`chat-icon-btn ${aiSettingsOpen ? 'is-active' : ''}`}
+            onClick={() => setAiSettingsOpen((v) => !v)}
+            aria-label={t('aiSettingsButton')}
+            aria-expanded={aiSettingsOpen}
+            title={t('aiSettingsButton')}
+          >
+            <SlidersHorizontal size={16} />
+          </button>
+          <button
+            type="button"
             className="chat-icon-btn"
             onClick={() => navigate(panel.threadId ? `/chat/${panel.threadId}` : '/chat/new')}
             aria-label={t('chatOpenFullScreen')}
@@ -155,6 +168,14 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
             onAttachmentCountChange={setAttachmentCount}
           />
         )}
+        <AiSettingsSheet
+          open={aiSettingsOpen}
+          onClose={() => setAiSettingsOpen(false)}
+          onNavigate={() => {
+            setAiSettingsOpen(false);
+            if (stacked) panel.close();
+          }}
+        />
       </aside>
     </>
   );

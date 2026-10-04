@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Minimize2, SquarePen } from 'lucide-react';
+import { ChevronLeft, Minimize2, SlidersHorizontal, SquarePen } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useChatThreads } from '../../hooks/useChatThreads';
 import { getChatThread } from '../../lib/chat';
 import { ChatConversation } from '../../components/chat/ChatConversation';
 import { ChatThreadList } from '../../components/chat/ChatThreadList';
 import { ChatPlanNotice } from '../../components/chat/ChatPlanNotice';
+import { AiSettingsSheet } from '../../components/chat/AiSettingsSheet';
 import { AttachmentListButton } from '../../components/chat/AttachmentListModal';
 
 /**
@@ -118,6 +119,7 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
   // この会話の資料の数(1本以上あるときだけクリップのボタンを出す)と、一覧を開いているか
   const [attachmentCount, setAttachmentCount] = useState(0);
   const [attachmentListOpen, setAttachmentListOpen] = useState(false);
+  const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
   useEffect(() => setAttachmentListOpen(false), [threadId]);
 
   const refreshTitle = useCallback(() => {
@@ -168,6 +170,16 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
           )}
           <button
             type="button"
+            className={`chat-icon-btn ${aiSettingsOpen ? 'is-active' : ''}`}
+            onClick={() => setAiSettingsOpen((v) => !v)}
+            aria-label={t('aiSettingsButton')}
+            aria-expanded={aiSettingsOpen}
+            title={t('aiSettingsButton')}
+          >
+            <SlidersHorizontal size={18} />
+          </button>
+          <button
+            type="button"
             className="chat-icon-btn"
             onClick={handleMinimize}
             aria-label={t('chatExitFullScreen')}
@@ -195,6 +207,7 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
           onAttachmentCountChange={setAttachmentCount}
         />
       </main>
+      <AiSettingsSheet open={aiSettingsOpen} onClose={() => setAiSettingsOpen(false)} onNavigate={() => setAiSettingsOpen(false)} fixed />
     </div>
   );
 };

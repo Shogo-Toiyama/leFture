@@ -26,6 +26,7 @@ import {
   LogOut,
   UserX,
   ExternalLink,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { CreditStarIcon } from '../../components/icons/CreditStarIcon';
 import { useProfile } from '../../hooks/useProfile';
@@ -365,6 +366,20 @@ export const AccountPage: React.FC = () => {
               {profile?.future_goals?.trim() ? profile.future_goals : t('noFutureDreamsYet')}
             </p>
           </div>
+          <ChevronRight size={18} className="glass-row-chevron" />
+        </Link>
+      </div>
+
+      {/* 自分像のAI: 話し方の覚え書き・AIのメモ(ロードマップ9章) */}
+      <div className="glass-card" style={{ marginTop: '0.75rem' }}>
+        <Link to="/account/ai-memory" className="glass-row">
+          <span className="glass-row-icon">
+            <SlidersHorizontal size={17} />
+          </span>
+          <span className="glass-row-text">
+            <span className="glass-row-title">{t('aiSettingsButton')}</span>
+            <span className="glass-row-sub">{t('accountAiSettingsSub')}</span>
+          </span>
           <ChevronRight size={18} className="glass-row-chevron" />
         </Link>
       </div>

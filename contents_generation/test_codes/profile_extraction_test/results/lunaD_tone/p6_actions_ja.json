@@ -1,0 +1,2082 @@
+{
+  "scenario_id": "p6_actions_ja",
+  "language": "ja",
+  "description": "発表や司会の話から「人前で話すのが好き」と推測されるが、本人は「違う(役割だからやってるだけ)」と言う。ツール作りの傾向は本人が文を直す。ADHDの話は確認トレイで「残さない」。最後に本人が「人前で話すのが楽しくなってきた」と言う。",
+  "tests": [
+    "「違う」と言われた項目を、推測の材料が増えても作り直さないか",
+    "「違う」の後でも、本人の明言があれば再提案できるか(興味は変わる)",
+    "「直す」で本人の文になった項目を、AIが書き換えないか(根拠の追加はしてよい)",
+    "「残さない」の後、同じ分野を提案しないか。観察役も記録しないか。中身がどこにも残っていないか",
+    "表紙の欄ごとのルール: 本人が書いた欄は書き直し案だけ / 空欄は自動で埋める / AIが書いた欄は自動で更新"
+  ],
+  "models": {
+    "observer": "gpt-6-luna",
+    "observer_reasoning": "none",
+    "consolidator": "gpt-6-luna",
+    "consolidator_reasoning": "medium",
+    "cover": "gpt-6-luna",
+    "cover_reasoning": "low"
+  },
+  "events": [
+    {
+      "type": "thread",
+      "id": "t1",
+      "date": "2026-09-04",
+      "observations": [
+        {
+          "id": "t1.o1",
+          "thread_id": "t1",
+          "observed_at": "2026-09-04",
+          "note": "ゼミの発表で質問をいくつも受け、全部答えられたと話していた。準備した甲斐があったとも話していた。",
+          "topic": "ゼミ発表",
+          "hook": "発表後の質問に準備を活かして答えられたこと",
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            1,
+            2
+          ],
+          "quote": "質問けっこう来たけど全部答えられた",
+          "occurred_at": "2026-09-04",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t1.o2",
+          "thread_id": "t1",
+          "observed_at": "2026-09-04",
+          "note": "毎学期手で入力するのが面倒で、授業の時間割を自動でGoogleカレンダーに入れるスクリプトを書いていた。授業の課題より、自分の困りごとを解決するツール作りの方が断然楽しいと話していた。",
+          "topic": "自作ツール・スクリプト",
+          "hook": "自分が感じている不便を、ツール作りで解決すること",
+          "caveat": "授業の課題よりも自分の困りごとを解決するツール作りの方が楽しい",
+          "reaction": "strong",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            2,
+            3
+          ],
+          "quote": "こういう自分の困りごとを解決するツール作る方が断然楽しい",
+          "occurred_at": "2026-09-04",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t1.o3",
+          "thread_id": "t1",
+          "observed_at": "2026-09-04",
+          "note": "時間割を自動でGoogleカレンダーに入れるスクリプトを書いていた。",
+          "topic": "時間割入力スクリプト",
+          "hook": null,
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "授業の時間割を自動でGoogleカレンダーに入れるスクリプト書いた",
+          "occurred_at": "2026-09-03",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t2",
+      "date": "2026-09-11",
+      "observations": [
+        {
+          "id": "t2.o1",
+          "thread_id": "t2",
+          "observed_at": "2026-09-11",
+          "note": "サークルの新歓で司会をして、けっこう笑いを取れたと話していた。先輩にも褒められたそうだ。",
+          "topic": "サークルの新歓での司会",
+          "hook": "司会で場の人たちから笑いを引き出すこと",
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            1,
+            2
+          ],
+          "quote": "けっこう笑い取れた笑",
+          "occurred_at": "2026-09-11",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t3",
+      "date": "2026-09-18",
+      "observations": [],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c1",
+      "today": "2026-09-18",
+      "input_counts": {
+        "new": 4,
+        "related": 0,
+        "items": 0,
+        "rejected": 0,
+        "memos": 0
+      },
+      "plan": {
+        "new_categories": [
+          {
+            "ref": "new1",
+            "name": "興味・関心",
+            "description": "惹かれることや、楽しいと感じること",
+            "kind": "trait",
+            "parent_id": null,
+            "parent_ref": null
+          },
+          {
+            "ref": "new2",
+            "name": "プロジェクト",
+            "description": "自分で作ったものや進めた取り組み",
+            "kind": "record",
+            "parent_id": null,
+            "parent_ref": null
+          },
+          {
+            "ref": "new3",
+            "name": "経験・活動",
+            "description": "発表や活動での出来事",
+            "kind": "record",
+            "parent_id": null,
+            "parent_ref": null
+          }
+        ],
+        "item_creates": [
+          {
+            "kind": "trait",
+            "content": "自分が感じている不便を、ツール作りで解決することが好き。授業の課題より、自分の困りごとを解決するものを作る方が楽しい。",
+            "evidence": [
+              "t1.o2"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": null,
+            "reason": "自分の好みを本人が明確に述べているため、関心として記録する。",
+            "category_ref": "new1"
+          },
+          {
+            "kind": "record",
+            "content": "授業の時間割をGoogleカレンダーに自動登録するスクリプトを作った。",
+            "evidence": [
+              "t1.o2",
+              "t1.o3"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-09-03",
+            "reason": "作成した具体的なプロジェクトとして、記録に残す。",
+            "category_ref": "new2"
+          },
+          {
+            "kind": "record",
+            "content": "ゼミ発表で受けた質問にすべて答えられた。準備した甲斐があったと話していた。",
+            "evidence": [
+              "t1.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-09-04",
+            "reason": "発表後の質問に答えられた、具体的な出来事として記録する。",
+            "category_ref": "new3"
+          },
+          {
+            "kind": "record",
+            "content": "サークルの新歓で司会をし、笑いを取って先輩にも褒められた。",
+            "evidence": [
+              "t2.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-09-11",
+            "reason": "司会を務めた具体的な活動の記録として残す。",
+            "category_ref": "new3"
+          }
+        ],
+        "item_updates": [],
+        "item_archives": [],
+        "memo_creates": [],
+        "memo_updates": [],
+        "memo_removes": [],
+        "hypothesis_creates": [
+          {
+            "content": "次に司会や人前で話す経験が話題になったら、場の人から笑いを引き出すことのどんな部分が楽しかったのか、自然に確かめる。",
+            "evidence": [
+              "t2.o1"
+            ]
+          }
+        ],
+        "hypothesis_closes": []
+      },
+      "dropped": [],
+      "rejected_guard": [],
+      "state": {
+        "today": "2026-09-18",
+        "categories": [
+          {
+            "id": "cat1",
+            "path": "興味・関心",
+            "kind": "trait"
+          },
+          {
+            "id": "cat2",
+            "path": "プロジェクト",
+            "kind": "record"
+          },
+          {
+            "id": "cat3",
+            "path": "経験・活動",
+            "kind": "record"
+          }
+        ],
+        "items": [
+          {
+            "id": "item4",
+            "category": "興味・関心",
+            "kind": "trait",
+            "content": "自分が感じている不便を、ツール作りで解決することが好き。授業の課題より、自分の困りごとを解決するものを作る方が楽しい。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [
+              {
+                "content": "自分が感じている不便を、ツール作りで解決することが好き。授業の課題より、自分の困りごとを解決するものを作る方が楽しい。",
+                "until": "2026-09-18"
+              }
+            ],
+            "rejected_reason": null
+          },
+          {
+            "id": "item5",
+            "category": "プロジェクト",
+            "kind": "record",
+            "content": "授業の時間割をGoogleカレンダーに自動登録するスクリプトを作った。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-03",
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item6",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "ゼミ発表で受けた質問にすべて答えられた。準備した甲斐があったと話していた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-04",
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item7",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "サークルの新歓で司会をし、笑いを取って先輩にも褒められた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-11",
+            "first_seen_at": "2026-09-11",
+            "last_seen_at": "2026-09-11",
+            "evidence_threads": [
+              "t2"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          }
+        ],
+        "memos": [],
+        "hypotheses": [
+          {
+            "id": "hyp8",
+            "content": "次に司会や人前で話す経験が話題になったら、場の人から笑いを引き出すことのどんな部分が楽しかったのか、自然に確かめる。",
+            "status": "open",
+            "evidence": [
+              "t2.o1"
+            ],
+            "created_at": "2026-09-18"
+          }
+        ],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": "東京の大学2年。情報系の学部で、プログラミングを勉強中。",
+            "origin": "user"
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": "人の役に立つアプリを作れるエンジニアになりたい。",
+            "origin": "ai"
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "used",
+          "t1.o2": "used",
+          "t1.o3": "used",
+          "t2.o1": "used"
+        }
+      }
+    },
+    {
+      "type": "user_action",
+      "id": "a1",
+      "action": "reject",
+      "target": "人前で話すこと・発表することが好き(得意)",
+      "injected": true,
+      "applied": true,
+      "item_id": "item9",
+      "item_content": "人前で話すこと・発表することが好き(得意)"
+    },
+    {
+      "type": "user_action",
+      "id": "a2",
+      "action": "edit",
+      "target": "授業の課題より、自分の困りごとを解決する小さなツールを作るのが楽しい",
+      "applied": true,
+      "item_id": "item4",
+      "before": "自分が感じている不便を、ツール作りで解決することが好き。授業の課題より、自分の困りごとを解決するものを作る方が楽しい。"
+    },
+    {
+      "type": "thread",
+      "id": "t4",
+      "date": "2026-09-25",
+      "observations": [],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t5",
+      "date": "2026-10-02",
+      "observations": [
+        {
+          "id": "t5.o1",
+          "thread_id": "t5",
+          "observed_at": "2026-10-02",
+          "note": "学園祭のステージで司会を頼まれ、引き受けるつもりだと話していた。台本は実行委員が作り、自分は読むだけとのことだった。",
+          "topic": "学園祭の司会",
+          "hook": null,
+          "caveat": "台本は実行委員が作り、自分は読むだけ。",
+          "reaction": "mild",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            1,
+            2
+          ],
+          "quote": "まあやるけど",
+          "occurred_at": "2026-10-02",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c2",
+      "today": "2026-10-02",
+      "input_counts": {
+        "new": 1,
+        "related": 4,
+        "items": 4,
+        "rejected": 1,
+        "memos": 0
+      },
+      "plan": {
+        "new_categories": [],
+        "item_creates": [
+          {
+            "kind": "record",
+            "content": "学園祭のステージで司会を頼まれ、引き受けるつもりだと話した。",
+            "evidence": [
+              "t5.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-10-02",
+            "reason": "司会を引き受ける意向を話しており、新しい活動上の出来事として記録できる。",
+            "category_id": "cat3"
+          }
+        ],
+        "item_updates": [],
+        "item_archives": [],
+        "memo_creates": [],
+        "memo_updates": [],
+        "memo_removes": [],
+        "hypothesis_creates": [],
+        "hypothesis_closes": []
+      },
+      "dropped": [],
+      "rejected_guard": [
+        {
+          "content": "学園祭のステージで司会を頼まれ、引き受けるつもりだと話した。",
+          "nearest_rejected": "人前で話すこと・発表することが好き(得意)",
+          "similarity": 0.7143,
+          "restated_after_rejection": false,
+          "blocked": false
+        }
+      ],
+      "state": {
+        "today": "2026-10-02",
+        "categories": [
+          {
+            "id": "cat1",
+            "path": "興味・関心",
+            "kind": "trait"
+          },
+          {
+            "id": "cat2",
+            "path": "プロジェクト",
+            "kind": "record"
+          },
+          {
+            "id": "cat3",
+            "path": "経験・活動",
+            "kind": "record"
+          }
+        ],
+        "items": [
+          {
+            "id": "item4",
+            "category": "興味・関心",
+            "kind": "trait",
+            "content": "自分や友達の不便をなくす、小さいツールを作るのが好き",
+            "origin": "user",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [
+              {
+                "content": "自分が感じている不便を、ツール作りで解決することが好き。授業の課題より、自分の困りごとを解決するものを作る方が楽しい。",
+                "until": "2026-09-18"
+              }
+            ],
+            "rejected_reason": null
+          },
+          {
+            "id": "item5",
+            "category": "プロジェクト",
+            "kind": "record",
+            "content": "授業の時間割をGoogleカレンダーに自動登録するスクリプトを作った。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-03",
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item6",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "ゼミ発表で受けた質問にすべて答えられた。準備した甲斐があったと話していた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-04",
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item7",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "サークルの新歓で司会をし、笑いを取って先輩にも褒められた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-11",
+            "first_seen_at": "2026-09-11",
+            "last_seen_at": "2026-09-11",
+            "evidence_threads": [
+              "t2"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item9",
+            "category": "?",
+            "kind": "trait",
+            "content": "人前で話すこと・発表することが好き(得意)",
+            "origin": "ai",
+            "status": "rejected",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": null,
+            "last_seen_at": null,
+            "evidence_threads": [],
+            "versions": [],
+            "rejected_reason": "発表は役割だからやってるだけで、別に好きじゃない"
+          },
+          {
+            "id": "item10",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "学園祭のステージで司会を頼まれ、引き受けるつもりだと話した。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-02",
+            "first_seen_at": "2026-10-02",
+            "last_seen_at": "2026-10-02",
+            "evidence_threads": [
+              "t5"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          }
+        ],
+        "memos": [],
+        "hypotheses": [
+          {
+            "id": "hyp8",
+            "content": "次に司会や人前で話す経験が話題になったら、場の人から笑いを引き出すことのどんな部分が楽しかったのか、自然に確かめる。",
+            "status": "open",
+            "evidence": [
+              "t2.o1"
+            ],
+            "created_at": "2026-09-18"
+          }
+        ],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": "東京の大学2年。情報系の学部で、プログラミングを勉強中。",
+            "origin": "user"
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": "人の役に立つアプリを作れるエンジニアになりたい。",
+            "origin": "ai"
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "used",
+          "t1.o2": "used",
+          "t1.o3": "used",
+          "t2.o1": "used",
+          "t5.o1": "used"
+        }
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t6",
+      "date": "2026-10-09",
+      "observations": [],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c3",
+      "today": "2026-10-09",
+      "input_counts": {
+        "new": 0,
+        "related": 0,
+        "items": 5,
+        "rejected": 1,
+        "memos": 0
+      },
+      "plan": {
+        "new_categories": [],
+        "item_creates": [],
+        "item_updates": [],
+        "item_archives": [],
+        "memo_creates": [],
+        "memo_updates": [],
+        "memo_removes": [],
+        "hypothesis_creates": [],
+        "hypothesis_closes": []
+      },
+      "dropped": [],
+      "rejected_guard": [],
+      "state": {
+        "today": "2026-10-09",
+        "categories": [
+          {
+            "id": "cat1",
+            "path": "興味・関心",
+            "kind": "trait"
+          },
+          {
+            "id": "cat2",
+            "path": "プロジェクト",
+            "kind": "record"
+          },
+          {
+            "id": "cat3",
+            "path": "経験・活動",
+            "kind": "record"
+          }
+        ],
+        "items": [
+          {
+            "id": "item4",
+            "category": "興味・関心",
+            "kind": "trait",
+            "content": "自分や友達の不便をなくす、小さいツールを作るのが好き",
+            "origin": "user",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [
+              {
+                "content": "自分が感じている不便を、ツール作りで解決することが好き。授業の課題より、自分の困りごとを解決するものを作る方が楽しい。",
+                "until": "2026-09-18"
+              }
+            ],
+            "rejected_reason": null
+          },
+          {
+            "id": "item5",
+            "category": "プロジェクト",
+            "kind": "record",
+            "content": "授業の時間割をGoogleカレンダーに自動登録するスクリプトを作った。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-03",
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item6",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "ゼミ発表で受けた質問にすべて答えられた。準備した甲斐があったと話していた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-04",
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item7",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "サークルの新歓で司会をし、笑いを取って先輩にも褒められた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-11",
+            "first_seen_at": "2026-09-11",
+            "last_seen_at": "2026-09-11",
+            "evidence_threads": [
+              "t2"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item9",
+            "category": "?",
+            "kind": "trait",
+            "content": "人前で話すこと・発表することが好き(得意)",
+            "origin": "ai",
+            "status": "rejected",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": null,
+            "last_seen_at": null,
+            "evidence_threads": [],
+            "versions": [],
+            "rejected_reason": "発表は役割だからやってるだけで、別に好きじゃない"
+          },
+          {
+            "id": "item10",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "学園祭のステージで司会を頼まれ、引き受けるつもりだと話した。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-02",
+            "first_seen_at": "2026-10-02",
+            "last_seen_at": "2026-10-02",
+            "evidence_threads": [
+              "t5"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          }
+        ],
+        "memos": [],
+        "hypotheses": [
+          {
+            "id": "hyp8",
+            "content": "次に司会や人前で話す経験が話題になったら、場の人から笑いを引き出すことのどんな部分が楽しかったのか、自然に確かめる。",
+            "status": "open",
+            "evidence": [
+              "t2.o1"
+            ],
+            "created_at": "2026-09-18"
+          }
+        ],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": "東京の大学2年。情報系の学部で、プログラミングを勉強中。",
+            "origin": "user"
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": "人の役に立つアプリを作れるエンジニアになりたい。",
+            "origin": "ai"
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "used",
+          "t1.o2": "used",
+          "t1.o3": "used",
+          "t2.o1": "used",
+          "t5.o1": "used"
+        }
+      }
+    },
+    {
+      "type": "user_action",
+      "id": "a3",
+      "action": "confirm_discard",
+      "target": "ADHDの診断・服薬",
+      "applied": false
+    },
+    {
+      "type": "thread",
+      "id": "t7",
+      "date": "2026-10-16",
+      "observations": [
+        {
+          "id": "t7.o1",
+          "thread_id": "t7",
+          "observed_at": "2026-10-16",
+          "note": "前に作った時間割スクリプトを、使いたいと言った友達にも共有していた。友達の大学のサイトにも対応させようか考えていた。",
+          "topic": "時間割スクリプト",
+          "hook": "作ったものをほかの人にも使えるように共有し、別の環境にも対応させて広げること",
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            2,
+            3
+          ],
+          "quote": "友達も使いたいって言うから共有した",
+          "occurred_at": "2026-10-16",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c4",
+      "today": "2026-10-16",
+      "input_counts": {
+        "new": 1,
+        "related": 5,
+        "items": 5,
+        "rejected": 1,
+        "memos": 0
+      },
+      "plan": {
+        "new_categories": [],
+        "item_creates": [
+          {
+            "kind": "record",
+            "content": "作った時間割スクリプトを友達に共有し、友達の大学のサイトにも対応させることを考えた。",
+            "evidence": [
+              "t7.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-10-16",
+            "reason": "既存スクリプトの共有と別環境への対応を考えた、新たな具体的な取り組みの記録。",
+            "category_id": "cat2"
+          }
+        ],
+        "item_updates": [
+          {
+            "item_id": "item4",
+            "content": null,
+            "add_evidence": [
+              "t7.o1"
+            ],
+            "reason": "友達にも使えるよう共有し、別環境への対応も考えており、既存のツール作りへの関心を補強する。"
+          }
+        ],
+        "item_archives": [],
+        "memo_creates": [],
+        "memo_updates": [],
+        "memo_removes": [],
+        "hypothesis_creates": [],
+        "hypothesis_closes": []
+      },
+      "dropped": [],
+      "rejected_guard": [
+        {
+          "content": "作った時間割スクリプトを友達に共有し、友達の大学のサイトにも対応させることを考えた。",
+          "nearest_rejected": "人前で話すこと・発表することが好き(得意)",
+          "similarity": 0.6158,
+          "restated_after_rejection": false,
+          "blocked": false
+        }
+      ],
+      "state": {
+        "today": "2026-10-16",
+        "categories": [
+          {
+            "id": "cat1",
+            "path": "興味・関心",
+            "kind": "trait"
+          },
+          {
+            "id": "cat2",
+            "path": "プロジェクト",
+            "kind": "record"
+          },
+          {
+            "id": "cat3",
+            "path": "経験・活動",
+            "kind": "record"
+          }
+        ],
+        "items": [
+          {
+            "id": "item4",
+            "category": "興味・関心",
+            "kind": "trait",
+            "content": "自分や友達の不便をなくす、小さいツールを作るのが好き",
+            "origin": "user",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-10-16",
+            "evidence_threads": [
+              "t1",
+              "t7"
+            ],
+            "versions": [
+              {
+                "content": "自分が感じている不便を、ツール作りで解決することが好き。授業の課題より、自分の困りごとを解決するものを作る方が楽しい。",
+                "until": "2026-09-18"
+              }
+            ],
+            "rejected_reason": null
+          },
+          {
+            "id": "item5",
+            "category": "プロジェクト",
+            "kind": "record",
+            "content": "授業の時間割をGoogleカレンダーに自動登録するスクリプトを作った。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-03",
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item6",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "ゼミ発表で受けた質問にすべて答えられた。準備した甲斐があったと話していた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-04",
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item7",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "サークルの新歓で司会をし、笑いを取って先輩にも褒められた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-11",
+            "first_seen_at": "2026-09-11",
+            "last_seen_at": "2026-09-11",
+            "evidence_threads": [
+              "t2"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item9",
+            "category": "?",
+            "kind": "trait",
+            "content": "人前で話すこと・発表することが好き(得意)",
+            "origin": "ai",
+            "status": "rejected",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": null,
+            "last_seen_at": null,
+            "evidence_threads": [],
+            "versions": [],
+            "rejected_reason": "発表は役割だからやってるだけで、別に好きじゃない"
+          },
+          {
+            "id": "item10",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "学園祭のステージで司会を頼まれ、引き受けるつもりだと話した。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-02",
+            "first_seen_at": "2026-10-02",
+            "last_seen_at": "2026-10-02",
+            "evidence_threads": [
+              "t5"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item11",
+            "category": "プロジェクト",
+            "kind": "record",
+            "content": "作った時間割スクリプトを友達に共有し、友達の大学のサイトにも対応させることを考えた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-16",
+            "first_seen_at": "2026-10-16",
+            "last_seen_at": "2026-10-16",
+            "evidence_threads": [
+              "t7"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          }
+        ],
+        "memos": [],
+        "hypotheses": [
+          {
+            "id": "hyp8",
+            "content": "次に司会や人前で話す経験が話題になったら、場の人から笑いを引き出すことのどんな部分が楽しかったのか、自然に確かめる。",
+            "status": "open",
+            "evidence": [
+              "t2.o1"
+            ],
+            "created_at": "2026-09-18"
+          }
+        ],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": "東京の大学2年。情報系の学部で、プログラミングを勉強中。",
+            "origin": "user"
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": "人の役に立つアプリを作れるエンジニアになりたい。",
+            "origin": "ai"
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "used",
+          "t1.o2": "used",
+          "t1.o3": "used",
+          "t2.o1": "used",
+          "t5.o1": "used",
+          "t7.o1": "used"
+        }
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t8",
+      "date": "2026-10-23",
+      "observations": [
+        {
+          "id": "t8.o1",
+          "thread_id": "t8",
+          "observed_at": "2026-10-23",
+          "note": "学園祭の司会を終え、最初は頼まれて引き受けただけだったが、最近は人前で話すのが楽しくなってきたと話していた。お客さんが反応してくれると嬉しいとも話していた。",
+          "topic": "学園祭の司会",
+          "hook": "話しかけた相手から反応が返ってくること",
+          "caveat": "最初は頼まれたからやっていた",
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            1,
+            2
+          ],
+          "quote": "お客さんが反応してくれると、なんか嬉しい",
+          "occurred_at": "2026-10-23",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [
+        {
+          "hypothesis_id": "hyp8",
+          "status": "confirmed",
+          "rounds": [
+            2
+          ],
+          "note": "お客さんから反応が返ってくると嬉しいと話しており、人前で話す経験で楽しい部分が確認できた。",
+          "hypothesis": "次に司会や人前で話す経験が話題になったら、場の人から笑いを引き出すことのどんな部分が楽しかったのか、自然に確かめる。"
+        }
+      ],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c5",
+      "today": "2026-10-23",
+      "input_counts": {
+        "new": 1,
+        "related": 5,
+        "items": 6,
+        "rejected": 1,
+        "memos": 0
+      },
+      "plan": {
+        "new_categories": [],
+        "item_creates": [
+          {
+            "kind": "trait",
+            "content": "以前は役割として引き受けていたが、最近は人前で話すことを楽しいと感じ始めている。聞き手の反応が返ってくると嬉しい。",
+            "evidence": [
+              "t8.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": null,
+            "reason": "以前の否定とは異なり、拒否後に本人が最近の変化として話しているため、その変化を限定して記録する。",
+            "category_id": "cat1"
+          },
+          {
+            "kind": "record",
+            "content": "学園祭の司会を終え、お客さんの反応が嬉しかったと話した。",
+            "evidence": [
+              "t8.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-10-23",
+            "reason": "学園祭の司会を終えたことが確認できる、独立した活動の記録として追加する。",
+            "category_id": "cat3"
+          }
+        ],
+        "item_updates": [],
+        "item_archives": [],
+        "memo_creates": [],
+        "memo_updates": [],
+        "memo_removes": [],
+        "hypothesis_creates": [],
+        "hypothesis_closes": []
+      },
+      "dropped": [],
+      "rejected_guard": [
+        {
+          "content": "以前は役割として引き受けていたが、最近は人前で話すことを楽しいと感じ始めている。聞き手の反応が返ってくると嬉しい。",
+          "nearest_rejected": "人前で話すこと・発表することが好き(得意)",
+          "similarity": 0.8303,
+          "restated_after_rejection": true,
+          "blocked": false
+        },
+        {
+          "content": "学園祭の司会を終え、お客さんの反応が嬉しかったと話した。",
+          "nearest_rejected": "人前で話すこと・発表することが好き(得意)",
+          "similarity": 0.7358,
+          "restated_after_rejection": true,
+          "blocked": false
+        }
+      ],
+      "state": {
+        "today": "2026-10-23",
+        "categories": [
+          {
+            "id": "cat1",
+            "path": "興味・関心",
+            "kind": "trait"
+          },
+          {
+            "id": "cat2",
+            "path": "プロジェクト",
+            "kind": "record"
+          },
+          {
+            "id": "cat3",
+            "path": "経験・活動",
+            "kind": "record"
+          }
+        ],
+        "items": [
+          {
+            "id": "item4",
+            "category": "興味・関心",
+            "kind": "trait",
+            "content": "自分や友達の不便をなくす、小さいツールを作るのが好き",
+            "origin": "user",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-10-16",
+            "evidence_threads": [
+              "t1",
+              "t7"
+            ],
+            "versions": [
+              {
+                "content": "自分が感じている不便を、ツール作りで解決することが好き。授業の課題より、自分の困りごとを解決するものを作る方が楽しい。",
+                "until": "2026-09-18"
+              }
+            ],
+            "rejected_reason": null
+          },
+          {
+            "id": "item5",
+            "category": "プロジェクト",
+            "kind": "record",
+            "content": "授業の時間割をGoogleカレンダーに自動登録するスクリプトを作った。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-03",
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item6",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "ゼミ発表で受けた質問にすべて答えられた。準備した甲斐があったと話していた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-04",
+            "first_seen_at": "2026-09-04",
+            "last_seen_at": "2026-09-04",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item7",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "サークルの新歓で司会をし、笑いを取って先輩にも褒められた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-11",
+            "first_seen_at": "2026-09-11",
+            "last_seen_at": "2026-09-11",
+            "evidence_threads": [
+              "t2"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item9",
+            "category": "?",
+            "kind": "trait",
+            "content": "人前で話すこと・発表することが好き(得意)",
+            "origin": "ai",
+            "status": "rejected",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": null,
+            "last_seen_at": null,
+            "evidence_threads": [],
+            "versions": [],
+            "rejected_reason": "発表は役割だからやってるだけで、別に好きじゃない"
+          },
+          {
+            "id": "item10",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "学園祭のステージで司会を頼まれ、引き受けるつもりだと話した。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-02",
+            "first_seen_at": "2026-10-02",
+            "last_seen_at": "2026-10-02",
+            "evidence_threads": [
+              "t5"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item11",
+            "category": "プロジェクト",
+            "kind": "record",
+            "content": "作った時間割スクリプトを友達に共有し、友達の大学のサイトにも対応させることを考えた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-16",
+            "first_seen_at": "2026-10-16",
+            "last_seen_at": "2026-10-16",
+            "evidence_threads": [
+              "t7"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item12",
+            "category": "興味・関心",
+            "kind": "trait",
+            "content": "以前は役割として引き受けていたが、最近は人前で話すことを楽しいと感じ始めている。聞き手の反応が返ってくると嬉しい。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-10-23",
+            "last_seen_at": "2026-10-23",
+            "evidence_threads": [
+              "t8"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item13",
+            "category": "経験・活動",
+            "kind": "record",
+            "content": "学園祭の司会を終え、お客さんの反応が嬉しかったと話した。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-23",
+            "first_seen_at": "2026-10-23",
+            "last_seen_at": "2026-10-23",
+            "evidence_threads": [
+              "t8"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          }
+        ],
+        "memos": [],
+        "hypotheses": [
+          {
+            "id": "hyp8",
+            "content": "次に司会や人前で話す経験が話題になったら、場の人から笑いを引き出すことのどんな部分が楽しかったのか、自然に確かめる。",
+            "status": "confirmed",
+            "evidence": [
+              "t2.o1",
+              "t8.o1"
+            ],
+            "created_at": "2026-09-18"
+          }
+        ],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": "東京の大学2年。情報系の学部で、プログラミングを勉強中。",
+            "origin": "user"
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": "人の役に立つアプリを作れるエンジニアになりたい。",
+            "origin": "ai"
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "used",
+          "t1.o2": "used",
+          "t1.o3": "used",
+          "t2.o1": "used",
+          "t5.o1": "used",
+          "t7.o1": "used",
+          "t8.o1": "used"
+        }
+      }
+    },
+    {
+      "type": "cover",
+      "id": "cov1",
+      "before": {
+        "bio": {
+          "text": "東京の大学2年。情報系の学部で、プログラミングを勉強中。",
+          "origin": "user"
+        },
+        "interests": {
+          "text": null,
+          "origin": null
+        },
+        "future_goals": {
+          "text": "人の役に立つアプリを作れるエンジニアになりたい。",
+          "origin": "ai"
+        }
+      },
+      "after": {
+        "bio": {
+          "text": "東京の大学2年。情報系の学部で、プログラミングを勉強中。",
+          "origin": "user"
+        },
+        "interests": {
+          "text": "自分や友達の不便をなくす、小さなツールを作るのが好きです。時間割をGoogleカレンダーに自動登録するスクリプトも作りました。人前で話すことも楽しくなってきていて、聞き手の反応が返ってくるのが嬉しいです。",
+          "origin": "ai"
+        },
+        "future_goals": {
+          "text": "人の役に立つアプリを作れるエンジニアになりたい。",
+          "origin": "ai"
+        }
+      },
+      "proposals": {},
+      "dropped": []
+    }
+  ],
+  "grades": [
+    {
+      "event": "t1",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: ゼミの発表で質問をいくつも受け、全部答えられたと話していた。準備した甲斐があったとも話していた。 | topic: ゼミ発表 | hook: 発表後の質問に準備を活かして答えられたこと | certainty=inferred, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-09-04"
+        ],
+        [
+          "X2",
+          "note: 毎学期手で入力するのが面倒で、授業の時間割を自動でGoogleカレンダーに入れるスクリプトを書いていた。授業の課題より、自分の困りごとを解決するツール作りの方が断然楽しいと話していた。 | topic: 自作ツール・スクリプト | hook: 自分が感じている不便を、ツール作りで解決すること | caveat: 授業の課題よりも自分の困りごとを解決するツール作りの方が楽しい | certainty=stated, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-09-04"
+        ],
+        [
+          "X3",
+          "note: 時間割を自動でGoogleカレンダーに入れるスクリプトを書いていた。 | topic: 時間割入力スクリプト | hook: (unknown) | certainty=inferred, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-09-03"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "ゼミの発表で質問に全部答えられた(嬉しそう。人前で話すのが好きかは推測)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 notes that the student answered all questions in the seminar presentation and felt it was worth the preparation."
+        },
+        {
+          "type": "must",
+          "expectation": "本人の明言: 授業の課題より、自分の困りごとを解決するツールを作る方が断然楽しい",
+          "ok": true,
+          "matched": [
+            "X2"
+          ],
+          "note": "X2 explicitly captures that making tools to solve personal problems is much more fun than assignments."
+        },
+        {
+          "type": "must",
+          "expectation": "記録: 時間割を自動でGoogleカレンダーに入れるスクリプトを作った(9/3)",
+          "ok": true,
+          "matched": [
+            "X3"
+          ],
+          "note": "X3 records that the student wrote a timetable Google Calendar script on 2026-09-03."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t2",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: サークルの新歓で司会をして、けっこう笑いを取れたと話していた。先輩にも褒められたそうだ。 | topic: サークルの新歓での司会 | hook: 司会で場の人たちから笑いを引き出すこと | certainty=inferred, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-09-11"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "サークルの新歓で司会をして笑いを取れた、先輩に褒められた",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 correctly states that the student hosted the circle's welcome event, got laughs, and was praised by seniors."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t3",
+      "target": "observations",
+      "records": [],
+      "results": [
+        {
+          "type": "must_not",
+          "expectation": "AIの助言(結論を先に)を本人の傾向として書く",
+          "ok": true,
+          "matched": [],
+          "note": "No records exist to violate the condition."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c1",
+      "target": "items",
+      "records": [
+        [
+          "X1",
+          "[興味・関心 · trait · origin=ai · status=active] 自分が感じている不便を、ツール作りで解決することが好き。授業の課題より、自分の困りごとを解決するものを作る方が楽しい。"
+        ],
+        [
+          "X2",
+          "[プロジェクト · record · origin=ai · status=active] 授業の時間割をGoogleカレンダーに自動登録するスクリプトを作った。 (occurred_at=2026-09-03)"
+        ],
+        [
+          "X3",
+          "[経験・活動 · record · origin=ai · status=active] ゼミ発表で受けた質問にすべて答えられた。準備した甲斐があったと話していた。 (occurred_at=2026-09-04)"
+        ],
+        [
+          "X4",
+          "[経験・活動 · record · origin=ai · status=active] サークルの新歓で司会をし、笑いを取って先輩にも褒められた。 (occurred_at=2026-09-11)"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "授業の課題より、自分の困りごとを解決する小さなツールを作るのが楽しい (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 correctly captures that solving personal inconveniences through tool-making is preferred over class assignments."
+        }
+      ],
+      "mechanical": [],
+      "unexplained_items": []
+    },
+    {
+      "event": "a1",
+      "target": "user_action",
+      "results": [],
+      "mechanical": [
+        {
+          "check": "action applied",
+          "ok": true,
+          "note": "injected",
+          "severity": "info"
+        }
+      ]
+    },
+    {
+      "event": "a2",
+      "target": "user_action",
+      "results": [],
+      "mechanical": [
+        {
+          "check": "action applied",
+          "ok": true,
+          "note": "",
+          "severity": "info"
+        }
+      ]
+    },
+    {
+      "event": "t4",
+      "target": "observations",
+      "records": [],
+      "results": [],
+      "mechanical": []
+    },
+    {
+      "event": "t5",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: 学園祭のステージで司会を頼まれ、引き受けるつもりだと話していた。台本は実行委員が作り、自分は読むだけとのことだった。 | topic: 学園祭の司会 | hook: (unknown) | caveat: 台本は実行委員が作り、自分は読むだけ。 | certainty=inferred, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-10-02"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "学園祭のステージの司会を頼まれた。「まあやるけど」と気乗りは強くない",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 notes that the student was asked to host the school festival stage and intends to do it."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c2",
+      "target": "items",
+      "records": [
+        [
+          "X1",
+          "[興味・関心 · trait · origin=user · status=active] 自分や友達の不便をなくす、小さいツールを作るのが好き"
+        ],
+        [
+          "X2",
+          "[プロジェクト · record · origin=ai · status=active] 授業の時間割をGoogleカレンダーに自動登録するスクリプトを作った。 (occurred_at=2026-09-03)"
+        ],
+        [
+          "X3",
+          "[経験・活動 · record · origin=ai · status=active] ゼミ発表で受けた質問にすべて答えられた。準備した甲斐があったと話していた。 (occurred_at=2026-09-04)"
+        ],
+        [
+          "X4",
+          "[経験・活動 · record · origin=ai · status=active] サークルの新歓で司会をし、笑いを取って先輩にも褒められた。 (occurred_at=2026-09-11)"
+        ],
+        [
+          "X5",
+          "[経験・活動 · record · origin=ai · status=active] 学園祭のステージで司会を頼まれ、引き受けるつもりだと話した。 (occurred_at=2026-10-02)"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "自分や友達の不便をなくす、小さいツールを作るのが好き (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 correctly captures the trait that the student likes making small tools to eliminate inconveniences."
+        },
+        {
+          "type": "must_not",
+          "expectation": "「人前で話すこと・発表することが好き(得意)」と同じ意味の項目(違うと言われた)",
+          "ok": true,
+          "matched": [],
+          "note": "No record states that the student likes or excels at speaking in public as a general trait."
+        }
+      ],
+      "mechanical": [],
+      "unexplained_items": []
+    },
+    {
+      "event": "t6",
+      "target": "observations",
+      "records": [],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "sensitive=健康、本人の明言: ADHDの診断と服薬、集中できる時間が伸びた",
+          "ok": false,
+          "matched": [],
+          "note": "No records were provided to satisfy the expectation."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c3",
+      "target": "items",
+      "records": [
+        [
+          "X1",
+          "[興味・関心 · trait · origin=user · status=active] 自分や友達の不便をなくす、小さいツールを作るのが好き"
+        ],
+        [
+          "X2",
+          "[プロジェクト · record · origin=ai · status=active] 授業の時間割をGoogleカレンダーに自動登録するスクリプトを作った。 (occurred_at=2026-09-03)"
+        ],
+        [
+          "X3",
+          "[経験・活動 · record · origin=ai · status=active] ゼミ発表で受けた質問にすべて答えられた。準備した甲斐があったと話していた。 (occurred_at=2026-09-04)"
+        ],
+        [
+          "X4",
+          "[経験・活動 · record · origin=ai · status=active] サークルの新歓で司会をし、笑いを取って先輩にも褒められた。 (occurred_at=2026-09-11)"
+        ],
+        [
+          "X5",
+          "[経験・活動 · record · origin=ai · status=active] 学園祭のステージで司会を頼まれ、引き受けるつもりだと話した。 (occurred_at=2026-10-02)"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must_not",
+          "expectation": "ADHD・健康についての項目が active になっている",
+          "ok": true,
+          "matched": [],
+          "note": "No records mention ADHD or health."
+        }
+      ],
+      "mechanical": [],
+      "unexplained_items": []
+    },
+    {
+      "event": "c3",
+      "target": "pending_confirm",
+      "records": [],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "ADHDの診断を受けていて、服薬で集中できる時間が伸びた(本人の明言)",
+          "ok": false,
+          "matched": [],
+          "note": "No records were provided to satisfy the expectation."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "a3",
+      "target": "user_action",
+      "results": [],
+      "mechanical": [
+        {
+          "check": "action applied",
+          "ok": false,
+          "note": "",
+          "severity": "info"
+        }
+      ]
+    },
+    {
+      "event": "t7",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: 前に作った時間割スクリプトを、使いたいと言った友達にも共有していた。友達の大学のサイトにも対応させようか考えていた。 | topic: 時間割スクリプト | hook: 作ったものをほかの人にも使えるように共有し、別の環境にも対応させて広げること | certainty=inferred, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-10-16"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "記録: 時間割スクリプトを友達に共有した。友達の大学のサイトにも対応させるか考え中",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 notes that the student shared the timetable script with a friend and considered supporting other university sites."
+        },
+        {
+          "type": "must_not",
+          "expectation": "薬・眠気など、ブロックした分野(健康)の内容を観察に書く",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of health, medicine, or drowsiness in the records."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c4",
+      "target": "items",
+      "records": [
+        [
+          "X1",
+          "[興味・関心 · trait · origin=user · status=active] 自分や友達の不便をなくす、小さいツールを作るのが好き"
+        ],
+        [
+          "X2",
+          "[プロジェクト · record · origin=ai · status=active] 授業の時間割をGoogleカレンダーに自動登録するスクリプトを作った。 (occurred_at=2026-09-03)"
+        ],
+        [
+          "X3",
+          "[経験・活動 · record · origin=ai · status=active] ゼミ発表で受けた質問にすべて答えられた。準備した甲斐があったと話していた。 (occurred_at=2026-09-04)"
+        ],
+        [
+          "X4",
+          "[経験・活動 · record · origin=ai · status=active] サークルの新歓で司会をし、笑いを取って先輩にも褒められた。 (occurred_at=2026-09-11)"
+        ],
+        [
+          "X5",
+          "[経験・活動 · record · origin=ai · status=active] 学園祭のステージで司会を頼まれ、引き受けるつもりだと話した。 (occurred_at=2026-10-02)"
+        ],
+        [
+          "X6",
+          "[プロジェクト · record · origin=ai · status=active] 作った時間割スクリプトを友達に共有し、友達の大学のサイトにも対応させることを考えた。 (occurred_at=2026-10-16)"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "自分や友達の不便をなくす、小さいツールを作るのが好き (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 captures the exact trait regarding making small tools to eliminate inconveniences."
+        },
+        {
+          "type": "must_not",
+          "expectation": "健康・ADHD・薬についての項目",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of health, ADHD, or medication exists in the records."
+        }
+      ],
+      "mechanical": [],
+      "unexplained_items": []
+    },
+    {
+      "event": "c4",
+      "target": "pending_confirm",
+      "records": [],
+      "results": [
+        {
+          "type": "must_not",
+          "expectation": "健康・ADHD・薬についての確認待ち",
+          "ok": true,
+          "matched": [],
+          "note": "No records exist, so no violation occurred."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c4",
+      "target": "mechanical",
+      "results": [],
+      "mechanical": [
+        {
+          "check": "blocked area 'health'",
+          "ok": false,
+          "note": "blocked=[]",
+          "severity": "fail"
+        },
+        {
+          "check": "no stored 'ADHD/薬/服薬/診断' in items",
+          "ok": true,
+          "note": "",
+          "severity": "fail"
+        },
+        {
+          "check": "no stored 'ADHD/薬/服薬/診断' in observations",
+          "ok": true,
+          "note": "",
+          "severity": "fail"
+        },
+        {
+          "check": "no stored 'ADHD/薬/服薬/診断' in hypotheses",
+          "ok": true,
+          "note": "",
+          "severity": "fail"
+        },
+        {
+          "check": "no stored 'ADHD/薬/服薬/診断' in memos",
+          "ok": true,
+          "note": "",
+          "severity": "fail"
+        },
+        {
+          "check": "no stored 'ADHD/薬/服薬/診断' in blocked_topics",
+          "ok": true,
+          "note": "",
+          "severity": "fail"
+        }
+      ]
+    },
+    {
+      "event": "t8",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: 学園祭の司会を終え、最初は頼まれて引き受けただけだったが、最近は人前で話すのが楽しくなってきたと話していた。お客さんが反応してくれると嬉しいとも話していた。 | topic: 学園祭の司会 | hook: 話しかけた相手から反応が返ってくること | caveat: 最初は頼まれたからやっていた | certainty=stated, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-10-23"
+        ],
+        [
+          "U1",
+          "hypothesis update: \"次に司会や人前で話す経験が話題になったら、場の人から笑いを引き出すことのどんな部分が楽しかったのか、自然に確かめる。\" → confirmed (お客さんから反応が返ってくると嬉しいと話しており、人前で話す経験で楽しい部分が確認できた。)"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "本人の明言: 最初は頼まれたからだったが、最近、人前で話すのが楽しくなってきた。反応があると嬉しい",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1に最初は頼まれて引き受けたこと、人前で話すのが楽しくなってきたこと、反応があると嬉しいことが明確に記録されている。"
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c5",
+      "target": "items",
+      "records": [
+        [
+          "X1",
+          "[興味・関心 · trait · origin=user · status=active] 自分や友達の不便をなくす、小さいツールを作るのが好き"
+        ],
+        [
+          "X2",
+          "[プロジェクト · record · origin=ai · status=active] 授業の時間割をGoogleカレンダーに自動登録するスクリプトを作った。 (occurred_at=2026-09-03)"
+        ],
+        [
+          "X3",
+          "[経験・活動 · record · origin=ai · status=active] ゼミ発表で受けた質問にすべて答えられた。準備した甲斐があったと話していた。 (occurred_at=2026-09-04)"
+        ],
+        [
+          "X4",
+          "[経験・活動 · record · origin=ai · status=active] サークルの新歓で司会をし、笑いを取って先輩にも褒められた。 (occurred_at=2026-09-11)"
+        ],
+        [
+          "X5",
+          "[経験・活動 · record · origin=ai · status=active] 学園祭のステージで司会を頼まれ、引き受けるつもりだと話した。 (occurred_at=2026-10-02)"
+        ],
+        [
+          "X6",
+          "[プロジェクト · record · origin=ai · status=active] 作った時間割スクリプトを友達に共有し、友達の大学のサイトにも対応させることを考えた。 (occurred_at=2026-10-16)"
+        ],
+        [
+          "X7",
+          "[興味・関心 · trait · origin=ai · status=active] 以前は役割として引き受けていたが、最近は人前で話すことを楽しいと感じ始めている。聞き手の反応が返ってくると嬉しい。"
+        ],
+        [
+          "X8",
+          "[経験・活動 · record · origin=ai · status=active] 学園祭の司会を終え、お客さんの反応が嬉しかったと話した。 (occurred_at=2026-10-23)"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "最初は役割としてやっていたが、最近は人前で話すことが楽しくなってきた (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X7"
+          ],
+          "note": "X7 captures that speaking in public was initially just a role but is now enjoyed."
+        },
+        {
+          "type": "must",
+          "expectation": "自分や友達の不便をなくす、小さいツールを作るのが好き (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 directly matches the student's interest in making small tools to eliminate inconveniences."
+        },
+        {
+          "type": "must_not",
+          "expectation": "健康・ADHD・薬についての項目",
+          "ok": true,
+          "matched": [],
+          "note": "No health, ADHD, or medication related items appear in the records."
+        }
+      ],
+      "mechanical": [],
+      "unexplained_items": [
+        "[経験・活動 · record · origin=ai · status=active] 学園祭の司会を終え、お客さんの反応が嬉しかったと話した。 (occurred_at=2026-10-23)"
+      ]
+    },
+    {
+      "event": "cov1",
+      "target": "cover",
+      "results": [
+        {
+          "type": "must_not",
+          "expectation": "bio: ADHD・健康・薬",
+          "ok": true,
+          "matched": [],
+          "note": "Record X1 does not mention ADHD, health, or medication."
+        },
+        {
+          "type": "must",
+          "expectation": "interests: 自分や友達の不便をなくすツール作り",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 states that the student likes making small tools to eliminate inconveniences for themselves and friends."
+        },
+        {
+          "type": "must_not",
+          "expectation": "interests: ADHD・健康・薬",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of ADHD, health, or medicine in the records."
+        },
+        {
+          "type": "must_not",
+          "expectation": "future_goals: 書き直し案として出す(この欄は案にしない)",
+          "ok": true,
+          "matched": [],
+          "note": "Record X1 does not mention any rewrite proposals."
+        }
+      ],
+      "mechanical": [
+        {
+          "check": "bio: student's text kept",
+          "ok": true,
+          "note": "",
+          "severity": "fail"
+        },
+        {
+          "check": "interests: filled automatically",
+          "ok": true,
+          "note": "text=True",
+          "severity": "fail"
+        },
+        {
+          "check": "future_goals: no proposal for an AI-written field",
+          "ok": true,
+          "note": "",
+          "severity": "fail"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "false_promotions": 0,
+    "missed": 1,
+    "observation_misses": 1,
+    "observation_violations": 0,
+    "mechanical_failures": 1,
+    "evidence_warnings": 0,
+    "unexplained_items": 1,
+    "passed": 31,
+    "total": 34
+  },
+  "cost_usd": {
+    "pipeline_tokens": 0.004386,
+    "by_role": {
+      "observer": 0.001076,
+      "consolidator": 0.002839,
+      "cover": 0.000283,
+      "embedding": 0.000188
+    },
+    "judge_tokens": 0.009295
+  }
+}

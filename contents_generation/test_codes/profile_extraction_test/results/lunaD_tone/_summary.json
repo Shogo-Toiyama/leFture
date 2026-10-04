@@ -1,0 +1,149 @@
+{
+  "models": {
+    "observer": "gpt-6-luna",
+    "observer_reasoning": "none",
+    "consolidator": "gpt-6-luna",
+    "consolidator_reasoning": "medium",
+    "cover": "gpt-6-luna",
+    "cover_reasoning": "low"
+  },
+  "total": {
+    "false_promotions": 0,
+    "missed": 6,
+    "observation_misses": 4,
+    "observation_violations": 0,
+    "mechanical_failures": 2,
+    "evidence_warnings": 2,
+    "unexplained_items": 5,
+    "passed": 161,
+    "total": 173
+  },
+  "scenarios": {
+    "p1_precision_ja": {
+      "false_promotions": 0,
+      "missed": 1,
+      "observation_misses": 0,
+      "observation_violations": 0,
+      "mechanical_failures": 1,
+      "evidence_warnings": 0,
+      "unexplained_items": 0,
+      "passed": 39,
+      "total": 41,
+      "cost_usd": {
+        "pipeline_tokens": 0.003378,
+        "by_role": {
+          "observer": 0.001202,
+          "consolidator": 0.001937,
+          "cover": 0.000138,
+          "embedding": 0.000101
+        },
+        "judge_tokens": 0.008165
+      }
+    },
+    "p2_bridge_ja": {
+      "false_promotions": 0,
+      "missed": 2,
+      "observation_misses": 1,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 0,
+      "unexplained_items": 4,
+      "passed": 24,
+      "total": 27,
+      "cost_usd": {
+        "pipeline_tokens": 0.004028,
+        "by_role": {
+          "observer": 0.001803,
+          "consolidator": 0.001985,
+          "cover": 0,
+          "embedding": 0.00024
+        },
+        "judge_tokens": 0.00663
+      }
+    },
+    "p3_culture_en": {
+      "false_promotions": 0,
+      "missed": 0,
+      "observation_misses": 1,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 2,
+      "unexplained_items": 0,
+      "passed": 31,
+      "total": 32,
+      "cost_usd": {
+        "pipeline_tokens": 0.003826,
+        "by_role": {
+          "observer": 0.001398,
+          "consolidator": 0.002316,
+          "cover": 0,
+          "embedding": 0.000112
+        },
+        "judge_tokens": 0.007648
+      }
+    },
+    "p4_traps_ja": {
+      "false_promotions": 0,
+      "missed": 0,
+      "observation_misses": 0,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 0,
+      "unexplained_items": 0,
+      "passed": 21,
+      "total": 21,
+      "cost_usd": {
+        "pipeline_tokens": 0.00162,
+        "by_role": {
+          "observer": 0.000807,
+          "consolidator": 0.000649,
+          "cover": 0.000101,
+          "embedding": 6.3e-05
+        },
+        "judge_tokens": 0.004934
+      }
+    },
+    "p5_memos_en": {
+      "false_promotions": 0,
+      "missed": 2,
+      "observation_misses": 1,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 0,
+      "unexplained_items": 0,
+      "passed": 15,
+      "total": 18,
+      "cost_usd": {
+        "pipeline_tokens": 0.001269,
+        "by_role": {
+          "observer": 0.000548,
+          "consolidator": 0.000692,
+          "cover": 0,
+          "embedding": 2.9e-05
+        },
+        "judge_tokens": 0.004259
+      }
+    },
+    "p6_actions_ja": {
+      "false_promotions": 0,
+      "missed": 1,
+      "observation_misses": 1,
+      "observation_violations": 0,
+      "mechanical_failures": 1,
+      "evidence_warnings": 0,
+      "unexplained_items": 1,
+      "passed": 31,
+      "total": 34,
+      "cost_usd": {
+        "pipeline_tokens": 0.004386,
+        "by_role": {
+          "observer": 0.001076,
+          "consolidator": 0.002839,
+          "cover": 0.000283,
+          "embedding": 0.000188
+        },
+        "judge_tokens": 0.009295
+      }
+    }
+  }
+}
