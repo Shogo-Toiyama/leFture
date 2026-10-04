@@ -69,6 +69,7 @@ from app.services.chat_screen import (
     load_screen_page,
 )
 from app.services.chat_thread_source import DbChatThreadSource
+from app.services.profile_store import load_chat_memory
 from app.services.chat_summary import (
     FOLD_TRIGGER_TURNS,
     fetch_active_blocks,
@@ -1023,6 +1024,17 @@ class ConversationMemory:
         return "\n\n".join(x for x in [self.summary, self.notes] if x) or "(none)"
 
 
+def _format_student_memos(memos: list[dict]) -> str:
+    lines = []
+    for m in memos:
+        if m.get("kind") == "situation":
+            until = f" (until {m['expires_at']})" if m.get("expires_at") else ""
+            lines.append(f"- Right now: {m['content']}{until}")
+        else:
+            lines.append(f"- {m['content']}")
+    return "\n".join(lines)
+
+
 def _build_answer_messages(
     turn: PreparedTurn,
     decision: RouterDecision,
@@ -1031,9 +1043,13 @@ def _build_answer_messages(
     profile: str,
     materials: list[Material],
     goal: Optional[list[str]] = None,
+    student_memos: Optional[list[dict]] = None,
+    open_questions: Optional[list[str]] = None,
 ) -> list[Message]:
     """
     並びは「system(固定の指示+プロフィール → 要約 → 会話の前提) → 原文の履歴 → 今回の文脈+質問」。
+    student_memos / open_questions は自分像プロフィール(ロードマップ9章)の覚え書きと確かめたい仮説。
+    どちらもまとめ役が動いたときにしか変わらないので、プロフィールと同じくキャッシュされる先頭に置く。
     プロンプトキャッシュは先頭が完全一致する部分にだけ効くので、毎ターン変わる
     出典・画面の文脈・返答言語はすべて最後のuserメッセージに入れる。要約はsystemの
     末尾にあり、変わるのは畳んだときだけ。履歴に残るuserメッセージは本人が打った
@@ -1042,9 +1058,13 @@ def _build_answer_messages(
     system_template = _render_conditional_sections(_load_prompt("chat_answer_prompt.txt"), {
         "HAS_MEMORY": bool(memory.summary),
         "HAS_NOTES": bool(memory.notes),
+        "HAS_STUDENT_MEMOS": bool(student_memos),
+        "HAS_OPEN_QUESTIONS": bool(open_questions),
     })
     system = fill_placeholders(system_template, {
         "STUDENT_PROFILE": profile,
+        "STUDENT_MEMOS": _format_student_memos(student_memos or []),
+        "OPEN_QUESTIONS": "\n".join(f"- {q}" for q in open_questions or []),
         "CONVERSATION_SUMMARY": memory.summary,
         "CONVERSATION_NOTES": memory.notes,
     })
@@ -1200,6 +1220,12 @@ async def run_chat_turn(
         chat_map_task.add_done_callback(lambda _t: timer.mark("chat_map_loaded"))
 
         profile = await asyncio.to_thread(_load_student_profile, admin_client, turn.user_id)
+        try:
+            student_memos, open_questions = await asyncio.to_thread(load_chat_memory, admin_client, turn.user_id)
+        except Exception as e:
+            # 覚え書きが読めなくても答えは出す(テーブルがまだ無い環境も含む)
+            print(f"⚠️ [chat] failed to load memos/hypotheses: {e}")
+            student_memos, open_questions = [], []
         timer.mark("context_loaded")
         if turn.screen_task is not None and turn.screen_page is None:
             try:
@@ -1259,6 +1285,7 @@ async def run_chat_turn(
         await emit("status", {"stage": "writing"})
         messages = _build_answer_messages(
             turn, decision, memory, history, profile, materials, navigation.goal if navigation else None,
+            student_memos=student_memos, open_questions=open_questions,
         )
         state = StreamState()
         # 3.1 Flash Liteでは reasoning_effort="low" で最初の1文字までが数秒遅くなった(2026-09-29)が、

@@ -20,10 +20,10 @@ Your only job is to read ONE chat thread and write down observations about the s
 
 ## What NOT to observe
 
-- Study content itself. Asking many questions for an exam, quiz, or assignment is an obligation, not interest. Only questions that go beyond what is required, raised on the student's own initiative, are signals (and record them as such).
+- Study content itself. Asking many questions for an exam, quiz, or assignment is an obligation, not interest. Ordinary study questions ("what does X mean?", "how does Y work?", "can you explain Z again?") are normal studying and say nothing about who the student is, even when they are asked on the student's own initiative: do NOT write one observation per question. Only record a study question when it carries a real signal: it clearly goes beyond what the class requires and shows curiosity of its own, or it comes with visible enthusiasm, a self-statement, or a stated reason.
 - Anything only the assistant said. Assistant suggestions, examples, or plans are not the student's views or decisions unless the student clearly adopts them.
 - Small talk with no signal about who the student is.
-Zero observations is a perfectly good output.
+Zero observations is a perfectly good output, and it is the right output for most study sessions. Every observation should tell the Consolidator something about who the student is; if it only says what was discussed, leave it out.
 
 ## Sensitive areas
 

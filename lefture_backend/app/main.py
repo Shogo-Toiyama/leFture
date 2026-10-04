@@ -90,6 +90,7 @@ from app.services.chat_service import (
 )
 from app.services.chat_screen import SCREEN_KINDS, ScreenRef
 from app.services.chat_summary import run_fold as run_chat_summary_fold
+from app.services import profile_store
 
 # チュートリアル講義のトピック画像(固定4枚)。ユーザーごとに/seed-tutorialが
 # R2の自分専用領域へ複製する(共有フォルダにはできない事情はseed_tutorial参照)。
@@ -186,6 +187,15 @@ CHAT_QUEUE_NAME = os.getenv("CHAT_QUEUE_NAME", "lefture-chat-queue")
 # /worker/chat-summaryが諦めるまでの試行回数。キュー側のMax Attemptsより小さくても、
 # ここで打ち切れば無駄なLLM呼び出しは止まる(次のチャットのターンでまた積まれる)。
 CHAT_SUMMARY_MAX_ATTEMPTS = int(os.getenv("CHAT_SUMMARY_MAX_ATTEMPTS", "5"))
+# 自分像プロフィール(ロードマップ9章)。マイグレーション(20261007000000)を反映するまでは
+# patrolが動かさないよう、明示的に "true" にしたときだけ観察役・まとめ役を積む。
+PROFILE_EXTRACTION_ENABLED = os.getenv("PROFILE_EXTRACTION_ENABLED", "false").lower() == "true"
+# 観察役・まとめ役のタスクを積むキュー。別に作るまではチャットの要約と同じキューを使う。
+PROFILE_QUEUE_NAME = os.getenv("PROFILE_QUEUE_NAME", CHAT_QUEUE_NAME)
+PROFILE_TASK_MAX_ATTEMPTS = int(os.getenv("PROFILE_TASK_MAX_ATTEMPTS", "3"))
+# patrolが1回に積む上限(導入直後や、patrolが止まっていた後の一気読みを防ぐ)
+PROFILE_PATROL_MAX_THREADS = int(os.getenv("PROFILE_PATROL_MAX_THREADS", "50"))
+PROFILE_OBSERVE_IDLE_MINUTES = int(os.getenv("PROFILE_OBSERVE_IDLE_MINUTES", "30"))
 AUDIO_CHUNKS_RETENTION_DAYS = int(os.getenv("AUDIO_CHUNKS_RETENTION_DAYS", "7"))
 CLOUD_RUN_URL = os.getenv("CLOUD_RUN_URL")
 SERVICE_ACCOUNT_EMAIL = os.getenv("SERVICE_ACCOUNT_EMAIL")
@@ -237,6 +247,14 @@ class CleanupAudioChunksPayload(BaseModel):
 class ChatSummaryPayload(BaseModel):
     """Cloud Tasks から /worker/chat-summary に渡されるデータ"""
     thread_id: str
+
+class ProfileObservePayload(BaseModel):
+    """Cloud Tasks から /worker/profile-observe に渡されるデータ"""
+    thread_id: str
+
+class ProfileConsolidatePayload(BaseModel):
+    """Cloud Tasks から /worker/profile-consolidate に渡されるデータ"""
+    user_id: str
 
 class ClaimPlanRequest(BaseModel):
     """Flutterから /billing/claim-plan に渡されるデータ。claim_mode='self_serve'の
@@ -3463,6 +3481,35 @@ async def enqueue_chat_summary_task(thread_id: str, next_block_index: int) -> No
         print(f"⏭️ Chat summary for thread {thread_id} (block {next_block_index}) already enqueued.")
 
 
+async def _enqueue_profile_task(path: str, body: dict, name_suffix: str) -> None:
+    """自分像プロフィールの観察役・まとめ役のタスクを積む。同じ対象・同じ時間帯の二重enqueueは名前で弾く。"""
+    if not (PROJECT_ID and CLOUD_RUN_URL and SERVICE_ACCOUNT_EMAIL):
+        raise RuntimeError("❌ Missing Environment Variables for Cloud Tasks enqueue!")
+    parent = client.queue_path(PROJECT_ID, REGION, PROFILE_QUEUE_NAME)
+    task = {
+        "name": client.task_path(PROJECT_ID, REGION, PROFILE_QUEUE_NAME, f"{name_suffix}-{_dedup_bucket()}"),
+        "http_request": {
+            "http_method": tasks_v2.HttpMethod.POST,
+            "url": f"{CLOUD_RUN_URL}{path}",
+            "headers": {"Content-Type": "application/json", **internal_task_headers()},
+            "body": json.dumps(body).encode(),
+            "oidc_token": {"service_account_email": SERVICE_ACCOUNT_EMAIL, "audience": CLOUD_RUN_URL},
+        },
+    }
+    try:
+        await asyncio.to_thread(client.create_task, request={"parent": parent, "task": task})
+    except AlreadyExists:
+        pass
+
+
+async def enqueue_profile_observe_task(thread_id: str) -> None:
+    await _enqueue_profile_task("/worker/profile-observe", {"thread_id": thread_id}, f"profile-observe-{thread_id}")
+
+
+async def enqueue_profile_consolidate_task(user_id: str) -> None:
+    await _enqueue_profile_task("/worker/profile-consolidate", {"user_id": user_id}, f"profile-consolidate-{user_id}")
+
+
 # ---------------------------------------------------------
 # 2. 【裏の顔: 職人たちの部屋】Cloud Tasks から呼ばれる専用エンドポイント
 # ---------------------------------------------------------
@@ -3580,6 +3627,43 @@ async def worker_chat_summary(payload: ChatSummaryPayload, request: Request):
             return {"status": "gave_up"}
         raise
     return {"status": "success", "blocks_created": created}
+
+
+@app.post("/worker/profile-observe", dependencies=[Depends(require_internal_caller)])
+async def worker_profile_observe(payload: ProfileObservePayload, request: Request):
+    """
+    自分像プロフィールの観察役(app/services/profile_store.py)。1スレッドのまだ読んでいない部分を観察する。
+    まとめ役に渡していない観察がたまったら、そのユーザーのまとめ役のタスクを積む。
+    失敗はCloud Tasksのリトライに任せ、PROFILE_TASK_MAX_ATTEMPTS回目で打ち切る(急ぎの処理ではない)。
+    """
+    try:
+        result = await profile_store.observe_thread_task(payload.thread_id)
+    except Exception as e:
+        retry_count = int(request.headers.get("X-CloudTasks-TaskRetryCount", "0"))
+        if retry_count >= PROFILE_TASK_MAX_ATTEMPTS - 1:
+            print(f"❌ [profile-observe] giving up on thread {payload.thread_id} after {retry_count + 1} attempts: {e}")
+            return {"status": "gave_up"}
+        raise
+    if result.get("consolidate_user_id"):
+        try:
+            await enqueue_profile_consolidate_task(result["consolidate_user_id"])
+        except Exception as e:
+            # 積めなくても、patrolが「たまっているユーザー」を拾い直す
+            print(f"⚠️ [profile-observe] failed to enqueue consolidation: {e}")
+    return result
+
+
+@app.post("/worker/profile-consolidate", dependencies=[Depends(require_internal_caller)])
+async def worker_profile_consolidate(payload: ProfileConsolidatePayload, request: Request):
+    """自分像プロフィールのまとめ役(+必要なら表紙の書き直し)。"""
+    try:
+        return await profile_store.consolidate_user_task(payload.user_id)
+    except Exception as e:
+        retry_count = int(request.headers.get("X-CloudTasks-TaskRetryCount", "0"))
+        if retry_count >= PROFILE_TASK_MAX_ATTEMPTS - 1:
+            print(f"❌ [profile-consolidate] giving up on user {payload.user_id} after {retry_count + 1} attempts: {e}")
+            return {"status": "gave_up"}
+        raise
 
 
 @app.post("/worker/cleanup-audio-chunks", dependencies=[Depends(require_internal_caller)])
@@ -4058,6 +4142,13 @@ async def _hard_delete_user_data(admin_client, uid: str) -> None:
     # 4.5 横断チャットボットの会話(要約→メッセージ→スレッドの順)と検索インデックス。
     #     どれもuser_idのON DELETE CASCADEでauth.users削除時に消えるが、
     #     他のテーブルと同じくカスケードに依存せず明示的に消す。
+    #     自分像プロフィールも同じ(根拠のつながり→項目→観察の順。どれもuser_idでCASCADEする)。
+    for profile_table in ("profile_item_evidence", "profile_item_versions", "profile_items", "profile_observations",
+                          "profile_categories", "ai_memos", "profile_hypotheses", "profile_blocked_areas",
+                          "profile_cover_proposals", "profile_extraction_state"):
+        await asyncio.to_thread(
+            lambda t=profile_table: admin_client.table(t).delete().eq("user_id", uid).execute()
+        )
     for chat_table in ("chat_summary_blocks", "chat_messages", "chat_threads", "knowledge_chunks"):
         await asyncio.to_thread(
             lambda t=chat_table: admin_client.table(t).delete().eq("user_id", uid).execute()
@@ -4337,6 +4428,32 @@ async def _patrol_fail_stale_chat_messages() -> dict:
             .execute()
     )
     return {"failed_stale": len(res.data or [])}
+
+
+async def _patrol_enqueue_profile_extraction() -> dict:
+    """
+    自分像プロフィール: しばらく止まっていて、まだ観察していない発言があるスレッドの観察役と、
+    観察がたまっている(または古くなった)ユーザーのまとめ役を積む。
+    まとめ役は観察役のワーカーが件数を見て積むが、積み損ねや「件数は少ないが1週間たった」はここで拾う。
+    """
+    if not PROFILE_EXTRACTION_ENABLED:
+        return {"disabled": True}
+    admin_client = get_supabase_client()
+    threads = await asyncio.to_thread(lambda: admin_client.rpc("list_threads_pending_profile_observation", {
+        "idle_minutes": PROFILE_OBSERVE_IDLE_MINUTES, "max_count": PROFILE_PATROL_MAX_THREADS,
+    }).execute())
+    users = await asyncio.to_thread(lambda: admin_client.rpc("list_users_pending_profile_consolidation", {
+        "min_new": profile_store.CONSOLIDATE_MIN_NEW_OBSERVATIONS,
+        "max_wait_days": profile_store.CONSOLIDATE_MAX_WAIT_DAYS,
+    }).execute())
+    observe, consolidate_ = 0, 0
+    for row in threads.data or []:
+        await enqueue_profile_observe_task(row["thread_id"])
+        observe += 1
+    for row in users.data or []:
+        await enqueue_profile_consolidate_task(row["user_id"])
+        consolidate_ += 1
+    return {"observe_enqueued": observe, "consolidate_enqueued": consolidate_}
 
 
 # 将来ここに追加していく（例）:
@@ -4641,6 +4758,7 @@ PATROL_CHECKS = [
     ("renew_subscriptions", _patrol_renew_subscriptions),
     ("reconcile_cross_platform_subscriptions", _patrol_reconcile_cross_platform_subscriptions),
     ("fail_stale_chat_messages", _patrol_fail_stale_chat_messages),
+    ("enqueue_profile_extraction", _patrol_enqueue_profile_extraction),
 ]
 
 
@@ -5689,6 +5807,18 @@ class ChatThreadUpdateRequest(BaseModel):
     title: str
 
 
+class ProfileItemRejectRequest(BaseModel):
+    reason: Optional[str] = None
+
+
+class ProfileItemEditRequest(BaseModel):
+    content: str
+
+
+class ProfileItemsSeenRequest(BaseModel):
+    item_ids: list[str]
+
+
 # 返答の生成はリクエストとは別のasyncioタスクで走らせる(クライアントが
 # 途中で切断しても保存・課金まで走り切るため)。タスクへの参照をどこかに
 # 持っておかないとGCで途中で消されることがあるので、ここに保持する。
@@ -5813,4 +5943,113 @@ async def delete_chat_thread(thread_id: str, request: Request):
     await asyncio.to_thread(
         lambda: admin_client.table("chat_threads").update({"deleted_at": now_iso}).eq("id", thread_id).execute()
     )
+    # 自分像プロフィール: このスレッドの観察も消し、根拠が無くなったAI由来の項目は使わないようにする
+    try:
+        await profile_store.on_thread_deleted(uid, thread_id)
+    except Exception as e:
+        print(f"⚠️ [profile] failed to follow the deletion of thread {thread_id}: {e}")
+    return {"success": True}
+
+
+# ---------------------------------------------------------
+# 🪞 自分像プロフィール: 本人の操作(ロードマップ9章)
+# 読み出しはwebappが本人のJWTでSupabaseから直接行う(各テーブルにSELECTのRLSがある)。
+# 書き込みはすべてここを通す(テーブルには本人向けの書き込みポリシーを置いていない)。
+# ---------------------------------------------------------
+
+PROFILE_ITEM_MAX_CHARS = 500
+
+
+def _profile_item_not_found() -> HTTPException:
+    return HTTPException(status_code=404, detail={"error_code": "PROFILE_ITEM_NOT_FOUND", "message": "Item not found."})
+
+
+@app.post("/profile/items/{item_id}/reject")
+async def reject_profile_item(item_id: str, payload: ProfileItemRejectRequest, request: Request):
+    """「違う」: 項目を rejected にし、同じ意味の項目を作り直させない。"""
+    uid = await _get_authenticated_user_id(request)
+    item_id = _parse_uuid_or_422(item_id, "item_id")
+    try:
+        await profile_store.reject_item(uid, item_id, payload.reason)
+    except profile_store.ProfileItemNotFound:
+        raise _profile_item_not_found()
+    return {"success": True}
+
+
+@app.patch("/profile/items/{item_id}")
+async def edit_profile_item(item_id: str, payload: ProfileItemEditRequest, request: Request):
+    """「直す」: 本人の文にする。以後AIはこの文を書き換えない。"""
+    uid = await _get_authenticated_user_id(request)
+    item_id = _parse_uuid_or_422(item_id, "item_id")
+    content = (payload.content or "").strip()
+    if not content or len(content) > PROFILE_ITEM_MAX_CHARS:
+        raise HTTPException(status_code=422, detail={"error_code": "INVALID_CONTENT",
+                                                     "message": f"Content must be 1-{PROFILE_ITEM_MAX_CHARS} characters."})
+    try:
+        await profile_store.edit_item(uid, item_id, content)
+    except profile_store.ProfileItemNotFound:
+        raise _profile_item_not_found()
+    return {"success": True}
+
+
+@app.post("/profile/items/{item_id}/discard")
+async def discard_profile_item(item_id: str, request: Request):
+    """「残したくない」(確認トレイの「残さない」も同じ): 中身と根拠を消す。センシティブなら分野だけ覚える。"""
+    uid = await _get_authenticated_user_id(request)
+    item_id = _parse_uuid_or_422(item_id, "item_id")
+    try:
+        blocked_area = await profile_store.discard_item(uid, item_id)
+    except profile_store.ProfileItemNotFound:
+        raise _profile_item_not_found()
+    return {"success": True, "blocked_area": blocked_area}
+
+
+@app.post("/profile/items/{item_id}/keep")
+async def keep_profile_item(item_id: str, request: Request):
+    """確認トレイの「残す」。"""
+    uid = await _get_authenticated_user_id(request)
+    item_id = _parse_uuid_or_422(item_id, "item_id")
+    try:
+        await profile_store.keep_pending_item(uid, item_id)
+    except profile_store.ProfileItemNotFound:
+        raise _profile_item_not_found()
+    return {"success": True}
+
+
+@app.post("/profile/items/seen")
+async def mark_profile_items_seen(payload: ProfileItemsSeenRequest, request: Request):
+    """「新しい」印を消す(画面に表示した項目)。"""
+    uid = await _get_authenticated_user_id(request)
+    ids = [_parse_uuid_or_422(i, "item_ids") for i in payload.item_ids[:200]]
+    await profile_store.mark_items_seen(uid, ids)
+    return {"success": True}
+
+
+@app.delete("/profile/memos/{memo_id}")
+async def delete_ai_memo(memo_id: str, request: Request):
+    """AIチャット設定: 覚え書きを1つ消す。"""
+    uid = await _get_authenticated_user_id(request)
+    memo_id = _parse_uuid_or_422(memo_id, "memo_id")
+    if not await profile_store.delete_memo(uid, memo_id):
+        raise HTTPException(status_code=404, detail={"error_code": "MEMO_NOT_FOUND", "message": "Memo not found."})
+    return {"success": True}
+
+
+@app.post("/profile/ai-notes/forget")
+async def forget_ai_notes(request: Request):
+    """AIチャット設定: AIのメモ(観察メモと仮説)を全部消す。見えている自分像と覚え書きは残す。"""
+    uid = await _get_authenticated_user_id(request)
+    await profile_store.forget_ai_notes(uid)
+    return {"success": True}
+
+
+@app.post("/profile/cover-proposals/{proposal_id}/{decision}")
+async def decide_profile_cover_proposal(proposal_id: str, decision: str, request: Request):
+    """表紙の書き直し案を反映する(accept)か、今のままにする(reject)。"""
+    uid = await _get_authenticated_user_id(request)
+    proposal_id = _parse_uuid_or_422(proposal_id, "proposal_id")
+    if decision not in ("accept", "reject"):
+        raise HTTPException(status_code=404, detail={"error_code": "NOT_FOUND", "message": "Unknown decision."})
+    if not await profile_store.decide_cover_proposal(uid, proposal_id, decision == "accept"):
+        raise HTTPException(status_code=404, detail={"error_code": "PROPOSAL_NOT_FOUND", "message": "Proposal not found."})
     return {"success": True}

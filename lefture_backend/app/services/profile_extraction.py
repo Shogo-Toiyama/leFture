@@ -504,9 +504,9 @@ def _make_refs(inp: ConsolidationInput) -> _Refs:
     )
 
 
-def _obs_line(ref: str, o: Observation) -> str:
+def _obs_line(ref: str, o: Observation, thread_label: str) -> str:
     parts = [
-        f"{ref} [{o.observed_at} · thread {o.thread_id} · {o.context} · {o.certainty} · initiative={o.initiative} · reaction={o.reaction}"
+        f"{ref} [{o.observed_at} · thread {thread_label} · {o.context} · {o.certainty} · initiative={o.initiative} · reaction={o.reaction}"
         f" · kind_hint={o.kind_hint}" + (f" · sensitive={o.sensitive}" if o.sensitive != "none" else "") + "]",
         f"   note: {o.note}",
         f"   topic: {o.topic}" if o.topic else "",
@@ -543,8 +543,12 @@ def build_consolidator_messages(inp: ConsolidationInput) -> tuple[list[Message],
         return f"- {ref} in {cat} [{' · '.join(flags)}] {it.content}  (evidence: {ev}; last seen {it.last_seen_at})"
 
     obs_items = list(refs.obs.items())
-    new_text = "\n".join(_obs_line(r, o) for r, o in obs_items[:n_new]) or "(none)"
-    related_text = "\n".join(_obs_line(r, o) for r, o in obs_items[n_new:]) or "(none)"
+    # スレッドはIDではなく短い呼び名で示す(「別の会話かどうか」が分かれば十分で、UUIDはトークンの無駄)
+    thread_labels: dict[str, str] = {}
+    for _, o in obs_items:
+        thread_labels.setdefault(o.thread_id, f"T{len(thread_labels) + 1}")
+    new_text = "\n".join(_obs_line(r, o, thread_labels[o.thread_id]) for r, o in obs_items[:n_new]) or "(none)"
+    related_text = "\n".join(_obs_line(r, o, thread_labels[o.thread_id]) for r, o in obs_items[n_new:]) or "(none)"
     cats_text = "\n".join(cat_line(r, c) for r, c in refs.cats.items()) or "(none yet)"
     items_text = "\n".join(item_line(r, it) for r, it in refs.items.items()) or "(none yet)"
     rejected_text = "\n".join(
