@@ -1,0 +1,111 @@
+{
+  "models": {
+    "observer": "gpt-6-luna",
+    "consolidator": "gemini/gemini-3.5-flash-lite",
+    "consolidator_reasoning": "medium",
+    "cover": "gemini/gemini-3.5-flash-lite"
+  },
+  "total": {
+    "false_promotions": 0,
+    "missed": 6,
+    "observation_misses": 0,
+    "observation_violations": 0,
+    "mechanical_failures": 0,
+    "evidence_warnings": 4,
+    "unexplained_items": 7,
+    "passed": 172,
+    "total": 178
+  },
+  "scenarios": {
+    "p1_precision_ja": {
+      "false_promotions": 0,
+      "missed": 1,
+      "observation_misses": 0,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 0,
+      "unexplained_items": 0,
+      "passed": 41,
+      "total": 42,
+      "cost_usd": {
+        "pipeline_tokens": 0.015679,
+        "judge_tokens": 0.00867
+      }
+    },
+    "p2_bridge_ja": {
+      "false_promotions": 0,
+      "missed": 3,
+      "observation_misses": 0,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 2,
+      "unexplained_items": 2,
+      "passed": 24,
+      "total": 27,
+      "cost_usd": {
+        "pipeline_tokens": 0.011206,
+        "judge_tokens": 0.006672
+      }
+    },
+    "p3_culture_en": {
+      "false_promotions": 0,
+      "missed": 0,
+      "observation_misses": 0,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 2,
+      "unexplained_items": 1,
+      "passed": 32,
+      "total": 32,
+      "cost_usd": {
+        "pipeline_tokens": 0.019494,
+        "judge_tokens": 0.007503
+      }
+    },
+    "p4_traps_ja": {
+      "false_promotions": 0,
+      "missed": 0,
+      "observation_misses": 0,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 0,
+      "unexplained_items": 0,
+      "passed": 25,
+      "total": 25,
+      "cost_usd": {
+        "pipeline_tokens": 0.011601,
+        "judge_tokens": 0.005694
+      }
+    },
+    "p5_memos_en": {
+      "false_promotions": 0,
+      "missed": 2,
+      "observation_misses": 0,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 0,
+      "unexplained_items": 0,
+      "passed": 16,
+      "total": 18,
+      "cost_usd": {
+        "pipeline_tokens": 0.008352,
+        "judge_tokens": 0.004279
+      }
+    },
+    "p6_actions_ja": {
+      "false_promotions": 0,
+      "missed": 0,
+      "observation_misses": 0,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 0,
+      "unexplained_items": 4,
+      "passed": 34,
+      "total": 34,
+      "cost_usd": {
+        "pipeline_tokens": 0.031175,
+        "judge_tokens": 0.00988
+      }
+    }
+  }
+}

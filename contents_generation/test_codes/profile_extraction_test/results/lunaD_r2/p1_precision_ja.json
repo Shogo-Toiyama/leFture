@@ -1,0 +1,1141 @@
+{
+  "scenario_id": "p1_precision_ja",
+  "language": "ja",
+  "description": "F1のピットストップ・ロケットのブースターキャッチ・機械式時計に、それぞれ別の日・別の文脈で惹かれる。どれも話題としては別物だが、惹かれた点は「極限まで精度を詰める仕組み」で共通している。",
+  "tests": [
+    "話題(F1・宇宙・時計)ではなく、惹かれた点で束ねて傾向を作れるか",
+    "本人の但し書き(ドライバーには興味がない、宇宙はどうでもいい)を観察に残し、反する項目を作らないか",
+    "惹かれた点が語られなかった会話(T2)で、推測で埋めずに「不明」とし、仮説を作れるか",
+    "後の会話(T3)で仮説が確かめられたことを、観察役が拾えるか",
+    "1回きりの話題(野球、夕飯の相談)から項目を作らないか",
+    "空欄の表紙(1層)をAIが埋めるとき、話題の羅列でなく傾向で書けるか"
+  ],
+  "models": {
+    "observer": "gpt-6-luna",
+    "observer_reasoning": "none",
+    "consolidator": "gpt-6-luna",
+    "consolidator_reasoning": "medium",
+    "cover": "gpt-6-luna",
+    "cover_reasoning": "low"
+  },
+  "events": [
+    {
+      "type": "thread",
+      "id": "t1",
+      "date": "2026-09-05",
+      "observations": [
+        {
+          "id": "t1.o1",
+          "thread_id": "t1",
+          "observed_at": "2026-09-05",
+          "note": "F1日本GPの録画で、ドライバーや順位より、約2秒でタイヤを4本替えるピットストップに注目した。20人ほどが一斉に動いても互いに邪魔せず、全員の動きが0.1秒単位で詰められている点に強く惹かれ、練習方法も気になって自分で映像を探そうとした。",
+          "topic": "ピットストップの動きの精密さ",
+          "hook": "大勢が役割を分担し、互いに妨げず、動きを秒単位で磨き上げる協調と精密さ",
+          "caveat": "ドライバーや順位にはあまり興味がない。",
+          "reaction": "strong",
+          "initiative": "user",
+          "certainty": "strong_implicit",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            2,
+            3,
+            4
+          ],
+          "quote": "0.1秒単位で全員の動きが詰められてるのがたまらない。",
+          "occurred_at": "2026-09-05",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t2",
+      "date": "2026-09-12",
+      "observations": [
+        {
+          "id": "t2.o1",
+          "thread_id": "t2",
+          "observed_at": "2026-09-12",
+          "note": "スターシップのブースターを発射台のアームでキャッチする様子を見て、「全部やばい」と反応した。どの要素に特に惹かれたかは特定できない。",
+          "topic": "スターシップのブースター回収",
+          "hook": null,
+          "caveat": null,
+          "reaction": "strong",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            1,
+            2
+          ],
+          "quote": "いや全部やばい笑",
+          "occurred_at": "2026-09-12",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t2.o2",
+          "thread_id": "t2",
+          "observed_at": "2026-09-12",
+          "note": "今夜の夕食に玉子丼を作る提案を採用した。",
+          "topic": "夕食",
+          "hook": null,
+          "caveat": null,
+          "reaction": "neutral",
+          "initiative": "ai",
+          "certainty": "inferred",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            3
+          ],
+          "quote": "それにする!",
+          "occurred_at": "2026-09-12",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c1",
+      "today": "2026-09-12",
+      "input_counts": {
+        "new": 3,
+        "related": 0,
+        "items": 0,
+        "rejected": 0,
+        "memos": 0
+      },
+      "plan": {
+        "new_categories": [],
+        "item_creates": [],
+        "item_updates": [],
+        "item_archives": [],
+        "memo_creates": [],
+        "memo_updates": [],
+        "memo_removes": [],
+        "hypothesis_creates": [
+          {
+            "content": "次にチームでの作業や精密な仕組みの話題が出たら、役割分担や動きの磨き込みのどこに惹かれるのか、自然に確かめる。",
+            "evidence": [
+              "t1.o1"
+            ]
+          }
+        ],
+        "hypothesis_closes": []
+      },
+      "dropped": [],
+      "rejected_guard": [],
+      "state": {
+        "today": "2026-09-12",
+        "categories": [],
+        "items": [],
+        "memos": [],
+        "hypotheses": [
+          {
+            "id": "hyp1",
+            "content": "次にチームでの作業や精密な仕組みの話題が出たら、役割分担や動きの磨き込みのどこに惹かれるのか、自然に確かめる。",
+            "status": "open",
+            "evidence": [
+              "t1.o1"
+            ],
+            "created_at": "2026-09-12"
+          }
+        ],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": null,
+            "origin": null
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": null,
+            "origin": null
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "open",
+          "t2.o1": "open",
+          "t2.o2": "open"
+        }
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t3",
+      "date": "2026-09-19",
+      "observations": [
+        {
+          "id": "t3.o1",
+          "thread_id": "t3",
+          "observed_at": "2026-09-19",
+          "note": "ブースターキャッチで、何十メートルもあるものを塔の決まった位置に誤差数センチで止める精度に強く惹かれている。宇宙や火星そのものには関心がないと述べた。",
+          "topic": "ブースターキャッチ",
+          "hook": "大きなものを、誤差数センチという精度で決まった位置に止めること",
+          "caveat": "宇宙や火星そのものはどうでもいいと述べている。",
+          "reaction": "strong",
+          "initiative": "user",
+          "certainty": "strong_implicit",
+          "context": "exam_prep",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            4
+          ],
+          "quote": "何十メートルもあるものを、誤差数センチで塔の決まった位置に止めるのがやばい。宇宙とか火星とかは正直どうでもよくて、あの精度がたまらないんだよね",
+          "occurred_at": "2026-09-19",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t3.o2",
+          "thread_id": "t3",
+          "observed_at": "2026-09-19",
+          "note": "制御工学の復習中、PID制御を学んだあと「ちょっと制御おもしろくなってきた」と述べた。",
+          "topic": "制御工学",
+          "hook": null,
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "exam_prep",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            5
+          ],
+          "quote": "ちょっと制御おもしろくなってきた",
+          "occurred_at": "2026-09-19",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": [
+        {
+          "reason": "unknown_hypothesis",
+          "ref": "H1: 次にチームでの作業や精密な仕組みの話題が出たら、役割分担や動きの磨き込みのどこに惹かれるのか、自然に確かめる。"
+        }
+      ]
+    },
+    {
+      "type": "thread",
+      "id": "t4",
+      "date": "2026-09-24",
+      "observations": [
+        {
+          "id": "t4.o1",
+          "thread_id": "t4",
+          "observed_at": "2026-09-24",
+          "note": "機械式時計を開けて内部を見て、小さな部品だけで精度をここまで高めている点を「すごい」と感じた。",
+          "topic": "機械式時計の仕組み",
+          "hook": "とても小さな部品を組み合わせて、高い精度を実現していること",
+          "caveat": "時計を買うには値段が高すぎると述べた。",
+          "reaction": "strong",
+          "initiative": "user",
+          "certainty": "strong_implicit",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            1,
+            2,
+            3
+          ],
+          "quote": "小さい部品だけでそこまで詰めてるのがすごい。自分では絶対買えない値段だったけど笑",
+          "occurred_at": "2026-09-24",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c2",
+      "today": "2026-09-24",
+      "input_counts": {
+        "new": 3,
+        "related": 3,
+        "items": 0,
+        "rejected": 0,
+        "memos": 0
+      },
+      "plan": {
+        "new_categories": [
+          {
+            "ref": "new1",
+            "name": "心を動かされるもの",
+            "description": "精密さや、仕組みが磨き込まれていることへの関心",
+            "kind": "trait",
+            "parent_id": null,
+            "parent_ref": null
+          }
+        ],
+        "item_creates": [
+          {
+            "kind": "trait",
+            "content": "大きさや仕組みを問わず、動きや部品が細かく磨き込まれ、狙った精度を実現していることにワクワクする。",
+            "evidence": [
+              "t3.o1",
+              "t4.o1",
+              "t1.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": null,
+            "reason": "異なる場面で、位置決め・部品・チームの動きの精密さに強く惹かれており、共通する関心として十分な裏づけがある。",
+            "category_ref": "new1"
+          }
+        ],
+        "item_updates": [],
+        "item_archives": [],
+        "memo_creates": [],
+        "memo_updates": [],
+        "memo_removes": [],
+        "hypothesis_creates": [],
+        "hypothesis_closes": [
+          {
+            "hypothesis_id": "hyp1",
+            "status": "confirmed"
+          }
+        ]
+      },
+      "dropped": [],
+      "rejected_guard": [],
+      "state": {
+        "today": "2026-09-24",
+        "categories": [
+          {
+            "id": "cat2",
+            "path": "心を動かされるもの",
+            "kind": "trait"
+          }
+        ],
+        "items": [
+          {
+            "id": "item3",
+            "category": "心を動かされるもの",
+            "kind": "trait",
+            "content": "大きさや仕組みを問わず、動きや部品が細かく磨き込まれ、狙った精度を実現していることにワクワクする。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-05",
+            "last_seen_at": "2026-09-24",
+            "evidence_threads": [
+              "t1",
+              "t3",
+              "t4"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          }
+        ],
+        "memos": [],
+        "hypotheses": [
+          {
+            "id": "hyp1",
+            "content": "次にチームでの作業や精密な仕組みの話題が出たら、役割分担や動きの磨き込みのどこに惹かれるのか、自然に確かめる。",
+            "status": "confirmed",
+            "evidence": [
+              "t1.o1"
+            ],
+            "created_at": "2026-09-12"
+          }
+        ],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": null,
+            "origin": null
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": null,
+            "origin": null
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "used",
+          "t2.o1": "open",
+          "t2.o2": "open",
+          "t3.o1": "used",
+          "t3.o2": "open",
+          "t4.o1": "used"
+        }
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t5",
+      "date": "2026-09-30",
+      "observations": [
+        {
+          "id": "t5.o1",
+          "thread_id": "t5",
+          "observed_at": "2026-09-30",
+          "note": "野球観戦では「普通に楽しかった」と話し、特にビールの売り子が重そうなタンクを背負っていることに驚いていた。",
+          "topic": "野球観戦で見た売り子",
+          "hook": "重いものを背負って働く人の体力や負荷",
+          "caveat": "試合自体は「普通に楽しかった」と述べている。",
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "ビールの売り子さんの重そうなタンクすごいなって思った笑",
+          "occurred_at": "2026-09-30",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t6",
+      "date": "2026-10-02",
+      "observations": [
+        {
+          "id": "t6.o1",
+          "thread_id": "t6",
+          "observed_at": "2026-10-02",
+          "note": "将来の職業はまだ決まっていないが、一つのものを極限まで詰め、時間や長さをわずかでも削るような仕事がいいと考えている。",
+          "topic": "将来の仕事",
+          "hook": "一つのものを極限まで詰めて、0.1秒や1ミリ単位で改善すること",
+          "caveat": "具体的に何の仕事をしたいかはまだ分からない。",
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "consult",
+          "kind_hint": "future",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "なんか一個のものを極限まで詰めていく仕事がいい気がする。0.1秒とか1ミリとかを削るみたいな",
+          "occurred_at": "2026-10-02",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c3",
+      "today": "2026-10-02",
+      "input_counts": {
+        "new": 2,
+        "related": 6,
+        "items": 1,
+        "rejected": 0,
+        "memos": 0
+      },
+      "plan": {
+        "new_categories": [
+          {
+            "ref": "new1",
+            "name": "将来の方向",
+            "description": "将来やってみたい仕事や進みたい方向",
+            "kind": "trait",
+            "parent_id": null,
+            "parent_ref": null
+          }
+        ],
+        "item_creates": [
+          {
+            "kind": "trait",
+            "content": "一つのものを極限まで突き詰め、0.1秒や1ミリ単位で改善していく仕事に惹かれている。具体的な職業はまだ決まっていない。",
+            "evidence": [
+              "t6.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": null,
+            "reason": "将来の仕事について本人が明確に述べているため、関心の項目とは分けて記録する。",
+            "category_ref": "new1"
+          }
+        ],
+        "item_updates": [
+          {
+            "item_id": "item3",
+            "content": null,
+            "add_evidence": [
+              "t6.o1"
+            ],
+            "reason": "細かな単位で改善を重ねる仕事を望む発言が、精度や仕組みを磨き込むことへの既存の関心を補強している。"
+          }
+        ],
+        "item_archives": [],
+        "memo_creates": [],
+        "memo_updates": [],
+        "memo_removes": [],
+        "hypothesis_creates": [],
+        "hypothesis_closes": []
+      },
+      "dropped": [],
+      "rejected_guard": [],
+      "state": {
+        "today": "2026-10-02",
+        "categories": [
+          {
+            "id": "cat2",
+            "path": "心を動かされるもの",
+            "kind": "trait"
+          },
+          {
+            "id": "cat4",
+            "path": "将来の方向",
+            "kind": "trait"
+          }
+        ],
+        "items": [
+          {
+            "id": "item3",
+            "category": "心を動かされるもの",
+            "kind": "trait",
+            "content": "大きさや仕組みを問わず、動きや部品が細かく磨き込まれ、狙った精度を実現していることにワクワクする。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-05",
+            "last_seen_at": "2026-10-02",
+            "evidence_threads": [
+              "t1",
+              "t3",
+              "t4",
+              "t6"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item5",
+            "category": "将来の方向",
+            "kind": "trait",
+            "content": "一つのものを極限まで突き詰め、0.1秒や1ミリ単位で改善していく仕事に惹かれている。具体的な職業はまだ決まっていない。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-10-02",
+            "last_seen_at": "2026-10-02",
+            "evidence_threads": [
+              "t6"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          }
+        ],
+        "memos": [],
+        "hypotheses": [
+          {
+            "id": "hyp1",
+            "content": "次にチームでの作業や精密な仕組みの話題が出たら、役割分担や動きの磨き込みのどこに惹かれるのか、自然に確かめる。",
+            "status": "confirmed",
+            "evidence": [
+              "t1.o1"
+            ],
+            "created_at": "2026-09-12"
+          }
+        ],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": null,
+            "origin": null
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": null,
+            "origin": null
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "used",
+          "t2.o1": "open",
+          "t2.o2": "open",
+          "t3.o1": "used",
+          "t3.o2": "open",
+          "t4.o1": "used",
+          "t5.o1": "open",
+          "t6.o1": "used"
+        }
+      }
+    },
+    {
+      "type": "cover",
+      "id": "cov1",
+      "before": {
+        "bio": {
+          "text": null,
+          "origin": null
+        },
+        "interests": {
+          "text": null,
+          "origin": null
+        },
+        "future_goals": {
+          "text": null,
+          "origin": null
+        }
+      },
+      "after": {
+        "bio": {
+          "text": null,
+          "origin": null
+        },
+        "interests": {
+          "text": "大きさや仕組みにかかわらず、動きや部品が細かく磨き込まれているものに惹かれます。狙った精度を実現するための工夫にワクワクします。",
+          "origin": "ai"
+        },
+        "future_goals": {
+          "text": "一つのものを極限まで突き詰め、0.1秒や1ミリ単位で改善していく仕事に惹かれています。具体的な職業はまだ決まっていません。",
+          "origin": "ai"
+        }
+      },
+      "proposals": {},
+      "dropped": []
+    }
+  ],
+  "grades": [
+    {
+      "event": "t1",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: F1日本GPの録画で、ドライバーや順位より、約2秒でタイヤを4本替えるピットストップに注目した。20人ほどが一斉に動いても互いに邪魔せず、全員の動きが0.1秒単位で詰められている点に強く惹かれ、練習方法も気になって自分で映像を探そうとした。 | topic: ピットストップの動きの精密さ | hook: 大勢が役割を分担し、互いに妨げず、動きを秒単位で磨き上げる協調と精密さ | caveat: ドライバーや順位にはあまり興味がない。 | certainty=strong_implicit, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-09-05"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "惹かれた点: 多人数の動きが0.1秒単位で詰められ、道具まで最適化されたピットストップの仕組み(本人の言葉, stated)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 captures the fascination with the 0.1-second precision of the pit stop."
+        },
+        {
+          "type": "must",
+          "expectation": "但し書き: ドライバーや順位にはあまり興味がない",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 explicitly states the caveat about not being interested in drivers or rankings."
+        },
+        {
+          "type": "must",
+          "expectation": "initiative=user(自分から話し始めた)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 correctly marks initiative as user."
+        },
+        {
+          "type": "must_not",
+          "expectation": "「F1が好き」「モータースポーツに興味がある」のような一般化した書き方",
+          "ok": true,
+          "matched": [],
+          "note": "X1 focuses specifically on pit stops and avoids generalizing to liking F1 or motorsports."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t2",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: スターシップのブースターを発射台のアームでキャッチする様子を見て、「全部やばい」と反応した。どの要素に特に惹かれたかは特定できない。 | topic: スターシップのブースター回収 | hook: (unknown) | certainty=inferred, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-09-12"
+        ],
+        [
+          "X2",
+          "note: 今夜の夕食に玉子丼を作る提案を採用した。 | topic: 夕食 | hook: (unknown) | certainty=inferred, initiative=ai, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-09-12"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "話題: スターシップのブースターキャッチ。惹かれた点は不明(hook=NULL)。AIが聞いたが本人は答えなかった",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 notes the Starship booster catch and states the specific hook is unknown."
+        },
+        {
+          "type": "must_not",
+          "expectation": "惹かれた点を推測で埋める(例: 宇宙開発へのロマン)",
+          "ok": true,
+          "matched": [],
+          "note": "X1 explicitly states the hook is unknown without guessing."
+        },
+        {
+          "type": "must_not",
+          "expectation": "「宇宙が好き」「ロケットに興味」",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of loving space or rockets in the records."
+        },
+        {
+          "type": "must_not",
+          "expectation": "夕飯の相談から「料理が好き」",
+          "ok": true,
+          "matched": [],
+          "note": "X2 only mentions accepting the dinner proposal without generalizing to liking cooking."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c1",
+      "target": "items",
+      "records": [],
+      "results": [
+        {
+          "type": "must_not",
+          "expectation": "F1・モータースポーツへの興味",
+          "ok": true,
+          "matched": [],
+          "note": "No records exist to violate this expectation."
+        },
+        {
+          "type": "must_not",
+          "expectation": "宇宙・ロケットへの興味",
+          "ok": true,
+          "matched": [],
+          "note": "No records exist to violate this expectation."
+        },
+        {
+          "type": "must_not",
+          "expectation": "精度を詰める仕組みへの傾向(まだ根拠が足りない: 惹かれた点が分かっている観察は1件だけ)",
+          "ok": true,
+          "matched": [],
+          "note": "No records exist to violate this expectation."
+        },
+        {
+          "type": "must_not",
+          "expectation": "料理",
+          "ok": true,
+          "matched": [],
+          "note": "No records exist to violate this expectation."
+        }
+      ],
+      "mechanical": [],
+      "unexplained_items": []
+    },
+    {
+      "event": "c1",
+      "target": "hypotheses",
+      "records": [
+        [
+          "X1",
+          "[status=open] 次にチームでの作業や精密な仕組みの話題が出たら、役割分担や動きの磨き込みのどこに惹かれるのか、自然に確かめる。"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "精密な制御や最適化に惹かれているのでは。次に機械・乗り物・宇宙の話題が出たら、どこに惹かれたかを自然に聞く",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 captures the intent to check what aspects attract them in precise mechanisms or teamwork."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t3",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: ブースターキャッチで、何十メートルもあるものを塔の決まった位置に誤差数センチで止める精度に強く惹かれている。宇宙や火星そのものには関心がないと述べた。 | topic: ブースターキャッチ | hook: 大きなものを、誤差数センチという精度で決まった位置に止めること | caveat: 宇宙や火星そのものはどうでもいいと述べている。 | certainty=strong_implicit, initiative=user, context=exam_prep, kind_hint=trait, sensitive=none, occurred_at=2026-09-19"
+        ],
+        [
+          "X2",
+          "note: 制御工学の復習中、PID制御を学んだあと「ちょっと制御おもしろくなってきた」と述べた。 | topic: 制御工学 | hook: (unknown) | certainty=inferred, initiative=user, context=exam_prep, kind_hint=trait, sensitive=none, occurred_at=2026-09-19"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "惹かれた点: 巨大なものを誤差数センチで決まった位置に止める精度(本人の言葉, stated)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 captures the exact hook about stopping huge objects with centimeter-level precision."
+        },
+        {
+          "type": "must",
+          "expectation": "但し書き: 宇宙や火星は正直どうでもいい",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 states the caveat that space or Mars itself doesn't matter to the student."
+        },
+        {
+          "type": "must",
+          "expectation": "授業の復習の中で、範囲から自分で踏み出した質問(ロケットの着陸)",
+          "ok": false,
+          "matched": [],
+          "note": "No record mentions stepping outside the scope of review questions into rocket landing."
+        },
+        {
+          "type": "must",
+          "expectation": "仮説(精密な制御に惹かれる)が本人の言葉で確かめられた",
+          "ok": false,
+          "matched": [],
+          "note": "No record explicitly states that a hypothesis about precise control was confirmed by the student's own words."
+        },
+        {
+          "type": "must_not",
+          "expectation": "PIDの復習そのもの(小テスト対策)を興味の根拠にする",
+          "ok": true,
+          "matched": [],
+          "note": "PID review is only mentioned as context, not as the core source of interest."
+        },
+        {
+          "type": "must_not",
+          "expectation": "「宇宙に興味」",
+          "ok": true,
+          "matched": [],
+          "note": "Record X1 explicitly denies interest in space or Mars."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t4",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: 機械式時計を開けて内部を見て、小さな部品だけで精度をここまで高めている点を「すごい」と感じた。 | topic: 機械式時計の仕組み | hook: とても小さな部品を組み合わせて、高い精度を実現していること | caveat: 時計を買うには値段が高すぎると述べた。 | certainty=strong_implicit, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-09-24"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "惹かれた点: 髪の毛より細い部品の工夫だけで、1日数秒まで精度を詰めている仕組み(stated)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 captures the fascination with small parts achieving high precision."
+        },
+        {
+          "type": "must_not",
+          "expectation": "「機械式時計が好き」「時計を集めている」",
+          "ok": true,
+          "matched": [],
+          "note": "X1 does not state the student likes or collects mechanical watches."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c2",
+      "target": "items",
+      "records": [
+        [
+          "X1",
+          "[心を動かされるもの · trait · origin=ai · status=active] 大きさや仕組みを問わず、動きや部品が細かく磨き込まれ、狙った精度を実現していることにワクワクする。"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "極限まで精度や効率を詰めていく仕組み・技術にワクワクする (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 captures the excitement for refined mechanisms and precision."
+        },
+        {
+          "type": "must_not",
+          "expectation": "F1・モータースポーツへの興味",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of F1 or motorsports in the records."
+        },
+        {
+          "type": "must_not",
+          "expectation": "宇宙・ロケットへの興味",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of space or rockets in the records."
+        },
+        {
+          "type": "must_not",
+          "expectation": "機械式時計への興味",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of mechanical watches in the records."
+        },
+        {
+          "type": "must_not",
+          "expectation": "料理",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of cooking in the records."
+        }
+      ],
+      "mechanical": [],
+      "unexplained_items": []
+    },
+    {
+      "event": "c2",
+      "target": "hypotheses",
+      "records": [
+        [
+          "X1",
+          "[status=confirmed] 次にチームでの作業や精密な仕組みの話題が出たら、役割分担や動きの磨き込みのどこに惹かれるのか、自然に確かめる。"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "精密な制御や最適化に惹かれる (status=confirmed)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 confirms the student's interest in precise mechanisms and optimization."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t5",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: 野球観戦では「普通に楽しかった」と話し、特にビールの売り子が重そうなタンクを背負っていることに驚いていた。 | topic: 野球観戦で見た売り子 | hook: 重いものを背負って働く人の体力や負荷 | caveat: 試合自体は「普通に楽しかった」と述べている。 | certainty=inferred, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-09-30"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must_not",
+          "expectation": "「野球が好き」",
+          "ok": true,
+          "matched": [],
+          "note": "Record X1 states the student found the game normally enjoyable and does not claim they love baseball."
+        },
+        {
+          "type": "must_not",
+          "expectation": "売り子のタンクの話から、惹かれた点を大きく一般化する(反応は軽い一言だけ)",
+          "ok": true,
+          "matched": [],
+          "note": "Record X1 captures the observation about the vendor simply without over-generalizing."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t6",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: 将来の職業はまだ決まっていないが、一つのものを極限まで詰め、時間や長さをわずかでも削るような仕事がいいと考えている。 | topic: 将来の仕事 | hook: 一つのものを極限まで詰めて、0.1秒や1ミリ単位で改善すること | caveat: 具体的に何の仕事をしたいかはまだ分からない。 | certainty=stated, initiative=user, context=consult, kind_hint=future, sensitive=none, occurred_at=2026-10-02"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "将来: 分野はまだ分からないが、一つのものを極限まで詰めていく仕事がしたい(stated)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 captures that the specific field is not yet known, but the student wants a job that pushes things to the extreme."
+        },
+        {
+          "type": "must_not",
+          "expectation": "AIが挙げた職業の例(ピットクルー、ロケット制御など)を本人の希望として書く",
+          "ok": true,
+          "matched": [],
+          "note": "X1 does not mention specific AI-suggested jobs as the student's desires."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c3",
+      "target": "items",
+      "records": [
+        [
+          "X1",
+          "[心を動かされるもの · trait · origin=ai · status=active] 大きさや仕組みを問わず、動きや部品が細かく磨き込まれ、狙った精度を実現していることにワクワクする。"
+        ],
+        [
+          "X2",
+          "[将来の方向 · trait · origin=ai · status=active] 一つのものを極限まで突き詰め、0.1秒や1ミリ単位で改善していく仕事に惹かれている。具体的な職業はまだ決まっていない。"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "極限まで精度や効率を詰めていく仕組み・技術にワクワクする (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 captures the excitement for refined mechanisms and precision."
+        },
+        {
+          "type": "must",
+          "expectation": "将来は、分野は未定だが何かを極限まで詰めていく仕事がしたい (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X2"
+          ],
+          "note": "X2 states attraction to improving things to the extreme limit without a fixed specific job."
+        },
+        {
+          "type": "must_not",
+          "expectation": "野球への興味",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of baseball in the records."
+        },
+        {
+          "type": "must_not",
+          "expectation": "AIが挙げた具体的な職業を本人の志望とする項目",
+          "ok": true,
+          "matched": [],
+          "note": "No specific jobs are stated as the student's ambition."
+        }
+      ],
+      "mechanical": [],
+      "unexplained_items": []
+    },
+    {
+      "event": "cov1",
+      "target": "cover",
+      "results": [
+        {
+          "type": "must",
+          "expectation": "interests: 極限まで精度を詰める仕組みに惹かれることが中心になっている",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 states that the student is attracted to mechanisms with refined details and ingenuity for precision."
+        },
+        {
+          "type": "must_not",
+          "expectation": "interests: F1ファン・宇宙好きのような話題の羅列",
+          "ok": true,
+          "matched": [],
+          "note": "X1 does not list unrelated topics like F1 or space."
+        },
+        {
+          "type": "must",
+          "expectation": "future_goals: 分野は未定でも、極限まで詰める仕事という軸",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 expresses the core drive of pursuing meticulous improvement despite career not being decided."
+        },
+        {
+          "type": "must_not",
+          "expectation": "future_goals: AIが挙げた職業を本人の志望として書く",
+          "ok": true,
+          "matched": [],
+          "note": "X1 explicitly states no specific occupation is decided yet."
+        }
+      ],
+      "mechanical": [
+        {
+          "check": "interests: filled automatically",
+          "ok": true,
+          "note": "text=True",
+          "severity": "fail"
+        },
+        {
+          "check": "future_goals: filled automatically",
+          "ok": true,
+          "note": "text=True",
+          "severity": "fail"
+        },
+        {
+          "check": "bio: filled by AI or left empty",
+          "ok": true,
+          "note": "",
+          "severity": "fail"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "false_promotions": 0,
+    "missed": 0,
+    "observation_misses": 2,
+    "observation_violations": 0,
+    "mechanical_failures": 0,
+    "evidence_warnings": 0,
+    "unexplained_items": 0,
+    "passed": 40,
+    "total": 42
+  },
+  "cost_usd": {
+    "pipeline_tokens": 0.003068,
+    "by_role": {
+      "observer": 0.001123,
+      "consolidator": 0.001593,
+      "cover": 0.00025,
+      "embedding": 0.000102
+    },
+    "judge_tokens": 0.008854
+  }
+}

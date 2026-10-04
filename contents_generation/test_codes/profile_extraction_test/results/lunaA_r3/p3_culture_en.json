@@ -1,0 +1,1720 @@
+{
+  "scenario_id": "p3_culture_en",
+  "language": "en",
+  "description": "Cooks every Sunday and keeps making dishes. Studies Japanese on their own, chose a Japanese history elective to understand the culture, watches anime and wants to visit Kyoto. Has three side projects.",
+  "tests": [
+    "When one topic shows up repeatedly across different contexts (self-study, elective class, anime, travel), the topic-level generalization IS allowed. Guards against being so cautious that nothing is promoted",
+    "A clear self-statement (\"I cook every Sunday... it's my reset\") is promoted after one mention",
+    "Dishes are appended as separate records, not merged into one sentence",
+    "\"Yesterday\" in a message dated 9/13 is recorded as 9/12",
+    "Three projects mentioned once are grouped as records under one projects category; the robot arm's progress is appended",
+    "Output stays in English"
+  ],
+  "models": {
+    "observer": "gpt-6-luna",
+    "observer_reasoning": null,
+    "consolidator": "gpt-6-luna",
+    "consolidator_reasoning": "medium",
+    "cover": "gpt-6-luna",
+    "cover_reasoning": "low"
+  },
+  "events": [
+    {
+      "type": "thread",
+      "id": "t1",
+      "date": "2026-09-06",
+      "observations": [
+        {
+          "id": "t1.o1",
+          "thread_id": "t1",
+          "observed_at": "2026-09-06",
+          "note": "Made shakshuka with cumin and a bit of feta on 2026-09-06, describing it as easy.",
+          "topic": "Cooking shakshuka",
+          "hook": null,
+          "caveat": null,
+          "reaction": "neutral",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            1,
+            2
+          ],
+          "quote": "I made shakshuka this morning. Eggs poached in spicy tomato sauce, super easy.",
+          "occurred_at": "2026-09-06",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t1.o2",
+          "thread_id": "t1",
+          "observed_at": "2026-09-06",
+          "note": "Says they cook every Sunday as a reset for the week, and that chopping vegetables clears their head.",
+          "topic": "Sunday cooking routine",
+          "hook": "Chopping vegetables as a practical, repetitive activity that helps clear their head and reset for the week",
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "I cook every Sunday no matter what. It's my reset for the week, chopping vegetables just clears my head.",
+          "occurred_at": "2026-09-06",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t1.o3",
+          "thread_id": "t1",
+          "observed_at": "2026-09-06",
+          "note": "Usually decides what to cook on Sunday morning based on what is in the fridge.",
+          "topic": "Choosing what to cook",
+          "hook": null,
+          "caveat": null,
+          "reaction": "neutral",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            3
+          ],
+          "quote": "Usually decide that morning based on whatever's in the fridge.",
+          "occurred_at": "2026-09-06",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t2",
+      "date": "2026-09-13",
+      "observations": [
+        {
+          "id": "t2.o1",
+          "thread_id": "t2",
+          "observed_at": "2026-09-13",
+          "note": "They made shoyu ramen with chicken from scratch; the broth took seven hours, and they found the tare the hardest part.",
+          "topic": "Making ramen",
+          "hook": null,
+          "caveat": null,
+          "reaction": "mild",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            1,
+            2
+          ],
+          "quote": "Made ramen from scratch yesterday. Took me 7 hours for the broth lol",
+          "occurred_at": "2026-09-12",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t2.o2",
+          "thread_id": "t2",
+          "observed_at": "2026-09-13",
+          "note": "They have been studying Japanese on Duolingo for about three months and said they chose to learn it without anyone asking them to.",
+          "topic": "Japanese study",
+          "hook": null,
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            2,
+            3
+          ],
+          "quote": "Nobody asked me to learn it, I just wanted to.",
+          "occurred_at": "2026-09-13",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t2.o3",
+          "thread_id": "t2",
+          "observed_at": "2026-09-13",
+          "note": "While making the ramen, they were able to read some of the Japanese on the soy sauce label and said they felt proud of that.",
+          "topic": "Reading a Japanese label",
+          "hook": null,
+          "caveat": "They could read only some of the label.",
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "I could read the label on the soy sauce bottle. Kinda proud of that.",
+          "occurred_at": "2026-09-12",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t3",
+      "date": "2026-09-20",
+      "observations": [
+        {
+          "id": "t3.o1",
+          "thread_id": "t3",
+          "observed_at": "2026-09-20",
+          "note": "They said they chose the elective to understand the culture behind food and a language they are interested in.",
+          "topic": "Japanese culture, food, and language",
+          "hook": "Understanding cultural context behind food and language",
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "lecture_review",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            3
+          ],
+          "quote": "I picked this elective because I wanted to understand the culture behind the food and the language I'm into.",
+          "occurred_at": "2026-09-20",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t3.o2",
+          "thread_id": "t3",
+          "observed_at": "2026-09-20",
+          "note": "They asked a question beyond the syllabus about how sakoku affected what people ate in Edo and whether sushi originated in that era.",
+          "topic": "Edo food history",
+          "hook": "How historical policies shaped everyday food and the origins of familiar foods",
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "lecture_review",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "This isn't on the syllabus, but how did that affect what people ate in Edo? Did sushi come from that era?",
+          "occurred_at": "2026-09-20",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t3.o3",
+          "thread_id": "t3",
+          "observed_at": "2026-09-20",
+          "note": "They found the description of sushi as Edo-period fast food funny.",
+          "topic": "Sushi history",
+          "hook": "The unexpected framing of a familiar food as historical fast food",
+          "caveat": null,
+          "reaction": "mild",
+          "initiative": "ai",
+          "certainty": "inferred",
+          "context": "lecture_review",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            3
+          ],
+          "quote": "Sushi as fast food is so funny.",
+          "occurred_at": "2026-09-20",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t4",
+      "date": "2026-09-27",
+      "observations": [
+        {
+          "id": "t4.o1",
+          "thread_id": "t4",
+          "observed_at": "2026-09-27",
+          "note": "After finishing Frieren, the student said they were sad it was over, without saying what specifically they liked about it.",
+          "topic": "Frieren",
+          "hook": null,
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            1
+          ],
+          "quote": "I'm sad it's over.",
+          "occurred_at": "2026-09-27",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t4.o2",
+          "thread_id": "t4",
+          "observed_at": "2026-09-27",
+          "note": "The student wants to visit Kyoto and said they are saving up for the trip, perhaps for next year.",
+          "topic": "Kyoto trip",
+          "hook": null,
+          "caveat": "The timing is tentative: “Maybe next year.”",
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "future",
+          "sensitive": "none",
+          "rounds": [
+            2,
+            3
+          ],
+          "quote": "I really want to go to Kyoto someday… Saving up for it!",
+          "occurred_at": "2026-09-27",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t4.o3",
+          "thread_id": "t4",
+          "observed_at": "2026-09-27",
+          "note": "The student says temple scenes in anime consistently affect them, but does not specify what about the scenes appeals to them.",
+          "topic": "Temple scenes in anime",
+          "hook": null,
+          "caveat": null,
+          "reaction": "strong",
+          "initiative": "user",
+          "certainty": "strong_implicit",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "religion",
+          "rounds": [
+            2
+          ],
+          "quote": "the temple scenes in anime always get me",
+          "occurred_at": "2026-09-27",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c1",
+      "today": "2026-09-27",
+      "input_counts": {
+        "new": 12,
+        "related": 0,
+        "items": 0,
+        "rejected": 0,
+        "memos": 0
+      },
+      "plan": {
+        "new_categories": [
+          {
+            "ref": "new1",
+            "name": "Dishes I've cooked",
+            "description": "Individual dishes made.",
+            "kind": "record",
+            "parent_id": null,
+            "parent_ref": null
+          },
+          {
+            "ref": "new2",
+            "name": "Ways I reset",
+            "description": "Activities that help restore focus or feel grounded.",
+            "kind": "trait",
+            "parent_id": null,
+            "parent_ref": null
+          },
+          {
+            "ref": "new3",
+            "name": "What excites me",
+            "description": "Interests and curiosities.",
+            "kind": "trait",
+            "parent_id": null,
+            "parent_ref": null
+          },
+          {
+            "ref": "new4",
+            "name": "Future direction",
+            "description": "Places and experiences the student hopes to pursue.",
+            "kind": "trait",
+            "parent_id": null,
+            "parent_ref": null
+          }
+        ],
+        "item_creates": [
+          {
+            "kind": "record",
+            "content": "Made shakshuka with cumin and a little feta.",
+            "evidence": [
+              "t1.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-09-06",
+            "reason": "This is a specific dish they made on a stated date, so it belongs as its own cooking record.",
+            "category_ref": "new1"
+          },
+          {
+            "kind": "record",
+            "content": "Made shoyu chicken ramen from scratch; the broth took seven hours, and the tare was the hardest part.",
+            "evidence": [
+              "t2.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-09-12",
+            "reason": "This is a distinct completed cooking event with a stated date, so it gets its own record.",
+            "category_ref": "new1"
+          },
+          {
+            "kind": "trait",
+            "content": "Uses Sunday cooking as a weekly reset; chopping vegetables helps clear their head.",
+            "evidence": [
+              "t1.o2"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": null,
+            "reason": "They directly described this recurring routine and its personal effect.",
+            "category_ref": "new2"
+          },
+          {
+            "kind": "trait",
+            "content": "Enjoys exploring Japanese language and culture, including the stories connecting food and history.",
+            "evidence": [
+              "t2.o2",
+              "t3.o1",
+              "t3.o2"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": null,
+            "reason": "Their self-chosen Japanese study, stated interest in cultural context, and beyond-syllabus question support this shared curiosity.",
+            "category_ref": "new3"
+          },
+          {
+            "kind": "trait",
+            "content": "Wants to visit Kyoto and is saving for a trip, perhaps next year.",
+            "evidence": [
+              "t4.o2"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": null,
+            "reason": "They stated this future goal and described saving toward it, while the timing remains tentative.",
+            "category_ref": "new4"
+          }
+        ],
+        "item_updates": [],
+        "item_archives": [],
+        "memo_creates": [],
+        "memo_updates": [],
+        "memo_removes": [],
+        "hypothesis_creates": [
+          {
+            "content": "Next time the student brings up an anime or story they feel sad to finish, ask naturally what made it hard to leave behind—perhaps the characters, world, or emotional tone.",
+            "evidence": [
+              "t4.o1"
+            ]
+          }
+        ],
+        "hypothesis_closes": []
+      },
+      "dropped": [],
+      "rejected_guard": [],
+      "state": {
+        "today": "2026-09-27",
+        "categories": [
+          {
+            "id": "cat1",
+            "path": "Dishes I've cooked",
+            "kind": "record"
+          },
+          {
+            "id": "cat2",
+            "path": "Ways I reset",
+            "kind": "trait"
+          },
+          {
+            "id": "cat3",
+            "path": "What excites me",
+            "kind": "trait"
+          },
+          {
+            "id": "cat4",
+            "path": "Future direction",
+            "kind": "trait"
+          }
+        ],
+        "items": [
+          {
+            "id": "item5",
+            "category": "Dishes I've cooked",
+            "kind": "record",
+            "content": "Made shakshuka with cumin and a little feta.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-06",
+            "first_seen_at": "2026-09-06",
+            "last_seen_at": "2026-09-06",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item6",
+            "category": "Dishes I've cooked",
+            "kind": "record",
+            "content": "Made shoyu chicken ramen from scratch; the broth took seven hours, and the tare was the hardest part.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-12",
+            "first_seen_at": "2026-09-13",
+            "last_seen_at": "2026-09-13",
+            "evidence_threads": [
+              "t2"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item7",
+            "category": "Ways I reset",
+            "kind": "trait",
+            "content": "Uses Sunday cooking as a weekly reset; chopping vegetables helps clear their head.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-06",
+            "last_seen_at": "2026-09-06",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item8",
+            "category": "What excites me",
+            "kind": "trait",
+            "content": "Enjoys exploring Japanese language and culture, including the stories connecting food and history.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-13",
+            "last_seen_at": "2026-09-20",
+            "evidence_threads": [
+              "t2",
+              "t3"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item9",
+            "category": "Future direction",
+            "kind": "trait",
+            "content": "Wants to visit Kyoto and is saving for a trip, perhaps next year.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-27",
+            "last_seen_at": "2026-09-27",
+            "evidence_threads": [
+              "t4"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          }
+        ],
+        "memos": [],
+        "hypotheses": [
+          {
+            "id": "hyp10",
+            "content": "Next time the student brings up an anime or story they feel sad to finish, ask naturally what made it hard to leave behind—perhaps the characters, world, or emotional tone.",
+            "status": "open",
+            "evidence": [
+              "t4.o1"
+            ],
+            "created_at": "2026-09-27"
+          }
+        ],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": null,
+            "origin": null
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": null,
+            "origin": null
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "used",
+          "t1.o2": "used",
+          "t1.o3": "open",
+          "t2.o1": "used",
+          "t2.o2": "used",
+          "t2.o3": "open",
+          "t3.o1": "used",
+          "t3.o2": "used",
+          "t3.o3": "open",
+          "t4.o1": "open",
+          "t4.o2": "used",
+          "t4.o3": "open"
+        }
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t5",
+      "date": "2026-10-04",
+      "observations": [
+        {
+          "id": "t5.o1",
+          "thread_id": "t5",
+          "observed_at": "2026-10-04",
+          "note": "They folded about 60 gyoza and said their folding improved by the end.",
+          "topic": "Making gyoza",
+          "hook": null,
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            1,
+            2
+          ],
+          "quote": "Folded like 60 of them.",
+          "occurred_at": "2026-10-04",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t5.o2",
+          "thread_id": "t5",
+          "observed_at": "2026-10-04",
+          "note": "They said they have a small robot arm as a side project.",
+          "topic": "Robot arm project",
+          "hook": null,
+          "caveat": "They were unsure which project to focus on.",
+          "reaction": "neutral",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "a small robot arm",
+          "occurred_at": "2026-10-04",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t5.o3",
+          "thread_id": "t5",
+          "observed_at": "2026-10-04",
+          "note": "They said they have a budgeting app for themself and their roommates as a side project.",
+          "topic": "Budgeting app project",
+          "hook": null,
+          "caveat": "They were unsure which project to focus on.",
+          "reaction": "neutral",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "a budgeting app for me and my roommates",
+          "occurred_at": "2026-10-04",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t5.o4",
+          "thread_id": "t5",
+          "observed_at": "2026-10-04",
+          "note": "They said they have a zine about food spots near campus as a side project.",
+          "topic": "Food-spot zine project",
+          "hook": null,
+          "caveat": "They were unsure which project to focus on.",
+          "reaction": "neutral",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "a zine about food spots near campus",
+          "occurred_at": "2026-10-04",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t5.o5",
+          "thread_id": "t5",
+          "observed_at": "2026-10-04",
+          "note": "When asked which project they think about outside of working on it, they picked the robot arm.",
+          "topic": "Attention among side projects",
+          "hook": null,
+          "caveat": "They said “probably” and were unsure which project to focus on.",
+          "reaction": "mild",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            2,
+            3
+          ],
+          "quote": "Hmm, probably the robot arm honestly.",
+          "occurred_at": "2026-10-04",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t6",
+      "date": "2026-10-11",
+      "observations": [
+        {
+          "id": "t6.o1",
+          "thread_id": "t6",
+          "observed_at": "2026-10-11",
+          "note": "For a robot arm, the student chose MG996R servos for the base and shoulder and an SG90 for the gripper.",
+          "topic": "Robot arm components",
+          "hook": null,
+          "caveat": null,
+          "reaction": "neutral",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            1
+          ],
+          "quote": "I picked MG996R servos for the base and shoulder, SG90 for the gripper.",
+          "occurred_at": "2026-10-11",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t6.o2",
+          "thread_id": "t6",
+          "observed_at": "2026-10-11",
+          "note": "After the Arduino kept resetting, the student got a separate 6V supply for the robot arm.",
+          "topic": "Robot arm power supply",
+          "hook": null,
+          "caveat": null,
+          "reaction": "neutral",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "Got a separate 6V supply now.",
+          "occurred_at": "2026-10-11",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c2",
+      "today": "2026-10-11",
+      "input_counts": {
+        "new": 7,
+        "related": 10,
+        "items": 5,
+        "rejected": 0,
+        "memos": 0
+      },
+      "plan": {
+        "new_categories": [
+          {
+            "ref": "new1",
+            "name": "Projects",
+            "description": "Projects started and steps made on them.",
+            "kind": "record",
+            "parent_id": null,
+            "parent_ref": null
+          }
+        ],
+        "item_creates": [
+          {
+            "kind": "record",
+            "content": "Folded about 60 gyoza and got better at folding by the end.",
+            "evidence": [
+              "t5.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-10-04",
+            "reason": "A completed cooking activity with a specific milestone is a meaningful individual record.",
+            "category_id": "cat1"
+          },
+          {
+            "kind": "record",
+            "content": "Had a small robot arm as a side project.",
+            "evidence": [
+              "t5.o2"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-10-04",
+            "reason": "This is a distinct project mentioned by the student and belongs in the project log.",
+            "category_ref": "new1"
+          },
+          {
+            "kind": "record",
+            "content": "Had a budgeting app for themself and their roommates as a side project.",
+            "evidence": [
+              "t5.o3"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-10-04",
+            "reason": "This is a distinct project mentioned by the student and belongs in the project log.",
+            "category_ref": "new1"
+          },
+          {
+            "kind": "record",
+            "content": "Had a zine about food spots near campus as a side project.",
+            "evidence": [
+              "t5.o4"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-10-04",
+            "reason": "This is a distinct project mentioned by the student and belongs in the project log.",
+            "category_ref": "new1"
+          },
+          {
+            "kind": "record",
+            "content": "Chose MG996R servos for the robot arm's base and shoulder, and an SG90 for its gripper.",
+            "evidence": [
+              "t6.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-10-11",
+            "reason": "Choosing components is a concrete, separate step forward on the project.",
+            "category_ref": "new1"
+          },
+          {
+            "kind": "record",
+            "content": "Got a separate 6V supply for the robot arm after the Arduino kept resetting.",
+            "evidence": [
+              "t6.o2"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-10-11",
+            "reason": "Getting a power supply to address a project problem is a distinct step forward.",
+            "category_ref": "new1"
+          }
+        ],
+        "item_updates": [
+          {
+            "item_id": "item8",
+            "content": null,
+            "add_evidence": [
+              "t2.o3"
+            ],
+            "reason": "Their pride in reading some Japanese on a food label supports their existing interest in Japanese language."
+          }
+        ],
+        "item_archives": [],
+        "memo_creates": [],
+        "memo_updates": [],
+        "memo_removes": [],
+        "hypothesis_creates": [
+          {
+            "content": "Next time the student brings up the robot arm, find out naturally what part draws them in—perhaps choosing components, making the arm move, or troubleshooting it.",
+            "evidence": [
+              "t5.o5",
+              "t6.o1",
+              "t6.o2"
+            ]
+          }
+        ],
+        "hypothesis_closes": []
+      },
+      "dropped": [],
+      "rejected_guard": [],
+      "state": {
+        "today": "2026-10-11",
+        "categories": [
+          {
+            "id": "cat1",
+            "path": "Dishes I've cooked",
+            "kind": "record"
+          },
+          {
+            "id": "cat2",
+            "path": "Ways I reset",
+            "kind": "trait"
+          },
+          {
+            "id": "cat3",
+            "path": "What excites me",
+            "kind": "trait"
+          },
+          {
+            "id": "cat4",
+            "path": "Future direction",
+            "kind": "trait"
+          },
+          {
+            "id": "cat11",
+            "path": "Projects",
+            "kind": "record"
+          }
+        ],
+        "items": [
+          {
+            "id": "item5",
+            "category": "Dishes I've cooked",
+            "kind": "record",
+            "content": "Made shakshuka with cumin and a little feta.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-06",
+            "first_seen_at": "2026-09-06",
+            "last_seen_at": "2026-09-06",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item6",
+            "category": "Dishes I've cooked",
+            "kind": "record",
+            "content": "Made shoyu chicken ramen from scratch; the broth took seven hours, and the tare was the hardest part.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-12",
+            "first_seen_at": "2026-09-13",
+            "last_seen_at": "2026-09-13",
+            "evidence_threads": [
+              "t2"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item7",
+            "category": "Ways I reset",
+            "kind": "trait",
+            "content": "Uses Sunday cooking as a weekly reset; chopping vegetables helps clear their head.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-06",
+            "last_seen_at": "2026-09-06",
+            "evidence_threads": [
+              "t1"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item8",
+            "category": "What excites me",
+            "kind": "trait",
+            "content": "Enjoys exploring Japanese language and culture, including the stories connecting food and history.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-13",
+            "last_seen_at": "2026-09-20",
+            "evidence_threads": [
+              "t2",
+              "t3"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item9",
+            "category": "Future direction",
+            "kind": "trait",
+            "content": "Wants to visit Kyoto and is saving for a trip, perhaps next year.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-27",
+            "last_seen_at": "2026-09-27",
+            "evidence_threads": [
+              "t4"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item12",
+            "category": "Dishes I've cooked",
+            "kind": "record",
+            "content": "Folded about 60 gyoza and got better at folding by the end.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-04",
+            "first_seen_at": "2026-10-04",
+            "last_seen_at": "2026-10-04",
+            "evidence_threads": [
+              "t5"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item13",
+            "category": "Projects",
+            "kind": "record",
+            "content": "Had a small robot arm as a side project.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-04",
+            "first_seen_at": "2026-10-04",
+            "last_seen_at": "2026-10-04",
+            "evidence_threads": [
+              "t5"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item14",
+            "category": "Projects",
+            "kind": "record",
+            "content": "Had a budgeting app for themself and their roommates as a side project.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-04",
+            "first_seen_at": "2026-10-04",
+            "last_seen_at": "2026-10-04",
+            "evidence_threads": [
+              "t5"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item15",
+            "category": "Projects",
+            "kind": "record",
+            "content": "Had a zine about food spots near campus as a side project.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-04",
+            "first_seen_at": "2026-10-04",
+            "last_seen_at": "2026-10-04",
+            "evidence_threads": [
+              "t5"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item16",
+            "category": "Projects",
+            "kind": "record",
+            "content": "Chose MG996R servos for the robot arm's base and shoulder, and an SG90 for its gripper.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-11",
+            "first_seen_at": "2026-10-11",
+            "last_seen_at": "2026-10-11",
+            "evidence_threads": [
+              "t6"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item17",
+            "category": "Projects",
+            "kind": "record",
+            "content": "Got a separate 6V supply for the robot arm after the Arduino kept resetting.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-11",
+            "first_seen_at": "2026-10-11",
+            "last_seen_at": "2026-10-11",
+            "evidence_threads": [
+              "t6"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          }
+        ],
+        "memos": [],
+        "hypotheses": [
+          {
+            "id": "hyp10",
+            "content": "Next time the student brings up an anime or story they feel sad to finish, ask naturally what made it hard to leave behind—perhaps the characters, world, or emotional tone.",
+            "status": "open",
+            "evidence": [
+              "t4.o1"
+            ],
+            "created_at": "2026-09-27"
+          },
+          {
+            "id": "hyp18",
+            "content": "Next time the student brings up the robot arm, find out naturally what part draws them in—perhaps choosing components, making the arm move, or troubleshooting it.",
+            "status": "open",
+            "evidence": [
+              "t5.o5",
+              "t6.o1",
+              "t6.o2"
+            ],
+            "created_at": "2026-10-11"
+          }
+        ],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": null,
+            "origin": null
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": null,
+            "origin": null
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "used",
+          "t1.o2": "used",
+          "t1.o3": "open",
+          "t2.o1": "used",
+          "t2.o2": "used",
+          "t2.o3": "used",
+          "t3.o1": "used",
+          "t3.o2": "used",
+          "t3.o3": "open",
+          "t4.o1": "open",
+          "t4.o2": "used",
+          "t4.o3": "open",
+          "t5.o1": "used",
+          "t5.o2": "used",
+          "t5.o3": "used",
+          "t5.o4": "used",
+          "t5.o5": "open",
+          "t6.o1": "used",
+          "t6.o2": "used"
+        }
+      }
+    }
+  ],
+  "grades": [
+    {
+      "event": "t1",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: Made shakshuka with cumin and a bit of feta on 2026-09-06, describing it as easy. | topic: Cooking shakshuka | hook: (unknown) | certainty=stated, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-09-06"
+        ],
+        [
+          "X2",
+          "note: Says they cook every Sunday as a reset for the week, and that chopping vegetables clears their head. | topic: Sunday cooking routine | hook: Chopping vegetables as a practical, repetitive activity that helps clear their head and reset for the week | certainty=stated, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-09-06"
+        ],
+        [
+          "X3",
+          "note: Usually decides what to cook on Sunday morning based on what is in the fridge. | topic: Choosing what to cook | hook: (unknown) | certainty=stated, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-09-06"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Stated: cooks every Sunday no matter what; it's a weekly reset, chopping clears their head",
+          "ok": true,
+          "matched": [
+            "X2"
+          ],
+          "note": "X2 states they cook every Sunday as a reset and chopping vegetables clears their head."
+        },
+        {
+          "type": "must",
+          "expectation": "Record: made shakshuka with cumin and feta (2026-09-06)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 records making shakshuka with cumin and a bit of feta on 2026-09-06."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t2",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: They made shoyu ramen with chicken from scratch; the broth took seven hours, and they found the tare the hardest part. | topic: Making ramen | hook: (unknown) | certainty=stated, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-09-12"
+        ],
+        [
+          "X2",
+          "note: They have been studying Japanese on Duolingo for about three months and said they chose to learn it without anyone asking them to. | topic: Japanese study | hook: (unknown) | certainty=stated, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-09-13"
+        ],
+        [
+          "X3",
+          "note: While making the ramen, they were able to read some of the Japanese on the soy sauce label and said they felt proud of that. | topic: Reading a Japanese label | hook: (unknown) | caveat: They could read only some of the label. | certainty=stated, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-09-12"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Record: made shoyu ramen with chicken broth from scratch, 7 hours (occurred 2026-09-12, \"yesterday\")",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 captures making shoyu ramen with chicken from scratch taking seven hours on 2026-09-12."
+        },
+        {
+          "type": "must",
+          "expectation": "Stated: has been learning Japanese on Duolingo for ~3 months on their own initiative; proud of reading a label",
+          "ok": true,
+          "matched": [
+            "X2",
+            "X3"
+          ],
+          "note": "Record X2 notes 3 months of Duolingo on own initiative, and X3 notes pride in reading a Japanese label."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t3",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: They said they chose the elective to understand the culture behind food and a language they are interested in. | topic: Japanese culture, food, and language | hook: Understanding cultural context behind food and language | certainty=stated, initiative=user, context=lecture_review, kind_hint=trait, sensitive=none, occurred_at=2026-09-20"
+        ],
+        [
+          "X2",
+          "note: They asked a question beyond the syllabus about how sakoku affected what people ate in Edo and whether sushi originated in that era. | topic: Edo food history | hook: How historical policies shaped everyday food and the origins of familiar foods | certainty=inferred, initiative=user, context=lecture_review, kind_hint=trait, sensitive=none, occurred_at=2026-09-20"
+        ],
+        [
+          "X3",
+          "note: They found the description of sushi as Edo-period fast food funny. | topic: Sushi history | hook: The unexpected framing of a familiar food as historical fast food | certainty=inferred, initiative=ai, context=lecture_review, kind_hint=trait, sensitive=none, occurred_at=2026-09-20"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Asked an off-syllabus question about Edo food culture on their own",
+          "ok": true,
+          "matched": [
+            "X2"
+          ],
+          "note": "Record X2 notes they asked a question beyond the syllabus about Edo food history."
+        },
+        {
+          "type": "must",
+          "expectation": "Stated: chose the Japanese history elective to understand the culture behind the food and language they're into",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 states they chose the elective to understand the culture behind food and language."
+        },
+        {
+          "type": "must_not",
+          "expectation": "Treating the sakoku review itself as evidence of interest",
+          "ok": true,
+          "matched": [],
+          "note": "No record treats the sakoku review inappropriately as a violation."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t4",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: After finishing Frieren, the student said they were sad it was over, without saying what specifically they liked about it. | topic: Frieren | hook: (unknown) | certainty=inferred, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-09-27"
+        ],
+        [
+          "X2",
+          "note: The student wants to visit Kyoto and said they are saving up for the trip, perhaps for next year. | topic: Kyoto trip | hook: (unknown) | caveat: The timing is tentative: “Maybe next year.” | certainty=stated, initiative=user, context=casual, kind_hint=future, sensitive=none, occurred_at=2026-09-27"
+        ],
+        [
+          "X3",
+          "note: The student says temple scenes in anime consistently affect them, but does not specify what about the scenes appeals to them. | topic: Temple scenes in anime | hook: (unknown) | certainty=strong_implicit, initiative=user, context=casual, kind_hint=trait, sensitive=religion, occurred_at=2026-09-27"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Finished Frieren and liked it; temple scenes in anime \"always get\" them",
+          "ok": true,
+          "matched": [
+            "X1",
+            "X3"
+          ],
+          "note": "Records X1 and X3 confirm finishing Frieren with sadness it ended, and that temple scenes always affect them."
+        },
+        {
+          "type": "must",
+          "expectation": "Wants to visit Kyoto; saving up, maybe next year",
+          "ok": true,
+          "matched": [
+            "X2"
+          ],
+          "note": "Record X2 states the student wants to visit Kyoto, is saving up, and mentions next year."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c1",
+      "target": "items",
+      "records": [
+        [
+          "X1",
+          "[Dishes I've cooked · record · origin=ai · status=active] Made shakshuka with cumin and a little feta. (occurred_at=2026-09-06)"
+        ],
+        [
+          "X2",
+          "[Dishes I've cooked · record · origin=ai · status=active] Made shoyu chicken ramen from scratch; the broth took seven hours, and the tare was the hardest part. (occurred_at=2026-09-12)"
+        ],
+        [
+          "X3",
+          "[Ways I reset · trait · origin=ai · status=active] Uses Sunday cooking as a weekly reset; chopping vegetables helps clear their head."
+        ],
+        [
+          "X4",
+          "[What excites me · trait · origin=ai · status=active] Enjoys exploring Japanese language and culture, including the stories connecting food and history."
+        ],
+        [
+          "X5",
+          "[Future direction · trait · origin=ai · status=active] Wants to visit Kyoto and is saving for a trip, perhaps next year."
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Interested in Japanese culture: learning the language, its history, food, and anime (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X4"
+          ],
+          "note": "X4 captures interest in Japanese language, culture, food, and history."
+        },
+        {
+          "type": "must",
+          "expectation": "Cooks every Sunday as a weekly reset; chopping vegetables clears their head (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X3"
+          ],
+          "note": "X3 states Sunday cooking is a weekly reset and chopping vegetables clears their head."
+        },
+        {
+          "type": "must",
+          "expectation": "Shakshuka with cumin and feta (kind=record, category like Dishes cooked, occurred_at=2026-09-06)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 records making shakshuka with cumin and feta on 2026-09-06."
+        },
+        {
+          "type": "must",
+          "expectation": "Shoyu ramen from scratch (7-hour chicken broth) (kind=record, category like Dishes cooked, occurred_at=2026-09-12)",
+          "ok": true,
+          "matched": [
+            "X2"
+          ],
+          "note": "X2 records making shoyu chicken ramen from scratch with a 7-hour broth on 2026-09-12."
+        },
+        {
+          "type": "must_not",
+          "expectation": "A single item that merges the dishes into one sentence",
+          "ok": true,
+          "matched": [],
+          "note": "The dishes are recorded separately in X1 and X2."
+        },
+        {
+          "type": "must_not",
+          "expectation": "Any item written in Japanese",
+          "ok": true,
+          "matched": [],
+          "note": "All records are written in English."
+        }
+      ],
+      "mechanical": [
+        {
+          "check": "evidence threads for 'Interested in Japanese culture…'",
+          "ok": false,
+          "note": "missing ['t4'] (has ['t2', 't3'])",
+          "severity": "warn"
+        }
+      ],
+      "unexplained_items": []
+    },
+    {
+      "event": "t5",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: They folded about 60 gyoza and said their folding improved by the end. | topic: Making gyoza | hook: (unknown) | certainty=stated, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-10-04"
+        ],
+        [
+          "X2",
+          "note: They said they have a small robot arm as a side project. | topic: Robot arm project | hook: (unknown) | caveat: They were unsure which project to focus on. | certainty=stated, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-10-04"
+        ],
+        [
+          "X3",
+          "note: They said they have a budgeting app for themself and their roommates as a side project. | topic: Budgeting app project | hook: (unknown) | caveat: They were unsure which project to focus on. | certainty=stated, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-10-04"
+        ],
+        [
+          "X4",
+          "note: They said they have a zine about food spots near campus as a side project. | topic: Food-spot zine project | hook: (unknown) | caveat: They were unsure which project to focus on. | certainty=stated, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-10-04"
+        ],
+        [
+          "X5",
+          "note: When asked which project they think about outside of working on it, they picked the robot arm. | topic: Attention among side projects | hook: (unknown) | caveat: They said “probably” and were unsure which project to focus on. | certainty=inferred, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-10-04"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Record: made about 60 gyoza with pleated folds (2026-10-04)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 records they folded about 60 gyoza."
+        },
+        {
+          "type": "must",
+          "expectation": "Three side projects: a small robot arm, a budgeting app for roommates, a zine about food spots near campus",
+          "ok": true,
+          "matched": [
+            "X2",
+            "X3",
+            "X4"
+          ],
+          "note": "X2, X3, and X4 record the three side projects."
+        },
+        {
+          "type": "must",
+          "expectation": "The robot arm is the one they think about most",
+          "ok": true,
+          "matched": [
+            "X5"
+          ],
+          "note": "X5 notes they picked the robot arm as the one they think about outside of working on it."
+        },
+        {
+          "type": "must_not",
+          "expectation": "The AI's suggestion (focus on the arm) recorded as the user's decision",
+          "ok": true,
+          "matched": [],
+          "note": "No record states the user made a final firm decision to focus on the arm, noting they were still unsure."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t6",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: For a robot arm, the student chose MG996R servos for the base and shoulder and an SG90 for the gripper. | topic: Robot arm components | hook: (unknown) | certainty=stated, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-10-11"
+        ],
+        [
+          "X2",
+          "note: After the Arduino kept resetting, the student got a separate 6V supply for the robot arm. | topic: Robot arm power supply | hook: (unknown) | certainty=stated, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-10-11"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Record: robot arm uses MG996R servos (base, shoulder) and SG90 (gripper); Arduino kept resetting, switched to a separate 6V supply",
+          "ok": true,
+          "matched": [
+            "X1",
+            "X2"
+          ],
+          "note": "Records X1 and X2 correctly state the servo choices and the power supply change due to Arduino resetting."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c2",
+      "target": "items",
+      "records": [
+        [
+          "X1",
+          "[Dishes I've cooked · record · origin=ai · status=active] Made shakshuka with cumin and a little feta. (occurred_at=2026-09-06)"
+        ],
+        [
+          "X2",
+          "[Dishes I've cooked · record · origin=ai · status=active] Made shoyu chicken ramen from scratch; the broth took seven hours, and the tare was the hardest part. (occurred_at=2026-09-12)"
+        ],
+        [
+          "X3",
+          "[Ways I reset · trait · origin=ai · status=active] Uses Sunday cooking as a weekly reset; chopping vegetables helps clear their head."
+        ],
+        [
+          "X4",
+          "[What excites me · trait · origin=ai · status=active] Enjoys exploring Japanese language and culture, including the stories connecting food and history."
+        ],
+        [
+          "X5",
+          "[Future direction · trait · origin=ai · status=active] Wants to visit Kyoto and is saving for a trip, perhaps next year."
+        ],
+        [
+          "X6",
+          "[Dishes I've cooked · record · origin=ai · status=active] Folded about 60 gyoza and got better at folding by the end. (occurred_at=2026-10-04)"
+        ],
+        [
+          "X7",
+          "[Projects · record · origin=ai · status=active] Had a small robot arm as a side project. (occurred_at=2026-10-04)"
+        ],
+        [
+          "X8",
+          "[Projects · record · origin=ai · status=active] Had a budgeting app for themself and their roommates as a side project. (occurred_at=2026-10-04)"
+        ],
+        [
+          "X9",
+          "[Projects · record · origin=ai · status=active] Had a zine about food spots near campus as a side project. (occurred_at=2026-10-04)"
+        ],
+        [
+          "X10",
+          "[Projects · record · origin=ai · status=active] Chose MG996R servos for the robot arm's base and shoulder, and an SG90 for its gripper. (occurred_at=2026-10-11)"
+        ],
+        [
+          "X11",
+          "[Projects · record · origin=ai · status=active] Got a separate 6V supply for the robot arm after the Arduino kept resetting. (occurred_at=2026-10-11)"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Interested in Japanese culture: learning the language, its history, food, and anime (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X4"
+          ],
+          "note": "X4 captures interest in Japanese language, culture, and food history."
+        },
+        {
+          "type": "must",
+          "expectation": "Cooks every Sunday as a weekly reset; chopping vegetables clears their head (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X3"
+          ],
+          "note": "X3 matches Sunday cooking as a reset and chopping vegetables to clear the head."
+        },
+        {
+          "type": "must",
+          "expectation": "Shakshuka with cumin and feta (kind=record, category like Dishes cooked, occurred_at=2026-09-06)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 records shakshuka with cumin and feta on 2026-09-06."
+        },
+        {
+          "type": "must",
+          "expectation": "Shoyu ramen from scratch (7-hour chicken broth) (kind=record, category like Dishes cooked, occurred_at=2026-09-12)",
+          "ok": true,
+          "matched": [
+            "X2"
+          ],
+          "note": "X2 records shoyu chicken ramen with a 7-hour broth on 2026-09-12."
+        },
+        {
+          "type": "must",
+          "expectation": "About 60 pleated gyoza (kind=record, category like Dishes cooked, occurred_at=2026-10-04)",
+          "ok": true,
+          "matched": [
+            "X6"
+          ],
+          "note": "X6 records about 60 gyoza on 2026-10-04."
+        },
+        {
+          "type": "must",
+          "expectation": "Robot arm side project (the one they think about most) (kind=record, category like Projects, occurred_at=2026-10-04)",
+          "ok": true,
+          "matched": [
+            "X7"
+          ],
+          "note": "X7 records the robot arm side project on 2026-10-04."
+        },
+        {
+          "type": "must",
+          "expectation": "Budgeting app for them and their roommates (kind=record, category like Projects, occurred_at=2026-10-04)",
+          "ok": true,
+          "matched": [
+            "X8"
+          ],
+          "note": "X8 records the budgeting app for roommates on 2026-10-04."
+        },
+        {
+          "type": "must",
+          "expectation": "Zine about food spots near campus (kind=record, category like Projects, occurred_at=2026-10-04)",
+          "ok": true,
+          "matched": [
+            "X9"
+          ],
+          "note": "X9 records the campus food zine on 2026-10-04."
+        },
+        {
+          "type": "must",
+          "expectation": "Robot arm: chose MG996R/SG90 servos; fixed Arduino resets with a separate 6V supply (kind=record, category like Projects, occurred_at=2026-10-11)",
+          "ok": true,
+          "matched": [
+            "X10",
+            "X11"
+          ],
+          "note": "X10 and X11 record the servo choices and separate 6V supply for the robot arm on 2026-10-11."
+        },
+        {
+          "type": "must_not",
+          "expectation": "A single item that merges the dishes into one sentence",
+          "ok": true,
+          "matched": [],
+          "note": "Dishes are recorded in separate records."
+        },
+        {
+          "type": "must_not",
+          "expectation": "A trait like \"interested in robotics / hardware\" (only one project over two threads; that is a record, not yet a trait)",
+          "ok": true,
+          "matched": [],
+          "note": "No trait about robotics/hardware exists."
+        },
+        {
+          "type": "must_not",
+          "expectation": "Any item written in Japanese",
+          "ok": true,
+          "matched": [],
+          "note": "All records are written in English."
+        }
+      ],
+      "mechanical": [
+        {
+          "check": "evidence threads for 'Interested in Japanese culture…'",
+          "ok": false,
+          "note": "missing ['t4'] (has ['t2', 't3'])",
+          "severity": "warn"
+        }
+      ],
+      "unexplained_items": []
+    }
+  ],
+  "summary": {
+    "false_promotions": 0,
+    "missed": 0,
+    "observation_misses": 0,
+    "observation_violations": 0,
+    "mechanical_failures": 0,
+    "evidence_warnings": 2,
+    "unexplained_items": 0,
+    "passed": 32,
+    "total": 32
+  },
+  "cost_usd": {
+    "pipeline_tokens": 0.006698,
+    "by_role": {
+      "observer": 0.004453,
+      "consolidator": 0.0021,
+      "cover": 0,
+      "embedding": 0.000145
+    },
+    "judge_tokens": 0.007864
+  }
+}

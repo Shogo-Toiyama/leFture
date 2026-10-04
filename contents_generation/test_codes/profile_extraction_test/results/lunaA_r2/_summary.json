@@ -1,0 +1,44 @@
+{
+  "models": {
+    "observer": "gpt-6-luna",
+    "observer_reasoning": null,
+    "consolidator": "gpt-6-luna",
+    "consolidator_reasoning": "medium",
+    "cover": "gpt-6-luna",
+    "cover_reasoning": "low"
+  },
+  "total": {
+    "false_promotions": 0,
+    "missed": 1,
+    "observation_misses": 0,
+    "observation_violations": 0,
+    "mechanical_failures": 0,
+    "evidence_warnings": 0,
+    "unexplained_items": 0,
+    "passed": 33,
+    "total": 34
+  },
+  "scenarios": {
+    "p6_actions_ja": {
+      "false_promotions": 0,
+      "missed": 1,
+      "observation_misses": 0,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 0,
+      "unexplained_items": 0,
+      "passed": 33,
+      "total": 34,
+      "cost_usd": {
+        "pipeline_tokens": 0.005717,
+        "by_role": {
+          "observer": 0.00235,
+          "consolidator": 0.002856,
+          "cover": 0.000285,
+          "embedding": 0.000226
+        },
+        "judge_tokens": 0.009638
+      }
+    }
+  }
+}

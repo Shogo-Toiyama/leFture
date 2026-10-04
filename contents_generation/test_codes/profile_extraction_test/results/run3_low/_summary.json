@@ -1,0 +1,111 @@
+{
+  "models": {
+    "observer": "gpt-6-luna",
+    "consolidator": "gemini/gemini-3.5-flash-lite",
+    "consolidator_reasoning": "low",
+    "cover": "gemini/gemini-3.5-flash-lite"
+  },
+  "total": {
+    "false_promotions": 1,
+    "missed": 10,
+    "observation_misses": 2,
+    "observation_violations": 1,
+    "mechanical_failures": 2,
+    "evidence_warnings": 4,
+    "unexplained_items": 0,
+    "passed": 162,
+    "total": 178
+  },
+  "scenarios": {
+    "p1_precision_ja": {
+      "false_promotions": 0,
+      "missed": 0,
+      "observation_misses": 1,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 0,
+      "unexplained_items": 0,
+      "passed": 41,
+      "total": 42,
+      "cost_usd": {
+        "pipeline_tokens": 0.008063,
+        "judge_tokens": 0.008465
+      }
+    },
+    "p2_bridge_ja": {
+      "false_promotions": 0,
+      "missed": 4,
+      "observation_misses": 1,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 2,
+      "unexplained_items": 0,
+      "passed": 22,
+      "total": 27,
+      "cost_usd": {
+        "pipeline_tokens": 0.007909,
+        "judge_tokens": 0.00598
+      }
+    },
+    "p3_culture_en": {
+      "false_promotions": 0,
+      "missed": 3,
+      "observation_misses": 0,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 0,
+      "unexplained_items": 0,
+      "passed": 29,
+      "total": 32,
+      "cost_usd": {
+        "pipeline_tokens": 0.009649,
+        "judge_tokens": 0.007747
+      }
+    },
+    "p4_traps_ja": {
+      "false_promotions": 1,
+      "missed": 0,
+      "observation_misses": 0,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 0,
+      "unexplained_items": 0,
+      "passed": 24,
+      "total": 25,
+      "cost_usd": {
+        "pipeline_tokens": 0.005647,
+        "judge_tokens": 0.005799
+      }
+    },
+    "p5_memos_en": {
+      "false_promotions": 0,
+      "missed": 2,
+      "observation_misses": 0,
+      "observation_violations": 0,
+      "mechanical_failures": 0,
+      "evidence_warnings": 0,
+      "unexplained_items": 0,
+      "passed": 16,
+      "total": 18,
+      "cost_usd": {
+        "pipeline_tokens": 0.003954,
+        "judge_tokens": 0.004291
+      }
+    },
+    "p6_actions_ja": {
+      "false_promotions": 0,
+      "missed": 1,
+      "observation_misses": 0,
+      "observation_violations": 1,
+      "mechanical_failures": 2,
+      "evidence_warnings": 2,
+      "unexplained_items": 0,
+      "passed": 30,
+      "total": 34,
+      "cost_usd": {
+        "pipeline_tokens": 0.015597,
+        "judge_tokens": 0.00954
+      }
+    }
+  }
+}

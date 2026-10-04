@@ -1,0 +1,1215 @@
+{
+  "scenario_id": "p2_bridge_ja",
+  "language": "ja",
+  "description": "日本史の試験対策で坂本龍馬の仲介に惹かれ(歴史自体は苦手)、文化祭ではクラスの対立の間に入り、サッカーではボランチとしてつなぐ役が好き。文化祭はプロジェクトとして進捗が続く。",
+  "tests": [
+    "義務の勉強(試験対策)の中にある、本人の惹かれた点だけを拾えるか。「歴史に興味」を作らないか",
+    "龍馬・文化祭・ボランチを「間に入ってつなぐ」で束ねられるか",
+    "文化祭の進捗を記録として1件ずつ追記し、まとめてしまわないか",
+    "AIが振った話題(歴史小説)への気のない返事を、興味として扱わないか",
+    "根拠が増えたとき、傾向を新しく作らず同じ項目を書き直せるか"
+  ],
+  "models": {
+    "observer": "gpt-6-luna",
+    "observer_reasoning": null,
+    "consolidator": "gpt-6-luna",
+    "consolidator_reasoning": "high",
+    "cover": "gpt-6-luna",
+    "cover_reasoning": "low"
+  },
+  "events": [
+    {
+      "type": "thread",
+      "id": "t1",
+      "date": "2026-09-08",
+      "observations": [
+        {
+          "id": "t1.o1",
+          "thread_id": "t1",
+          "observed_at": "2026-09-08",
+          "note": "年号を覚えるのが苦手で、歴史はずっと苦手だと述べた。",
+          "topic": "歴史の学習",
+          "hook": null,
+          "caveat": null,
+          "reaction": "mild",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "exam_prep",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "年号ほんと覚えられない。歴史は正直ずっと苦手",
+          "occurred_at": "2026-09-08",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t1.o2",
+          "thread_id": "t1",
+          "observed_at": "2026-09-08",
+          "note": "龍馬が、対立していた二つの藩のどちらの味方でもない立場から間に入り、話をまとめたところが好きだと述べた。双方に得のある形を作ることも「うまい」と評価した。",
+          "topic": "龍馬の仲介",
+          "hook": "対立する双方のどちらにも属さない立場から、双方に利益のある形を作って話をまとめること",
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "strong_implicit",
+          "context": "exam_prep",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            3,
+            4
+          ],
+          "quote": "ちょっと前まで本気で殺し合ってた2つの藩の間に入って、話をまとめちゃうの。どっちの味方でもないのに",
+          "occurred_at": "2026-09-08",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t1.o3",
+          "thread_id": "t1",
+          "observed_at": "2026-09-08",
+          "note": "翌日に日本史の小テストがあると述べた。",
+          "topic": "翌日の小テスト",
+          "hook": null,
+          "caveat": null,
+          "reaction": "neutral",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "exam_prep",
+          "kind_hint": "situation",
+          "sensitive": "none",
+          "rounds": [
+            1
+          ],
+          "quote": "日本史の小テスト明日なんだけど",
+          "occurred_at": "2026-09-08",
+          "ends_at": "2026-09-09",
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t2",
+      "date": "2026-09-15",
+      "observations": [
+        {
+          "id": "t2.o1",
+          "thread_id": "t2",
+          "observed_at": "2026-09-15",
+          "note": "対立の間に入ることは、しんどくても嫌いではないと話した。意見の違う人たちがまとまる瞬間に強い喜びを感じる。",
+          "topic": "対立の調整",
+          "hook": "意見の違う人たちの間に入り、まとまる瞬間をつくること",
+          "caveat": "しんどさも感じる",
+          "reaction": "strong",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "consult",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            3
+          ],
+          "quote": "しんどいけど嫌いじゃないんだよね。最後にまとまった瞬間がめちゃくちゃ嬉しかった",
+          "occurred_at": "2026-09-15",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t2.o2",
+          "thread_id": "t2",
+          "observed_at": "2026-09-15",
+          "note": "中学時代、部活で揉めたときに間に入り、最後にまとまった経験がある。",
+          "topic": "中学時代の部活での対立",
+          "hook": "対立の間に入って、最後にまとまるまで関わること",
+          "caveat": null,
+          "reaction": "strong",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "consult",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            3
+          ],
+          "quote": "中学のときも部活で揉めたとき間に入ってて、最後にまとまった",
+          "occurred_at": "2026-09-15",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t2.o3",
+          "thread_id": "t2",
+          "observed_at": "2026-09-15",
+          "note": "文化祭の実行委員をしており、クラスが演劇派と模擬店派に分かれて、話し合いが難しくLINEの空気も悪い状況だと話した。",
+          "topic": "文化祭のクラス企画をめぐる対立",
+          "hook": null,
+          "caveat": "演劇派と模擬店派のどちらも譲らず、本人はしんどさを感じている",
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "consult",
+          "kind_hint": "situation",
+          "sensitive": "none",
+          "rounds": [
+            1,
+            2
+          ],
+          "quote": "クラスが割れててしんどい",
+          "occurred_at": "2026-09-15",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t2.o4",
+          "thread_id": "t2",
+          "observed_at": "2026-09-15",
+          "note": "文化祭の対立を調整するため、演劇派のリーダーと翌日話すことにした。",
+          "topic": "文化祭の対立調整の進め方",
+          "hook": "まず相手と個別に話して、譲れない点を聞くこと",
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "ai",
+          "certainty": "inferred",
+          "context": "consult",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            4
+          ],
+          "quote": "それやってみる。とりあえず演劇派のリーダーと明日話す",
+          "occurred_at": "2026-09-15",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t3",
+      "date": "2026-09-21",
+      "observations": [
+        {
+          "id": "t3.o1",
+          "thread_id": "t3",
+          "observed_at": "2026-09-21",
+          "note": "ボランチとして攻撃と守備の間でボールをつなぐのが好きで、自分のパスを起点に得点が生まれると、自分で決めるより嬉しい。FWが得点して目立つことも気にしていない。",
+          "topic": "サッカーでの役割",
+          "hook": "自分がつなぎ役となって周りを活かし、チームの得点につなげること",
+          "caveat": "FWの人たちが点を取って目立つことも全然いい。",
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            2,
+            3
+          ],
+          "quote": "点取るより、攻撃と守備の間でボール回してつなぐのが好きなんだよね。自分のパスから点が入ると、自分で決めるよりなんか嬉しい",
+          "occurred_at": "2026-09-21",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t3.o2",
+          "thread_id": "t3",
+          "observed_at": "2026-09-21",
+          "note": "サッカーの試合に出場し、勝った。",
+          "topic": "サッカーの試合",
+          "hook": null,
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            1
+          ],
+          "quote": "今日サッカーの試合だった!勝った",
+          "occurred_at": "2026-09-21",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c1",
+      "today": "2026-09-21",
+      "input_counts": {
+        "new": 9,
+        "related": 0,
+        "items": 0,
+        "rejected": 0,
+        "memos": 0
+      },
+      "plan": {
+        "new_categories": [
+          {
+            "ref": "new1",
+            "name": "心が動くこと",
+            "description": "人や役割をつなぎ、周りが活きることへの関心",
+            "kind": "trait",
+            "parent_id": null,
+            "parent_ref": null
+          },
+          {
+            "ref": "new2",
+            "name": "できごと",
+            "description": "印象に残った経験や出来事",
+            "kind": "record",
+            "parent_id": null,
+            "parent_ref": null
+          }
+        ],
+        "item_creates": [
+          {
+            "kind": "trait",
+            "content": "人や役割の間をつなぎ、周りが活きてチーム全体の成果につながることに喜びを感じる。意見の調整にはしんどさもあるが、まとまった瞬間が嬉しい。",
+            "evidence": [
+              "t1.o2",
+              "t2.o1",
+              "t3.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": null,
+            "reason": "対立をまとめることへの喜びと、サッカーでつなぎ役を好むことが別の場面で本人の言葉から確認できるため。",
+            "category_ref": "new1"
+          },
+          {
+            "kind": "record",
+            "content": "中学時代、部活で意見がぶつかったときに間に入り、最後に話し合いがまとまった。",
+            "evidence": [
+              "t2.o2"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": null,
+            "reason": "本人が語った、まとまりまで関わった具体的な経験として記録する。",
+            "category_ref": "new2"
+          },
+          {
+            "kind": "record",
+            "content": "サッカーの試合に出場し、チームが勝った。",
+            "evidence": [
+              "t3.o2"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-09-21",
+            "reason": "試合への出場と勝利という具体的な出来事が確認できるため。",
+            "category_ref": "new2"
+          }
+        ],
+        "item_updates": [],
+        "item_archives": [],
+        "memo_creates": [
+          {
+            "kind": "answer_style",
+            "content": "歴史など年号暗記が必要な内容は、年号の丸暗記に頼らず、出来事の流れや因果関係を軸に説明する。",
+            "expires_at": null,
+            "evidence": [
+              "t1.o1"
+            ]
+          },
+          {
+            "kind": "situation",
+            "content": "文化祭の実行委員をしており、クラス企画が演劇派と模擬店派に分かれて話し合いが難しく、負担を感じている。急かさず、調整の負担にも配慮する。",
+            "expires_at": "2026-10-31",
+            "evidence": [
+              "t2.o3"
+            ]
+          }
+        ],
+        "memo_updates": [],
+        "memo_removes": [],
+        "hypothesis_creates": [],
+        "hypothesis_closes": []
+      },
+      "dropped": [],
+      "rejected_guard": [],
+      "state": {
+        "today": "2026-09-21",
+        "categories": [
+          {
+            "id": "cat1",
+            "path": "心が動くこと",
+            "kind": "trait"
+          },
+          {
+            "id": "cat2",
+            "path": "できごと",
+            "kind": "record"
+          }
+        ],
+        "items": [
+          {
+            "id": "item3",
+            "category": "心が動くこと",
+            "kind": "trait",
+            "content": "人や役割の間をつなぎ、周りが活きてチーム全体の成果につながることに喜びを感じる。意見の調整にはしんどさもあるが、まとまった瞬間が嬉しい。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-08",
+            "last_seen_at": "2026-09-21",
+            "evidence_threads": [
+              "t1",
+              "t2",
+              "t3"
+            ],
+            "versions": [
+              {
+                "content": "人や役割の間をつなぎ、周りが活きてチーム全体の成果につながることに喜びを感じる。意見の調整にはしんどさもあるが、まとまった瞬間が嬉しい。",
+                "until": "2026-10-25"
+              }
+            ],
+            "rejected_reason": null
+          },
+          {
+            "id": "item4",
+            "category": "できごと",
+            "kind": "record",
+            "content": "中学時代、部活で意見がぶつかったときに間に入り、最後に話し合いがまとまった。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-15",
+            "last_seen_at": "2026-09-15",
+            "evidence_threads": [
+              "t2"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item5",
+            "category": "できごと",
+            "kind": "record",
+            "content": "サッカーの試合に出場し、チームが勝った。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-21",
+            "first_seen_at": "2026-09-21",
+            "last_seen_at": "2026-09-21",
+            "evidence_threads": [
+              "t3"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          }
+        ],
+        "memos": [
+          {
+            "id": "memo6",
+            "kind": "answer_style",
+            "content": "歴史など年号暗記が必要な内容は、年号の丸暗記に頼らず、出来事の流れや因果関係を軸に説明する。",
+            "expires_at": null,
+            "evidence": [
+              "t1.o1"
+            ],
+            "created_at": "2026-09-21",
+            "active": true
+          },
+          {
+            "id": "memo7",
+            "kind": "situation",
+            "content": "文化祭の実行委員をしており、クラス企画が演劇派と模擬店派に分かれて話し合いが難しく、負担を感じている。急かさず、調整の負担にも配慮する。",
+            "expires_at": "2026-10-31",
+            "evidence": [
+              "t2.o3"
+            ],
+            "created_at": "2026-09-21",
+            "active": true
+          }
+        ],
+        "hypotheses": [],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": null,
+            "origin": null
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": null,
+            "origin": null
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "open",
+          "t1.o2": "used",
+          "t1.o3": "open",
+          "t2.o1": "used",
+          "t2.o2": "used",
+          "t2.o3": "open",
+          "t2.o4": "open",
+          "t3.o1": "used",
+          "t3.o2": "used"
+        }
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t4",
+      "date": "2026-10-01",
+      "observations": [
+        {
+          "id": "t4.o1",
+          "thread_id": "t4",
+          "observed_at": "2026-10-01",
+          "note": "文化祭をめぐる両派のリーダーと話し、各派の代表を3人ずつ集めた話し合いの場を作った。両派の事情を踏まえた案が出ており、来週クラス全体に提案する予定。",
+          "topic": "文化祭の企画調整",
+          "hook": null,
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            1,
+            2,
+            3
+          ],
+          "quote": "両派の代表3人ずつ集めて話し合いの場を作った",
+          "occurred_at": "2026-09-30",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t5",
+      "date": "2026-10-08",
+      "observations": [],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t6",
+      "date": "2026-10-25",
+      "observations": [
+        {
+          "id": "t6.o1",
+          "thread_id": "t6",
+          "observed_at": "2026-10-25",
+          "note": "文化祭で、演劇派と模擬店派の希望を両立する形にまとめた。本人は「こういう役回り」が自分に向いていると感じている。",
+          "topic": "文化祭の企画調整",
+          "hook": "対立する希望を、どちらも実現できる形に組み直す役回り",
+          "caveat": "正直しんどかったとも話している。",
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "record",
+          "sensitive": "none",
+          "rounds": [
+            2,
+            3
+          ],
+          "quote": "劇と模擬店、両方やる形にまとまった。／こういう役回り、たぶん自分に向いてる気がする",
+          "occurred_at": "2026-10-25",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t6.o2",
+          "thread_id": "t6",
+          "observed_at": "2026-10-25",
+          "note": "演劇派と模擬店派のリーダーが一緒に写真を撮る姿を見て、少し泣きそうになった。",
+          "topic": "文化祭でのリーダー同士の写真",
+          "hook": "対立していた側の人たちが、最後に並んで一緒にいる姿",
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "最後に演劇派のリーダーと模擬店派のリーダーが一緒に写真撮ってて、ちょっと泣きそうになった",
+          "occurred_at": "2026-10-25",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t6.o3",
+          "thread_id": "t6",
+          "observed_at": "2026-10-25",
+          "note": "意見の異なる人たちの間を調整する役回りは、自分に向いている気がすると話した。",
+          "topic": "調整役への自己認識",
+          "hook": "異なる希望をすり合わせて形にすること",
+          "caveat": "「たぶん」「気がする」と確信を限定している。",
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "casual",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            3
+          ],
+          "quote": "こういう役回り、たぶん自分に向いてる気がする",
+          "occurred_at": "2026-10-25",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c2",
+      "today": "2026-10-25",
+      "input_counts": {
+        "new": 4,
+        "related": 6,
+        "items": 3,
+        "rejected": 0,
+        "memos": 2
+      },
+      "plan": {
+        "new_categories": [],
+        "item_creates": [
+          {
+            "kind": "record",
+            "content": "文化祭の企画をめぐり、演劇派と模擬店派の代表を集めて話し合いの場をつくった。",
+            "evidence": [
+              "t4.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-09-30",
+            "reason": "代表を集めて話し合いの場をつくった具体的な一歩として記録する。",
+            "category_id": "cat2"
+          },
+          {
+            "kind": "record",
+            "content": "文化祭の企画を、演劇と模擬店の両方を実現する形にまとめた。",
+            "evidence": [
+              "t6.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": "2026-10-25",
+            "reason": "企画を両立する形にまとめた、話し合いの明確な成果として記録する。",
+            "category_id": "cat2"
+          }
+        ],
+        "item_updates": [
+          {
+            "item_id": "item3",
+            "content": "人や役割の間をつなぎ、周りが活きてチーム全体の成果につながることに喜びを感じる。対立する希望を両立させる調整役もたぶん自分に向いていると感じる一方、しんどさもあり、対立していた人たちが一緒にいる姿にも心を動かされる。",
+            "add_evidence": [
+              "t6.o1",
+              "t6.o2",
+              "t6.o3"
+            ],
+            "reason": "本人の調整役への自己認識に加え、まとまった人たちの姿への反応が既存の傾向に新しい具体性を加えているため。"
+          }
+        ],
+        "item_archives": [],
+        "memo_creates": [],
+        "memo_updates": [],
+        "memo_removes": [
+          "memo7"
+        ],
+        "hypothesis_creates": [],
+        "hypothesis_closes": []
+      },
+      "dropped": [],
+      "rejected_guard": [],
+      "state": {
+        "today": "2026-10-25",
+        "categories": [
+          {
+            "id": "cat1",
+            "path": "心が動くこと",
+            "kind": "trait"
+          },
+          {
+            "id": "cat2",
+            "path": "できごと",
+            "kind": "record"
+          }
+        ],
+        "items": [
+          {
+            "id": "item3",
+            "category": "心が動くこと",
+            "kind": "trait",
+            "content": "人や役割の間をつなぎ、周りが活きてチーム全体の成果につながることに喜びを感じる。対立する希望を両立させる調整役もたぶん自分に向いていると感じる一方、しんどさもあり、対立していた人たちが一緒にいる姿にも心を動かされる。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-08",
+            "last_seen_at": "2026-10-25",
+            "evidence_threads": [
+              "t1",
+              "t2",
+              "t3",
+              "t6"
+            ],
+            "versions": [
+              {
+                "content": "人や役割の間をつなぎ、周りが活きてチーム全体の成果につながることに喜びを感じる。意見の調整にはしんどさもあるが、まとまった瞬間が嬉しい。",
+                "until": "2026-10-25"
+              }
+            ],
+            "rejected_reason": null
+          },
+          {
+            "id": "item4",
+            "category": "できごと",
+            "kind": "record",
+            "content": "中学時代、部活で意見がぶつかったときに間に入り、最後に話し合いがまとまった。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-15",
+            "last_seen_at": "2026-09-15",
+            "evidence_threads": [
+              "t2"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item5",
+            "category": "できごと",
+            "kind": "record",
+            "content": "サッカーの試合に出場し、チームが勝った。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-21",
+            "first_seen_at": "2026-09-21",
+            "last_seen_at": "2026-09-21",
+            "evidence_threads": [
+              "t3"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item8",
+            "category": "できごと",
+            "kind": "record",
+            "content": "文化祭の企画をめぐり、演劇派と模擬店派の代表を集めて話し合いの場をつくった。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-09-30",
+            "first_seen_at": "2026-10-01",
+            "last_seen_at": "2026-10-01",
+            "evidence_threads": [
+              "t4"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item9",
+            "category": "できごと",
+            "kind": "record",
+            "content": "文化祭の企画を、演劇と模擬店の両方を実現する形にまとめた。",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": "2026-10-25",
+            "first_seen_at": "2026-10-25",
+            "last_seen_at": "2026-10-25",
+            "evidence_threads": [
+              "t6"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          }
+        ],
+        "memos": [
+          {
+            "id": "memo6",
+            "kind": "answer_style",
+            "content": "歴史など年号暗記が必要な内容は、年号の丸暗記に頼らず、出来事の流れや因果関係を軸に説明する。",
+            "expires_at": null,
+            "evidence": [
+              "t1.o1"
+            ],
+            "created_at": "2026-09-21",
+            "active": true
+          }
+        ],
+        "hypotheses": [],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": null,
+            "origin": null
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": null,
+            "origin": null
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "open",
+          "t1.o2": "used",
+          "t1.o3": "open",
+          "t2.o1": "used",
+          "t2.o2": "used",
+          "t2.o3": "open",
+          "t2.o4": "open",
+          "t3.o1": "used",
+          "t3.o2": "used",
+          "t4.o1": "used",
+          "t6.o1": "used",
+          "t6.o2": "used",
+          "t6.o3": "used"
+        }
+      }
+    }
+  ],
+  "grades": [
+    {
+      "event": "t1",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: 年号を覚えるのが苦手で、歴史はずっと苦手だと述べた。 | topic: 歴史の学習 | hook: (unknown) | certainty=stated, initiative=user, context=exam_prep, kind_hint=trait, sensitive=none, occurred_at=2026-09-08"
+        ],
+        [
+          "X2",
+          "note: 龍馬が、対立していた二つの藩のどちらの味方でもない立場から間に入り、話をまとめたところが好きだと述べた。双方に得のある形を作ることも「うまい」と評価した。 | topic: 龍馬の仲介 | hook: 対立する双方のどちらにも属さない立場から、双方に利益のある形を作って話をまとめること | certainty=strong_implicit, initiative=user, context=exam_prep, kind_hint=trait, sensitive=none, occurred_at=2026-09-08"
+        ],
+        [
+          "X3",
+          "note: 翌日に日本史の小テストがあると述べた。 | topic: 翌日の小テスト | hook: (unknown) | certainty=stated, initiative=user, context=exam_prep, kind_hint=situation, sensitive=none, occurred_at=2026-09-08"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "惹かれた点: 対立していた二者の間に、どちらの味方でもない立場で入り、お互いに得がある形でまとめること(stated:「なんか好き」)",
+          "ok": true,
+          "matched": [
+            "X2"
+          ],
+          "note": "X2 correctly captures the hook where Ryoma acts as a neutral mediator creating a beneficial outcome for both sides."
+        },
+        {
+          "type": "must",
+          "expectation": "但し書き: 歴史はずっと苦手、年号が覚えられない",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 notes the student's struggle with dates and historical subjects."
+        },
+        {
+          "type": "must",
+          "expectation": "文脈は試験対策(義務)",
+          "ok": true,
+          "matched": [
+            "X1",
+            "X2",
+            "X3"
+          ],
+          "note": "All records mention the context as exam preparation."
+        },
+        {
+          "type": "must_not",
+          "expectation": "「歴史に興味」「幕末が好き」「坂本龍馬のファン」",
+          "ok": true,
+          "matched": [],
+          "note": "No forbidden statements about broad interest or fandom appear in the records."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t2",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: 対立の間に入ることは、しんどくても嫌いではないと話した。意見の違う人たちがまとまる瞬間に強い喜びを感じる。 | topic: 対立の調整 | hook: 意見の違う人たちの間に入り、まとまる瞬間をつくること | caveat: しんどさも感じる | certainty=stated, initiative=user, context=consult, kind_hint=trait, sensitive=none, occurred_at=2026-09-15"
+        ],
+        [
+          "X2",
+          "note: 中学時代、部活で揉めたときに間に入り、最後にまとまった経験がある。 | topic: 中学時代の部活での対立 | hook: 対立の間に入って、最後にまとまるまで関わること | certainty=inferred, initiative=user, context=consult, kind_hint=record, sensitive=none, occurred_at=2026-09-15"
+        ],
+        [
+          "X3",
+          "note: 文化祭の実行委員をしており、クラスが演劇派と模擬店派に分かれて、話し合いが難しくLINEの空気も悪い状況だと話した。 | topic: 文化祭のクラス企画をめぐる対立 | hook: (unknown) | caveat: 演劇派と模擬店派のどちらも譲らず、本人はしんどさを感じている | certainty=stated, initiative=user, context=consult, kind_hint=situation, sensitive=none, occurred_at=2026-09-15"
+        ],
+        [
+          "X4",
+          "note: 文化祭の対立を調整するため、演劇派のリーダーと翌日話すことにした。 | topic: 文化祭の対立調整の進め方 | hook: まず相手と個別に話して、譲れない点を聞くこと | certainty=inferred, initiative=ai, context=consult, kind_hint=record, sensitive=none, occurred_at=2026-09-15"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "惹かれた点: 揉めている人たちの間に入り、まとまった瞬間が嬉しい(stated。中学の部活でも同じ経験)",
+          "ok": true,
+          "matched": [
+            "X1",
+            "X2"
+          ],
+          "note": "X1 and X2 capture that the student finds joy in mediating between conflicting people based on stated and junior high experiences."
+        },
+        {
+          "type": "must",
+          "expectation": "記録: 文化祭の実行委員。クラスが演劇派と模擬店派に割れている(9/15時点)",
+          "ok": true,
+          "matched": [
+            "X3"
+          ],
+          "note": "X3 correctly records the student is on the school festival executive committee with the class split into drama and food stall factions."
+        },
+        {
+          "type": "must_not",
+          "expectation": "AIの提案(1対1で話す)を本人の考えとして書く",
+          "ok": true,
+          "matched": [],
+          "note": "X4 correctly attributes the proposal of talking individually to the AI, not as the user's original thought."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t3",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: ボランチとして攻撃と守備の間でボールをつなぐのが好きで、自分のパスを起点に得点が生まれると、自分で決めるより嬉しい。FWが得点して目立つことも気にしていない。 | topic: サッカーでの役割 | hook: 自分がつなぎ役となって周りを活かし、チームの得点につなげること | caveat: FWの人たちが点を取って目立つことも全然いい。 | certainty=stated, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-09-21"
+        ],
+        [
+          "X2",
+          "note: サッカーの試合に出場し、勝った。 | topic: サッカーの試合 | hook: (unknown) | certainty=stated, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-09-21"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "惹かれた点: 攻撃と守備の間でつなぐ役。自分が起点になって周りが活きるのが、自分で決めるより嬉しい(stated)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 captures the preference for playing as a defensive midfielder linking play and feeling happier when contributing to others' goals."
+        },
+        {
+          "type": "must",
+          "expectation": "事実: サッカーをしていて、ポジションはボランチ",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 states the student plays soccer as a bolanche (defensive midfielder)."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c1",
+      "target": "items",
+      "records": [
+        [
+          "X1",
+          "[心が動くこと · trait · origin=ai · status=active] 人や役割の間をつなぎ、周りが活きてチーム全体の成果につながることに喜びを感じる。意見の調整にはしんどさもあるが、まとまった瞬間が嬉しい。"
+        ],
+        [
+          "X2",
+          "[できごと · record · origin=ai · status=active] 中学時代、部活で意見がぶつかったときに間に入り、最後に話し合いがまとまった。"
+        ],
+        [
+          "X3",
+          "[できごと · record · origin=ai · status=active] サッカーの試合に出場し、チームが勝った。 (occurred_at=2026-09-21)"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "対立や分断している人たちの間に入り、両方をつなぐ・まとめることにやりがいを感じる (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 captures the trait of connecting people and feeling joy when opinions are aligned."
+        },
+        {
+          "type": "must",
+          "expectation": "文化祭の実行委員。クラスが演劇派と模擬店派に割れている (kind=record, category like プロジェクト / 文化祭, occurred_at=2026-09-15)",
+          "ok": false,
+          "matched": [],
+          "note": "No record about the cultural festival or divided groups on theater vs food stalls exists."
+        },
+        {
+          "type": "must_not",
+          "expectation": "歴史・幕末への興味",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of history or Bakumatsu."
+        },
+        {
+          "type": "must_not",
+          "expectation": "坂本龍馬のファン",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of Sakamoto Ryoma."
+        }
+      ],
+      "mechanical": [],
+      "unexplained_items": [
+        "[できごと · record · origin=ai · status=active] 中学時代、部活で意見がぶつかったときに間に入り、最後に話し合いがまとまった。"
+      ]
+    },
+    {
+      "event": "t4",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: 文化祭をめぐる両派のリーダーと話し、各派の代表を3人ずつ集めた話し合いの場を作った。両派の事情を踏まえた案が出ており、来週クラス全体に提案する予定。 | topic: 文化祭の企画調整 | hook: (unknown) | certainty=inferred, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-09-30"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "記録: 両派のリーダーと話し、代表3人ずつを集めて話し合いの場を作った。本音(全員で作りたい / バイトで練習に出られない人がいる)が出た(9/30)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 notes that the student talked with both faction leaders and created a discussion space gathering representatives."
+        },
+        {
+          "type": "must_not",
+          "expectation": "AIが出した案(有志の劇 + シフト制)を、本人たちが決めたこととして書く",
+          "ok": true,
+          "matched": [],
+          "note": "X1 does not mention the AI-generated proposal."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t5",
+      "target": "observations",
+      "records": [],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "AIが振った話題(歴史小説)に対して「あまり読まないかも」。弱い信号",
+          "ok": false,
+          "matched": [],
+          "note": "No records were produced to capture this signal."
+        },
+        {
+          "type": "must_not",
+          "expectation": "「歴史小説が好き」「読書が趣味」",
+          "ok": true,
+          "matched": [],
+          "note": "No records exist, so the forbidden statement was not mentioned."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t6",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: 文化祭で、演劇派と模擬店派の希望を両立する形にまとめた。本人は「こういう役回り」が自分に向いていると感じている。 | topic: 文化祭の企画調整 | hook: 対立する希望を、どちらも実現できる形に組み直す役回り | caveat: 正直しんどかったとも話している。 | certainty=stated, initiative=user, context=casual, kind_hint=record, sensitive=none, occurred_at=2026-10-25"
+        ],
+        [
+          "X2",
+          "note: 演劇派と模擬店派のリーダーが一緒に写真を撮る姿を見て、少し泣きそうになった。 | topic: 文化祭でのリーダー同士の写真 | hook: 対立していた側の人たちが、最後に並んで一緒にいる姿 | certainty=inferred, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-10-25"
+        ],
+        [
+          "X3",
+          "note: 意見の異なる人たちの間を調整する役回りは、自分に向いている気がすると話した。 | topic: 調整役への自己認識 | hook: 異なる希望をすり合わせて形にすること | caveat: 「たぶん」「気がする」と確信を限定している。 | certainty=stated, initiative=user, context=casual, kind_hint=trait, sensitive=none, occurred_at=2026-10-25"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "記録: 文化祭が終わった。劇(有志10人・15分)と模擬店(全員シフト制)の両方をやる形にまとまった。両リーダーが一緒に写真を撮っていて泣きそうになった",
+          "ok": true,
+          "matched": [
+            "X1",
+            "X2"
+          ],
+          "note": "Records X1 and X2 capture the cultural festival coordination and the emotional moment seeing the leaders together."
+        },
+        {
+          "type": "must",
+          "expectation": "本人の言葉: こういう役回りが自分に向いている気がする(stated)",
+          "ok": true,
+          "matched": [
+            "X3"
+          ],
+          "note": "Record X3 directly captures the student's stated self-awareness about coordination roles."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c2",
+      "target": "items",
+      "records": [
+        [
+          "X1",
+          "[心が動くこと · trait · origin=ai · status=active] 人や役割の間をつなぎ、周りが活きてチーム全体の成果につながることに喜びを感じる。対立する希望を両立させる調整役もたぶん自分に向いていると感じる一方、しんどさもあり、対立していた人たちが一緒にいる姿にも心を動かされる。"
+        ],
+        [
+          "X2",
+          "[できごと · record · origin=ai · status=active] 中学時代、部活で意見がぶつかったときに間に入り、最後に話し合いがまとまった。"
+        ],
+        [
+          "X3",
+          "[できごと · record · origin=ai · status=active] サッカーの試合に出場し、チームが勝った。 (occurred_at=2026-09-21)"
+        ],
+        [
+          "X4",
+          "[できごと · record · origin=ai · status=active] 文化祭の企画をめぐり、演劇派と模擬店派の代表を集めて話し合いの場をつくった。 (occurred_at=2026-09-30)"
+        ],
+        [
+          "X5",
+          "[できごと · record · origin=ai · status=active] 文化祭の企画を、演劇と模擬店の両方を実現する形にまとめた。 (occurred_at=2026-10-25)"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "対立や分断している人たちの間に入り、両方をつなぐ・まとめることにやりがいを感じる (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 reflects the trait of connecting people and mediating conflicting wishes."
+        },
+        {
+          "type": "must",
+          "expectation": "文化祭の実行委員。クラスが演劇派と模擬店派に割れている (kind=record, category like プロジェクト / 文化祭, occurred_at=2026-09-15)",
+          "ok": false,
+          "matched": [],
+          "note": "No record captures the exact middle-school or specific split with the requested occurred_at date."
+        },
+        {
+          "type": "must",
+          "expectation": "両派の代表を集めて話し合いの場を作り、本音を引き出した (kind=record, category like プロジェクト / 文化祭, occurred_at=2026-09-30)",
+          "ok": true,
+          "matched": [
+            "X4"
+          ],
+          "note": "X4 captures bringing drama and food-stand reps together on 2026-09-30."
+        },
+        {
+          "type": "must",
+          "expectation": "劇と模擬店の両方をやる形にまとまり、文化祭を終えた (kind=record, category like プロジェクト / 文化祭, occurred_at=2026-10-25)",
+          "ok": true,
+          "matched": [
+            "X5"
+          ],
+          "note": "X5 captures combining both drama and food stands on 2026-10-25."
+        },
+        {
+          "type": "must_not",
+          "expectation": "歴史・幕末への興味",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of history or Bakumatsu."
+        },
+        {
+          "type": "must_not",
+          "expectation": "歴史小説・読書が好き",
+          "ok": true,
+          "matched": [],
+          "note": "No mention of historical novels or reading."
+        },
+        {
+          "type": "must_not",
+          "expectation": "文化祭の3件の記録を1つの文にまとめたもの",
+          "ok": true,
+          "matched": [],
+          "note": "The cultural festival events are split into separate records."
+        },
+        {
+          "type": "must_not",
+          "expectation": "c1の傾向と同じ意味の、2つ目の傾向",
+          "ok": true,
+          "matched": [],
+          "note": "Only one trait record about bridging people exists."
+        }
+      ],
+      "mechanical": [],
+      "unexplained_items": [
+        "[できごと · record · origin=ai · status=active] 中学時代、部活で意見がぶつかったときに間に入り、最後に話し合いがまとまった。"
+      ]
+    }
+  ],
+  "summary": {
+    "false_promotions": 0,
+    "missed": 2,
+    "observation_misses": 1,
+    "observation_violations": 0,
+    "mechanical_failures": 0,
+    "evidence_warnings": 0,
+    "unexplained_items": 2,
+    "passed": 24,
+    "total": 27
+  },
+  "cost_usd": {
+    "pipeline_tokens": 0.006854,
+    "by_role": {
+      "observer": 0.003365,
+      "consolidator": 0.003303,
+      "cover": 0,
+      "embedding": 0.000186
+    },
+    "judge_tokens": 0.006606
+  }
+}

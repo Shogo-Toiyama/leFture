@@ -1,0 +1,357 @@
+{
+  "id": "p3_culture_en",
+  "language": "en",
+  "description": "Cooks every Sunday and keeps making dishes. Studies Japanese on their own, chose a Japanese history elective to understand the culture, watches anime and wants to visit Kyoto. Has three side projects.",
+  "tests": [
+    "When one topic shows up repeatedly across different contexts (self-study, elective class, anime, travel), the topic-level generalization IS allowed. Guards against being so cautious that nothing is promoted",
+    "A clear self-statement (\"I cook every Sunday... it's my reset\") is promoted after one mention",
+    "Dishes are appended as separate records, not merged into one sentence",
+    "\"Yesterday\" in a message dated 9/13 is recorded as 9/12",
+    "Three projects mentioned once are grouped as records under one projects category; the robot arm's progress is appended",
+    "Output stays in English"
+  ],
+  "initial_profile": {
+    "bio": {
+      "text": null,
+      "origin": null
+    },
+    "interests": {
+      "text": null,
+      "origin": null
+    },
+    "future_goals": {
+      "text": null,
+      "origin": null
+    }
+  },
+  "timeline": [
+    {
+      "type": "thread",
+      "id": "t1",
+      "date": "2026-09-06",
+      "context": "casual",
+      "rounds": [
+        {
+          "round": 1,
+          "user": "I made shakshuka this morning. Eggs poached in spicy tomato sauce, super easy.",
+          "assistant": "Nice! Shakshuka is a great weekend dish. Did you add anything to the sauce, like cumin or feta?"
+        },
+        {
+          "round": 2,
+          "user": "Cumin and a bit of feta, yeah. Honestly I cook every Sunday no matter what. It's my reset for the week, chopping vegetables just clears my head.",
+          "assistant": "That's a great ritual. A lot of people find the repetitive parts of cooking, like chopping, almost meditative. Do you plan what to cook during the week, or decide on Sunday?"
+        },
+        {
+          "round": 3,
+          "user": "Usually decide that morning based on whatever's in the fridge.",
+          "assistant": "Improvising from the fridge is a real skill. Shakshuka is perfect for that, since almost any vegetable works in the sauce."
+        }
+      ],
+      "expect_observations": {
+        "must": [
+          "Stated: cooks every Sunday no matter what; it's a weekly reset, chopping clears their head",
+          "Record: made shakshuka with cumin and feta (2026-09-06)"
+        ],
+        "must_not": []
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t2",
+      "date": "2026-09-13",
+      "context": "casual",
+      "rounds": [
+        {
+          "round": 1,
+          "user": "Made ramen from scratch yesterday. Took me 7 hours for the broth lol",
+          "assistant": "Seven hours! Was it a pork bone (tonkotsu) broth?"
+        },
+        {
+          "round": 2,
+          "user": "Shoyu actually, with chicken. The tare was the hardest part. Also I've been doing Duolingo Japanese for like 3 months, so I could read the label on the soy sauce bottle. Kinda proud of that.",
+          "assistant": "That's a fun moment, when a skill you're practicing suddenly shows up in real life. Reading kanji on a label after three months is solid progress."
+        },
+        {
+          "round": 3,
+          "user": "Only some of them haha. Nobody asked me to learn it, I just wanted to.",
+          "assistant": "Self-motivated learning tends to stick. If you want, I can share a few common cooking-related kanji you'll see on Japanese packaging."
+        }
+      ],
+      "expect_observations": {
+        "must": [
+          "Record: made shoyu ramen with chicken broth from scratch, 7 hours (occurred 2026-09-12, \"yesterday\")",
+          "Stated: has been learning Japanese on Duolingo for ~3 months on their own initiative; proud of reading a label"
+        ],
+        "must_not": []
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t3",
+      "date": "2026-09-20",
+      "context": "lecture_review",
+      "rounds": [
+        {
+          "round": 1,
+          "user": "For my Japanese history elective, can you explain the sakoku policy again?",
+          "assistant": "Sakoku refers to the Edo shogunate's policies from the 1630s that strictly limited foreign contact. Trade continued only through specific channels, like the Dutch and Chinese at Nagasaki, plus Korea via Tsushima."
+        },
+        {
+          "round": 2,
+          "user": "Got it. This isn't on the syllabus, but how did that affect what people ate in Edo? Did sushi come from that era?",
+          "assistant": "Good question! Edo street food boomed: nigiri sushi as we know it appeared in the early 1800s as fast food from stalls, along with tempura and soba. The city's huge population of busy workers made quick stall food popular."
+        },
+        {
+          "round": 3,
+          "user": "Sushi as fast food is so funny. I picked this elective because I wanted to understand the culture behind the food and the language I'm into.",
+          "assistant": "That's a great reason to choose a class. Food history is a really good lens on Edo society."
+        }
+      ],
+      "expect_observations": {
+        "must": [
+          "Asked an off-syllabus question about Edo food culture on their own",
+          "Stated: chose the Japanese history elective to understand the culture behind the food and language they're into"
+        ],
+        "must_not": [
+          "Treating the sakoku review itself as evidence of interest"
+        ]
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t4",
+      "date": "2026-09-27",
+      "context": "casual",
+      "rounds": [
+        {
+          "round": 1,
+          "user": "Any anime recommendations? I just finished Frieren and I'm sad it's over.",
+          "assistant": "Frieren is beautiful. If you liked its quiet, reflective mood, you might enjoy Mushishi or Natsume's Book of Friends. Both have that slow, gentle pacing."
+        },
+        {
+          "round": 2,
+          "user": "Adding both. Also I really want to go to Kyoto someday, the temple scenes in anime always get me.",
+          "assistant": "Kyoto is a great goal. Late November is stunning around the temples, though crowded. Early spring is quieter."
+        },
+        {
+          "round": 3,
+          "user": "Saving up for it! Maybe next year.",
+          "assistant": "That gives you a nice target, and your Japanese will be even better by then."
+        }
+      ],
+      "expect_observations": {
+        "must": [
+          "Finished Frieren and liked it; temple scenes in anime \"always get\" them",
+          "Wants to visit Kyoto; saving up, maybe next year"
+        ],
+        "must_not": []
+      }
+    },
+    {
+      "type": "consolidate",
+      "id": "c1",
+      "after": "t4",
+      "expect": {
+        "items_must": [
+          {
+            "kind": "trait",
+            "content": "Interested in Japanese culture: learning the language, its history, food, and anime",
+            "evidence_threads_at_least": [
+              "t2",
+              "t3",
+              "t4"
+            ]
+          },
+          {
+            "kind": "trait",
+            "content": "Cooks every Sunday as a weekly reset; chopping vegetables clears their head",
+            "evidence_threads_at_least": [
+              "t1"
+            ]
+          },
+          {
+            "kind": "record",
+            "category_hint": "Dishes cooked",
+            "content": "Shakshuka with cumin and feta",
+            "occurred_at": "2026-09-06",
+            "evidence_threads_at_least": [
+              "t1"
+            ]
+          },
+          {
+            "kind": "record",
+            "category_hint": "Dishes cooked",
+            "content": "Shoyu ramen from scratch (7-hour chicken broth)",
+            "occurred_at": "2026-09-12",
+            "evidence_threads_at_least": [
+              "t2"
+            ]
+          }
+        ],
+        "items_must_not": [
+          "A single item that merges the dishes into one sentence",
+          "Any item written in Japanese"
+        ],
+        "items_allowed": [
+          "Wants to visit Kyoto next year (goal)",
+          "Enjoys quiet, reflective anime"
+        ]
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t5",
+      "date": "2026-10-04",
+      "context": "casual",
+      "rounds": [
+        {
+          "round": 1,
+          "user": "Gyoza night! Folded like 60 of them.",
+          "assistant": "Sixty is a serious batch! Did you do the pleated fold?"
+        },
+        {
+          "round": 2,
+          "user": "Yep, got way better by the end. Also, random, but I have three side projects going and I'm not sure which to focus on: a small robot arm, a budgeting app for me and my roommates, and a zine about food spots near campus.",
+          "assistant": "That's a fun mix: hardware, software, and writing. Which one do you find yourself thinking about when you're not working on it?"
+        },
+        {
+          "round": 3,
+          "user": "Hmm, probably the robot arm honestly.",
+          "assistant": "That's often a good sign of where your energy wants to go. You could keep the others light and give the arm most of your time."
+        }
+      ],
+      "expect_observations": {
+        "must": [
+          "Record: made about 60 gyoza with pleated folds (2026-10-04)",
+          "Three side projects: a small robot arm, a budgeting app for roommates, a zine about food spots near campus",
+          "The robot arm is the one they think about most"
+        ],
+        "must_not": [
+          "The AI's suggestion (focus on the arm) recorded as the user's decision"
+        ]
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t6",
+      "date": "2026-10-11",
+      "context": "casual",
+      "rounds": [
+        {
+          "round": 1,
+          "user": "Robot arm update: I picked MG996R servos for the base and shoulder, SG90 for the gripper.",
+          "assistant": "Sensible choices. The MG996R has enough torque for the base and shoulder at that scale, and SG90s are light for the gripper. Watch your power supply, though; several MG996Rs on USB power won't be enough."
+        },
+        {
+          "round": 2,
+          "user": "Yeah I learned that the hard way, the Arduino kept resetting lol. Got a separate 6V supply now.",
+          "assistant": "Classic! A separate supply with a common ground is exactly the right fix."
+        }
+      ],
+      "expect_observations": {
+        "must": [
+          "Record: robot arm uses MG996R servos (base, shoulder) and SG90 (gripper); Arduino kept resetting, switched to a separate 6V supply"
+        ],
+        "must_not": []
+      }
+    },
+    {
+      "type": "consolidate",
+      "id": "c2",
+      "after": "t6",
+      "expect": {
+        "items_must": [
+          {
+            "kind": "trait",
+            "content": "Interested in Japanese culture: learning the language, its history, food, and anime",
+            "evidence_threads_at_least": [
+              "t2",
+              "t3",
+              "t4"
+            ]
+          },
+          {
+            "kind": "trait",
+            "content": "Cooks every Sunday as a weekly reset; chopping vegetables clears their head",
+            "evidence_threads_at_least": [
+              "t1"
+            ]
+          },
+          {
+            "kind": "record",
+            "category_hint": "Dishes cooked",
+            "content": "Shakshuka with cumin and feta",
+            "occurred_at": "2026-09-06",
+            "evidence_threads_at_least": [
+              "t1"
+            ]
+          },
+          {
+            "kind": "record",
+            "category_hint": "Dishes cooked",
+            "content": "Shoyu ramen from scratch (7-hour chicken broth)",
+            "occurred_at": "2026-09-12",
+            "evidence_threads_at_least": [
+              "t2"
+            ]
+          },
+          {
+            "kind": "record",
+            "category_hint": "Dishes cooked",
+            "content": "About 60 pleated gyoza",
+            "occurred_at": "2026-10-04",
+            "evidence_threads_at_least": [
+              "t5"
+            ]
+          },
+          {
+            "kind": "record",
+            "category_hint": "Projects",
+            "content": "Robot arm side project (the one they think about most)",
+            "occurred_at": "2026-10-04",
+            "evidence_threads_at_least": [
+              "t5"
+            ]
+          },
+          {
+            "kind": "record",
+            "category_hint": "Projects",
+            "content": "Budgeting app for them and their roommates",
+            "occurred_at": "2026-10-04",
+            "evidence_threads_at_least": [
+              "t5"
+            ]
+          },
+          {
+            "kind": "record",
+            "category_hint": "Projects",
+            "content": "Zine about food spots near campus",
+            "occurred_at": "2026-10-04",
+            "evidence_threads_at_least": [
+              "t5"
+            ]
+          },
+          {
+            "kind": "record",
+            "category_hint": "Projects",
+            "content": "Robot arm: chose MG996R/SG90 servos; fixed Arduino resets with a separate 6V supply",
+            "occurred_at": "2026-10-11",
+            "evidence_threads_at_least": [
+              "t6"
+            ]
+          }
+        ],
+        "items_must_not": [
+          "A single item that merges the dishes into one sentence",
+          "A trait like \"interested in robotics / hardware\" (only one project over two threads; that is a record, not yet a trait)",
+          "Any item written in Japanese"
+        ],
+        "items_allowed": [
+          "Wants to visit Kyoto next year (goal)",
+          "Enjoys quiet, reflective anime",
+          "The robot arm as its own child category under Projects"
+        ]
+      }
+    }
+  ]
+}

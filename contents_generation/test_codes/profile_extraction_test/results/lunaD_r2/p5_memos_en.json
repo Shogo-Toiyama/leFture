@@ -1,0 +1,710 @@
+{
+  "scenario_id": "p5_memos_en",
+  "language": "en",
+  "description": "Numbers mixed with letters overwhelm them (since middle school). Once asks for fewer formulas because they're on their phone. Always learns faster with an example first. Job hunting for PM roles until December.",
+  "tests": [
+    "A general statement about how they learn goes to BOTH the profile (trait) and a memo (how to answer), stored separately",
+    "A one-time, situational request (\"this time, I'm on my phone\") stays in the thread and does not become a memo",
+    "\"I always...\" becomes an answer-style memo",
+    "A temporary situation becomes a situation memo with an expiry (end of December)",
+    "Repeated preferences don't create duplicate memos",
+    "Not over-generalizing \"numbers and letters mixed\" into \"bad at math\""
+  ],
+  "models": {
+    "observer": "gpt-6-luna",
+    "observer_reasoning": "none",
+    "consolidator": "gpt-6-luna",
+    "consolidator_reasoning": "medium",
+    "cover": "gpt-6-luna",
+    "cover_reasoning": "low"
+  },
+  "events": [
+    {
+      "type": "thread",
+      "id": "t1",
+      "date": "2026-09-07",
+      "observations": [
+        {
+          "id": "t1.o1",
+          "thread_id": "t1",
+          "observed_at": "2026-09-07",
+          "note": "The student says mixed numbers and letters have felt overwhelming since middle school. They said the derivative explanation made sense after it was put into words first.",
+          "topic": "Understanding algebraic notation",
+          "hook": "Having mixed numbers and letters translated into plain-language meaning before working with the formula",
+          "caveat": "They said this difficulty has been present since middle school.",
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "lecture_review",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            2,
+            3
+          ],
+          "quote": "whenever numbers and letters get mixed together my head just explodes. It's been like that since middle school.",
+          "occurred_at": "2026-09-07",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t2",
+      "date": "2026-09-14",
+      "observations": [],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t3",
+      "date": "2026-09-21",
+      "observations": [
+        {
+          "id": "t3.o1",
+          "thread_id": "t3",
+          "observed_at": "2026-09-21",
+          "note": "The student said examples help them understand things much faster and prefers explanations that start with one.",
+          "topic": "Explanation preferences",
+          "hook": "Starting with a concrete example to make an explanation click",
+          "caveat": null,
+          "reaction": "strong",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "lecture_review",
+          "kind_hint": "answer_style",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "I always get things way faster when you start with an example like that.",
+          "occurred_at": "2026-09-21",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t3.o2",
+          "thread_id": "t3",
+          "observed_at": "2026-09-21",
+          "note": "After hearing an example-based explanation, the student independently asked what happens when two keys map to the same slot.",
+          "topic": "Hash table collisions",
+          "hook": null,
+          "caveat": null,
+          "reaction": "mild",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "lecture_review",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            3
+          ],
+          "quote": "So what happens if two coats get the same number?",
+          "occurred_at": "2026-09-21",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t4",
+      "date": "2026-09-28",
+      "observations": [
+        {
+          "id": "t4.o1",
+          "thread_id": "t4",
+          "observed_at": "2026-09-28",
+          "note": "The student said they are job hunting through December and feel scattered lately.",
+          "topic": "Job hunting",
+          "hook": null,
+          "caveat": null,
+          "reaction": "mild",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "consult",
+          "kind_hint": "situation",
+          "sensitive": "none",
+          "rounds": [
+            1
+          ],
+          "quote": "I'm job hunting until December so I'm kind of scattered.",
+          "occurred_at": "2026-09-28",
+          "ends_at": "2026-12-31",
+          "status": "open"
+        },
+        {
+          "id": "t4.o2",
+          "thread_id": "t4",
+          "observed_at": "2026-09-28",
+          "note": "The student is considering interview preparation later and is mainly targeting product manager roles.",
+          "topic": "Career plans",
+          "hook": null,
+          "caveat": "Interview preparation is a possibility for later, not a current request.",
+          "reaction": "neutral",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "consult",
+          "kind_hint": "future",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "Maybe interview prep later. Mostly product manager roles.",
+          "occurred_at": "2026-09-28",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "thread",
+      "id": "t5",
+      "date": "2026-10-05",
+      "observations": [
+        {
+          "id": "t5.o1",
+          "thread_id": "t5",
+          "observed_at": "2026-10-05",
+          "note": "The student says examples-first explanations work for them.",
+          "topic": "Explanation preference",
+          "hook": "Starting with a concrete example before introducing an explanation",
+          "caveat": null,
+          "reaction": "moderate",
+          "initiative": "user",
+          "certainty": "stated",
+          "context": "consult",
+          "kind_hint": "answer_style",
+          "sensitive": "none",
+          "rounds": [
+            2
+          ],
+          "quote": "Yes, examples first is the way.",
+          "occurred_at": "2026-10-05",
+          "ends_at": null,
+          "status": "open"
+        },
+        {
+          "id": "t5.o2",
+          "thread_id": "t5",
+          "observed_at": "2026-10-05",
+          "note": "The student says recommendation systems would be useful for product management interviews.",
+          "topic": "Recommendation systems and PM interviews",
+          "hook": null,
+          "caveat": null,
+          "reaction": "mild",
+          "initiative": "user",
+          "certainty": "inferred",
+          "context": "consult",
+          "kind_hint": "trait",
+          "sensitive": "none",
+          "rounds": [
+            3
+          ],
+          "quote": "This would actually be useful for PM interviews.",
+          "occurred_at": "2026-10-05",
+          "ends_at": null,
+          "status": "open"
+        }
+      ],
+      "hypothesis_updates": [],
+      "dropped": []
+    },
+    {
+      "type": "consolidate",
+      "id": "c1",
+      "today": "2026-10-05",
+      "input_counts": {
+        "new": 7,
+        "related": 0,
+        "items": 0,
+        "rejected": 0,
+        "memos": 0
+      },
+      "plan": {
+        "new_categories": [
+          {
+            "ref": "new1",
+            "name": "How I learn",
+            "description": "Ways of explaining that help ideas click.",
+            "kind": "trait",
+            "parent_id": null,
+            "parent_ref": null
+          },
+          {
+            "ref": "new2",
+            "name": "Future direction",
+            "description": "Career paths the student is aiming toward.",
+            "kind": "trait",
+            "parent_id": null,
+            "parent_ref": null
+          }
+        ],
+        "item_creates": [
+          {
+            "kind": "trait",
+            "content": "Understands formula-heavy ideas more easily when they’re first put into plain language and introduced through a concrete example.",
+            "evidence": [
+              "t1.o1",
+              "t3.o1",
+              "t5.o1"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": null,
+            "reason": "The student described this learning pattern directly across separate conversations, including a longstanding difficulty with mixed numbers and letters.",
+            "category_ref": "new1"
+          },
+          {
+            "kind": "trait",
+            "content": "Is mainly targeting product manager roles.",
+            "evidence": [
+              "t4.o2"
+            ],
+            "sensitive": "none",
+            "status": "active",
+            "occurred_at": null,
+            "reason": "The student stated this as their main career target.",
+            "category_ref": "new2"
+          }
+        ],
+        "item_updates": [],
+        "item_archives": [],
+        "memo_creates": [
+          {
+            "kind": "answer_style",
+            "content": "Start explanations with a concrete example, then put formulas or notation into plain language before moving into formal steps.",
+            "expires_at": null,
+            "evidence": [
+              "t1.o1",
+              "t3.o1",
+              "t5.o1"
+            ]
+          },
+          {
+            "kind": "situation",
+            "content": "Job hunting through December 2026; currently feeling scattered.",
+            "expires_at": "2026-12-31",
+            "evidence": [
+              "t4.o1"
+            ]
+          }
+        ],
+        "memo_updates": [],
+        "memo_removes": [],
+        "hypothesis_creates": [
+          {
+            "content": "Next time technical systems or product decisions come up, find out naturally whether the student is drawn more to how the system works, its edge cases, or how it could inform product decisions.",
+            "evidence": [
+              "t3.o2",
+              "t5.o2"
+            ]
+          }
+        ],
+        "hypothesis_closes": []
+      },
+      "dropped": [],
+      "rejected_guard": [],
+      "state": {
+        "today": "2026-10-05",
+        "categories": [
+          {
+            "id": "cat1",
+            "path": "How I learn",
+            "kind": "trait"
+          },
+          {
+            "id": "cat2",
+            "path": "Future direction",
+            "kind": "trait"
+          }
+        ],
+        "items": [
+          {
+            "id": "item3",
+            "category": "How I learn",
+            "kind": "trait",
+            "content": "Understands formula-heavy ideas more easily when they’re first put into plain language and introduced through a concrete example.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-07",
+            "last_seen_at": "2026-10-05",
+            "evidence_threads": [
+              "t1",
+              "t3",
+              "t5"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          },
+          {
+            "id": "item4",
+            "category": "Future direction",
+            "kind": "trait",
+            "content": "Is mainly targeting product manager roles.",
+            "origin": "ai",
+            "status": "active",
+            "sensitive": "none",
+            "occurred_at": null,
+            "first_seen_at": "2026-09-28",
+            "last_seen_at": "2026-09-28",
+            "evidence_threads": [
+              "t4"
+            ],
+            "versions": [],
+            "rejected_reason": null
+          }
+        ],
+        "memos": [
+          {
+            "id": "memo5",
+            "kind": "answer_style",
+            "content": "Start explanations with a concrete example, then put formulas or notation into plain language before moving into formal steps.",
+            "expires_at": null,
+            "evidence": [
+              "t1.o1",
+              "t3.o1",
+              "t5.o1"
+            ],
+            "created_at": "2026-10-05",
+            "active": true
+          },
+          {
+            "id": "memo6",
+            "kind": "situation",
+            "content": "Job hunting through December 2026; currently feeling scattered.",
+            "expires_at": "2026-12-31",
+            "evidence": [
+              "t4.o1"
+            ],
+            "created_at": "2026-10-05",
+            "active": true
+          }
+        ],
+        "hypotheses": [
+          {
+            "id": "hyp7",
+            "content": "Next time technical systems or product decisions come up, find out naturally whether the student is drawn more to how the system works, its edge cases, or how it could inform product decisions.",
+            "status": "open",
+            "evidence": [
+              "t3.o2",
+              "t5.o2"
+            ],
+            "created_at": "2026-10-05"
+          }
+        ],
+        "blocked_areas": [],
+        "cover": {
+          "bio": {
+            "text": null,
+            "origin": null
+          },
+          "interests": {
+            "text": null,
+            "origin": null
+          },
+          "future_goals": {
+            "text": null,
+            "origin": null
+          }
+        },
+        "proposals": {},
+        "observation_status": {
+          "t1.o1": "used",
+          "t3.o1": "used",
+          "t3.o2": "open",
+          "t4.o1": "open",
+          "t4.o2": "used",
+          "t5.o1": "used",
+          "t5.o2": "open"
+        }
+      }
+    }
+  ],
+  "grades": [
+    {
+      "event": "t1",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: The student says mixed numbers and letters have felt overwhelming since middle school. They said the derivative explanation made sense after it was put into words first. | topic: Understanding algebraic notation | hook: Having mixed numbers and letters translated into plain-language meaning before working with the formula | caveat: They said this difficulty has been present since middle school. | certainty=stated, initiative=user, context=lecture_review, kind_hint=trait, sensitive=none, occurred_at=2026-09-07"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Stated, general (since middle school): expressions that mix numbers and letters overwhelm them",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 notes that mixed numbers and letters have felt overwhelming since middle school."
+        },
+        {
+          "type": "must",
+          "expectation": "Explaining in words first worked for them",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 states that the derivative explanation made sense after being put into words first."
+        },
+        {
+          "type": "must_not",
+          "expectation": "\"Bad at math\" or \"dislikes math\"",
+          "ok": true,
+          "matched": [],
+          "note": "No record claims the student is bad at or dislikes math."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t2",
+      "target": "observations",
+      "records": [],
+      "results": [
+        {
+          "type": "must_not",
+          "expectation": "Treating \"fewer formulas\" as a general preference",
+          "ok": true,
+          "matched": [],
+          "note": "No records exist, so the forbidden item is not violated."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t3",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: The student said examples help them understand things much faster and prefers explanations that start with one. | topic: Explanation preferences | hook: Starting with a concrete example to make an explanation click | certainty=stated, initiative=user, context=lecture_review, kind_hint=answer_style, sensitive=none, occurred_at=2026-09-21"
+        ],
+        [
+          "X2",
+          "note: After hearing an example-based explanation, the student independently asked what happens when two keys map to the same slot. | topic: Hash table collisions | hook: (unknown) | certainty=inferred, initiative=user, context=lecture_review, kind_hint=trait, sensitive=none, occurred_at=2026-09-21"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Stated, general (\"always\"): understands faster when an explanation starts with an example",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 captures that the student understands explanations much faster when they start with an example."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t4",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: The student said they are job hunting through December and feel scattered lately. | topic: Job hunting | hook: (unknown) | certainty=stated, initiative=user, context=consult, kind_hint=situation, sensitive=none, occurred_at=2026-09-28"
+        ],
+        [
+          "X2",
+          "note: The student is considering interview preparation later and is mainly targeting product manager roles. | topic: Career plans | hook: (unknown) | caveat: Interview preparation is a possibility for later, not a current request. | certainty=stated, initiative=user, context=consult, kind_hint=future, sensitive=none, occurred_at=2026-09-28"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Temporary situation: job hunting until December, feeling scattered",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 captures the job hunting through December and feeling scattered."
+        },
+        {
+          "type": "must",
+          "expectation": "Stated: applying mostly for product manager roles",
+          "ok": true,
+          "matched": [
+            "X2"
+          ],
+          "note": "Record X2 states the student is mainly targeting product manager roles."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "t5",
+      "target": "observations",
+      "records": [
+        [
+          "X1",
+          "note: The student says examples-first explanations work for them. | topic: Explanation preference | hook: Starting with a concrete example before introducing an explanation | certainty=stated, initiative=user, context=consult, kind_hint=answer_style, sensitive=none, occurred_at=2026-10-05"
+        ],
+        [
+          "X2",
+          "note: The student says recommendation systems would be useful for product management interviews. | topic: Recommendation systems and PM interviews | hook: (unknown) | certainty=inferred, initiative=user, context=consult, kind_hint=trait, sensitive=none, occurred_at=2026-10-05"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Repeats the examples-first preference (\"examples first is the way\")",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "Record X1 captures the student's preference for examples-first explanations."
+        }
+      ],
+      "mechanical": []
+    },
+    {
+      "event": "c1",
+      "target": "items",
+      "records": [
+        [
+          "X1",
+          "[How I learn · trait · origin=ai · status=active] Understands formula-heavy ideas more easily when they’re first put into plain language and introduced through a concrete example."
+        ],
+        [
+          "X2",
+          "[Future direction · trait · origin=ai · status=active] Is mainly targeting product manager roles."
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "Expressions that mix numbers and letters tend to overwhelm them (since middle school) (kind=trait)",
+          "ok": false,
+          "matched": [],
+          "note": "Record X1 mentions formula-heavy ideas but does not mention numbers and letters mixing or middle school."
+        },
+        {
+          "type": "must",
+          "expectation": "Aiming for product manager roles (kind=trait)",
+          "ok": true,
+          "matched": [
+            "X2"
+          ],
+          "note": "Record X2 explicitly states targeting product manager roles."
+        },
+        {
+          "type": "must_not",
+          "expectation": "Bad at math / dislikes math",
+          "ok": true,
+          "matched": [],
+          "note": "No record claims the student is bad at or dislikes math."
+        },
+        {
+          "type": "must_not",
+          "expectation": "Prefers few formulas",
+          "ok": true,
+          "matched": [],
+          "note": "No record states a preference for few formulas."
+        },
+        {
+          "type": "must_not",
+          "expectation": "Any item written in Japanese",
+          "ok": true,
+          "matched": [],
+          "note": "All records are written in English."
+        }
+      ],
+      "mechanical": [],
+      "unexplained_items": []
+    },
+    {
+      "event": "c1",
+      "target": "memos",
+      "records": [
+        [
+          "X1",
+          "[answer_style] Start explanations with a concrete example, then put formulas or notation into plain language before moving into formal steps."
+        ],
+        [
+          "X2",
+          "[situation] Job hunting through December 2026; currently feeling scattered. (until 2026-12-31)"
+        ]
+      ],
+      "results": [
+        {
+          "type": "must",
+          "expectation": "When a formula appears, explain what it means in words first (kind=answer_style)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 specifies putting formulas into plain language."
+        },
+        {
+          "type": "must",
+          "expectation": "Start explanations with a concrete example (kind=answer_style)",
+          "ok": true,
+          "matched": [
+            "X1"
+          ],
+          "note": "X1 states to start explanations with a concrete example."
+        },
+        {
+          "type": "must",
+          "expectation": "Job hunting until December (kind=situation, expires around 2026-12-31)",
+          "ok": true,
+          "matched": [
+            "X2"
+          ],
+          "note": "X2 notes job hunting through December 2026."
+        },
+        {
+          "type": "must_not",
+          "expectation": "Keep formulas to a minimum (that was only for one thread)",
+          "ok": true,
+          "matched": [],
+          "note": "No record suggests keeping formulas to a minimum."
+        },
+        {
+          "type": "must_not",
+          "expectation": "Two memos with the same meaning (e.g., examples first twice)",
+          "ok": true,
+          "matched": [],
+          "note": "There is only one record about examples first."
+        }
+      ],
+      "mechanical": []
+    }
+  ],
+  "summary": {
+    "false_promotions": 0,
+    "missed": 1,
+    "observation_misses": 0,
+    "observation_violations": 0,
+    "mechanical_failures": 0,
+    "evidence_warnings": 0,
+    "unexplained_items": 0,
+    "passed": 17,
+    "total": 18
+  },
+  "cost_usd": {
+    "pipeline_tokens": 0.001303,
+    "by_role": {
+      "observer": 0.000485,
+      "consolidator": 0.000782,
+      "cover": 0,
+      "embedding": 3.6e-05
+    },
+    "judge_tokens": 0.004266
+  }
+}

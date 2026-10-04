@@ -1,0 +1,218 @@
+{
+  "id": "p5_memos_en",
+  "language": "en",
+  "description": "Numbers mixed with letters overwhelm them (since middle school). Once asks for fewer formulas because they're on their phone. Always learns faster with an example first. Job hunting for PM roles until December.",
+  "tests": [
+    "A general statement about how they learn goes to BOTH the profile (trait) and a memo (how to answer), stored separately",
+    "A one-time, situational request (\"this time, I'm on my phone\") stays in the thread and does not become a memo",
+    "\"I always...\" becomes an answer-style memo",
+    "A temporary situation becomes a situation memo with an expiry (end of December)",
+    "Repeated preferences don't create duplicate memos",
+    "Not over-generalizing \"numbers and letters mixed\" into \"bad at math\""
+  ],
+  "initial_profile": {
+    "bio": {
+      "text": null,
+      "origin": null
+    },
+    "interests": {
+      "text": null,
+      "origin": null
+    },
+    "future_goals": {
+      "text": null,
+      "origin": null
+    }
+  },
+  "timeline": [
+    {
+      "type": "thread",
+      "id": "t1",
+      "date": "2026-09-07",
+      "context": "lecture_review",
+      "rounds": [
+        {
+          "round": 1,
+          "user": "Can you explain what the derivative of x^2 + 3x means?",
+          "assistant": "The derivative tells you how fast a function changes at each point. For f(x) = x² + 3x, the derivative is f'(x) = 2x + 3, so..."
+        },
+        {
+          "round": 2,
+          "user": "wait. Honestly whenever numbers and letters get mixed together my head just explodes. It's been like that since middle school.",
+          "assistant": "That's really common, and it's okay. Let's put it in words first: imagine walking along a hill. The derivative is how steep the hill is right where you're standing. On this hill, it's a little steep at the start, and it gets steeper the further right you walk. \"2x + 3\" is just a short way of writing that."
+        },
+        {
+          "round": 3,
+          "user": "ok that actually makes sense",
+          "assistant": "Great. Whenever a formula shows up, I'll say what it means in words first."
+        }
+      ],
+      "expect_observations": {
+        "must": [
+          "Stated, general (since middle school): expressions that mix numbers and letters overwhelm them",
+          "Explaining in words first worked for them"
+        ],
+        "must_not": [
+          "\"Bad at math\" or \"dislikes math\""
+        ]
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t2",
+      "date": "2026-09-14",
+      "context": "lecture_review",
+      "rounds": [
+        {
+          "round": 1,
+          "user": "Quick one, I'm on my phone so keep formulas to a minimum this time: what's the difference between mean and median?",
+          "assistant": "Mean is the average: add everything up and divide by how many there are. Median is the middle value when you line them up. If one value is extreme, like one billionaire in a room, the mean jumps but the median barely moves."
+        },
+        {
+          "round": 2,
+          "user": "perfect, thanks",
+          "assistant": "Anytime!"
+        }
+      ],
+      "expect_observations": {
+        "must": [],
+        "must_not": [
+          "Treating \"fewer formulas\" as a general preference"
+        ]
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t3",
+      "date": "2026-09-21",
+      "context": "lecture_review",
+      "rounds": [
+        {
+          "round": 1,
+          "user": "What's a hash table?",
+          "assistant": "Picture a coat check at a theater: you hand over your coat, get a numbered ticket, and later the number takes the attendant straight to your hook, no searching needed. A hash table does the same: it turns a key into a slot number so it can jump straight to the value."
+        },
+        {
+          "round": 2,
+          "user": "Love that. I always get things way faster when you start with an example like that.",
+          "assistant": "Noted, I'll lead with an example."
+        },
+        {
+          "round": 3,
+          "user": "So what happens if two coats get the same number?",
+          "assistant": "That's called a collision. Common fixes: hang both coats on the same hook in a little list (chaining), or move to the next free hook (open addressing)."
+        }
+      ],
+      "expect_observations": {
+        "must": [
+          "Stated, general (\"always\"): understands faster when an explanation starts with an example"
+        ],
+        "must_not": []
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t4",
+      "date": "2026-09-28",
+      "context": "consult",
+      "rounds": [
+        {
+          "round": 1,
+          "user": "Sorry if I'm slow to reply lately, I'm job hunting until December so I'm kind of scattered.",
+          "assistant": "No need to apologize. Job hunting is a lot. Is there anything I can help with, like interview prep or organizing applications?"
+        },
+        {
+          "round": 2,
+          "user": "Maybe interview prep later. Mostly product manager roles.",
+          "assistant": "Got it. PM interviews often include product sense questions (\"How would you improve X?\") and behavioral questions. Happy to practice either whenever you want."
+        }
+      ],
+      "expect_observations": {
+        "must": [
+          "Temporary situation: job hunting until December, feeling scattered",
+          "Stated: applying mostly for product manager roles"
+        ],
+        "must_not": []
+      }
+    },
+    {
+      "type": "thread",
+      "id": "t5",
+      "date": "2026-10-05",
+      "context": "lecture_review",
+      "rounds": [
+        {
+          "round": 1,
+          "user": "How does a recommendation system work?",
+          "assistant": "Think of a friend with similar taste: you both loved the same three movies, so when they love a fourth, they tell you about it. That's collaborative filtering: finding people like you and borrowing their picks."
+        },
+        {
+          "round": 2,
+          "user": "Yes, examples first is the way. Can you also explain content-based?",
+          "assistant": "Sure. Imagine a bookstore clerk who doesn't know other customers but knows you like slow-paced mysteries, so they hand you another slow-paced mystery. Content-based filtering looks at the features of what you liked, not at other people."
+        },
+        {
+          "round": 3,
+          "user": "Got it. This would actually be useful for PM interviews.",
+          "assistant": "Definitely. Recommendation features come up a lot in product sense questions."
+        }
+      ],
+      "expect_observations": {
+        "must": [
+          "Repeats the examples-first preference (\"examples first is the way\")"
+        ],
+        "must_not": []
+      }
+    },
+    {
+      "type": "consolidate",
+      "id": "c1",
+      "after": "t5",
+      "expect": {
+        "memos_must": [
+          {
+            "kind": "answer_style",
+            "content": "When a formula appears, explain what it means in words first"
+          },
+          {
+            "kind": "answer_style",
+            "content": "Start explanations with a concrete example"
+          },
+          {
+            "kind": "situation",
+            "content": "Job hunting until December",
+            "expires_at": "2026-12-31"
+          }
+        ],
+        "memos_must_not": [
+          "Keep formulas to a minimum (that was only for one thread)",
+          "Two memos with the same meaning (e.g., examples first twice)"
+        ],
+        "items_must": [
+          {
+            "kind": "trait",
+            "content": "Expressions that mix numbers and letters tend to overwhelm them (since middle school)",
+            "evidence_threads_at_least": [
+              "t1"
+            ]
+          },
+          {
+            "kind": "trait",
+            "content": "Aiming for product manager roles",
+            "evidence_threads_at_least": [
+              "t4"
+            ]
+          }
+        ],
+        "items_must_not": [
+          "Bad at math / dislikes math",
+          "Prefers few formulas",
+          "Any item written in Japanese"
+        ],
+        "items_allowed": [
+          "Learns faster when ideas start with a concrete example (as a learning-style trait)"
+        ]
+      }
+    }
+  ]
+}
