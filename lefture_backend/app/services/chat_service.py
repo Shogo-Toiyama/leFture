@@ -14,8 +14,8 @@
      blocked → 定型文(課金なし) / crisis → 共感の定型文+相談窓口(課金なし)
      それ以外 → needs_retrievalがtrueなら探索役(chat_navigator.py、GPT-6 Luna、最大4周)が
      地図を見て検索を選び、コードが実行する(検索は本人のJWTでRPC、Webは1ターン2回までBrave)
-  4. 回答役(Gemini 3.5 Flash-Lite, ストリーミング)。needs_reasoningなら先に確かめ役(GPT-6 Luna)が
-     答えを確かめたメモを作り、回答役はそれを根拠に書く(chat_reasoning.py)
+  4. 回答役(GPT-6 Luna, ストリーミング)。needs_reasoning(計算・コード・提出物の確認・難しい質問)なら推論lowで
+     一段で答える(chat_reasoning.py。二段構え=確かめ役のメモ→別のモデルが書く、にも設定で戻せる)
   5. 締め: 本文・出典・原価を保存 → 原価×CHAT_CREDIT_MARKUP(1.5)のクレジットを消費 → done
      → 未要約が15往復以上なら、畳む処理(chat_summary.py)をCloud Tasksに積む
 
@@ -75,9 +75,12 @@ from app.services.chat_attachments import (
     ReadResult,
     Visibility,
     assign_handles,
+    auto_select,
+    estimate_tokens,
     history_marker,
     plan_visibility,
     read_attachment,
+    render_ai_code_rule,
     render_for_answer,
     render_for_router,
 )
@@ -115,7 +118,7 @@ from app.services.helpers.llm_unified import (
     UnifiedLLM,
 )
 from app.services.logic.web_search import brave_search
-from app.services.knowledge_index import embed_queries
+from app.services.knowledge_index import embed_queries, index_now
 
 
 # =========================================================
@@ -125,8 +128,15 @@ from app.services.knowledge_index import embed_queries
 ROUTER_MODEL = "gemini/gemini-2.5-flash-lite"
 # 2026-10-02に3.1 Flash Lite(推論なし)から変更。同じ材料で比べると、最初の1文字までの時間は同じくらい
 # (約0.6秒)で、「1文に出典は1つ」「同じ内容を言う出典は1つにまとめる」をよく守った(7回中まとめ付け0回)。
-ANSWER_MODEL = "gemini/gemini-2.5-flash"
-# 2026-10-04に3.5 Flash-Liteから変更。3.5 Flash-Liteは日本語の相談の会話で単語が崩れる事故が
+ANSWER_MODEL = "gpt-6-luna"
+# 2026-10-05にGemini 2.5 Flashから変更(ユーザー判断、数日試す)。2.5 Flashは、正しい確かめ役(Luna)のメモを
+# 受け取っても生徒のコードを別物に書き換えて「君のコード」として示し、コードが依存している行を消すよう
+# 勧めた(LeetCodeのスレッド「Best Time to Buy and Sell Stock」、作り直し3回中3回)。同じターンをLunaが
+# 直接書くと3回とも正確で、1ターンの原価も安い(入力$0.10/M・出力$0.50/M)。口調はVOICEの節で補う
+# (Lunaは素のままだと淡々とする。2026-10-03の比べ読み: results/tone_compare_20261003.md)。
+# 推論が要るターンは、二段構えをやめてLunaが推論lowで一段で答える(chat_reasoning.REASONING_CONFIG)。
+#
+# 以下は2.5 Flashを選んだときの記録。2026-10-04に3.5 Flash-Liteから変更。3.5 Flash-Liteは日本語の相談の会話で単語が崩れる事故が
 # 複数回出た(「コミカカ」「走り抜けたちから」、評価では韓国語の文字が混入する例も)。同じ会話を
 # 5回ずつ作り直す比較で、2.5 Flash(推論none)は崩れ0/5、3.5 Flash-Liteは1/5で再現した。
 # 単価は3.5 Flash-Liteと同じ($0.30/$2.50)で、最初の1文字までの時間も変わらない(約0.4〜0.5秒)。
@@ -136,8 +146,10 @@ ANSWER_MODEL = "gemini/gemini-2.5-flash"
 # その1問で中身を読み比べても、低い方(low)が考えた分だけ良い回答になっている様子は無く
 # (むしろnoneの方が短い出力トークンでより詳しい回答を書いていた)、厚くする理由が無いと判断した。
 ANSWER_REASONING_EFFORT = "none"
-# max_tokensには思考のトークンも含まれるので、その分を足しておく(回答の途中で切れないように)
+# max_tokensには思考のトークンも含まれるので、その分を足しておく(回答の途中で切れないように)。
+# 推論ありのターン(Luna low)は考える量が多いので別に取る(評価では8192で切れなかった)
 ANSWER_THINKING_TOKENS = 1024
+ANSWER_REASONING_THINKING_TOKENS = 8192
 ANSWER_MAX_OUTPUT_TOKENS = 2048
 # 広い質問(探索役のゴールが多い・コースの講義一覧を開いた)だけ、回答の上限を引き上げる(3-8)
 ANSWER_MAX_OUTPUT_TOKENS_WIDE = 4096
@@ -582,7 +594,8 @@ def _fetch_history_rows(admin_client, thread_id: str) -> list[dict]:
     return list(reversed(h.data or []))
 
 
-ATTACHMENT_COLUMNS = "id, title, content, summary, sections, message_id, created_at, status"
+ATTACHMENT_COLUMNS = ("id, title, content, summary, sections, message_id, created_at, status, selected, token_count, "
+                      "forbids_ai_code")
 
 
 def _fetch_thread_attachments(admin_client, thread_id: str) -> list[dict]:
@@ -665,6 +678,7 @@ def _write_turn_rows(
             "title": att.title,
             "content": att.content,
             "char_count": len(att.content),
+            "token_count": estimate_tokens(att.content),
             "created_at": (base + timedelta(milliseconds=i)).isoformat(),
         } for i, att in enumerate(attachments)]).execute()
         attachment_rows = res.data or []
@@ -1035,6 +1049,7 @@ async def _gather_materials(
     blocked_source_types: frozenset[str],
     on_fetch: Optional[Callable[[dict], Awaitable[None]]] = None,
     attachment_visibility: Optional[Visibility] = None,
+    must_check_attachments: bool = False,
 ) -> tuple[list[Material], Optional[NavigationResult]]:
     """
     探索役(chat_navigator.py)で回答役に渡す材料を集める。探索役が1周目から動かない
@@ -1078,6 +1093,7 @@ async def _gather_materials(
             screen_page_excerpt=turn.screen_page.excerpt() if turn.screen_page else None,
             attachments=turn.attachments,
             attachment_visibility=attachment_visibility,
+            must_check_attachments=must_check_attachments,
         )
         # 速度の計測: ベクトル化1回ごと・検索RPC1本ごとの所要時間(ユーザー用クライアントの
         # 1本目が接続の張り直しで遅いかどうかも、rpc_msの先頭で分かる)
@@ -1126,6 +1142,17 @@ def _answer_max_tokens(navigation: Optional[NavigationResult], materials: list[M
     """コース全体の概観のような広い質問だけ長く書けるようにする(普段は短く速く)。"""
     wide = (navigation is not None and len(navigation.goal) >= WIDE_GOAL_ITEMS) or any(m.kind == "course" for m in materials)
     return ANSWER_MAX_OUTPUT_TOKENS_WIDE if wide else ANSWER_MAX_OUTPUT_TOKENS
+
+
+def answer_options(model: str, effort: Optional[str], max_output_tokens: int) -> LLMOptions:
+    """
+    回答役の呼び出しのオプション。思考のトークンも上限に含まれるので、推論の量に応じて足す。
+    GPT-6系はtemperatureの既定値(1)以外とmax_tokensを受け付けない(探索役・確かめ役と同じ)。
+    """
+    limit = max_output_tokens + (ANSWER_THINKING_TOKENS if effort in (None, "none") else ANSWER_REASONING_THINKING_TOKENS)
+    if model.startswith("gpt-"):
+        return LLMOptions(temperature=1.0, max_completion_tokens=limit, reasoning_effort=effort)
+    return LLMOptions(max_tokens=limit, reasoning_effort=effort)
 
 
 def _previous_turn_refs(history_rows: list[dict]) -> list[dict]:
@@ -1203,16 +1230,19 @@ def _build_answer_messages(
     # 資料は毎ターン変わりうる(添付・外す・全文で渡す1本の入れ替わり)ので最後のメッセージに置く。
     # 確かめ役(chat_reasoning)はsystemだけ差し替えるので、同じ資料が見える
     attachments_text = render_for_answer(turn.attachments, attachment_visibility or plan_visibility(turn.attachments))
+    ai_code_rule = render_ai_code_rule(turn.attachments)
     turn_template = _render_conditional_sections(_load_prompt("chat_answer_turn_prompt.txt"), {
         "HAS_SOURCES": bool(materials),
         "HAS_GOAL": bool(goal),
         "HAS_ATTACHMENTS": bool(attachments_text),
+        "HAS_AI_CODE_RULE": bool(ai_code_rule),
         "HAS_SCREEN_CONTEXT": bool(screen_context),
     })
     turn_message = fill_placeholders(turn_template, {
         "SOURCES": format_sources_block(materials),
         "GOAL": "\n".join(f"- {g}" for g in goal or []),
         "ATTACHMENTS": attachments_text,
+        "AI_CODE_RULE": ai_code_rule,
         "SCREEN_CONTEXT": screen_context,
         "REPLY_LANGUAGE": decision.reply_language,
         "MESSAGE": turn.message_for_prompt,
@@ -1309,23 +1339,43 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
             return True, usage
         raise RuntimeError(f"failed to read an attachment: {error}")
 
+    new = [Attachment(
+        id=row["id"], title=row.get("title") or res.title, content=row["content"], summary=res.summary,
+        sections=res.sections, message_id=row.get("message_id"), created_at=row.get("created_at") or "",
+        token_count=row.get("token_count") or estimate_tokens(row["content"]),
+        forbids_ai_code=res.forbids_ai_code,
+    ) for row, res in zip(rows, results)]
+    # 貼った直後はたいてい全文で読んでほしいので、選択中の合計が上限に収まるものは自動で選ぶ
+    picked = auto_select(turn.attachments, new)
+    for a in new:
+        a.selected = a.id in picked
+
     def save() -> None:
-        for row, res in zip(rows, results):
+        for a, res in zip(new, results):
             admin_client.table("chat_attachments").update({
                 "status": "ready",
                 # 本人が付けた名前を優先し、無ければ要約役が付けた名前
-                "title": row.get("title") or res.title or None,
+                "title": a.title or None,
                 "summary": res.summary,
                 "sections": [sec.to_json() for sec in res.sections],
                 "usage": res.usage_json(),
-            }).eq("id", row["id"]).execute()
+                "selected": a.selected,
+                "forbids_ai_code": a.forbids_ai_code,
+            }).eq("id", a.id).execute()
     await asyncio.to_thread(save)
-    for row, res in zip(rows, results):
-        turn.attachments.append(Attachment(
-            id=row["id"], title=row.get("title") or res.title, content=row["content"], summary=res.summary,
-            sections=res.sections, message_id=row.get("message_id"), created_at=row.get("created_at") or "",
-        ))
+    turn.attachments.extend(new)
+    # 資料の中の検索(attachment.search)に、次のターンから使えるように今すぐ入れる(返答は待たせない)。
+    # 失敗してもトリガが積んだキューをpatrolが後で処理する
+    for a in new:
+        task = asyncio.create_task(index_now("chat_attachment", a.id))
+        _BACKGROUND_TASKS.add(task)
+        task.add_done_callback(_BACKGROUND_TASKS.discard)
+        task.add_done_callback(_ignore_task_exception)
     return False, usage
+
+
+# 返答を待たせずに走らせる後片付け(資料のインデックス)。参照を持っておかないとGCで途中で消える
+_BACKGROUND_TASKS: set = set()
 
 
 def _mark_new_attachments_failed(admin_client, turn: PreparedTurn) -> None:
@@ -1483,6 +1533,15 @@ async def run_chat_turn(
             await emit("done", {"status": decision.intent, "credits_charged": 0})
             return
 
+        # 推論が要るターンで、全文を渡していない資料があれば、振り分け役が探索不要と判断しても探しに行く
+        # (確かめ役が資料の本文を見ずに一般論で「訂正」を作り、仕様書と逆のことを答えた失敗の対策、10章)
+        retrieval_forced = False
+        must_check_attachments = decision.needs_reasoning and any(
+            not attachment_visibility.is_full(a) for a in turn.attachments)
+        if must_check_attachments and not decision.needs_retrieval:
+            decision.needs_retrieval = True
+            retrieval_forced = True
+
         # --- 3. 分岐: 探索 ---
         materials: list[Material] = []
         navigation: Optional[NavigationResult] = None
@@ -1504,7 +1563,7 @@ async def run_chat_turn(
 
             materials, navigation = await _gather_materials(
                 llm, billing, user_client, turn, history, map_task, chat_map_task, await blocked_task, on_fetch,
-                attachment_visibility)
+                attachment_visibility, must_check_attachments)
             timer.mark("retrieval_done")
             await emit("sources", {"sources": sources_event(materials)})
 
@@ -1529,13 +1588,11 @@ async def run_chat_turn(
                     print(f"⚠️ [chat] checking step failed for message {turn.assistant_message_id}: {checked.error}")
             elif REASONING_CONFIG.single_model:
                 answer_model, answer_effort = REASONING_CONFIG.single_model, REASONING_CONFIG.single_effort
-        await emit("status", {"stage": "writing"})
+        # 一段で推論するときは、考えている間(最初の1文字まで)「じっくり考えています…」を出す
+        thinking = answer_effort not in (None, "none")
+        await emit("status", {"stage": "reasoning" if thinking else "writing"})
         state = StreamState()
-        # 3.1 Flash Liteでは reasoning_effort="low" で最初の1文字までが数秒遅くなった(2026-09-29)が、
-        # 3.5 Flash Liteのlowは約0.6秒で、推論なしの3.1と変わらなかった(2026-10-02に計測)。
-        # 2.5 Flash(現在のANSWER_MODEL)も推論noneで最初の1文字は約0.4〜0.5秒(2026-10-04に計測)。
-        options = LLMOptions(max_tokens=_answer_max_tokens(navigation, materials) + ANSWER_THINKING_TOKENS,
-                             reasoning_effort=answer_effort)
+        options = answer_options(answer_model, answer_effort, _answer_max_tokens(navigation, materials))
         timer.mark("answer_started")
         async for delta in llm.generate_stream(answer_model, messages, state, options):
             if "answer_first_token" not in timer.marks:
@@ -1555,6 +1612,7 @@ async def run_chat_turn(
             "answer_cache_write_tokens": state.cache_write_tokens,
             "usage_estimated": state.usage_estimated,
             "materials": [{"key": m.key, "handle": m.handle} for m in materials],
+            "retrieval_forced_for_attachments": retrieval_forced or None,
             "attachments": {
                 "count": len(turn.attachments),
                 "full": [a.handle for a in turn.attachments if attachment_visibility.is_full(a)],

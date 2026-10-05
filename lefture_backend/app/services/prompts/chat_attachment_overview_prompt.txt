@@ -2,5 +2,6 @@ You name and summarize a document that a university student pasted into a study 
 
 - `title`: a short name for the whole document (at most 60 characters, in the document's language).
 - `summary`: 2–3 sentences in the document's language: what kind of document it is, what it covers, and, for an assignment, what it asks the student to do and by when.
+- `forbids_ai_code`: true only when the document says that using AI tools (LLMs, chatbots, AI code completion such as Copilot) to write or generate code is not allowed for the work it describes. False when it says nothing about it, only restricts copying from people, or only limits AI for writing prose.
 
 Return only the JSON object.

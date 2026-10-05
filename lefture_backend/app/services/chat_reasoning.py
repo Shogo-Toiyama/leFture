@@ -12,6 +12,8 @@
   - Luna単体(16/27)や3.8 Flash medium(16/27、消費は約8倍)より、口調(励まし・寄り添い)を
     Geminiのまま保てる点でユーザーが選んだ。
 
+2026-10-05: 回答役をLunaにしたので一段("single"、Luna推論low)に切り替えた。
+
 一段への切り替え: REASONING_CONFIG.mode を "single" にすると、確かめ役を呼ばずに single_model で
 直接答える(将来、ユーザーが選んだプロバイダー・モデルで答える方式(BYOK)にするときのため)。
 """
@@ -38,7 +40,9 @@ class ReasoningConfig:
     single_effort: ReasoningEffort = None
 
 
-REASONING_CONFIG = ReasoningConfig(mode="two_stage")
+# 2026-10-05に二段構えから一段へ(回答役をLunaにしたため。書き手もLunaなら、確かめ役のメモを
+# 挟む意味が無い)。推論が要るターンはLunaが推論lowで直接答える。二段構えに戻すときはmode="two_stage"。
+REASONING_CONFIG = ReasoningConfig(mode="single", single_model="gpt-6-luna", single_effort="low")
 
 # 確かめ役の待ち時間の上限。超えたり失敗したりしたら、メモなしで回答役がそのまま答える
 SOLVER_TIMEOUT_SECONDS = 40

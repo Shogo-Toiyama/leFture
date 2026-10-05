@@ -105,8 +105,26 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   onAttachmentCountChange,
 }) => {
   const { t } = useLanguage();
-  const { messages, attachments, loading, loadError, sending, send, retry, discard, reload, removeAttachment } =
-    useChatConversation(threadId, { onThreadCreated });
+  const {
+    messages,
+    attachments,
+    selectAttachment,
+    loading,
+    loadError,
+    sending,
+    send,
+    retry,
+    discard,
+    reload,
+    removeAttachment,
+  } = useChatConversation(threadId, { onThreadCreated });
+  // 資料の一覧は、ヘッダーのクリップのボタン(親が開く)と、＋メニューの「既存の資料を選ぶ」(ここで開く)の両方から開く
+  const [localListOpen, setLocalListOpen] = useState(false);
+  const listOpen = attachmentListOpen || localListOpen;
+  const closeList = useCallback(() => {
+    setLocalListOpen(false);
+    onAttachmentListClose?.();
+  }, [onAttachmentListClose]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
   const [prefill, setPrefill] = useState<{ text: string; attachments?: ChatDraftAttachment[]; nonce: number } | null>(
@@ -295,6 +313,10 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           onClearSelectedText={onClearSelection}
           lectureTitle={lectureTitle}
           onDetachLecture={onDetachLecture}
+          selectedAttachments={listedAttachments.filter((a) => a.selected)}
+          onUnselectAttachment={(id) => void selectAttachment(id, false).catch(() => {})}
+          hasAttachments={listedAttachments.some((a) => a.status === 'ready')}
+          onOpenAttachmentList={() => setLocalListOpen(true)}
           prefill={prefill}
           autoFocus={variant === 'page'}
         />
@@ -302,10 +324,11 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
       </div>
 
       <AttachmentListModal
-        open={attachmentListOpen && !viewing}
+        open={listOpen && !viewing}
         attachments={listedAttachments}
         onOpen={(a) => setViewing({ attachment: viewableFromAttachment(a), id: a.id })}
-        onClose={() => onAttachmentListClose?.()}
+        onToggleSelected={selectAttachment}
+        onClose={closeList}
       />
       <AttachmentViewerModal
         attachment={viewing?.attachment ?? null}

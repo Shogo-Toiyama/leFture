@@ -52,6 +52,8 @@ interface AttachmentChip {
   title: string;
   chars: number;
   status?: ChatAttachment['status'];
+  /** 送った資料のとき: 全文で読ませているか */
+  selected?: boolean;
   viewable: ViewableAttachment;
   id?: string;
 }
@@ -69,6 +71,7 @@ const UserMessage: React.FC<{
         title: a.title || t('chatAttachmentUntitled'),
         chars: a.char_count,
         status: a.status,
+        selected: a.selected,
         viewable: viewableFromAttachment(a),
         id: a.id,
       }))
@@ -95,6 +98,11 @@ const UserMessage: React.FC<{
               <span className="chat-msg-attachment-meta">
                 {t('chatAttachmentChars', { count: formatNumber(chip.chars) })}
               </span>
+              {chip.status === 'ready' && (
+                <span className={`chat-attachment-mode ${chip.selected ? 'is-full' : ''}`}>
+                  {chip.selected ? t('chatAttachmentFullRead') : t('chatAttachmentTocRead')}
+                </span>
+              )}
               {chip.status && <AttachmentStatusBadge status={chip.status} />}
             </button>
           ))}

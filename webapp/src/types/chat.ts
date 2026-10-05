@@ -179,6 +179,17 @@ export const CHAT_MAX_ATTACHMENTS_PER_MESSAGE = 5;
 export const CHAT_MAX_ATTACHMENTS_PER_THREAD = 30;
 export const CHAT_MAX_ATTACHMENT_TITLE_CHARS = 100;
 
+/**
+ * 全文で読む資料(選択中)の合計の上限。バックエンドの MAX_SELECTED_TOKENS と揃える
+ * (超える選択はバックエンドも断るが、画面でも先に止めて理由を出す)。
+ */
+export const CHAT_MAX_SELECTED_TOKENS = 30_000;
+/**
+ * 全文で読む資料1万トークンあたりの、1ターンの消費の目安(回答役の入力原価 × チャットの請求倍率)。
+ * 一覧の「1回あたり約+Nクレジット」の表示にだけ使う目安で、請求はバックエンドが実際のトークンで計算する。
+ */
+export const CHAT_CREDITS_PER_10K_TOKENS = 1.35;
+
 /** processing: 確認・目次づくりの途中 / ready: 使える / blocked: 断った / failed: 処理に失敗した */
 export type ChatAttachmentStatus = 'processing' | 'ready' | 'blocked' | 'failed';
 
@@ -202,6 +213,10 @@ export interface ChatAttachment {
   title: string | null;
   content: string;
   char_count: number;
+  /** 全文を渡したときのトークン数の概算(バックエンドのestimate_tokens)。 */
+  token_count: number;
+  /** 全文で読む資料か(本人が選ぶ。新しい資料は上限に収まれば自動で選ばれる)。 */
+  selected: boolean;
   summary: string | null;
   sections: ChatAttachmentSection[];
   created_at: string;

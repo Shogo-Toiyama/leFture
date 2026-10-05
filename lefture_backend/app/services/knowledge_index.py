@@ -652,6 +652,48 @@ def _build_chat_turn(admin_client, source_id: str, cache: _ContextCache) -> list
     )]
 
 
+def _build_chat_attachment(admin_client, source_id: str, cache: _ContextCache) -> list[ChunkDraft]:
+    """
+    チャットに添付した資料を、目次の1節=1チャンクに(chat_attachments.sectionsの区切りをそのまま使う。
+    節は最大3,500字で、MAX_CHUNK_CHARSと同じくらい)。探索役のattachment.searchが、当たった節を
+    呼び名A{n}/S{k}に直せるように、metadataにthread_id・attachment_id・節の番号を入れる。
+    審査を通った(ready)資料だけ。外した資料は返さない(トリガがチャンクを外す)。
+    """
+    res = admin_client.table("chat_attachments").select(
+        "id, user_id, thread_id, title, content, sections, status, deleted_at"
+    ).eq("id", source_id).maybe_single().execute()
+    row = res.data if res else None
+    if not row or row.get("deleted_at") or row.get("status") != "ready":
+        return []
+    content = row.get("content") or ""
+    title = (row.get("title") or "Attached material").strip()
+    drafts = []
+    for sec in row.get("sections") or []:
+        start, end, index = sec.get("start"), sec.get("end"), sec.get("index")
+        if not (isinstance(start, int) and isinstance(end, int) and isinstance(index, int)):
+            continue
+        body = content[start:end].strip()
+        if not body:
+            continue
+        drafts.append(ChunkDraft(
+            chunk_index=index - 1,
+            title=f"Attachment: {title} / {(sec.get('title') or f'Part {index}').strip()}",
+            body=body,
+            user_id=row["user_id"],
+            metadata={"thread_id": row["thread_id"], "attachment_id": row["id"], "section": index},
+        ))
+    return drafts
+
+
+async def index_now(source_type: str, source_id: str) -> None:
+    """
+    キューを待たずに1件だけ今すぐインデックスする(添付した資料を、次のターンから検索できるように)。
+    トリガが積んだキューの行は残るが、後でpatrolが処理するときはcontent_hashが同じなので埋め込みは呼ばれない。
+    """
+    admin_client = get_supabase_client()
+    await _index_one(admin_client, _ContextCache(admin_client), source_type, source_id)
+
+
 SOURCE_TYPE_BUILDERS: dict[str, Callable[[Any, str, _ContextCache], list[ChunkDraft]]] = {
     "review_card": _build_review_card,
     "deep_note": _build_deep_note,
@@ -663,6 +705,7 @@ SOURCE_TYPE_BUILDERS: dict[str, Callable[[Any, str, _ContextCache], list[ChunkDr
     "transcript_topic": _build_transcript_topic,
     "lecture_moment": _build_lecture_moment,
     "chat_turn": _build_chat_turn,
+    "chat_attachment": _build_chat_attachment,
 }
 
 

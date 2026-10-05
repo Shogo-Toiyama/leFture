@@ -19,6 +19,7 @@ ${ATTACHMENTS}
 </attached_materials>
 
 <!--END_IF-->
+
 <!--IF:HAS_SCREEN_CONTEXT-->
 <screen_context>
 ${SCREEN_CONTEXT}
@@ -30,3 +31,9 @@ ${SCREEN_CONTEXT}
 <student_message>
 ${MESSAGE}
 </student_message>
+<!--IF:HAS_AI_CODE_RULE-->
+
+<assignment_rules>
+${AI_CODE_RULE}
+</assignment_rules>
+<!--END_IF-->

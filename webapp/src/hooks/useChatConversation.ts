@@ -7,6 +7,7 @@ import {
   newClientMessageId,
   removeChatAttachment,
   sendChatMessage,
+  setChatAttachmentSelected,
 } from '../lib/chat';
 import type {
   ChatAttachment,
@@ -338,9 +339,21 @@ export function useChatConversation(threadId: string | null, options: Options = 
     []
   );
 
+  /** 資料を全文で読ませる/外す。断られたら(上限など)元に戻して例外を投げる。 */
+  const selectAttachment = useCallback(async (attachmentId: string, selected: boolean) => {
+    setAttachments((prev) => prev.map((a) => (a.id === attachmentId ? { ...a, selected } : a)));
+    try {
+      await setChatAttachmentSelected(attachmentId, selected);
+    } catch (e) {
+      setAttachments((prev) => prev.map((a) => (a.id === attachmentId ? { ...a, selected: !selected } : a)));
+      throw e;
+    }
+  }, []);
+
   return {
     messages,
     attachments,
+    selectAttachment,
     loading,
     loadError,
     sending,

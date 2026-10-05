@@ -88,6 +88,7 @@ from app.services.chat_service import (
     prepare_chat_turn,
     run_chat_turn,
 )
+from app.services.chat_attachments import MAX_SELECTED_TOKENS
 from app.services.chat_screen import SCREEN_KINDS, ScreenRef
 from app.services.chat_summary import run_fold as run_chat_summary_fold
 from app.services import profile_store
@@ -5825,6 +5826,11 @@ class ChatThreadUpdateRequest(BaseModel):
     title: str
 
 
+class ChatAttachmentUpdateRequest(BaseModel):
+    """資料を全文で読ませるか(選択)。"""
+    selected: bool
+
+
 class ProfileItemRejectRequest(BaseModel):
     reason: Optional[str] = None
 
@@ -5976,6 +5982,48 @@ async def delete_chat_thread(thread_id: str, request: Request):
         await profile_store.on_thread_deleted(uid, thread_id)
     except Exception as e:
         print(f"⚠️ [profile] failed to follow the deletion of thread {thread_id}: {e}")
+    return {"success": True}
+
+
+@app.patch("/chat/attachments/{attachment_id}")
+async def update_chat_attachment(attachment_id: str, payload: ChatAttachmentUpdateRequest, request: Request):
+    """
+    資料を選ぶ(全文で回答役・確かめ役に渡す)/選択を外す(目次と検索で読む)。選ぶときは、同じ会話で
+    選択中の資料と合わせてMAX_SELECTED_TOKENSに収まるかを確かめ、収まらなければ理由を返す。
+    """
+    uid = await _get_authenticated_user_id(request)
+    attachment_id = _parse_uuid_or_422(attachment_id, "attachment_id")
+    admin_client = get_supabase_client()
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments").select("id, user_id, thread_id, status, token_count, deleted_at")
+            .eq("id", attachment_id).maybe_single().execute()
+    )
+    row = res.data if res else None
+    if not row or row.get("user_id") != uid or row.get("deleted_at"):
+        raise HTTPException(status_code=404, detail={"error_code": "ATTACHMENT_NOT_FOUND", "message": "Attachment not found."})
+    if payload.selected:
+        if row.get("status") != "ready":
+            raise HTTPException(status_code=409, detail={"error_code": "ATTACHMENT_NOT_READY",
+                                                         "message": "This attachment cannot be read."})
+        if row["token_count"] > MAX_SELECTED_TOKENS:
+            raise HTTPException(status_code=413, detail={
+                "error_code": "ATTACHMENT_TOO_LONG_TO_SELECT", "message": "This attachment is too long to read in full.",
+                "max_tokens": MAX_SELECTED_TOKENS, "token_count": row["token_count"]})
+        others = await asyncio.to_thread(
+            lambda: admin_client.table("chat_attachments").select("token_count")
+                .eq("thread_id", row["thread_id"]).eq("selected", True).is_("deleted_at", "null")
+                .neq("id", attachment_id).execute()
+        )
+        selected_tokens = sum(r["token_count"] for r in others.data or [])
+        if selected_tokens + row["token_count"] > MAX_SELECTED_TOKENS:
+            raise HTTPException(status_code=409, detail={
+                "error_code": "ATTACHMENT_SELECTION_LIMIT",
+                "message": "Selected attachments would exceed the limit.",
+                "max_tokens": MAX_SELECTED_TOKENS, "selected_tokens": selected_tokens, "token_count": row["token_count"]})
+    await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments").update({"selected": payload.selected})
+            .eq("id", attachment_id).execute()
+    )
     return {"success": True}
 
 

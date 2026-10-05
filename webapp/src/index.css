@@ -17623,3 +17623,245 @@ button.ai-settings-scrim:hover:not(:disabled) { filter: none; }
 .ai-obs-head a { flex: none; color: var(--gold); text-decoration: none; }
 .ai-forget-card { margin-top: 1.25rem; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
 button.ai-forget-btn { align-self: flex-start; background: rgba(229, 57, 53, 0.12); color: #ef7d73; border: 1px solid rgba(239, 125, 115, 0.4); border-radius: 999px; padding: 0.55rem 1.1rem; }
+
+/* 全文で読む資料の選択(一覧の切り替え・上限のバー・チップの印) */
+.chat-attachment-list-budget {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  font-size: 0.8rem;
+  color: var(--starlight);
+  font-variant-numeric: tabular-nums;
+}
+
+.chat-attachment-list-budget p {
+  margin: 0;
+  color: var(--comet);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.chat-attachment-list-budget-bar {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.chat-attachment-list-budget-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gold);
+  transition: width 0.2s ease;
+}
+
+.chat-attachment-list-item {
+  display: grid;
+  gap: 0;
+  border-radius: 12px;
+}
+
+.chat-attachment-list-item .chat-attachment-list-row {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.chat-attachment-list-item.is-selected .chat-attachment-list-row,
+.chat-attachment-list-item.is-selected .chat-attachment-list-select {
+  border-color: rgba(255, 179, 0, 0.35);
+}
+
+.chat-attachment-list-select {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 8px 14px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.chat-attachment-list-cost {
+  color: var(--comet);
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chat-attachment-list-note {
+  flex-basis: 100%;
+  margin: 0;
+  color: #ffb4a8;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.chat-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--starlight);
+}
+
+.chat-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.chat-switch-track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.chat-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.chat-switch input:checked + .chat-switch-track {
+  background: var(--gold);
+}
+
+.chat-switch input:checked + .chat-switch-track .chat-switch-thumb {
+  transform: translateX(14px);
+}
+
+.chat-switch input:focus-visible + .chat-switch-track {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.chat-switch.is-disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.chat-attachment-mode {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  background: var(--glass-high);
+  color: var(--comet);
+}
+
+.chat-attachment-mode.is-full {
+  background: rgba(255, 179, 0, 0.18);
+  color: var(--gold);
+}
+
+.chat-attachment.is-selected {
+  background: rgba(255, 179, 0, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-switch-track,
+  .chat-switch-thumb,
+  .chat-attachment-list-budget-bar > span {
+    transition: none;
+  }
+}
+
+/* Paperテーマ */
+.chat-fullscreen.is-paper .chat-attachment-list-budget,
+.chat-fullscreen.is-paper .chat-switch,
+.chat-page.is-paper .chat-attachment-list-budget,
+.chat-page.is-paper .chat-switch,
+.chat-panel.is-paper .chat-attachment-list-budget,
+.chat-panel.is-paper .chat-switch {
+  color: var(--ink, #3e3228);
+}
+
+.chat-fullscreen.is-paper .chat-attachment-list-budget p,
+.chat-fullscreen.is-paper .chat-attachment-list-cost,
+.chat-page.is-paper .chat-attachment-list-budget p,
+.chat-page.is-paper .chat-attachment-list-cost,
+.chat-panel.is-paper .chat-attachment-list-budget p,
+.chat-panel.is-paper .chat-attachment-list-cost {
+  color: #8a7a6c;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-list-budget-bar,
+.chat-page.is-paper .chat-attachment-list-budget-bar,
+.chat-panel.is-paper .chat-attachment-list-budget-bar {
+  background: #ece4d4;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-list-budget-bar > span,
+.chat-fullscreen.is-paper .chat-switch input:checked + .chat-switch-track,
+.chat-page.is-paper .chat-attachment-list-budget-bar > span,
+.chat-page.is-paper .chat-switch input:checked + .chat-switch-track,
+.chat-panel.is-paper .chat-attachment-list-budget-bar > span,
+.chat-panel.is-paper .chat-switch input:checked + .chat-switch-track {
+  background: #d97706;
+}
+
+.chat-fullscreen.is-paper .chat-switch-track,
+.chat-page.is-paper .chat-switch-track,
+.chat-panel.is-paper .chat-switch-track {
+  background: #ddd3c2;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-list-select,
+.chat-page.is-paper .chat-attachment-list-select,
+.chat-panel.is-paper .chat-attachment-list-select {
+  background: #fcfaf5;
+  border-color: #e6ded0;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-list-item.is-selected .chat-attachment-list-row,
+.chat-fullscreen.is-paper .chat-attachment-list-item.is-selected .chat-attachment-list-select,
+.chat-page.is-paper .chat-attachment-list-item.is-selected .chat-attachment-list-row,
+.chat-page.is-paper .chat-attachment-list-item.is-selected .chat-attachment-list-select,
+.chat-panel.is-paper .chat-attachment-list-item.is-selected .chat-attachment-list-row,
+.chat-panel.is-paper .chat-attachment-list-item.is-selected .chat-attachment-list-select {
+  border-color: #ecd9b0;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-list-note,
+.chat-page.is-paper .chat-attachment-list-note,
+.chat-panel.is-paper .chat-attachment-list-note {
+  color: #b91c1c;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-mode,
+.chat-page.is-paper .chat-attachment-mode,
+.chat-panel.is-paper .chat-attachment-mode {
+  background: #efe8da;
+  color: #8a7a6c;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-mode.is-full,
+.chat-page.is-paper .chat-attachment-mode.is-full,
+.chat-panel.is-paper .chat-attachment-mode.is-full {
+  background: #fdecc8;
+  color: #b45309;
+}
+
+.chat-fullscreen.is-paper .chat-attachment.is-selected,
+.chat-page.is-paper .chat-attachment.is-selected,
+.chat-panel.is-paper .chat-attachment.is-selected {
+  background: #fdf3df;
+  border-color: #ecd9b0;
+}

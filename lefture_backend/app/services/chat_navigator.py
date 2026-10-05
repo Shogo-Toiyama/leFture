@@ -174,6 +174,8 @@ def available_targets(web_left: bool = True, search_left: bool = True) -> list[s
     targets = ["lecture.concept"] if search_left else []
     if CAPABILITIES["CAN_CHAT"] and search_left:
         targets += ["chat.all", "chat.thread"]
+    if CAPABILITIES["CAN_ATTACHMENTS"] and search_left:
+        targets.append("attachment.search")
     if CAPABILITIES["CAN_WEB"] and web_left:
         targets.append("web.search")
     return targets
@@ -302,6 +304,8 @@ class NavigatorInput:
     # このスレッドに添付された資料(呼び名A1…を振ったもの)と、回答役に全文で見せている資料
     attachments: list[Attachment] = field(default_factory=list)
     attachment_visibility: Optional[Visibility] = None
+    # 推論が要るターンで、全文が見えていない資料がある: 資料の該当箇所を取ってくるよう明示する(10章)
+    must_check_attachments: bool = False
 
     @property
     def can_transcript(self) -> bool:
@@ -681,6 +685,9 @@ def build_schema(nav_input: NavigatorInput, state: NavState) -> dict[str, Any]:
     scope = nav_input.student_map.scope_handles()
     op_shapes: list[dict[str, Any]] = []
     targets = available_targets(state.web_searches_left() > 0, state.searches_left() > 0)
+    # 資料の中の検索は、全文で見えていない資料があるときだけ選べる
+    if not nav_input.attachment_scope_handles():
+        targets = [t for t in targets if t != "attachment.search"]
     if targets:
         op_shapes.append({"type": "object", "properties": {
             "op": {"type": "string", "enum": ["find"]},
@@ -731,6 +738,8 @@ def _op_kind(raw: dict) -> Optional[str]:
         return "lecture"
     if op == "find":
         target = raw.get("target") or ""
+        if target == "attachment.search":
+            return "attachment"
         return "web" if target == "web.search" else "chat" if target.startswith("chat.") else "lecture"
     if op == "open":
         handle = raw.get("handle") or ""
@@ -789,6 +798,12 @@ def validate_operations(
             elif raw["target"] == "web.search":
                 # Webには絞り込みが無い。1ターンの回数の上限はここで数える(繰り返しの判定の後)
                 req = FindRequest(target="web.search", query=query, layer="all", within=None, **common)
+            elif raw["target"] == "attachment.search":
+                if not nav_input.attachment_scope_handles():
+                    reason = "no_attachment_to_search"
+                else:
+                    # 資料の中の検索には層・コースの絞り込みが無い(今のスレッドの資料だけを探す)
+                    req = FindRequest(target="attachment.search", query=query, layer="all", within=None, **common)
             else:
                 req = FindRequest(
                     target=raw["target"], query=query,
@@ -887,6 +902,12 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
         parts.append("<screen>\n" + "\n".join(screen) + "\n</screen>")
 
     parts.append(f"<student_message>\n{nav_input.message}\n</student_message>")
+    if lap == 1 and nav_input.must_check_attachments and nav_input.attachment_scope_handles():
+        parts.append("<check_note>This message needs careful checking, and the answerer does not see the attached "
+                     "material in full. Unless the message clearly has nothing to do with the material, fetch the "
+                     "parts it depends on: attachment.search with a distinctive line of what the student pasted or "
+                     "the term in question, or open the section from the table of contents. Without them, the "
+                     "checking step can only guess.</check_note>")
 
     done_laps = [lp for lp in state.laps if lp.done]
     if done_laps:
@@ -1246,8 +1267,9 @@ async def resolve_hit_handles(
       属さない)に当たったものは、原文で既に見えているので捨てる(3-14 ④)。
     """
     m = nav_input.student_map
-    lecture_chunks = [c for c in chunks if c.get("source_type") != "chat_turn"]
+    lecture_chunks = [c for c in chunks if c.get("source_type") not in ("chat_turn", "chat_attachment")]
     chat_chunks = [c for c in chunks if c.get("source_type") == "chat_turn"]
+    attachment_chunks = [c for c in chunks if c.get("source_type") == "chat_attachment"]
 
     topic_ids = [c.get("source_id") for c in lecture_chunks
                  if c.get("source_type") in ("topic_summary", "transcript_topic") and c.get("source_id")]
@@ -1280,6 +1302,15 @@ async def resolve_hit_handles(
             p_handle = await chat_thread_handle_for(nav_input, chat_source, thread_id)
             if p_handle:
                 hits.append(Hit(handle=f"{p_handle}/T{turn_number}", chunk=c))
+
+    # 資料の節。全文で回答役に見えている資料(と外した資料)に当たったものは捨てる
+    searchable = set(nav_input.attachment_scope_handles())
+    for c in attachment_chunks:
+        meta = c.get("metadata") or {}
+        a = next((x for x in nav_input.attachments if x.id == meta.get("attachment_id")), None)
+        if a is None or a.handle not in searchable or not isinstance(meta.get("section"), int):
+            continue
+        hits.append(Hit(handle=f"{a.handle}/S{meta['section']}", chunk=c))
     return hits
 
 
@@ -1434,12 +1465,16 @@ def make_chat_search(
     embed: Callable[[list[str]], Awaitable[list[list[float]]]],
     rpc_ms: Optional[list[int]] = None,
 ) -> SearchFn:
-    """chat.all/chat.threadの検索。chat.threadだけ今のスレッドに絞る(RPCのfilter_thread_id)。"""
+    """
+    chat.all/chat.thread/attachment.searchの検索。chat.threadと資料の中の検索は、今のスレッドに絞る
+    (RPCのfilter_thread_id。資料はスレッドごとなので、ほかのスレッドの資料は探さない)。
+    """
     def _rpc(embedding: list[float], req: FindRequest) -> list[dict]:
+        source_type = "chat_attachment" if req.target == "attachment.search" else "chat_turn"
         params: dict[str, Any] = {
-            "query_embedding": embedding, "match_count": SEARCH_MATCH_COUNT, "filter_source_types": ["chat_turn"],
+            "query_embedding": embedding, "match_count": SEARCH_MATCH_COUNT, "filter_source_types": [source_type],
         }
-        if req.target == "chat.thread" and current_thread_id:
+        if req.target in ("chat.thread", "attachment.search") and current_thread_id:
             params["filter_thread_id"] = current_thread_id
         t = time.perf_counter()
         res = user_client.rpc("search_knowledge_chunks", params).execute()
@@ -1463,8 +1498,9 @@ def make_search(lecture_search: SearchFn, chat_search: SearchFn) -> SearchFn:
     """探索役に渡す1つの検索関数。target(lecture.* / chat.*)ごとに実際の検索へ振り分け、
     結果は元の順番のまま返す。"""
     async def search(requests: list[FindRequest]) -> list[Union[list[dict], Exception]]:
+        # 資料の中の検索も、スレッドで絞るのでチャットの検索と同じ関数で行う
         lecture_reqs = [r for r in requests if r.target.startswith("lecture.")]
-        chat_reqs = [r for r in requests if r.target.startswith("chat.")]
+        chat_reqs = [r for r in requests if not r.target.startswith("lecture.")]
         lecture_results, chat_results = await asyncio.gather(lecture_search(lecture_reqs), chat_search(chat_reqs))
         li, ci = iter(lecture_results), iter(chat_results)
         return [next(li) if r.target.startswith("lecture.") else next(ci) for r in requests]
@@ -1740,6 +1776,15 @@ def _ms_since(t0: float) -> int:
     return round((time.perf_counter() - t0) * 1000)
 
 
+def _find_kind(target: str) -> str:
+    """検索の種類(画面の表示用): web / attachments / chats / lectures。"""
+    if target == "web.search":
+        return "web"
+    if target == "attachment.search":
+        return "attachments"
+    return "chats" if target.startswith("chat.") else "lectures"
+
+
 def _open_kind(handle: str) -> str:
     """開く呼び名の種類(画面の表示用): web / attachments / chats / lectures。"""
     if _WEB_HANDLE_RE.match(handle):
@@ -1754,7 +1799,7 @@ def fetch_kinds(requests: list[Request]) -> list[str]:
     kinds: list[str] = []
     for r in requests:
         if isinstance(r, FindRequest):
-            kind = "web" if r.target == "web.search" else "chats" if r.target.startswith("chat.") else "lectures"
+            kind = _find_kind(r.target)
         elif isinstance(r, OpenRequest):
             kind = _open_kind(r.handle)
         else:
@@ -1789,7 +1834,7 @@ def fetch_info(requests: list[Request]) -> dict:
 
     if isinstance(selected_r, FindRequest):
         info["query"] = selected_r.query
-        info["target"] = "web" if selected_r.target == "web.search" else "chats" if selected_r.target.startswith("chat.") else "lectures"
+        info["target"] = _find_kind(selected_r.target)
         info["layer"] = selected_r.layer
     elif isinstance(selected_r, OpenRequest):
         info["target"] = _open_kind(selected_r.handle)

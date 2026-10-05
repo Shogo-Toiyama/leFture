@@ -9,13 +9,17 @@
                                       ├─ 失敗 → そのターンは error(課金なし)
                                       └─ 全部通った → ready。処理の原価はそのターンの請求に含まれる
                                       ↓
-                              毎ターン: plan_visibility で「全文で渡す資料」と「一覧だけの資料」を決める
+                              新しい資料は、選択中の合計がMAX_SELECTED_TOKENSに収まれば自動で選ぶ(auto_select)
+                                      ↓
+                              毎ターン: 選択中の資料は全文、それ以外は一覧(名前と要約)+目次と検索
 
 - 振り分け役は資料の本文を読まない。安全の確認は添付時に一度だけ(本文を必ず読む要約役が兼ねる)。
   節の束を前から波(READ_WAVE_BATCHES個ずつ並列)で読み、断った束が出た波で止める(最後まで読まされない)。
-- 毎ターン渡すもの: スレッドの資料の合計がFULL_TEXT_BUDGET_CHARS以内なら全部を全文、超えたら
-  最後に添付した1本だけ全文(それ自体が予算以内のとき)、残りは一覧(名前と要約)。中身は探索役が
-  目次(A2)→ 節(A2/S3)と開く。「最後の1本」を外す条件は付けない(10章、ユーザーと合意)。
+- 毎ターン渡すもの(10章「選んだ資料だけ全文で読む」、2026-10-04): 本人が選んだ資料(selected)は全文。
+  選択の上限は合計MAX_SELECTED_TOKENS。選んでいない資料は一覧(名前と要約)だけで、中身は探索役が
+  目次(A2)→ 節(A2/S3)と開くか、資料の中を検索する(attachment.search)。
+  以前の「合計1万字以内なら全部・最後に添付した1本」のルールは、4万字の課題の仕様書で要約しか
+  見えずに仕様書と逆のことを答えた失敗を受けて、本人が選ぶ形に置き換えた。
 - 節の区切りはコードで決める(見出しらしい行・段落の切れ目で2〜3千字ずつ)。要約役は各節に名前と
   「何が書いてあるか」を付けるだけなので、区切りがずれて本文が欠けることは無い。
 """
@@ -48,8 +52,10 @@ MAX_ATTACHMENTS_PER_THREAD = 30
 MAX_ATTACHMENTS_PER_MESSAGE = 5
 MAX_ATTACHMENT_TITLE_CHARS = 100
 
-# 毎ターン全文で渡す量の上限(スレッドの資料の合計、または最後に添付した1本)
-FULL_TEXT_BUDGET_CHARS = 10_000
+# 全文で渡す資料(選択中)の合計の上限(トークン、estimate_tokensの概算)。英語の10万字の資料が
+# 1本丸ごと入る大きさ。1万トークンにつき1ターン約+1.35クレジット(回答役2.5 Flashの入力$0.30/M ×
+# CHAT_CREDIT_MARKUP 1.5 × 300クレジット/$)、推論ターンは確かめ役(Luna $0.10/M)の分で約+0.45。
+MAX_SELECTED_TOKENS = 30_000
 
 # 節の区切り(文字数)。見出しらしい行があればそこで、無ければ段落の切れ目で区切る
 SECTION_TARGET_CHARS = 2500
@@ -64,7 +70,8 @@ READ_WAVE_BATCHES = 10
 # 1回の送信で読む資料(最大5本)全体での、Lunaへの同時呼び出しの上限
 READ_MAX_CONCURRENT_CALLS = 12
 READ_MAX_TOKENS = 4096
-# 名前と要約: 全文で渡す長さの資料は全文から(束と並列に)、それより長い資料は冒頭と目次から(束の後に)
+# 名前と要約: 短い資料は全文から(束と並列に)、それより長い資料は冒頭と目次から(束の後に)
+OVERVIEW_FULL_TEXT_CHARS = 10_000
 OVERVIEW_HEAD_CHARS = 3000
 
 SECTION_TITLE_CHARS = 60
@@ -94,8 +101,8 @@ READER_SCHEMA: dict[str, Any] = {
 
 OVERVIEW_SCHEMA: dict[str, Any] = {
     "type": "object",
-    "properties": {"title": {"type": "string"}, "summary": {"type": "string"}},
-    "required": ["title", "summary"],
+    "properties": {"title": {"type": "string"}, "summary": {"type": "string"}, "forbids_ai_code": {"type": "boolean"}},
+    "required": ["title", "summary", "forbids_ai_code"],
 }
 
 
@@ -127,6 +134,10 @@ class Attachment:
     message_id: Optional[str] = None
     created_at: str = ""
     handle: str = ""
+    # 本人が選んだ(全文で渡す)資料か。新しい資料は上限に収まれば自動で選ばれる
+    selected: bool = False
+    token_count: int = 0
+    forbids_ai_code: bool = False
 
     @property
     def char_count(self) -> int:
@@ -150,9 +161,13 @@ class Attachment:
                 continue
             sections.append(Section(index=raw["index"], start=start, end=end,
                                     title=str(raw.get("title") or ""), description=str(raw.get("description") or "")))
+        token_count = row.get("token_count")
         return cls(id=row["id"], title=(row.get("title") or "").strip(), content=content,
                    summary=(row.get("summary") or "").strip(), sections=sections,
-                   message_id=row.get("message_id"), created_at=row.get("created_at") or "")
+                   message_id=row.get("message_id"), created_at=row.get("created_at") or "",
+                   selected=bool(row.get("selected")),
+                   forbids_ai_code=bool(row.get("forbids_ai_code")),
+                   token_count=token_count if isinstance(token_count, int) else estimate_tokens(content))
 
 
 @dataclass
@@ -161,6 +176,8 @@ class ReadResult:
     title: str = ""
     summary: str = ""
     sections: list[Section] = field(default_factory=list)
+    # 課題の資料が、AIでコードを書くことを禁止しているか(回答役に毎ターン明示する、10章)
+    forbids_ai_code: bool = False
     blocked: bool = False
     error: Optional[str] = None
     calls: int = 0
@@ -367,7 +384,7 @@ async def _read_batch(llm: UnifiedLLM, text: str, bounds: list[tuple[int, int]],
     raise RuntimeError(f"attachment reader failed: {last_error}")
 
 
-async def _overview(llm: UnifiedLLM, text: str, sections: Optional[list[Section]], result: ReadResult) -> tuple[str, str]:
+async def _overview(llm: UnifiedLLM, text: str, sections: Optional[list[Section]], result: ReadResult) -> tuple[str, str, bool]:
     """
     資料の名前と要約。sectionsがNoneなら全文から、あれば冒頭と目次から作る。
     失敗しても資料は使える(名前は本人が付けたもの・節の名前で代わりがきく)ので、空で返す。
@@ -384,19 +401,19 @@ async def _overview(llm: UnifiedLLM, text: str, sections: Optional[list[Section]
         res = await llm.generate(ATTACHMENT_MODEL, messages, _options(OVERVIEW_SCHEMA))
     except Exception as e:
         print(f"⚠️ [chat] attachment overview failed: {e}")
-        return "", ""
+        return "", "", False
     result.calls += 1
     result.input_tokens += res.input_tokens
     result.output_tokens += res.output_tokens
     out = res.output_json if isinstance(res.output_json, dict) else {}
-    return str(out.get("title") or "").strip(), str(out.get("summary") or "").strip()
+    return str(out.get("title") or "").strip(), str(out.get("summary") or "").strip(), out.get("forbids_ai_code") is True
 
 
 async def read_attachment(llm: UnifiedLLM, text: str, limiter: Optional[asyncio.Semaphore] = None) -> ReadResult:
     """
     資料を読んで、審査・節ごとの名前と説明・全体の名前と要約を作る。
     節の束をREAD_WAVE_BATCHES個ずつ並列に読み、断った束が出た波で止める(最後まで読まされない)。
-    全文で渡す長さの資料は、名前と要約も全文から最初の波と並列に作る(待ち時間を増やさない)。
+    短い資料は、名前と要約も全文から最初の波と並列に作る(待ち時間を増やさない)。
     要約役が節を返し損ねたら、その節は本文の最初の行を名前にする(本文は欠けない)。
     """
     result = ReadResult()
@@ -407,7 +424,7 @@ async def read_attachment(llm: UnifiedLLM, text: str, limiter: Optional[asyncio.
     batches = batch_sections(bounds)
     sections: dict[int, Section] = {}
     overview_task: Optional[asyncio.Task] = None
-    if len(text) <= FULL_TEXT_BUDGET_CHARS:
+    if len(text) <= OVERVIEW_FULL_TEXT_CHARS:
         overview_task = asyncio.create_task(_overview(llm, text, None, result))
     try:
         for w in range(0, len(batches), READ_WAVE_BATCHES):
@@ -434,9 +451,10 @@ async def read_attachment(llm: UnifiedLLM, text: str, limiter: Optional[asyncio.
                                   description=sections[n].description if n in sections else "")
     result.sections = [sections[i + 1] for i in range(len(bounds))]
     if overview_task is not None:
-        title, summary = await overview_task
+        title, summary, forbids_ai_code = await overview_task
     else:
-        title, summary = await _overview(llm, text, result.sections, result)
+        title, summary, forbids_ai_code = await _overview(llm, text, result.sections, result)
+    result.forbids_ai_code = forbids_ai_code
     result.title = title[:SECTION_TITLE_CHARS]
     result.summary = summary[:SUMMARY_CHARS]
     return result
@@ -454,14 +472,33 @@ def assign_handles(attachments: list[Attachment]) -> list[Attachment]:
     return ordered
 
 
-def plan_visibility(attachments: list[Attachment], budget: int = FULL_TEXT_BUDGET_CHARS) -> Visibility:
-    """合計が予算以内なら全部を全文、超えたら最後に添付した1本だけ(それ自体が予算以内のとき)。"""
-    if not attachments:
-        return Visibility(full=set())
-    if sum(a.char_count for a in attachments) <= budget:
-        return Visibility(full={a.id for a in attachments})
-    last = max(attachments, key=lambda a: a.created_at)
-    return Visibility(full={last.id} if last.char_count <= budget else set())
+def plan_visibility(attachments: list[Attachment]) -> Visibility:
+    """全文で渡すのは選択中の資料だけ(上限は選ぶときに確かめてある)。"""
+    return Visibility(full={a.id for a in attachments if a.selected})
+
+
+def estimate_tokens(text: str) -> int:
+    """
+    全文を渡したときのトークン数の概算: ceil(ASCII文字数/4) + ASCII以外の文字数。英語は約4文字で
+    1トークン、日本語は1〜2文字で1トークンなので、日本語を多めに見積もる(上限の判定が安全側になる)。
+    migration(20261009000000)の既存行の計算と同じ式。webappは保存した値(token_count)を読むだけ。
+    """
+    non_ascii = sum(1 for ch in text if ord(ch) > 127)
+    return -(-(len(text) - non_ascii) // 4) + non_ascii
+
+
+def auto_select(existing: list[Attachment], new: list[Attachment], limit: int = MAX_SELECTED_TOKENS) -> set[str]:
+    """
+    新しく添付した資料のうち、自動で選ぶもの(添付した順に、選択中の合計が上限に収まるものだけ)。
+    貼った直後はたいてい全文で読んでほしいので、収まるなら選ぶ。収まらない資料は目次と検索で読む。
+    """
+    used = sum(a.token_count for a in existing if a.selected)
+    picked: set[str] = set()
+    for a in new:
+        if used + a.token_count <= limit:
+            picked.add(a.id)
+            used += a.token_count
+    return picked
 
 
 def _line(a: Attachment) -> str:
@@ -480,9 +517,26 @@ def render_for_answer(attachments: list[Attachment], vis: Visibility) -> str:
     listed = [a for a in attachments if not vis.is_full(a)]
     if listed:
         lines = [f"- {_line(a)}: {a.summary or '(no summary)'}" for a in listed]
-        blocks.append("Also attached, but not shown in full here (only the parts in <sources>, if any, were read for "
-                      "this message):\n" + "\n".join(lines))
+        blocks.append("Also attached, but not shown in full here: you see only these summaries and the parts in <sources>, "
+                      "if any. Do not state what else they say; if a reply needs a part you were not given, say you "
+                      "could not check it, and that the student can turn on \"Read in full\" (全文で読む) for that "
+                      "material in the materials list:\n" + "\n".join(lines))
     return "\n\n".join(blocks)
+
+
+def render_ai_code_rule(attachments: list[Attachment]) -> str:
+    """AIでコードを書くことを禁止している資料があれば、そのことを回答役に毎ターン明示する文。無ければ空。"""
+    names = [f'{a.handle} "{a.title}"' if a.title else a.handle for a in attachments if a.forbids_ai_code]
+    if not names:
+        return ""
+    # 生徒の発言の後ろ(最後に読む位置)に置く。資料の本文の前に置いたときは、全文が見えていると
+    # 回答役(2.5 Flash)が仕様書どおりのクラスの骨組みを書いた(2026-10-04の作り直しで確認)
+    return (f"The assignment in {', '.join(names)} forbids using AI to write its code, and the student would be "
+            "the one punished for it. So this reply contains no code for this assignment: no code block, no line, "
+            "no skeleton, no class or method header, no import line, even if the spec spells it out and even if "
+            "the student asks. Describe each step in words instead (what to write next and why, pointing to the "
+            "spec), and invite the student to write it and show you. A code block is allowed only for a different, "
+            "unrelated toy example.")
 
 
 def render_for_router(attachments: list[Attachment], vis: Visibility) -> str:

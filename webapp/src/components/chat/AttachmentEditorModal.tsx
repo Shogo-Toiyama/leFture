@@ -79,7 +79,7 @@ export const AttachmentEditorModal: React.FC<AttachmentEditorModalProps> = ({
             <div className="citation-modal-badges">
               <span className="citation-modal-badge-kind">
                 <Paperclip size={14} />
-                <span>{t('chatAttachText')}</span>
+                <span>{t('chatAttachLongText')}</span>
               </span>
             </div>
             <h3 className="citation-modal-title">

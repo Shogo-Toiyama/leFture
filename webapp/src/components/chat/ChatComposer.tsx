@@ -1,9 +1,10 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowUp, BookOpen, FileText, FileType, Image as ImageIcon, Paperclip, Plus, Quote, X } from 'lucide-react';
+import { ArrowUp, BookOpen, FileText, Files, Paperclip, Plus, Quote, Upload, X } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import {
   CHAT_MAX_ATTACHMENTS_PER_MESSAGE,
   CHAT_MAX_MESSAGE_CHARS,
+  type ChatAttachment,
   type ChatDraftAttachment,
 } from '../../types/chat';
 import { newClientMessageId } from '../../lib/chat';
@@ -20,6 +21,13 @@ interface ChatComposerProps {
   /** 話題にしている講義名(チップとして見せ、外せる)。 */
   lectureTitle: string | null;
   onDetachLecture?: () => void;
+  /** 全文で読ませている資料(チップとして見せ、×で全文で読むのをやめられる)。 */
+  selectedAttachments?: ChatAttachment[];
+  onUnselectAttachment?: (attachmentId: string) => void;
+  /** この会話に選べる資料があるか(＋メニューの「既存の資料を選ぶ」を押せるか)。 */
+  hasAttachments?: boolean;
+  /** ＋メニューの「既存の資料を選ぶ」: 資料の一覧を開く。 */
+  onOpenAttachmentList?: () => void;
   /** 候補の質問を押したとき・送れなかった送信を戻すときに、外から入力欄(と資料)を埋める。 */
   prefill?: { text: string; attachments?: ChatDraftAttachment[]; nonce: number } | null;
   autoFocus?: boolean;
@@ -49,6 +57,10 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
   onClearSelectedText,
   lectureTitle,
   onDetachLecture,
+  selectedAttachments = [],
+  onUnselectAttachment,
+  hasAttachments = false,
+  onOpenAttachmentList,
   prefill,
   autoFocus,
 }) => {
@@ -155,8 +167,20 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
         submit();
       }}
     >
-      {(selectedText || lectureTitle || drafts.length > 0) && (
+      {(selectedText || lectureTitle || drafts.length > 0 || selectedAttachments.length > 0) && (
         <div className="chat-attachments">
+          {selectedAttachments.map((a) => (
+            <span key={a.id} className="chat-attachment is-file is-selected" title={a.title ?? undefined}>
+              <Files size={12} />
+              <span className="chat-attachment-text">{a.title || t('chatAttachmentUntitled')}</span>
+              <span className="chat-attachment-meta">{t('chatAttachmentFullRead')}</span>
+              {onUnselectAttachment && (
+                <button type="button" onClick={() => onUnselectAttachment(a.id)} aria-label={t('chatAttachmentUnselect')}>
+                  <X size={12} />
+                </button>
+              )}
+            </span>
+          ))}
           {drafts.map((draft) => (
             <span key={draft.localId} className="chat-attachment is-file">
               <button
@@ -220,10 +244,25 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
           </button>
           {menuOpen && (
             <div className="chat-attach-menu" role="menu">
+              <button
+                type="button"
+                role="menuitem"
+                disabled={!hasAttachments || !onOpenAttachmentList}
+                onClick={() => {
+                  setMenuOpen(false);
+                  onOpenAttachmentList?.();
+                }}
+              >
+                <Files size={16} />
+                <span className="chat-attach-menu-label">
+                  <span>{t('chatAttachSelect')}</span>
+                  <small>{hasAttachments ? t('chatAttachSelectHint') : t('chatAttachSelectNone')}</small>
+                </span>
+              </button>
               <button type="button" role="menuitem" onClick={openNewText} disabled={draftsFull}>
                 <FileText size={16} />
                 <span className="chat-attach-menu-label">
-                  <span>{t('chatAttachText')}</span>
+                  <span>{t('chatAttachLongText')}</span>
                   <small>
                     {draftsFull
                       ? t('chatAttachmentLimitPerMessage', { max: CHAT_MAX_ATTACHMENTS_PER_MESSAGE })
@@ -232,16 +271,10 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                 </span>
               </button>
               <button type="button" role="menuitem" disabled>
-                <ImageIcon size={16} />
+                <Upload size={16} />
                 <span className="chat-attach-menu-label">
-                  <span>{t('chatAttachImage')}</span>
-                </span>
-                <span className="chat-attach-soon">{t('chatComingSoon')}</span>
-              </button>
-              <button type="button" role="menuitem" disabled>
-                <FileType size={16} />
-                <span className="chat-attach-menu-label">
-                  <span>{t('chatAttachPdf')}</span>
+                  <span>{t('chatAttachFile')}</span>
+                  <small>{t('chatAttachFileHint')}</small>
                 </span>
                 <span className="chat-attach-soon">{t('chatComingSoon')}</span>
               </button>

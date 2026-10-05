@@ -86,7 +86,7 @@ function normalizeMessage(row: Record<string, unknown>): ChatMessage {
 }
 
 const ATTACHMENT_COLUMNS =
-  'id, thread_id, message_id, kind, status, title, content, char_count, summary, sections, created_at';
+  'id, thread_id, message_id, kind, status, title, content, char_count, token_count, selected, summary, sections, created_at';
 
 /**
  * スレッドの資料(外したものを除く)。添付順。断った・失敗した資料も返す(送ったメッセージの横に
@@ -104,6 +104,17 @@ export async function listChatAttachments(threadId: string): Promise<ChatAttachm
     ...(row as unknown as ChatAttachment),
     sections: Array.isArray(row.sections) ? (row.sections as ChatAttachment['sections']) : [],
   }));
+}
+
+/**
+ * 資料を全文で読ませる(選ぶ)/目次と検索で読ませる(選択を外す)。上限を超える選択は
+ * ATTACHMENT_SELECTION_LIMIT / ATTACHMENT_TOO_LONG_TO_SELECT で断られる(ApiError)。
+ */
+export async function setChatAttachmentSelected(attachmentId: string, selected: boolean): Promise<void> {
+  await apiFetch(`/chat/attachments/${attachmentId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ selected }),
+  });
 }
 
 /** 資料を外す(以降のターンでAIに渡らなくなる)。 */
