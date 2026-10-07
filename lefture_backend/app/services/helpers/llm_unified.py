@@ -1,6 +1,7 @@
 # app/services/helpers/llm_unified.py
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Dict, List, Optional, Literal
+import base64
 import json
 import time
 import warnings
@@ -361,6 +362,22 @@ class BillingEngine:
 class Message:
     role: Literal["system", "user", "assistant"]
     content: str
+    # 一緒に渡す画像(JPEGのバイト列)。チャットに添付した画像・ページの書き起こしで使う。
+    # contentを文字列のまま保つため別の欄にしている(履歴の切り詰め・ログなどはcontentだけを見る)
+    images: List[bytes] = field(default_factory=list)
+
+
+def _litellm_message(m: Message) -> Dict[str, Any]:
+    """画像があれば、OpenAI形式の [text, image_url(data URI)...] にする(GeminiもlitellmがOpenAI形式から変換する)。"""
+    if not m.images:
+        return {"role": m.role, "content": m.content}
+    parts: List[Dict[str, Any]] = []
+    if m.content:
+        parts.append({"type": "text", "text": m.content})
+    for data in m.images:
+        parts.append({"type": "image_url",
+                      "image_url": {"url": "data:image/jpeg;base64," + base64.b64encode(data).decode("ascii")}})
+    return {"role": m.role, "content": parts}
 
 
 @dataclass
@@ -434,7 +451,7 @@ class UnifiedLLM:
         messages: List[Message],
         options: LLMOptions,
     ) -> Dict[str, Any]:
-        litellm_messages = [{"role": m.role, "content": m.content} for m in messages]
+        litellm_messages = [_litellm_message(m) for m in messages]
 
         kwargs: Dict[str, Any] = {
             "model": model,

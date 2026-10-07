@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import { AlertCircle, HeartHandshake, Paperclip, RotateCw } from 'lucide-react';
+import { AlertCircle, HeartHandshake, RotateCw } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import {
   CHAT_SOURCE_LABEL_KEYS,
@@ -17,8 +17,13 @@ import {
 } from '../../lib/chatCitations';
 import { fixBoldPunctuationSpacing, prepareMath } from '../../lib/markdownText';
 import type { LocalChatMessage } from '../../hooks/useChatConversation';
-import type { ChatAttachment, ChatCitation } from '../../types/chat';
-import { AttachmentStatusBadge, viewableFromAttachment, type ViewableAttachment } from './AttachmentViewerModal';
+import type { ChatAttachment, ChatAttachmentKind, ChatCitation } from '../../types/chat';
+import {
+  AttachmentKindIcon,
+  AttachmentStatusBadge,
+  viewableFromAttachment,
+  type ViewableAttachment,
+} from './AttachmentViewerModal';
 import { CitationPreviewModal } from './CitationPreviewModal';
 
 interface ChatMessageItemProps {
@@ -50,7 +55,9 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
 interface AttachmentChip {
   key: string;
   title: string;
-  chars: number;
+  kind: ChatAttachmentKind;
+  /** 右側の小さな情報(文字数・ページ数・画像) */
+  meta: string;
   status?: ChatAttachment['status'];
   /** 送った資料のとき: 全文で読ませているか */
   selected?: boolean;
@@ -65,22 +72,41 @@ const UserMessage: React.FC<{
 }> = ({ message, attachments, onOpenAttachment }) => {
   const { t, formatNumber } = useLanguage();
   const selected = message.context?.selected_text;
+  const metaFor = (kind: ChatAttachmentKind, chars: number, pages: number | null | undefined) => {
+    if (kind === 'image') return t('chatFileImage');
+    if (kind === 'pdf' && pages) return t('chatFilePages', { count: pages });
+    if (kind === 'pptx' && pages) return t('chatFileSlides', { count: pages });
+    return t('chatAttachmentChars', { count: formatNumber(chars) });
+  };
   const chips: AttachmentChip[] = attachments?.length
     ? attachments.map((a) => ({
         key: a.id,
-        title: a.title || t('chatAttachmentUntitled'),
-        chars: a.char_count,
+        title: a.title || a.file_name || t('chatAttachmentUntitled'),
+        kind: a.kind,
+        meta: metaFor(a.kind, a.char_count, a.page_count),
         status: a.status,
         selected: a.selected,
         viewable: viewableFromAttachment(a),
         id: a.id,
       }))
-    : (message.localAttachments ?? []).map((d) => ({
-        key: d.localId,
-        title: d.title || d.content.split('\n').find((line) => line.trim())?.trim() || t('chatAttachmentUntitled'),
-        chars: d.content.length,
-        viewable: { title: d.title || null, content: d.content },
-      }));
+    : (message.localAttachments ?? []).map((d) =>
+        d.kind === 'file'
+          ? {
+              key: d.localId,
+              title: d.fileName,
+              kind: d.fileKind,
+              meta: metaFor(d.fileKind, d.info?.text_chars ?? 0, d.info?.page_count),
+              viewable: { title: d.fileName, content: '', kind: d.fileKind, status: 'processing' as const },
+            }
+          : {
+              key: d.localId,
+              title:
+                d.title || d.content.split('\n').find((line) => line.trim())?.trim() || t('chatAttachmentUntitled'),
+              kind: 'text' as const,
+              meta: t('chatAttachmentChars', { count: formatNumber(d.content.length) }),
+              viewable: { title: d.title || null, content: d.content },
+            }
+      );
   return (
     <div className={`chat-msg is-user ${message.failedCode ? 'is-failed' : ''}`}>
       {chips.length > 0 && (
@@ -93,11 +119,9 @@ const UserMessage: React.FC<{
               onClick={() => onOpenAttachment?.(chip.viewable, chip.id)}
               title={chip.title}
             >
-              <Paperclip size={13} />
+              <AttachmentKindIcon kind={chip.kind} size={13} />
               <span className="chat-msg-attachment-title">{chip.title}</span>
-              <span className="chat-msg-attachment-meta">
-                {t('chatAttachmentChars', { count: formatNumber(chip.chars) })}
-              </span>
+              <span className="chat-msg-attachment-meta">{chip.meta}</span>
               {chip.status === 'ready' && (
                 <span className={`chat-attachment-mode ${chip.selected ? 'is-full' : ''}`}>
                   {chip.selected ? t('chatAttachmentFullRead') : t('chatAttachmentTocRead')}

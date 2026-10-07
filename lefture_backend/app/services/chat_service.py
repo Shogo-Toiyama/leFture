@@ -21,8 +21,9 @@
 
 会話履歴: 古い往復は要約ブロック(chat_summary_blocks)として回答役のsystemの末尾に、
 まだ畳んでいない往復(通常5〜14往復)は原文のまま渡す。
-添付資料: 合計1万字以内なら全文、超えたら最後の1本だけ全文+残りは一覧を、最新のメッセージに入れる
-(chat_attachments.plan_visibility)。確かめ役もsystem以外は同じメッセージを受け取るので、同じものが見える。
+添付資料: 本人が選んだ(selected)資料は全文、それ以外は一覧を、最新のメッセージに入れる
+(chat_attachments.plan_visibility)。選んだ画像の資料は画像そのものも最新のメッセージに付ける(chat_files.py)。
+確かめ役もsystem以外は同じメッセージを受け取るので、同じものが見える。
 
 回答役が自由に何度も検索する形(エージェント型)にしていない理由:
 - 危険/危機の判定は回答を作る前に確実に行いたい(仕分け役に残す)
@@ -73,7 +74,9 @@ from app.services.chat_attachments import (
     READ_MAX_CONCURRENT_CALLS,
     Attachment,
     ReadResult,
+    Section,
     Visibility,
+    answer_image_attachments,
     assign_handles,
     auto_select,
     estimate_tokens,
@@ -83,6 +86,12 @@ from app.services.chat_attachments import (
     render_ai_code_rule,
     render_for_answer,
     render_for_router,
+)
+from app.services.chat_files import (
+    answer_image,
+    image_tokens,
+    transcribe_file,
+    units_from_json,
 )
 from app.services.chat_screen import (
     MAX_SELECTION_CONTEXT_CHARS,
@@ -473,9 +482,17 @@ class TurnTimer:
 
 @dataclass
 class NewAttachment:
-    """この送信で添付された資料(審査の前)。titleは本人が付けた名前(無ければNone)。"""
+    """
+    この送信で添付された資料(審査の前)。titleは本人が付けた名前(無ければNone)。
+    ファイル(chat_files.py)はattachment_idに、送る前に取り出し済みのdraftの行を指す(contentは空)。
+    """
     title: Optional[str]
     content: str
+    attachment_id: Optional[str] = None
+
+    @property
+    def is_file(self) -> bool:
+        return self.attachment_id is not None
 
 
 # 本文を書かずに資料だけ送ったときに、振り分け役・探索役・回答役へ渡す本文の代わり
@@ -514,6 +531,8 @@ class PreparedTurn:
     # このスレッドの使える資料(審査を通ったもの、添付順)と、この送信で添付された資料の行(processing)
     attachments: list[Attachment] = field(default_factory=list)
     new_attachment_rows: list[dict] = field(default_factory=list)
+    # 回答役に渡す画像(選択中の画像の資料、answer_image_attachmentsの順)。run_chat_turnが読み込む
+    answer_images: list[bytes] = field(default_factory=list)
 
     @property
     def message_for_prompt(self) -> str:
@@ -522,7 +541,8 @@ class PreparedTurn:
 
     def language_hint(self) -> str:
         """振り分け役を通る前に返答言語を推すための文(本文、無ければ添付した資料の冒頭)。"""
-        return self.content or " ".join((r.get("content") or "")[:200] for r in self.new_attachment_rows)
+        return self.content or " ".join((r.get("content") or r.get("file_name") or "")[:200]
+                                        for r in self.new_attachment_rows)
 
 
 def _now_iso(delta: timedelta = timedelta(0)) -> str:
@@ -595,7 +615,20 @@ def _fetch_history_rows(admin_client, thread_id: str) -> list[dict]:
 
 
 ATTACHMENT_COLUMNS = ("id, title, content, summary, sections, message_id, created_at, status, selected, token_count, "
-                      "forbids_ai_code")
+                      "forbids_ai_code, kind, image_path")
+# 送る前に取り出したファイル(draft)。extractionは書き起こしに使う(送った後のターンで消す)
+DRAFT_COLUMNS = ("id, user_id, kind, status, title, file_name, extraction, storage_prefix, deleted_at, "
+                 "created_at, token_count")
+# ファイルから書き起こした本文の上限(送る前の見積もりで10万字以内を確かめてあるが、書き起こしが
+# 見積もりより長くなることがある。超えた分は切り、警告を残す)
+MAX_FILE_CONTENT_CHARS = 150_000
+
+
+def _fetch_drafts(admin_client, attachment_ids: list[str]) -> list[dict]:
+    if not attachment_ids:
+        return []
+    res = admin_client.table("chat_attachments").select(DRAFT_COLUMNS).in_("id", attachment_ids).execute()
+    return res.data or []
 
 
 def _fetch_thread_attachments(admin_client, thread_id: str) -> list[dict]:
@@ -619,9 +652,10 @@ def _write_turn_rows(
     attachments: Optional[list[NewAttachment]] = None,
 ) -> tuple[str, str, str, list[dict]]:
     """
-    スレッド作成(新規のみ) → userメッセージ → 添付された資料(processing) → 返答用の空行。
-    どれも書き込みなので逐次。資料の行(審査前)も返す。
+    スレッド作成(新規のみ) → ファイルのdraftをこのスレッドに結び付ける → userメッセージ →
+    添付された資料(processing) → 返答用の空行。どれも書き込みなので逐次。資料の行(審査前、添付順)も返す。
     """
+    attachments = attachments or []
     if is_new_thread:
         t = admin_client.table("chat_threads").insert({
             "user_id": user_id,
@@ -629,6 +663,33 @@ def _write_turn_rows(
             "context_lecture_id": context_lecture_id,
         }).execute()
         thread_id = t.data[0]["id"]
+
+    # 同じ送信の資料は、添付した順に1msずつずらした時刻にする(同じ時刻だと呼び名A1…の順が決まらない。
+    # 2026-10-04の通しテストで、後に添付した方を最後と判定しなかった)
+    base = datetime.now(timezone.utc)
+    created = {i: (base + timedelta(milliseconds=i)).isoformat() for i in range(len(attachments))}
+
+    # ファイル: draftのうちに取る(同じdraftを2つの送信が同時に使わないよう、statusがdraftのものだけ)
+    claimed: dict[int, dict] = {}
+    for i, att in enumerate(attachments):
+        if not att.is_file:
+            continue
+        r = admin_client.table("chat_attachments").update({
+            "thread_id": thread_id, "status": "processing", "created_at": created[i],
+            **({"title": att.title} if att.title else {}),
+        }).eq("id", att.attachment_id).eq("status", "draft").execute()
+        if not r.data:
+            # 取れなかった: 取ったものをdraftに戻し、作ったばかりのスレッドは消す
+            for row in claimed.values():
+                admin_client.table("chat_attachments").update({"thread_id": None, "status": "draft"}) \
+                    .eq("id", row["id"]).execute()
+            if is_new_thread:
+                try:
+                    admin_client.table("chat_threads").delete().eq("id", thread_id).execute()
+                except Exception:
+                    pass
+            raise ChatRequestError(409, "ATTACHMENT_NOT_READY", "An attached file is no longer available.")
+        claimed[i] = r.data[0]
 
     message_context = {}
     if context_lecture_id:
@@ -652,6 +713,13 @@ def _write_turn_rows(
             "context": message_context,
         }).execute()
     except Exception as e:
+        # 取ったファイルはdraftに戻す(スレッドを消すとON DELETE CASCADEで行ごと消えてしまう)
+        for row in claimed.values():
+            try:
+                admin_client.table("chat_attachments").update({"thread_id": None, "status": "draft"}) \
+                    .eq("id", row["id"]).execute()
+            except Exception:
+                pass
         # この送信のために作ったばかりのスレッドは、中身が空のまま残さない
         if is_new_thread:
             try:
@@ -665,10 +733,13 @@ def _write_turn_rows(
     user_message_id = u.data[0]["id"]
 
     attachment_rows: list[dict] = []
-    if attachments:
-        # 同じ送信の資料は、添付した順に1msずつずらした時刻にする(同じ時刻だと「最後に添付した1本」と
-        # 呼び名A1…の順が決まらない。2026-10-04の通しテストで、後に添付した方を最後と判定しなかった)
-        base = datetime.now(timezone.utc)
+    if claimed:
+        admin_client.table("chat_attachments").update({"message_id": user_message_id}) \
+            .in_("id", [row["id"] for row in claimed.values()]).execute()
+        for row in claimed.values():
+            row["message_id"] = user_message_id
+    texts = [(i, att) for i, att in enumerate(attachments) if not att.is_file]
+    if texts:
         res = admin_client.table("chat_attachments").insert([{
             "user_id": user_id,
             "thread_id": thread_id,
@@ -679,9 +750,11 @@ def _write_turn_rows(
             "content": att.content,
             "char_count": len(att.content),
             "token_count": estimate_tokens(att.content),
-            "created_at": (base + timedelta(milliseconds=i)).isoformat(),
-        } for i, att in enumerate(attachments)]).execute()
-        attachment_rows = res.data or []
+            "created_at": created[i],
+        } for i, att in texts]).execute()
+        attachment_rows.extend(res.data or [])
+    attachment_rows.extend(claimed.values())
+    attachment_rows.sort(key=lambda r: r.get("created_at") or "")
 
     a = admin_client.table("chat_messages").insert({
         "thread_id": thread_id,
@@ -720,7 +793,9 @@ async def prepare_chat_turn(
     content = (content or "").strip()
     selected_text = (selected_text or "").strip() or None
     attachments = [
-        NewAttachment(title=((a.title or "").strip()[:MAX_ATTACHMENT_TITLE_CHARS] or None), content=(a.content or "").strip())
+        NewAttachment(title=((getattr(a, "title", None) or "").strip()[:MAX_ATTACHMENT_TITLE_CHARS] or None),
+                      content=(getattr(a, "content", None) or "").strip(),
+                      attachment_id=getattr(a, "attachment_id", None) if getattr(a, "kind", "text") == "file" else None)
         for a in attachments or []
     ]
 
@@ -733,6 +808,8 @@ async def prepare_chat_turn(
                                f"At most {MAX_ATTACHMENTS_PER_MESSAGE} attachments per message.",
                                {"max_attachments": MAX_ATTACHMENTS_PER_MESSAGE})
     for att in attachments:
+        if att.is_file:
+            continue
         if not att.content:
             raise ChatRequestError(400, "EMPTY_ATTACHMENT", "An attachment is empty.")
         if len(att.content) > MAX_ATTACHMENT_CHARS:
@@ -795,7 +872,7 @@ async def prepare_chat_turn(
 
     (
         balance_micro, rate_count, blocked_count, dup_row, lecture_label,
-        thread_row, is_busy, history_rows, summary_blocks, summary_level2, attachment_rows,
+        thread_row, is_busy, history_rows, summary_blocks, summary_level2, attachment_rows, draft_rows,
     ) = await asyncio.gather(
         to_thread(_fetch_balance_micro, admin_client, user_id),
         to_thread(_fetch_rate_limit_count, admin_client, user_id),
@@ -808,6 +885,7 @@ async def prepare_chat_turn(
         to_thread(fetch_active_blocks, admin_client, thread_id) if not is_new_thread else none(),
         to_thread(fetch_active_blocks, admin_client, thread_id, 2) if not is_new_thread else none(),
         to_thread(_fetch_thread_attachments, admin_client, thread_id) if not is_new_thread else none(),
+        to_thread(_fetch_drafts, admin_client, [a.attachment_id for a in attachments if a.is_file]),
     )
     timer.mark("prep_checks")
     summary_blocks = summary_blocks or []
@@ -847,6 +925,17 @@ async def prepare_chat_turn(
         # 生成中の返答があれば二重送信として弾く(取り残されたものは無視)
         if is_busy:
             raise ChatRequestError(409, "THREAD_BUSY", "A reply is still being generated in this thread.")
+
+    # ファイル: 本人のdraftで、送る前の取り出しが済んでいること
+    drafts_by_id = {r["id"]: r for r in draft_rows or []}
+    for att in attachments:
+        if not att.is_file:
+            continue
+        row = drafts_by_id.get(att.attachment_id)
+        if not row or row.get("user_id") != user_id or row.get("deleted_at"):
+            raise ChatRequestError(404, "ATTACHMENT_NOT_FOUND", "An attached file was not found.")
+        if row.get("status") != "draft" or not row.get("extraction"):
+            raise ChatRequestError(409, "ATTACHMENT_NOT_READY", "An attached file is not ready to send.")
 
     attachment_rows = attachment_rows or []
     if attachments and len(attachment_rows) + len(attachments) > MAX_ATTACHMENTS_PER_THREAD:
@@ -1247,7 +1336,33 @@ def _build_answer_messages(
         "REPLY_LANGUAGE": decision.reply_language,
         "MESSAGE": turn.message_for_prompt,
     })
-    return [Message(role="system", content=system), *history, Message(role="user", content=turn_message)]
+    # 選択中の画像の資料(render_for_answerが「image N」と書いた順)。回答役は画像を読めるモデルであること
+    return [Message(role="system", content=system), *history,
+            Message(role="user", content=turn_message, images=turn.answer_images)]
+
+
+async def _load_answer_images(turn: PreparedTurn, vis: Visibility) -> list[bytes]:
+    """
+    選択中の画像の資料の画像を読み込み、回答役に渡す大きさに縮める。読めなかった画像は、その資料を
+    書き起こしだけで見せる(image_pathを外す。render_for_answerの「image N」の番号がずれないように)。
+    """
+    targets = answer_image_attachments(turn.attachments, vis)
+    if not targets:
+        return []
+    from app.core.r2_storage import storage_service
+
+    def load(path: str) -> bytes:
+        return answer_image(storage_service.download_binary(path))
+
+    results = await asyncio.gather(*[asyncio.to_thread(load, a.image_path) for a in targets], return_exceptions=True)
+    images = []
+    for a, r in zip(targets, results):
+        if isinstance(r, BaseException):
+            print(f"⚠️ [chat] failed to load the image of attachment {a.id}: {r}")
+            a.image_path = None
+        else:
+            images.append(r)
+    return images
 
 
 async def _finalize(
@@ -1320,9 +1435,47 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
     """
     rows = turn.new_attachment_rows
     limiter = asyncio.Semaphore(READ_MAX_CONCURRENT_CALLS)
-    results: list[ReadResult] = list(await asyncio.gather(
-        *[read_attachment(llm, row["content"], limiter) for row in rows]))
-    usage = [res.usage_json() for res in results]
+    # 画像の資料: 回答役に渡すトークン数を数えるため、読み込んだ画像を覚えておく
+    images_seen: dict[str, bytes] = {}
+
+    async def read_one(row: dict) -> tuple[ReadResult, Optional[dict]]:
+        """テキストはそのまま読む。ファイルは、画像として読む部分を書き起こして本文にしてから読む(chat_files.py)。"""
+        if row.get("kind", "text") == "text":
+            return await read_attachment(llm, row["content"], limiter), None
+        from app.core.r2_storage import storage_service
+        extraction = row.get("extraction") or {}
+        image_keys: dict[str, str] = extraction.get("images") or {}
+
+        async def load(key: str) -> bytes:
+            data = await asyncio.to_thread(storage_service.download_binary, image_keys[key])
+            images_seen[image_keys[key]] = data
+            return data
+
+        try:
+            tr = await transcribe_file(llm, row["kind"], units_from_json(extraction), load, limiter)
+        except Exception as e:
+            return ReadResult(error=f"transcribe failed: {e}"[:500]), None
+        file_usage = tr.usage_json()
+        if tr.blocked:
+            return ReadResult(blocked=True), file_usage
+        content = tr.content
+        if len(content) > MAX_FILE_CONTENT_CHARS:
+            content = content[:MAX_FILE_CONTENT_CHARS]
+            file_usage["truncated"] = True
+        row["content"] = content
+        if row["kind"] == "image":
+            row["image_path"] = image_keys.get("main")
+            title = tr.title or (row.get("file_name") or "")[:60]
+            return ReadResult(title=title, summary=tr.summary, forbids_ai_code=tr.forbids_ai_code,
+                              sections=[Section(index=1, start=0, end=len(content), title=title or "Image",
+                                                description=tr.summary[:400])]), file_usage
+        if not content.strip():
+            return ReadResult(error="no text in the file"), file_usage
+        return await read_attachment(llm, content, limiter), file_usage
+
+    pairs = await asyncio.gather(*[read_one(row) for row in rows])
+    results: list[ReadResult] = [r for r, _ in pairs]
+    usage = [{**res.usage_json(), **({"file": fu} if fu else {})} for res, fu in pairs]
     blocked = any(res.blocked for res in results)
     error = next((res.error for res in results if res.error), None)
 
@@ -1332,18 +1485,25 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
                 res = results[i] if i < len(results) else None
                 admin_client.table("chat_attachments").update({
                     "status": "blocked" if res and res.blocked else "failed",
-                    "usage": res.usage_json() if res else None,
+                    "usage": usage[i] if i < len(usage) else None,
                 }).eq("id", row["id"]).execute()
         await asyncio.to_thread(mark_unusable)
         if blocked:
             return True, usage
         raise RuntimeError(f"failed to read an attachment: {error}")
 
+    def token_count(row: dict) -> int:
+        if row.get("kind", "text") == "text":
+            return row.get("token_count") or estimate_tokens(row["content"])
+        tokens = estimate_tokens(row["content"])
+        image = images_seen.get(row.get("image_path") or "")
+        return tokens + (image_tokens(image) if image else 0)
+
     new = [Attachment(
         id=row["id"], title=row.get("title") or res.title, content=row["content"], summary=res.summary,
         sections=res.sections, message_id=row.get("message_id"), created_at=row.get("created_at") or "",
-        token_count=row.get("token_count") or estimate_tokens(row["content"]),
-        forbids_ai_code=res.forbids_ai_code,
+        token_count=token_count(row), forbids_ai_code=res.forbids_ai_code,
+        kind=row.get("kind") or "text", image_path=row.get("image_path"),
     ) for row, res in zip(rows, results)]
     # 貼った直後はたいてい全文で読んでほしいので、選択中の合計が上限に収まるものは自動で選ぶ
     picked = auto_select(turn.attachments, new)
@@ -1351,14 +1511,19 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
         a.selected = a.id in picked
 
     def save() -> None:
-        for a, res in zip(new, results):
+        for a, res, (_, file_usage) in zip(new, results, pairs):
+            file_fields = {} if a.kind == "text" else {
+                "content": a.content, "char_count": len(a.content), "token_count": a.token_count,
+                "image_path": a.image_path, "extraction": None,
+            }
             admin_client.table("chat_attachments").update({
+                **file_fields,
                 "status": "ready",
                 # 本人が付けた名前を優先し、無ければ要約役が付けた名前
                 "title": a.title or None,
                 "summary": res.summary,
                 "sections": [sec.to_json() for sec in res.sections],
-                "usage": res.usage_json(),
+                "usage": {**res.usage_json(), **({"file": file_usage} if file_usage else {})},
                 "selected": a.selected,
                 "forbids_ai_code": a.forbids_ai_code,
             }).eq("id", a.id).execute()
@@ -1468,6 +1633,9 @@ async def run_chat_turn(
         # 資料の呼び名(A1…)と、このターンに全文で渡す資料
         turn.attachments = assign_handles(turn.attachments)
         attachment_visibility = plan_visibility(turn.attachments)
+        # 選択中の画像の資料は、画像そのものも回答役に渡す。振り分け役・探索役と並行で読み込んでおく
+        answer_images_task = asyncio.create_task(_load_answer_images(turn, attachment_visibility))
+        answer_images_task.add_done_callback(_ignore_task_exception)
         history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, HISTORY_MAX_CHARS_PER_MESSAGE,
                                          _attachment_titles_by_message(turn.attachments))
         memory = ConversationMemory.from_blocks(turn.summary_blocks, turn.summary_level2)
@@ -1568,6 +1736,7 @@ async def run_chat_turn(
             await emit("sources", {"sources": sources_event(materials)})
 
         # --- 4. 回答 ---
+        turn.answer_images = await answer_images_task
         messages = _build_answer_messages(
             turn, decision, memory, history, profile, materials, navigation.goal if navigation else None,
             student_memos=student_memos, open_questions=open_questions,

@@ -138,6 +138,9 @@ class Attachment:
     selected: bool = False
     token_count: int = 0
     forbids_ai_code: bool = False
+    # text / pdf / docx / pptx / image(chat_files.py)。画像の資料は、選択中なら画像そのものも回答役に渡す
+    kind: str = "text"
+    image_path: Optional[str] = None
 
     @property
     def char_count(self) -> int:
@@ -167,6 +170,7 @@ class Attachment:
                    message_id=row.get("message_id"), created_at=row.get("created_at") or "",
                    selected=bool(row.get("selected")),
                    forbids_ai_code=bool(row.get("forbids_ai_code")),
+                   kind=row.get("kind") or "text", image_path=row.get("image_path"),
                    token_count=token_count if isinstance(token_count, int) else estimate_tokens(content))
 
 
@@ -213,6 +217,8 @@ _HEADING_RE = re.compile(
     r"|第\s*[0-9０-９一二三四五六七八九十百]+\s*[章節部条問回]"
     r"|問\s*[0-9０-９一二三四五六七八九十]+"
     r"|[■□●◆◇▼▶【]"
+    # ファイルから取り出した本文のページ・スライドの印(chat_files.assemble)。節がページをまたがないように
+    r"|\[(?:p\.\d+|slide \d+)\]\s*$"
     r")",
     re.IGNORECASE,
 )
@@ -511,8 +517,15 @@ def _line(a: Attachment) -> str:
 def render_for_answer(attachments: list[Attachment], vis: Visibility) -> str:
     """回答役(と確かめ役)に渡す資料の枠。全文の資料は本文ごと、残りは名前と要約だけ。"""
     blocks = []
+    image_no = 0
     for a in attachments:
-        if vis.is_full(a):
+        if vis.is_full(a) and a.kind == "image" and a.image_path:
+            # 画像そのものはこのメッセージに付いている(answer_image_attachmentsと同じ順)
+            image_no += 1
+            blocks.append(f'<material handle="{a.handle}" title="{a.title}" kind="image">\n'
+                          f'The image itself is attached to this message (image {image_no}). Its transcription:\n'
+                          f'{a.content.strip()}\n</material>')
+        elif vis.is_full(a):
             blocks.append(f'<material handle="{a.handle}" title="{a.title}">\n{a.content.strip()}\n</material>')
     listed = [a for a in attachments if not vis.is_full(a)]
     if listed:
@@ -522,6 +535,11 @@ def render_for_answer(attachments: list[Attachment], vis: Visibility) -> str:
                       "could not check it, and that the student can turn on \"Read in full\" (全文で読む) for that "
                       "material in the materials list:\n" + "\n".join(lines))
     return "\n\n".join(blocks)
+
+
+def answer_image_attachments(attachments: list[Attachment], vis: Visibility) -> list[Attachment]:
+    """回答役に画像そのものを渡す資料(選択中の画像の資料、render_for_answerと同じ順)。"""
+    return [a for a in attachments if vis.is_full(a) and a.kind == "image" and a.image_path]
 
 
 def render_ai_code_rule(attachments: list[Attachment]) -> str:

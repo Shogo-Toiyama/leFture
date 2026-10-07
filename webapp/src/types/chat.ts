@@ -153,6 +153,8 @@ export type ChatRequestErrorCode =
   | 'ATTACHMENT_TOO_LONG'
   | 'TOO_MANY_ATTACHMENTS'
   | 'THREAD_ATTACHMENT_LIMIT'
+  | 'ATTACHMENT_NOT_FOUND'
+  | 'ATTACHMENT_NOT_READY'
   | 'INSUFFICIENT_CREDITS'
   | 'CHAT_RATE_LIMITED'
   | 'CHAT_BLOCKED_COOLDOWN'
@@ -190,8 +192,15 @@ export const CHAT_MAX_SELECTED_TOKENS = 30_000;
  */
 export const CHAT_CREDITS_PER_10K_TOKENS = 1.35;
 
-/** processing: 確認・目次づくりの途中 / ready: 使える / blocked: 断った / failed: 処理に失敗した */
-export type ChatAttachmentStatus = 'processing' | 'ready' | 'blocked' | 'failed';
+/**
+ * draft: ファイルをアップロードして、まだ送っていない(一覧には出ない) / processing: 確認・目次づくりの途中 /
+ * ready: 使える / blocked: 断った / failed: 処理に失敗した
+ */
+export type ChatAttachmentStatus = 'draft' | 'processing' | 'ready' | 'blocked' | 'failed';
+
+/** ファイルの種類(バックエンドのchat_files.KIND_BY_EXTENSION)。textは貼り付け・テキストファイル。 */
+export type ChatFileKind = 'pdf' | 'docx' | 'pptx' | 'image';
+export type ChatAttachmentKind = 'text' | ChatFileKind;
 
 /** 目次の1節。start/endは本文(content)の文字位置。 */
 export interface ChatAttachmentSection {
@@ -208,7 +217,7 @@ export interface ChatAttachment {
   thread_id: string;
   /** 添付したuserメッセージ */
   message_id: string | null;
-  kind: 'text' | 'pdf' | 'image';
+  kind: ChatAttachmentKind;
   status: ChatAttachmentStatus;
   title: string | null;
   content: string;
@@ -220,12 +229,63 @@ export interface ChatAttachment {
   summary: string | null;
   sections: ChatAttachmentSection[];
   created_at: string;
+  /** ファイルのとき: 元の名前・PDFのページ数 / pptxのスライド数 */
+  file_name: string | null;
+  page_count: number | null;
 }
 
-/** 送る前の資料(入力欄の下書き)。送るまでは何度でも直せる。 */
-export interface ChatDraftAttachment {
+/** 送る前の資料(入力欄の下書き)。テキストは送るまで何度でも直せる。 */
+export interface ChatTextDraft {
   localId: string;
   kind: 'text';
   title: string;
   content: string;
 }
+
+/**
+ * ファイルの下書き。選ぶ → 端末で縮める → アップロード → バックエンドが中身を取り出す(LLMなし)
+ * → ready。readyになるまで送れない。
+ */
+export interface ChatFileDraft {
+  localId: string;
+  kind: 'file';
+  fileKind: ChatFileKind;
+  fileName: string;
+  /** 本人が付けた名前(今は使わない。空ならAIが付ける) */
+  title: string;
+  stage: 'compressing' | 'uploading' | 'reading' | 'ready' | 'error';
+  /** uploadingのときの進み具合(0〜1) */
+  progress?: number;
+  /** アップロード先を頼んだ後(draftの行のid) */
+  attachmentId?: string;
+  info?: ChatFileInfo;
+  errorCode?: string;
+  errorDetail?: Record<string, unknown>;
+  /** 画像のとき: チップに出す小さな見本(object URL) */
+  previewUrl?: string;
+}
+
+export type ChatDraftAttachment = ChatTextDraft | ChatFileDraft;
+
+/** 送る前に取り出して分かったこと(バックエンドのchat_files.draft_info)。 */
+export interface ChatFileInfo {
+  id: string;
+  kind: ChatFileKind;
+  file_name: string;
+  file_size: number;
+  page_count: number | null;
+  text_chars: number;
+  estimated_chars: number;
+  /** 画像として読む(ビジョンで書き起こす)ページ・画像の数 */
+  vision_count: number;
+  vision_pages: string[];
+  estimated_tokens: number;
+}
+
+/** バックエンドのchat_files.MAX_UPLOAD_BYTES と揃える(画像・docx・pptxは端末で縮めた後の大きさ)。 */
+export const CHAT_MAX_FILE_BYTES: Record<ChatFileKind, number> = {
+  pdf: 100 * 1024 * 1024,
+  docx: 30 * 1024 * 1024,
+  pptx: 30 * 1024 * 1024,
+  image: 30 * 1024 * 1024,
+};

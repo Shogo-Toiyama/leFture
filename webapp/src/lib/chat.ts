@@ -86,7 +86,7 @@ function normalizeMessage(row: Record<string, unknown>): ChatMessage {
 }
 
 const ATTACHMENT_COLUMNS =
-  'id, thread_id, message_id, kind, status, title, content, char_count, token_count, selected, summary, sections, created_at';
+  'id, thread_id, message_id, kind, status, title, content, char_count, token_count, selected, summary, sections, created_at, file_name, page_count';
 
 /**
  * スレッドの資料(外したものを除く)。添付順。断った・失敗した資料も返す(送ったメッセージの横に
@@ -117,9 +117,16 @@ export async function setChatAttachmentSelected(attachmentId: string, selected: 
   });
 }
 
-/** 資料を外す(以降のターンでAIに渡らなくなる)。 */
+/** 資料を外す(以降のターンでAIに渡らなくなる)。送る前のファイル(draft)は消える。 */
 export async function removeChatAttachment(attachmentId: string): Promise<void> {
   await apiFetch(`/chat/attachments/${attachmentId}`, { method: 'DELETE' });
+}
+
+/** 添付したファイルを開くための短い署名付きURL(本人のみ。PDF・画像はブラウザでそのまま表示できる)。 */
+export async function getChatAttachmentFileUrl(
+  attachmentId: string
+): Promise<{ url: string; file_name: string; kind: string; content_type: string }> {
+  return apiFetch(`/chat/attachments/${attachmentId}/file`);
 }
 
 export async function renameChatThread(threadId: string, title: string): Promise<void> {
@@ -194,7 +201,11 @@ export async function sendChatMessage(
         content: params.content,
         context: params.context ?? null,
         attachments: params.attachments?.length
-          ? params.attachments.map((a) => ({ kind: a.kind, title: a.title.trim() || null, content: a.content }))
+          ? params.attachments.map((a) =>
+              a.kind === 'file'
+                ? { kind: 'file', attachment_id: a.attachmentId, title: a.title.trim() || null }
+                : { kind: a.kind, title: a.title.trim() || null, content: a.content }
+            )
           : null,
         // 「昨日の授業」「今学期」を端末の日付で解決するため(バックエンドは無ければUTC)
         timezone: deviceTimeZone(),

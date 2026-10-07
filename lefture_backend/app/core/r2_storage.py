@@ -196,6 +196,47 @@ class R2StorageService:
             "retention_days": retention_days,
         }
 
+    def generate_presigned_put_url_for_key(self, key: str, content_type: str, expires_in: int = 900) -> str:
+        """
+        決まったキーへ端末が直接PUTするための署名付きURL(チャットに添付するファイル)。
+        ContentTypeも署名に含まれるので、端末は同じContent-Typeで送る必要がある。
+        """
+        return self.s3.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": self.bucket_name, "Key": key, "ContentType": content_type},
+            ExpiresIn=expires_in,
+            HttpMethod="PUT",
+        )
+
+    def generate_presigned_view_url(self, key: str, file_name: str, content_type: str, expires_in: int = 600) -> str:
+        """
+        本人が自分の添付ファイルを開くための短い署名付きGET URL。ブラウザで開けるもの(PDF・画像)はその場で
+        表示し、保存するときは元のファイル名になるようにする。
+        """
+        from urllib.parse import quote
+        return self.s3.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": self.bucket_name,
+                "Key": key,
+                "ResponseContentType": content_type,
+                "ResponseContentDisposition": f"inline; filename*=UTF-8''{quote(file_name)}",
+            },
+            ExpiresIn=expires_in,
+        )
+
+    def put_bytes(self, key: str, data: bytes, content_type: str = "application/octet-stream") -> str:
+        """バイト列を決まったキーに保存する。"""
+        self.s3.put_object(Bucket=self.bucket_name, Key=key, Body=data, ContentType=content_type)
+        return key
+
+    def object_size(self, key: str) -> int | None:
+        """オブジェクトの大きさ(バイト)。無ければNone。"""
+        try:
+            return int(self.s3.head_object(Bucket=self.bucket_name, Key=key)["ContentLength"])
+        except ClientError:
+            return None
+
     def object_exists(self, storage_path: str) -> bool:
         """R2上に指定パスのオブジェクトが実在するか確認する。"""
         try:

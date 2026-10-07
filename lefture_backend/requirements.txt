@@ -21,3 +21,8 @@ resend
 standardwebhooks
 firebase-admin
 stripe==15.6.1
+# チャットに添付するファイルの取り出し(app/services/chat_files.py)。PyMuPDFはAGPLなので使わない
+pypdfium2
+python-docx
+python-pptx
+Pillow

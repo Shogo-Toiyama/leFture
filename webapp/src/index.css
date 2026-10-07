@@ -17360,6 +17360,7 @@ a.lecture-tile-card:hover {
 
 .chat-attachment-list-icon {
   flex-shrink: 0;
+  display: inline-flex;
   color: var(--gold);
 }
 
@@ -17864,4 +17865,215 @@ button.ai-forget-btn { align-self: flex-start; background: rgba(229, 57, 53, 0.1
 .chat-panel.is-paper .chat-attachment.is-selected {
   background: #fdf3df;
   border-color: #ecd9b0;
+}
+
+
+/* ---------------------------------------------------------------------------
+ * チャットのファイル添付(ChatComposer / ChatConversation / AttachmentViewerModal)
+ * ------------------------------------------------------------------------- */
+
+/* 会話の上にファイルを重ねたとき */
+.chat-convo {
+  position: relative;
+}
+
+.chat-drop-overlay {
+  position: absolute;
+  inset: 8px;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  border: 2px dashed rgba(255, 179, 0, 0.6);
+  border-radius: 18px;
+  background: rgba(10, 14, 22, 0.78);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.chat-drop-card {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 0 24px;
+  text-align: center;
+  color: var(--starlight);
+}
+
+.chat-drop-card > svg {
+  color: var(--gold);
+}
+
+.chat-drop-card strong {
+  font-size: 1rem;
+}
+
+.chat-drop-card span {
+  color: var(--comet);
+  font-size: 0.8rem;
+}
+
+.chat-fullscreen.is-paper .chat-drop-overlay,
+.chat-page.is-paper .chat-drop-overlay,
+.chat-panel.is-paper .chat-drop-overlay {
+  border-color: rgba(217, 119, 6, 0.55);
+  background: rgba(250, 245, 235, 0.88);
+}
+
+.chat-fullscreen.is-paper .chat-drop-card,
+.chat-page.is-paper .chat-drop-card,
+.chat-panel.is-paper .chat-drop-card {
+  color: #2b2118;
+}
+
+.chat-fullscreen.is-paper .chat-drop-card > svg,
+.chat-page.is-paper .chat-drop-card > svg,
+.chat-panel.is-paper .chat-drop-card > svg {
+  color: #d97706;
+}
+
+.chat-fullscreen.is-paper .chat-drop-card span,
+.chat-page.is-paper .chat-drop-card span,
+.chat-panel.is-paper .chat-drop-card span {
+  color: #7a6a5a;
+}
+
+/* 準備中のファイルのチップ(下に進み具合の細い線) */
+.chat-attachment.is-upload {
+  position: relative;
+  overflow: hidden;
+}
+
+.chat-attachment.is-upload .chat-attachment-text {
+  max-width: 200px;
+}
+
+.chat-attachment.is-error {
+  border-color: rgba(229, 57, 53, 0.55);
+}
+
+.chat-attachment.is-error > svg,
+.chat-attachment.is-error .chat-attachment-meta {
+  color: #ff8a80;
+}
+
+.chat-attachment.is-error .chat-attachment-meta {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-attachment-thumb {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.chat-attachment-spin {
+  animation: spin 1s linear infinite;
+}
+
+.chat-attachment-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--glass-low);
+}
+
+.chat-attachment-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transition: width 0.2s ease;
+}
+
+.chat-fullscreen.is-paper .chat-attachment.is-error .chat-attachment-meta,
+.chat-page.is-paper .chat-attachment.is-error .chat-attachment-meta,
+.chat-panel.is-paper .chat-attachment.is-error .chat-attachment-meta,
+.chat-fullscreen.is-paper .chat-attachment.is-error > svg,
+.chat-page.is-paper .chat-attachment.is-error > svg,
+.chat-panel.is-paper .chat-attachment.is-error > svg {
+  color: #c62828;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-progress > span,
+.chat-page.is-paper .chat-attachment-progress > span,
+.chat-panel.is-paper .chat-attachment-progress > span {
+  background: #d97706;
+}
+
+/* 添付できなかった理由(チップにならないもの) */
+.chat-composer-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 8px 6px 10px;
+  border-radius: 10px;
+  background: rgba(229, 57, 53, 0.1);
+  color: #ff8a80;
+  font-size: 0.76rem;
+}
+
+.chat-composer-notice > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-composer-notice button {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.chat-fullscreen.is-paper .chat-composer-notice,
+.chat-page.is-paper .chat-composer-notice,
+.chat-panel.is-paper .chat-composer-notice {
+  background: #fdecea;
+  color: #b3261e;
+}
+
+/* 資料のビューア: 画像の資料・元のファイルを開く */
+.chat-attachment-viewer-image {
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: var(--glass-low);
+  overflow: hidden;
+}
+
+.chat-attachment-viewer-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+}
+
+.chat-attachment-viewer-image-loading {
+  color: var(--comet);
+  font-size: 0.8rem;
+}
+
+.chat-attachment-open-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-viewer-image,
+.chat-page.is-paper .chat-attachment-viewer-image,
+.chat-panel.is-paper .chat-attachment-viewer-image {
+  background: #f1e9da;
 }

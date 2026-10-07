@@ -88,7 +88,8 @@ from app.services.chat_service import (
     prepare_chat_turn,
     run_chat_turn,
 )
-from app.services.chat_attachments import MAX_SELECTED_TOKENS
+from app.services.chat_attachments import MAX_ATTACHMENT_CHARS, MAX_SELECTED_TOKENS
+from app.services import chat_files
 from app.services.chat_screen import SCREEN_KINDS, ScreenRef
 from app.services.chat_summary import run_fold as run_chat_summary_fold
 from app.services import profile_store
@@ -4437,7 +4438,23 @@ async def _patrol_fail_stale_chat_messages() -> dict:
             .lt("created_at", cutoff)
             .execute()
     )
-    return {"failed_stale": len(res.data or []), "failed_stale_attachments": len(att.data or [])}
+    # 送られなかったファイル(draft)は、行もR2のファイルも消す
+    draft_cutoff = (datetime.now(timezone.utc) - timedelta(hours=chat_files.DRAFT_TTL_HOURS)).isoformat()
+    drafts = await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments").select("id, storage_prefix")
+            .eq("status", "draft").lt("created_at", draft_cutoff).limit(200).execute()
+    )
+    for row in drafts.data or []:
+        if row.get("storage_prefix") and "/chat_attachments/" in row["storage_prefix"]:
+            try:
+                await asyncio.to_thread(storage_service.delete_prefix, row["storage_prefix"])
+            except Exception as e:
+                print(f"⚠️ [chat] failed to delete draft files {row['storage_prefix']}: {e}")
+                continue
+        await asyncio.to_thread(
+            lambda: admin_client.table("chat_attachments").delete().eq("id", row["id"]).eq("status", "draft").execute())
+    return {"failed_stale": len(res.data or []), "failed_stale_attachments": len(att.data or []),
+            "expired_drafts": len(drafts.data or [])}
 
 
 async def _patrol_enqueue_profile_extraction() -> dict:
@@ -5804,10 +5821,20 @@ class ChatMessageContext(BaseModel):
 
 
 class ChatAttachmentRequest(BaseModel):
-    """送信と一緒に添付する資料(今はテキストだけ)。上限はchat_attachments.pyとprepare_chat_turnが確かめる。"""
+    """
+    送信と一緒に添付する資料。text: 本文を送る(上限はchat_attachments.pyとprepare_chat_turnが確かめる)。
+    file: 送る前にアップロードして取り出したファイル(draft)のattachment_idを送る(chat_files.py)。
+    """
     kind: str = "text"
     title: Optional[str] = None
-    content: str
+    content: str = ""
+    attachment_id: Optional[str] = None
+
+
+class ChatAttachmentUploadRequest(BaseModel):
+    """ファイルを添付する前に、アップロード先を頼む。file_sizeは端末で縮めた後の大きさ。"""
+    file_name: str
+    file_size: int
 
 
 class ChatMessageRequest(BaseModel):
@@ -5891,9 +5918,14 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
         )
 
     attachments = payload.attachments or []
-    if any(a.kind != "text" for a in attachments):
+    if any(a.kind not in ("text", "file") for a in attachments):
         raise HTTPException(status_code=422, detail={"error_code": "UNSUPPORTED_ATTACHMENT",
-                                                     "message": "Only text attachments are supported."})
+                                                     "message": "Unsupported attachment kind."})
+    for a in attachments:
+        if a.kind == "file":
+            if not a.attachment_id:
+                raise HTTPException(status_code=422, detail={"error_code": "INVALID_ID", "message": "attachment_id is required."})
+            a.attachment_id = _parse_uuid_or_422(a.attachment_id, "attachment_id")
 
     try:
         turn = await prepare_chat_turn(
@@ -5970,13 +6002,16 @@ async def delete_chat_thread(thread_id: str, request: Request):
         lambda: admin_client.table("chat_messages").update({"deleted_at": now_iso})
             .eq("thread_id", thread_id).is_("deleted_at", "null").execute()
     )
-    await asyncio.to_thread(
+    removed = await asyncio.to_thread(
         lambda: admin_client.table("chat_attachments").update({"deleted_at": now_iso})
             .eq("thread_id", thread_id).is_("deleted_at", "null").execute()
     )
     await asyncio.to_thread(
         lambda: admin_client.table("chat_threads").update({"deleted_at": now_iso}).eq("id", thread_id).execute()
     )
+    # 添付したファイル(R2)はその場で消す(行は論理削除のまま残る)
+    for row in removed.data or []:
+        _delete_attachment_files_later(row.get("storage_prefix"))
     # 自分像プロフィール: このスレッドの観察も消し、根拠が無くなったAI由来の項目は使わないようにする
     try:
         await profile_store.on_thread_deleted(uid, thread_id)
@@ -6037,17 +6072,206 @@ async def remove_chat_attachment(attachment_id: str, request: Request):
     attachment_id = _parse_uuid_or_422(attachment_id, "attachment_id")
     admin_client = get_supabase_client()
     res = await asyncio.to_thread(
-        lambda: admin_client.table("chat_attachments").select("id, user_id, deleted_at")
+        lambda: admin_client.table("chat_attachments").select("id, user_id, status, storage_prefix, deleted_at")
             .eq("id", attachment_id).maybe_single().execute()
     )
     row = res.data if res else None
     if not row or row.get("user_id") != uid or row.get("deleted_at"):
         raise HTTPException(status_code=404, detail={"error_code": "ATTACHMENT_NOT_FOUND", "message": "Attachment not found."})
-    await asyncio.to_thread(
-        lambda: admin_client.table("chat_attachments")
-            .update({"deleted_at": datetime.now(timezone.utc).isoformat()}).eq("id", attachment_id).execute()
-    )
+    if row.get("status") == "draft":
+        # 送る前に外したファイルは、行ごと消す(どの会話にも属していない)
+        await asyncio.to_thread(
+            lambda: admin_client.table("chat_attachments").delete().eq("id", attachment_id).eq("status", "draft").execute()
+        )
+    else:
+        await asyncio.to_thread(
+            lambda: admin_client.table("chat_attachments")
+                .update({"deleted_at": datetime.now(timezone.utc).isoformat()}).eq("id", attachment_id).execute()
+        )
+    _delete_attachment_files_later(row.get("storage_prefix"))
     return {"success": True}
+
+
+# 返答を待たせずに走らせるR2の後片付け。参照を持っておかないとGCで途中で消える
+_ATTACHMENT_FILE_TASKS: set = set()
+
+
+def _delete_attachment_files_later(prefix: Optional[str]) -> None:
+    """添付ファイルのR2のフォルダを消す(失敗しても、アカウント削除の {uid}/ 一括削除で最後は消える)。"""
+    if not prefix or "/chat_attachments/" not in prefix:
+        return
+
+    async def run() -> None:
+        try:
+            await asyncio.to_thread(storage_service.delete_prefix, prefix)
+        except Exception as e:
+            print(f"⚠️ [chat] failed to delete attachment files {prefix}: {e}")
+
+    task = asyncio.create_task(run())
+    _ATTACHMENT_FILE_TASKS.add(task)
+    task.add_done_callback(_ATTACHMENT_FILE_TASKS.discard)
+
+
+def _file_error(status: int, e: "chat_files.FileError") -> HTTPException:
+    return HTTPException(status_code=status, detail={"error_code": e.code, "message": e.message, **e.extra})
+
+
+@app.post("/chat/attachments/uploads")
+async def create_chat_attachment_upload(payload: ChatAttachmentUploadRequest, request: Request):
+    """
+    ファイルを添付する1歩目: 種類と大きさを確かめ、draftの行を作り、R2へ直接PUTする署名付きURLを返す
+    (chat_files.py)。端末は返したcontent_typeでPUTし、終わったら /chat/attachments/{id}/extract を呼ぶ。
+    """
+    uid = await _get_authenticated_user_id(request)
+    admin_client = get_supabase_client()
+    await _reject_if_suspended(admin_client, uid)
+
+    file_name = chat_files.clean_file_name(payload.file_name)
+    kind = chat_files.kind_for(file_name)
+    if not kind:
+        raise HTTPException(status_code=415, detail={"error_code": "UNSUPPORTED_FILE_TYPE",
+                                                     "message": "This file type is not supported."})
+    max_bytes = chat_files.MAX_UPLOAD_BYTES[kind]
+    if payload.file_size <= 0:
+        raise HTTPException(status_code=400, detail={"error_code": "FILE_EMPTY", "message": "The file is empty."})
+    if payload.file_size > max_bytes:
+        raise HTTPException(status_code=413, detail={"error_code": "FILE_TOO_LARGE", "message": "The file is too large.",
+                                                     "max_bytes": max_bytes})
+
+    since = (datetime.now(timezone.utc) - timedelta(hours=chat_files.DRAFT_TTL_HOURS)).isoformat()
+    drafts = await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments").select("id", count="exact")
+            .eq("user_id", uid).eq("status", "draft").gte("created_at", since).limit(1).execute()
+    )
+    if (drafts.count or 0) >= chat_files.MAX_DRAFTS_PER_USER:
+        raise HTTPException(status_code=429, detail={"error_code": "TOO_MANY_DRAFTS",
+                                                     "message": "Too many files are waiting to be sent.",
+                                                     "max_drafts": chat_files.MAX_DRAFTS_PER_USER})
+
+    attachment_id = str(uuid.uuid4())
+    prefix = chat_files.storage_prefix(uid, attachment_id)
+    content_type = chat_files.UPLOAD_CONTENT_TYPES[kind]
+    await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments").insert({
+            "id": attachment_id, "user_id": uid, "kind": kind, "status": "draft",
+            "content": "", "char_count": 0, "token_count": 0,
+            "storage_prefix": prefix, "file_name": file_name, "mime_type": content_type,
+            "file_size": payload.file_size,
+        }).execute()
+    )
+    upload_url = await asyncio.to_thread(
+        storage_service.generate_presigned_put_url_for_key, chat_files.upload_key(prefix, kind), content_type)
+    return {"attachment_id": attachment_id, "upload_url": upload_url, "content_type": content_type,
+            "kind": kind, "max_bytes": max_bytes}
+
+
+async def _require_own_draft(admin_client, attachment_id: str, uid: str) -> dict:
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments")
+            .select("id, user_id, kind, status, file_name, file_size, page_count, storage_prefix, extraction, deleted_at")
+            .eq("id", attachment_id).maybe_single().execute()
+    )
+    row = res.data if res else None
+    if not row or row.get("user_id") != uid or row.get("deleted_at") or row.get("status") != "draft":
+        raise HTTPException(status_code=404, detail={"error_code": "ATTACHMENT_NOT_FOUND", "message": "Attachment not found."})
+    return row
+
+
+@app.post("/chat/attachments/{attachment_id}/extract")
+async def extract_chat_attachment(attachment_id: str, request: Request):
+    """
+    ファイルを添付する2歩目(アップロードの後): LLMを使わずに中身を取り出し、送る前に分かること
+    (ページ数・文字数・画像として読む数)を返す。取り出せない・上限を超えるファイルは、draftを消して
+    理由(error_code)を返す。同じdraftに2回呼ばれたら、前の結果をそのまま返す。
+    """
+    import tempfile
+
+    uid = await _get_authenticated_user_id(request)
+    attachment_id = _parse_uuid_or_422(attachment_id, "attachment_id")
+    admin_client = get_supabase_client()
+    row = await _require_own_draft(admin_client, attachment_id, uid)
+    if row.get("extraction"):
+        return chat_files.draft_info(row)
+
+    kind, prefix = row["kind"], row["storage_prefix"]
+    key = chat_files.upload_key(prefix, kind)
+
+    async def discard(status: int, e: chat_files.FileError) -> HTTPException:
+        await asyncio.to_thread(
+            lambda: admin_client.table("chat_attachments").delete().eq("id", attachment_id).execute())
+        _delete_attachment_files_later(prefix)
+        return _file_error(status, e)
+
+    size = await asyncio.to_thread(storage_service.object_size, key)
+    if size is None:
+        raise HTTPException(status_code=409, detail={"error_code": "FILE_NOT_UPLOADED",
+                                                     "message": "The file has not been uploaded yet."})
+    if size > chat_files.MAX_UPLOAD_BYTES[kind]:
+        raise await discard(413, chat_files.FileError("FILE_TOO_LARGE", "The file is too large.",
+                                                      {"max_bytes": chat_files.MAX_UPLOAD_BYTES[kind]}))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / key.rsplit("/", 1)[-1]
+        await asyncio.to_thread(storage_service.download_file, key, path)
+        try:
+            ex = await asyncio.wait_for(asyncio.to_thread(chat_files.extract_file, kind, path),
+                                        timeout=chat_files.EXTRACT_TIMEOUT_SECONDS)
+        except chat_files.FileError as e:
+            raise await discard(422, e)
+        except asyncio.TimeoutError:
+            raise await discard(422, chat_files.FileError("FILE_TOO_COMPLEX", "The file took too long to read."))
+    if ex.estimated_chars > MAX_ATTACHMENT_CHARS:
+        raise await discard(413, chat_files.FileError(
+            "ATTACHMENT_TOO_LONG", f"The file has more than {MAX_ATTACHMENT_CHARS} characters.",
+            {"max_chars": MAX_ATTACHMENT_CHARS, "estimated_chars": ex.estimated_chars}))
+
+    # 画像として読む部分(縮めたJPEG)をR2に置く。画像の資料は、端末が送ったファイルを消し、
+    # 作り直した画像(EXIFを消したもの)だけを残す
+    image_keys = {k: f"{prefix}img/{k}.jpg" for k in ex.images}
+    await asyncio.gather(*[asyncio.to_thread(storage_service.put_bytes, image_keys[k], data, "image/jpeg")
+                           for k, data in ex.images.items()])
+    if kind == "image":
+        await asyncio.to_thread(lambda: storage_service.s3.delete_object(Bucket=storage_service.bucket_name, Key=key))
+
+    extraction = chat_files.extraction_json(ex, image_keys)
+    updated = await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments").update({
+            "extraction": extraction, "page_count": ex.page_count, "char_count": ex.text_chars,
+            "token_count": extraction["estimated_tokens"],
+            **({"image_path": image_keys["main"]} if kind == "image" else {}),
+        }).eq("id", attachment_id).eq("status", "draft").execute()
+    )
+    if not updated.data:
+        raise HTTPException(status_code=404, detail={"error_code": "ATTACHMENT_NOT_FOUND", "message": "Attachment not found."})
+    return chat_files.draft_info(updated.data[0])
+
+
+@app.get("/chat/attachments/{attachment_id}/file")
+async def get_chat_attachment_file(attachment_id: str, request: Request):
+    """添付したファイルを開くための短い署名付きURL(本人のみ。PDF・画像はブラウザでそのまま表示できる)。"""
+    uid = await _get_authenticated_user_id(request)
+    attachment_id = _parse_uuid_or_422(attachment_id, "attachment_id")
+    admin_client = get_supabase_client()
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments")
+            .select("id, user_id, kind, storage_prefix, image_path, file_name, mime_type, deleted_at")
+            .eq("id", attachment_id).maybe_single().execute()
+    )
+    row = res.data if res else None
+    if not row or row.get("user_id") != uid or row.get("deleted_at") or not row.get("storage_prefix"):
+        raise HTTPException(status_code=404, detail={"error_code": "ATTACHMENT_NOT_FOUND", "message": "Attachment not found."})
+    kind = row["kind"]
+    if kind == "image":
+        key, content_type = row.get("image_path"), "image/jpeg"
+    else:
+        key, content_type = chat_files.upload_key(row["storage_prefix"], kind), chat_files.UPLOAD_CONTENT_TYPES[kind]
+    if not key:
+        raise HTTPException(status_code=404, detail={"error_code": "ATTACHMENT_NOT_FOUND", "message": "Attachment not found."})
+    file_name = row.get("file_name") or "file"
+    if kind == "image" and not file_name.lower().endswith((".jpg", ".jpeg")):
+        file_name = Path(file_name).stem + ".jpg"
+    url = await asyncio.to_thread(storage_service.generate_presigned_view_url, key, file_name, content_type)
+    return {"url": url, "file_name": file_name, "kind": kind, "content_type": content_type}
 
 
 # ---------------------------------------------------------

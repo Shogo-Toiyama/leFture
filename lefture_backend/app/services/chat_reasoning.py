@@ -90,7 +90,8 @@ def with_checked_work(answer_messages: list[Message], notes: str) -> list[Messag
     """最新のメッセージの末尾にメモを足す(回答役のsystemの「CHECKED WORK」節が扱い方を指示している)。"""
     last = answer_messages[-1]
     return [*answer_messages[:-1],
-            Message(role=last.role, content=f"{last.content}\n\n<checked_work>\n{notes.strip()}\n</checked_work>")]
+            Message(role=last.role, content=f"{last.content}\n\n<checked_work>\n{notes.strip()}\n</checked_work>",
+                    images=last.images)]
 
 
 async def check_work(llm: UnifiedLLM, answer_messages: list[Message],

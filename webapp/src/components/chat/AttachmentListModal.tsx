@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronRight, FileText, Paperclip, X } from 'lucide-react';
+import { ChevronRight, Paperclip, X } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { extractErrorCode } from '../../lib/api';
 import {
@@ -8,7 +8,7 @@ import {
   CHAT_MAX_SELECTED_TOKENS,
   type ChatAttachment,
 } from '../../types/chat';
-import { AttachmentStatusBadge } from './AttachmentViewerModal';
+import { AttachmentKindIcon, AttachmentStatusBadge } from './AttachmentViewerModal';
 
 interface AttachmentListModalProps {
   open: boolean;
@@ -133,7 +133,11 @@ export const AttachmentListModal: React.FC<AttachmentListModalProps> = ({
               </div>
               <ul className="chat-attachment-list">
                 {ordered.map((a) => {
-                  const meta = [t('chatAttachmentChars', { count: formatNumber(a.char_count) })];
+                  const meta: string[] = [];
+                  if (a.kind === 'image') meta.push(t('chatFileImage'));
+                  else if (a.kind === 'pdf' && a.page_count) meta.push(t('chatFilePages', { count: a.page_count }));
+                  else if (a.kind === 'pptx' && a.page_count) meta.push(t('chatFileSlides', { count: a.page_count }));
+                  if (a.kind !== 'image') meta.push(t('chatAttachmentChars', { count: formatNumber(a.char_count) }));
                   if (a.sections.length > 1) meta.push(t('chatAttachmentSections', { count: a.sections.length }));
                   meta.push(formatDate(a.created_at, { month: 'numeric', day: 'numeric' }));
                   const reason = blockReason(a);
@@ -143,9 +147,13 @@ export const AttachmentListModal: React.FC<AttachmentListModalProps> = ({
                   return (
                     <li key={a.id} className={`chat-attachment-list-item ${a.selected ? 'is-selected' : ''}`}>
                       <button type="button" className="chat-attachment-list-row" onClick={() => onOpen(a)}>
-                        <FileText size={17} className="chat-attachment-list-icon" />
+                        <span className="chat-attachment-list-icon">
+                          <AttachmentKindIcon kind={a.kind} size={17} />
+                        </span>
                         <span className="chat-attachment-list-text">
-                          <span className="chat-attachment-list-title">{a.title || t('chatAttachmentUntitled')}</span>
+                          <span className="chat-attachment-list-title">
+                            {a.title || a.file_name || t('chatAttachmentUntitled')}
+                          </span>
                           {a.summary && <span className="chat-attachment-list-summary">{a.summary}</span>}
                           <span className="chat-attachment-list-meta">{meta.join('・')}</span>
                         </span>

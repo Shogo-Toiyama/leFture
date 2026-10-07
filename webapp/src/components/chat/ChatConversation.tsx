@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Upload } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import type { TranslationKey } from '../../i18n/translations';
 import { useChatConversation, type LocalChatMessage } from '../../hooks/useChatConversation';
@@ -72,6 +72,9 @@ function failureCopy(
       return { key: 'chatErrorTooManyAttachments', params: { max: CHAT_MAX_ATTACHMENTS_PER_MESSAGE } };
     case 'THREAD_ATTACHMENT_LIMIT':
       return { key: 'chatErrorThreadAttachmentLimit', params: { max: CHAT_MAX_ATTACHMENTS_PER_THREAD } };
+    case 'ATTACHMENT_NOT_FOUND':
+    case 'ATTACHMENT_NOT_READY':
+      return { key: 'chatErrorAttachmentNotReady' };
     case 'THREAD_BUSY':
       return { key: 'chatErrorThreadBusy' };
     case 'THREAD_NOT_FOUND':
@@ -130,6 +133,11 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   const [prefill, setPrefill] = useState<{ text: string; attachments?: ChatDraftAttachment[]; nonce: number } | null>(
     null
   );
+  /** 会話の上にドロップされたファイル(入力欄が添付する)。 */
+  const [droppedFiles, setDroppedFiles] = useState<{ files: File[]; nonce: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  // 子要素への出入りでもdragenter/dragleaveが来るので、数えて「外に出た」を判定する
+  const dragDepthRef = useRef(0);
   /** 読んでいる資料(送った資料ならidがあり、外せる)。 */
   const [viewing, setViewing] = useState<{ attachment: ViewableAttachment; id?: string } | null>(null);
 
@@ -247,8 +255,45 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     );
   };
 
+  const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer.types).includes('Files');
+  const dropHandlers = {
+    onDragEnter: (e: React.DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepthRef.current += 1;
+      setDragging(true);
+    },
+    onDragOver: (e: React.DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    },
+    onDragLeave: (e: React.DragEvent) => {
+      if (!hasFiles(e)) return;
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) setDragging(false);
+    },
+    onDrop: (e: React.DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepthRef.current = 0;
+      setDragging(false);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length) setDroppedFiles({ files, nonce: Date.now() });
+    },
+  };
+
   return (
-    <div className={`chat-convo is-${variant}`}>
+    <div className={`chat-convo is-${variant} ${dragging ? 'is-dragging' : ''}`} {...dropHandlers}>
+      {dragging && (
+        <div className="chat-drop-overlay" aria-hidden="true">
+          <div className="chat-drop-card">
+            <Upload size={22} />
+            <strong>{t('chatFileDropTitle')}</strong>
+            <span>{t('chatFileDropHint', { max: CHAT_MAX_ATTACHMENTS_PER_MESSAGE })}</span>
+          </div>
+        </div>
+      )}
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
         <div className="chat-thread">
           {loading ? (
@@ -318,6 +363,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           hasAttachments={listedAttachments.some((a) => a.status === 'ready')}
           onOpenAttachmentList={() => setLocalListOpen(true)}
           prefill={prefill}
+          droppedFiles={droppedFiles}
           autoFocus={variant === 'page'}
         />
         <p className="chat-disclaimer">{t('chatAiDisclaimer')}</p>
