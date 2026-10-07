@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle, ExternalLink, FileText, ImageIcon, Paperclip, Presentation, X } from 'lucide-react';
+import { AlertCircle, ChevronRight, ExternalLink, FileText, ImageIcon, Paperclip, Presentation, X } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { getChatAttachmentFileUrl } from '../../lib/chat';
 import type {
@@ -187,8 +187,12 @@ export const AttachmentViewerModal: React.FC<AttachmentViewerModalProps> = ({ at
           {attachment.summary && <p className="chat-attachment-viewer-summary">{attachment.summary}</p>}
 
           {sections.length > 1 && (
-            <nav className="chat-attachment-toc" aria-label={t('chatAttachmentContents')}>
-              <h4>{t('chatAttachmentContents')}</h4>
+            // ふだんは畳んでおき、押すと開く(長い資料だと目次だけで画面が埋まるため)
+            <details className="chat-attachment-toc" aria-label={t('chatAttachmentContents')}>
+              <summary>
+                <ChevronRight size={14} />
+                {t('chatAttachmentContentsCount', { count: sections.length })}
+              </summary>
               <ol>
                 {sections.map((s) => (
                   <li key={s.index}>
@@ -199,7 +203,7 @@ export const AttachmentViewerModal: React.FC<AttachmentViewerModalProps> = ({ at
                   </li>
                 ))}
               </ol>
-            </nav>
+            </details>
           )}
 
           <h4 className="chat-attachment-viewer-heading">{t('chatAttachmentFullText')}</h4>

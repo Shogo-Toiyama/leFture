@@ -36,6 +36,7 @@ import asyncio
 import json
 import re
 import time
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Awaitable, Callable, Optional
@@ -71,6 +72,7 @@ from app.services.chat_attachments import (
     MAX_ATTACHMENT_TITLE_CHARS,
     MAX_ATTACHMENTS_PER_MESSAGE,
     MAX_ATTACHMENTS_PER_THREAD,
+    MAX_MENTIONS_PER_MESSAGE,
     READ_MAX_CONCURRENT_CALLS,
     Attachment,
     ReadResult,
@@ -78,14 +80,18 @@ from app.services.chat_attachments import (
     Visibility,
     answer_image_attachments,
     assign_handles,
-    auto_select,
     estimate_tokens,
     history_marker,
+    mention_ids,
+    plain_mentions,
+    plan_pins,
     plan_visibility,
     read_attachment,
     render_ai_code_rule,
     render_for_answer,
     render_for_router,
+    render_mentions,
+    rewrite_mentions,
 )
 from app.services.chat_files import (
     answer_image,
@@ -489,10 +495,17 @@ class NewAttachment:
     title: Optional[str]
     content: str
     attachment_id: Optional[str] = None
+    # テキスト: 本文の印(⟦att:ref⟧)で使う端末の仮のidと、保存する行のid(prepare_chat_turnが先に決める)
+    ref: Optional[str] = None
+    new_id: Optional[str] = None
 
     @property
     def is_file(self) -> bool:
         return self.attachment_id is not None
+
+    @property
+    def id(self) -> str:
+        return self.attachment_id or self.new_id or ""
 
 
 # 本文を書かずに資料だけ送ったときに、振り分け役・探索役・回答役へ渡す本文の代わり
@@ -533,16 +546,23 @@ class PreparedTurn:
     new_attachment_rows: list[dict] = field(default_factory=list)
     # 回答役に渡す画像(選択中の画像の資料、answer_image_attachmentsの順)。run_chat_turnが読み込む
     answer_images: list[bytes] = field(default_factory=list)
+    # 本文が文中で指している資料のid(出てくる順)と、全文で読む枠に入れる資料のid(新しく添付したもの +
+    # 「全文で添付」した既存の資料)。新しく添付した資料は、いつも全文で添付(2026-10-07にユーザーと合意)
+    mentions: list[str] = field(default_factory=list)
+    pin_requests: list[str] = field(default_factory=list)
+    # 全文で読む枠を超えて外した資料など(返答の行のcontextに残し、画面に知らせる)
+    attachment_notice: Optional[dict] = None
 
     @property
     def message_for_prompt(self) -> str:
-        """LLMに渡す本文(資料だけ送ったときは、その旨の一文)。"""
-        return self.content or ATTACHMENT_ONLY_MESSAGE
+        """LLMに渡す本文(資料の印は呼び名と名前に直す。資料だけ送ったときは、その旨の一文)。"""
+        return render_mentions(self.content, self.attachments).strip() or ATTACHMENT_ONLY_MESSAGE
 
     def language_hint(self) -> str:
         """振り分け役を通る前に返答言語を推すための文(本文、無ければ添付した資料の冒頭)。"""
-        return self.content or " ".join((r.get("content") or r.get("file_name") or "")[:200]
-                                        for r in self.new_attachment_rows)
+        text = plain_mentions(self.content).replace("[attached material]", "").strip()
+        return text or " ".join((r.get("content") or r.get("file_name") or "")[:200]
+                                for r in self.new_attachment_rows)
 
 
 def _now_iso(delta: timedelta = timedelta(0)) -> str:
@@ -615,7 +635,7 @@ def _fetch_history_rows(admin_client, thread_id: str) -> list[dict]:
 
 
 ATTACHMENT_COLUMNS = ("id, title, content, summary, sections, message_id, created_at, status, selected, token_count, "
-                      "forbids_ai_code, kind, image_path")
+                      "forbids_ai_code, kind, image_path, selected_at")
 # 送る前に取り出したファイル(draft)。extractionは書き起こしに使う(送った後のターンで消す)
 DRAFT_COLUMNS = ("id, user_id, kind, status, title, file_name, extraction, storage_prefix, deleted_at, "
                  "created_at, token_count")
@@ -650,6 +670,7 @@ def _write_turn_rows(
     selected_text: Optional[str],
     screen_ref: Optional[ScreenRef] = None,
     attachments: Optional[list[NewAttachment]] = None,
+    attachment_modes: Optional[list[dict]] = None,
 ) -> tuple[str, str, str, list[dict]]:
     """
     スレッド作成(新規のみ) → ファイルのdraftをこのスレッドに結び付ける → userメッセージ →
@@ -701,6 +722,9 @@ def _write_turn_rows(
             k: v for k, v in {"kind": screen_ref.kind, "id": screen_ref.id,
                               "topic_number": screen_ref.topic_number}.items() if v is not None
         }
+    # このメッセージで添付・指した資料と、その渡し方(full: 全文で添付 / mention: 指しただけ)。画面のチップ用
+    if attachment_modes:
+        message_context["attachments"] = attachment_modes
 
     try:
         u = admin_client.table("chat_messages").insert({
@@ -741,6 +765,7 @@ def _write_turn_rows(
     texts = [(i, att) for i, att in enumerate(attachments) if not att.is_file]
     if texts:
         res = admin_client.table("chat_attachments").insert([{
+            "id": att.new_id,
             "user_id": user_id,
             "thread_id": thread_id,
             "message_id": user_message_id,
@@ -792,17 +817,27 @@ async def prepare_chat_turn(
     """
     content = (content or "").strip()
     selected_text = (selected_text or "").strip() or None
+    # 新しく添付する資料(text / file)と、このスレッドの既存の資料を指すもの(existing: 全文で添付 / メンション)
+    existing_refs: list[tuple[str, str]] = [
+        (a.attachment_id, "full" if getattr(a, "mode", None) == "full" else "mention")
+        for a in attachments or [] if getattr(a, "kind", "text") == "existing" and getattr(a, "attachment_id", None)
+    ]
     attachments = [
         NewAttachment(title=((getattr(a, "title", None) or "").strip()[:MAX_ATTACHMENT_TITLE_CHARS] or None),
                       content=(getattr(a, "content", None) or "").strip(),
-                      attachment_id=getattr(a, "attachment_id", None) if getattr(a, "kind", "text") == "file" else None)
-        for a in attachments or []
+                      attachment_id=getattr(a, "attachment_id", None) if getattr(a, "kind", "text") == "file" else None,
+                      ref=getattr(a, "ref", None),
+                      new_id=str(uuid.uuid4()) if getattr(a, "kind", "text") == "text" else None)
+        for a in attachments or [] if getattr(a, "kind", "text") in ("text", "file")
     ]
 
     # --- 入力の上限(LLMはおろかDBも呼ぶ前に弾く) ---
     # 資料だけを送るのは許す(「これを一緒に読みたい」と書かずに貼ることもある)
-    if not content and not attachments:
+    if not content and not attachments and not existing_refs:
         raise ChatRequestError(400, "EMPTY_MESSAGE", "Message is empty.")
+    if len(existing_refs) > MAX_MENTIONS_PER_MESSAGE:
+        raise ChatRequestError(413, "TOO_MANY_MENTIONS", f"At most {MAX_MENTIONS_PER_MESSAGE} materials per message.",
+                               {"max_mentions": MAX_MENTIONS_PER_MESSAGE})
     if len(attachments) > MAX_ATTACHMENTS_PER_MESSAGE:
         raise ChatRequestError(413, "TOO_MANY_ATTACHMENTS",
                                f"At most {MAX_ATTACHMENTS_PER_MESSAGE} attachments per message.",
@@ -938,6 +973,23 @@ async def prepare_chat_turn(
             raise ChatRequestError(409, "ATTACHMENT_NOT_READY", "An attached file is not ready to send.")
 
     attachment_rows = attachment_rows or []
+    # 既存の資料を指すのは、このスレッドの使える(ready)資料だけ
+    ready_ids = {r["id"] for r in attachment_rows if r.get("status") == "ready"}
+    for att_id, _mode in existing_refs:
+        if att_id not in ready_ids:
+            raise ChatRequestError(404, "ATTACHMENT_NOT_FOUND", "A referenced material was not found in this conversation.")
+    # 本文の印: 仮のid(テキストのref)を本物のidに直し、このスレッドで指せないものは消す
+    content = rewrite_mentions(
+        content, {a.ref: a.new_id for a in attachments if a.ref and a.new_id},
+        ready_ids | {a.id for a in attachments})
+    mentions = mention_ids(content)
+    if len(mentions) > MAX_MENTIONS_PER_MESSAGE:
+        raise ChatRequestError(413, "TOO_MANY_MENTIONS", f"At most {MAX_MENTIONS_PER_MESSAGE} materials per message.",
+                               {"max_mentions": MAX_MENTIONS_PER_MESSAGE})
+    pin_requests = [att_id for att_id, mode in existing_refs if mode == "full"] + [a.id for a in attachments]
+    attachment_modes = [{"id": att_id, "mode": mode} for att_id, mode in existing_refs] + \
+                       [{"id": a.id, "mode": "full"} for a in attachments]
+
     if attachments and len(attachment_rows) + len(attachments) > MAX_ATTACHMENTS_PER_THREAD:
         raise ChatRequestError(409, "THREAD_ATTACHMENT_LIMIT",
                                f"A conversation can hold at most {MAX_ATTACHMENTS_PER_THREAD} attachments.",
@@ -947,7 +999,7 @@ async def prepare_chat_turn(
 
     thread_id, user_message_id, assistant_message_id, new_attachment_rows = await to_thread(
         _write_turn_rows, admin_client, is_new_thread, thread_id, user_id, content,
-        client_message_id, context_lecture_id, selected_text, screen_ref, attachments,
+        client_message_id, context_lecture_id, selected_text, screen_ref, attachments, attachment_modes,
     )
     timer.mark("prep_saved")
 
@@ -973,6 +1025,8 @@ async def prepare_chat_turn(
         screen_task=screen_task,
         attachments=[Attachment.from_row(r) for r in attachment_rows if r.get("status") == "ready"],
         new_attachment_rows=new_attachment_rows,
+        mentions=mentions,
+        pin_requests=pin_requests,
     )
 
 
@@ -986,10 +1040,12 @@ def _load_student_profile(admin_client, user_id: str) -> str:
     空のときに「CS専攻の学生」という既定文を返すが、チャットでそれを使うと
     本人でない人物像で話しかけてしまうので、空なら空と明示する。
     """
-    res = admin_client.table("user_profiles").select("bio, interests, future_goals") \
+    res = admin_client.table("user_profiles").select("username, bio, interests, future_goals") \
         .eq("id", user_id).maybe_single().execute()
     row = (res.data if res else None) or {}
     parts = []
+    if (row.get("username") or "").strip():
+        parts.append(f"Name: {row['username'].strip()}")
     if (row.get("bio") or "").strip():
         parts.append(f"About: {row['bio'].strip()}")
     if (row.get("interests") or "").strip():
@@ -1220,7 +1276,7 @@ async def _gather_materials(
     if not turn.content:
         return [], navigation  # 資料だけの送信: 本文で検索するものが無い
     try:
-        chunks = await _retrieve(user_client, billing, [turn.content[:200]], turn.context_lecture_id, blocked_source_types)
+        chunks = await _retrieve(user_client, billing, [plain_mentions(turn.content)[:200]], turn.context_lecture_id, blocked_source_types)
     except Exception as e:
         print(f"⚠️ [chat] retrieval failed, answering without sources: {e}")
         chunks = []
@@ -1505,10 +1561,7 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
         token_count=token_count(row), forbids_ai_code=res.forbids_ai_code,
         kind=row.get("kind") or "text", image_path=row.get("image_path"),
     ) for row, res in zip(rows, results)]
-    # 貼った直後はたいてい全文で読んでほしいので、選択中の合計が上限に収まるものは自動で選ぶ
-    picked = auto_select(turn.attachments, new)
-    for a in new:
-        a.selected = a.id in picked
+    # 全文で読む枠への出し入れは、読み終えた後に _apply_pins がまとめて行う(新しく添付した資料は全文で添付)
 
     def save() -> None:
         for a, res, (_, file_usage) in zip(new, results, pairs):
@@ -1541,6 +1594,41 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
 
 # 返答を待たせずに走らせる後片付け(資料のインデックス)。参照を持っておかないとGCで途中で消える
 _BACKGROUND_TASKS: set = set()
+
+
+async def _apply_pins(admin_client, turn: PreparedTurn) -> Optional[dict]:
+    """
+    全文で添付した資料を全文で読む枠に入れ、枠を超えた分は古いものから外す(chat_attachments.plan_pins)。
+    文中で指した全文の資料は「使った」ので、外す順番を後ろにする(selected_atを今にする)。
+    外した・長すぎて全文にできなかった資料があれば、画面に知らせる内容を返す。
+    """
+    if not turn.pin_requests and not turn.mentions:
+        return None
+    plan = plan_pins(turn.attachments, turn.pin_requests)
+    pinned, unpinned = set(plan.pin), set(plan.unpin)
+    used = [a.id for a in turn.attachments
+            if a.selected and a.id in turn.mentions and a.id not in pinned and a.id not in unpinned]
+    now = _now_iso()
+
+    def save() -> None:
+        if plan.pin:
+            admin_client.table("chat_attachments").update({"selected": True, "selected_at": now}) \
+                .in_("id", plan.pin).execute()
+        if plan.unpin:
+            admin_client.table("chat_attachments").update({"selected": False}).in_("id", plan.unpin).execute()
+        if used:
+            admin_client.table("chat_attachments").update({"selected_at": now}).in_("id", used).execute()
+    await asyncio.to_thread(save)
+    for a in turn.attachments:
+        if a.id in pinned:
+            a.selected, a.selected_at = True, now
+        elif a.id in unpinned:
+            a.selected = False
+        elif a.id in used:
+            a.selected_at = now
+    if plan.unpin or plan.too_long:
+        return {"unpinned": plan.unpin, "too_long": plan.too_long}
+    return None
 
 
 def _mark_new_attachments_failed(admin_client, turn: PreparedTurn) -> None:
@@ -1630,9 +1718,17 @@ async def run_chat_turn(
 
         await emit("status", {"stage": "thinking"})
 
-        # 資料の呼び名(A1…)と、このターンに全文で渡す資料
+        # 全文で添付した資料を全文で読む枠に入れる(超えたら古いものから外し、画面に知らせる)
+        turn.attachment_notice = await _apply_pins(admin_client, turn)
+        if turn.attachment_notice:
+            await emit("attachments", turn.attachment_notice)
+
+        # 資料の呼び名(A1…)と、このターンに全文で渡す資料(メンションした画像は、このターンだけ画像も渡す)
         turn.attachments = assign_handles(turn.attachments)
-        attachment_visibility = plan_visibility(turn.attachments)
+        attachment_visibility = plan_visibility(turn.attachments, turn.mentions)
+        # 履歴の本文の資料の印も、このターンの呼び名に直す(外した資料は [removed material])
+        turn.history_rows = [{**r, "content": render_mentions(r.get("content") or "", turn.attachments)}
+                             if r.get("role") == "user" else r for r in turn.history_rows]
         # 選択中の画像の資料は、画像そのものも回答役に渡す。振り分け役・探索役と並行で読み込んでおく
         answer_images_task = asyncio.create_task(_load_answer_images(turn, attachment_visibility))
         answer_images_task.add_done_callback(_ignore_task_exception)
@@ -1707,6 +1803,11 @@ async def run_chat_turn(
         must_check_attachments = decision.needs_reasoning and any(
             not attachment_visibility.is_full(a) for a in turn.attachments)
         if must_check_attachments and not decision.needs_retrieval:
+            decision.needs_retrieval = True
+            retrieval_forced = True
+        # 文中で指した資料が全文で見えていなければ、その中を探しに行く(探索役には<mention_note>で伝える)
+        if not decision.needs_retrieval and any(
+                attachment_visibility.is_mentioned(a) and not attachment_visibility.is_full(a) for a in turn.attachments):
             decision.needs_retrieval = True
             retrieval_forced = True
 
@@ -1818,7 +1919,10 @@ async def run_chat_turn(
             admin_client, turn, content=answer_text, status="complete",
             decision=decision, citations=citations, billing=billing,
             usage_extra={**usage_extra, "finish_reason": state.finish_reason}, charge=True,
-            message_context={"opened": opened_refs} if opened_refs else None,
+            message_context={
+                **({"opened": opened_refs} if opened_refs else {}),
+                **({"attachment_notice": turn.attachment_notice} if turn.attachment_notice else {}),
+            } or None,
         )
         await emit("done", {
             "status": "complete",

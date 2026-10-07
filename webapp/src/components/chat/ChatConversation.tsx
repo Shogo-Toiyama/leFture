@@ -8,9 +8,11 @@ import {
   CHAT_MAX_ATTACHMENT_CHARS,
   CHAT_MAX_ATTACHMENTS_PER_MESSAGE,
   CHAT_MAX_ATTACHMENTS_PER_THREAD,
+  CHAT_MAX_MENTIONS_PER_MESSAGE,
   CHAT_MAX_MESSAGE_CHARS,
   CHAT_MAX_SELECTED_TEXT_CHARS,
   type ChatAttachment,
+  type ChatAttachmentRef,
   type ChatDraftAttachment,
   type ChatMessageContext,
   type ChatScreenRef,
@@ -18,7 +20,7 @@ import {
 } from '../../types/chat';
 import { AttachmentListModal } from './AttachmentListModal';
 import { AttachmentViewerModal, viewableFromAttachment, type ViewableAttachment } from './AttachmentViewerModal';
-import { ChatComposer } from './ChatComposer';
+import { ChatComposer, type ChatInsertRequest } from './ChatComposer';
 import { ChatMessageItem } from './ChatMessageItem';
 
 interface ChatConversationProps {
@@ -75,6 +77,8 @@ function failureCopy(
     case 'ATTACHMENT_NOT_FOUND':
     case 'ATTACHMENT_NOT_READY':
       return { key: 'chatErrorAttachmentNotReady' };
+    case 'TOO_MANY_MENTIONS':
+      return { key: 'chatErrorTooManyMentions', params: { max: CHAT_MAX_MENTIONS_PER_MESSAGE } };
     case 'THREAD_BUSY':
       return { key: 'chatErrorThreadBusy' };
     case 'THREAD_NOT_FOUND':
@@ -130,9 +134,16 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   }, [onAttachmentListClose]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
-  const [prefill, setPrefill] = useState<{ text: string; attachments?: ChatDraftAttachment[]; nonce: number } | null>(
-    null
-  );
+  const [prefill, setPrefill] = useState<{
+    text: string;
+    attachments?: ChatDraftAttachment[];
+    references?: ChatAttachmentRef[];
+    nonce: number;
+  } | null>(null);
+  /** 資料の一覧の「全文で添付」「メンション」で入力欄に入れる資料 */
+  const [insertRequest, setInsertRequest] = useState<ChatInsertRequest | null>(null);
+  /** 入力欄で指している既存の資料(資料の一覧に「添付する予定」として見せる) */
+  const [pendingRefs, setPendingRefs] = useState<ChatAttachmentRef[]>([]);
   /** 会話の上にドロップされたファイル(入力欄が添付する)。 */
   const [droppedFiles, setDroppedFiles] = useState<{ files: File[]; nonce: number } | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -151,6 +162,10 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   }, [listedAttachments.length, onAttachmentCountChange]);
 
   // 送ったメッセージごとの資料(会話の中でチップとして見せる)
+  // 本文の中のチップ・外した知らせに名前を出すため(外した資料も含む)
+  const attachmentsById = useMemo(() => new Map(attachments.map((a) => [a.id, a])), [attachments]);
+  const readyAttachments = useMemo(() => listedAttachments.filter((a) => a.status === 'ready'), [listedAttachments]);
+
   const attachmentsByMessage = useMemo(() => {
     const map = new Map<string, ChatAttachment[]>();
     for (const a of attachments) {
@@ -182,7 +197,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   const selectedTooLong = (selectedText?.length ?? 0) > CHAT_MAX_SELECTED_TEXT_CHARS;
 
   const handleSend = useCallback(
-    (content: string, drafts: ChatDraftAttachment[] = []) => {
+    (content: string, drafts: ChatDraftAttachment[] = [], references: ChatAttachmentRef[] = []) => {
       stickToBottomRef.current = true;
       const context: ChatMessageContext = {};
       if (lectureId) context.lecture_id = lectureId;
@@ -194,7 +209,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
         if (selection.before) context.selection_before = selection.before;
         if (selection.after) context.selection_after = selection.after;
       }
-      void send(content, context, drafts);
+      void send(content, context, drafts, references);
       // 選択テキストは1回の質問にだけ添える
       if (selection) onClearSelection?.();
     },
@@ -245,7 +260,12 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
             className="chat-banner-btn"
             onClick={() => {
               discard(message.id);
-              setPrefill({ text: message.content, attachments: message.localAttachments, nonce: Date.now() });
+              setPrefill({
+                text: message.content,
+                attachments: message.localAttachments,
+                references: message.localReferences,
+                nonce: Date.now(),
+              });
             }}
           >
             {t('chatDismiss')}
@@ -335,6 +355,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
                 <ChatMessageItem
                   message={message}
                   attachments={attachmentsByMessage.get(message.id)}
+                  attachmentsById={attachmentsById}
                   onOpenAttachment={(attachment, id) => setViewing({ attachment, id })}
                   onOpenCitation={onOpenCitation}
                   onResend={message.status === 'error' && !sending ? resendFor(index) : undefined}
@@ -351,6 +372,8 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           <p className="chat-footer-warning">{t('chatErrorSelectedTooLong', { max: CHAT_MAX_SELECTED_TEXT_CHARS })}</p>
         )}
         <ChatComposer
+          // パネル ⇄ 全画面の切り替えで、入力中の中身をこの名前で預けて戻す
+          draftKey={threadId ?? 'new'}
           disabled={sending || selectedTooLong}
           placeholder={messages.length > 0 ? t('chatInputPlaceholderFollowUp') : t('chatInputPlaceholder')}
           onSend={handleSend}
@@ -360,10 +383,16 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           onDetachLecture={onDetachLecture}
           selectedAttachments={listedAttachments.filter((a) => a.selected)}
           onUnselectAttachment={(id) => void selectAttachment(id, false).catch(() => {})}
-          hasAttachments={listedAttachments.some((a) => a.status === 'ready')}
+          mentionables={readyAttachments}
           onOpenAttachmentList={() => setLocalListOpen(true)}
           prefill={prefill}
           droppedFiles={droppedFiles}
+          insertRequest={insertRequest}
+          onPendingChange={setPendingRefs}
+          onViewAttachment={(id) => {
+            const a = attachmentsById.get(id);
+            if (a) setViewing({ attachment: viewableFromAttachment(a), id: a.id });
+          }}
           autoFocus={variant === 'page'}
         />
         <p className="chat-disclaimer">{t('chatAiDisclaimer')}</p>
@@ -372,8 +401,11 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
       <AttachmentListModal
         open={listOpen && !viewing}
         attachments={listedAttachments}
-        onOpen={(a) => setViewing({ attachment: viewableFromAttachment(a), id: a.id })}
-        onToggleSelected={selectAttachment}
+        onView={(a) => setViewing({ attachment: viewableFromAttachment(a), id: a.id })}
+        pendingRefs={pendingRefs}
+        // 一覧は開いたまま(続けていくつも選べるように)。入力欄には裏で「@名前」が入る
+        onAttach={(a, mode) => setInsertRequest({ attachment: a, mode, nonce: Date.now() })}
+        onUnpin={(a) => selectAttachment(a.id, false)}
         onClose={closeList}
       />
       <AttachmentViewerModal

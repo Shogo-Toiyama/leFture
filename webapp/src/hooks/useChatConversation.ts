@@ -12,6 +12,7 @@ import {
 import type {
   ChatAttachment,
   ChatCitation,
+  ChatAttachmentRef,
   ChatDraftAttachment,
   ChatSearchDetail,
   ChatMessage,
@@ -42,6 +43,8 @@ export interface LocalChatMessage extends ChatMessage {
    * 表示と、送れなかったときの再送に使う。
    */
   localAttachments?: ChatDraftAttachment[];
+  /** この送信で指した既存の資料(userのみ。送れなかったときの再送に使う)。 */
+  localReferences?: ChatAttachmentRef[];
 }
 
 interface Options {
@@ -175,11 +178,32 @@ export function useChatConversation(threadId: string | null, options: Options = 
   }, [threadId, load]);
 
   const send = useCallback(
-    async (rawContent: string, context?: ChatMessageContext, drafts?: ChatDraftAttachment[]) => {
+    async (
+      rawContent: string,
+      context?: ChatMessageContext,
+      drafts?: ChatDraftAttachment[],
+      references?: ChatAttachmentRef[]
+    ) => {
       const content = rawContent.trim();
       const localAttachments = drafts?.length ? drafts : undefined;
+      const localReferences = references?.length ? references : undefined;
       // 資料だけを送るのは許す
-      if ((!content && !localAttachments) || sending) return;
+      if ((!content && !localAttachments && !localReferences) || sending) return;
+      // 画面のチップ用に、添付・指した資料と渡し方を残す(サーバーも同じものを保存する)
+      const sentContext: ChatMessageContext = {
+        ...(context ?? {}),
+        ...(localAttachments || localReferences
+          ? {
+              attachments: [
+                ...(localReferences ?? []).map((r) => ({ id: r.attachment_id, mode: r.mode })),
+                ...(localAttachments ?? []).map((d) => ({
+                  id: d.kind === 'file' ? (d.attachmentId ?? d.localId) : d.localId,
+                  mode: 'full' as const,
+                })),
+              ],
+            }
+          : {}),
+      };
 
       const clientMessageId = newClientMessageId();
       const now = new Date().toISOString();
@@ -197,10 +221,11 @@ export function useChatConversation(threadId: string | null, options: Options = 
           content,
           status: 'complete',
           citations: [],
-          context: context ?? {},
+          context: sentContext,
           credits_charged_micro: null,
           created_at: now,
           localAttachments,
+          localReferences,
         },
         {
           id: assistantId,
@@ -254,6 +279,13 @@ export function useChatConversation(threadId: string | null, options: Options = 
           case 'sources':
             patchMessage(assistantId, { pendingSources: event.sources });
             break;
+          case 'attachments':
+            // 全文で読む枠を超えて外した資料など(返答の下に知らせる。資料の一覧も読み直す)
+            patchMessage(assistantId, {
+              context: { attachment_notice: { unpinned: event.unpinned, too_long: event.too_long } },
+            });
+            void refreshAttachments(activeThreadIdRef.current);
+            break;
           case 'delta':
             setMessages((prev) =>
               prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + event.text } : m))
@@ -279,7 +311,14 @@ export function useChatConversation(threadId: string | null, options: Options = 
 
       try {
         await sendChatMessage(
-          { threadId: activeThreadIdRef.current, clientMessageId, content, context, attachments: localAttachments },
+          {
+            threadId: activeThreadIdRef.current,
+            clientMessageId,
+            content,
+            context,
+            attachments: localAttachments,
+            references: localReferences,
+          },
           onEvent,
           controller.signal
         );
@@ -304,7 +343,7 @@ export function useChatConversation(threadId: string | null, options: Options = 
         if (abortRef.current === controller) abortRef.current = null;
         if (mountedRef.current) setSending(false);
         // 添付した資料の状態(確認済み・断った)と、AIが付けた名前を読み直す
-        if (localAttachments && receivedMeta) void refreshAttachments(activeThreadIdRef.current);
+        if ((localAttachments || localReferences) && receivedMeta) void refreshAttachments(activeThreadIdRef.current);
       }
     },
     [sending, patchMessage, waitForServerCompletion, refreshAttachments]
@@ -316,7 +355,7 @@ export function useChatConversation(threadId: string | null, options: Options = 
       const target = messages.find((m) => m.id === failedMessageId);
       if (!target || !target.failedCode || sending) return;
       setMessages((prev) => prev.filter((m) => m.id !== failedMessageId));
-      void send(target.content, target.context, target.localAttachments);
+      void send(target.content, target.context, target.localAttachments, target.localReferences);
     },
     [messages, sending, send]
   );

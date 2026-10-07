@@ -102,10 +102,17 @@ function putToR2(url: string, blob: Blob, contentType: string, onRatio: (ratio: 
     xhr.upload.addEventListener('progress', (e) => {
       if (e.lengthComputable) onRatio(e.loaded / e.total);
     });
-    xhr.addEventListener('load', () =>
-      xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new ChatFileError('UPLOAD_FAILED'))
-    );
-    xhr.addEventListener('error', () => reject(new ChatFileError('UPLOAD_FAILED')));
+    xhr.addEventListener('load', () => {
+      if (xhr.status >= 200 && xhr.status < 300) return resolve();
+      // 原因を追えるように、R2の返事(署名の不一致など)をコンソールに残す
+      console.error('[chat] upload to storage failed', xhr.status, xhr.responseText.slice(0, 300));
+      reject(new ChatFileError('UPLOAD_FAILED', { status: xhr.status }));
+    });
+    // status 0: CORSで止められた・通信が切れた(ブラウザは理由を教えない。コンソールにCORSのエラーが出る)
+    xhr.addEventListener('error', () => {
+      console.error('[chat] upload to storage failed (network or CORS)', xhr.status);
+      reject(new ChatFileError('UPLOAD_FAILED', { status: xhr.status }));
+    });
     xhr.addEventListener('abort', () => reject(new DOMException('Upload cancelled', 'AbortError')));
     signal?.addEventListener('abort', () => xhr.abort());
     xhr.send(blob);

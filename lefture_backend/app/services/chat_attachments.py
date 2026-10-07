@@ -53,8 +53,9 @@ MAX_ATTACHMENTS_PER_MESSAGE = 5
 MAX_ATTACHMENT_TITLE_CHARS = 100
 
 # 全文で渡す資料(選択中)の合計の上限(トークン、estimate_tokensの概算)。英語の10万字の資料が
-# 1本丸ごと入る大きさ。1万トークンにつき1ターン約+1.35クレジット(回答役2.5 Flashの入力$0.30/M ×
-# CHAT_CREDIT_MARKUP 1.5 × 300クレジット/$)、推論ターンは確かめ役(Luna $0.10/M)の分で約+0.45。
+# 1本丸ごと入る大きさ。1万トークンにつき1ターン約+0.45クレジット(回答役Lunaの入力$0.10/M ×
+# CHAT_CREDIT_MARKUP 1.5 × 300クレジット/$。推論ターンも同じLuna)。webappの
+# CHAT_CREDITS_PER_10K_TOKENS(一覧の目安の表示)と揃える。
 MAX_SELECTED_TOKENS = 30_000
 
 # 節の区切り(文字数)。見出しらしい行があればそこで、無ければ段落の切れ目で区切る
@@ -141,6 +142,8 @@ class Attachment:
     # text / pdf / docx / pptx / image(chat_files.py)。画像の資料は、選択中なら画像そのものも回答役に渡す
     kind: str = "text"
     image_path: Optional[str] = None
+    # 全文で読み始めた・最後にメンションされた時刻(全文で読む枠を超えたら、古いものから外す)
+    selected_at: str = ""
 
     @property
     def char_count(self) -> int:
@@ -171,6 +174,7 @@ class Attachment:
                    selected=bool(row.get("selected")),
                    forbids_ai_code=bool(row.get("forbids_ai_code")),
                    kind=row.get("kind") or "text", image_path=row.get("image_path"),
+                   selected_at=row.get("selected_at") or "",
                    token_count=token_count if isinstance(token_count, int) else estimate_tokens(content))
 
 
@@ -195,11 +199,62 @@ class ReadResult:
 
 @dataclass
 class Visibility:
-    """そのターンに各資料をどう見せるか。full: 回答役に全文を渡す資料のid。"""
+    """
+    そのターンに各資料をどう見せるか。full: 回答役に全文を渡す資料のid。
+    mentioned: 生徒がこのメッセージの文中で指した資料のid(全文でなければ、探索役がその中を探す)。
+    """
     full: set[str]
+    mentioned: set[str] = field(default_factory=set)
 
     def is_full(self, a: Attachment) -> bool:
         return a.id in self.full
+
+    def is_mentioned(self, a: Attachment) -> bool:
+        return a.id in self.mentioned
+
+
+# =========================================================
+# @ 本文の中で資料を指す(メンション)
+# =========================================================
+
+# 生徒の本文の中の資料の印(webappが入れる)。保存する本文もこの形: ⟦att:<資料のid>⟧
+# 送るときの新しい資料(まだidが無いテキスト)は端末の仮のid(ref)で届き、prepare_chat_turnが本物のidに直す
+MENTION_RE = re.compile(r"⟦att:([0-9A-Za-z-]{1,64})⟧")
+MAX_MENTIONS_PER_MESSAGE = 10
+
+
+def mention_ids(text: str) -> list[str]:
+    """本文が指している資料のid(出てくる順、重複なし)。"""
+    out: list[str] = []
+    for m in MENTION_RE.finditer(text or ""):
+        if m.group(1) not in out:
+            out.append(m.group(1))
+    return out
+
+
+def rewrite_mentions(text: str, mapping: dict[str, str], allowed: set[str]) -> str:
+    """仮のid(ref)を本物のidに直し、このスレッドで指せない印は消す。"""
+    def sub(m: re.Match) -> str:
+        target = mapping.get(m.group(1), m.group(1))
+        return f"⟦att:{target}⟧" if target in allowed else ""
+    return MENTION_RE.sub(sub, text or "")
+
+
+def render_mentions(text: str, attachments: list[Attachment]) -> str:
+    """LLMに渡す形: 印を資料の呼び名と名前に直す(例: [A2 "Project #1 spec"])。外した資料は [removed material]。"""
+    by_id = {a.id: a for a in attachments}
+
+    def sub(m: re.Match) -> str:
+        a = by_id.get(m.group(1))
+        if a is None:
+            return "[removed material]"
+        return f'[{a.handle} "{a.title or "untitled"}"]' if a.handle else f'["{a.title or "attached material"}"]'
+    return MENTION_RE.sub(sub, text or "")
+
+
+def plain_mentions(text: str) -> str:
+    """資料の一覧が無いところ(要約・検索の索引・プロフィール)で読む形。印を [attached material] にする。"""
+    return MENTION_RE.sub("[attached material]", text or "")
 
 
 # =========================================================
@@ -478,9 +533,52 @@ def assign_handles(attachments: list[Attachment]) -> list[Attachment]:
     return ordered
 
 
-def plan_visibility(attachments: list[Attachment]) -> Visibility:
-    """全文で渡すのは選択中の資料だけ(上限は選ぶときに確かめてある)。"""
-    return Visibility(full={a.id for a in attachments if a.selected})
+def plan_visibility(attachments: list[Attachment], mentioned: Optional[list[str]] = None) -> Visibility:
+    """
+    全文で渡すのは選択中(全文で添付した)資料と、このメッセージでメンションした画像(画像はそのターンだけ
+    画像そのものと書き起こしを渡す。1枚約1,550トークン)。上限は選ぶときに確かめてある。
+    """
+    mentioned_ids = set(mentioned or [])
+    full = {a.id for a in attachments if a.selected or (a.id in mentioned_ids and a.kind == "image" and a.image_path)}
+    return Visibility(full=full, mentioned=mentioned_ids)
+
+
+@dataclass
+class PinPlan:
+    """全文で読む資料の入れ替え。pin: 全文にする / unpin: 枠を超えたので外す / too_long: 1本で枠を超えるので全文にできない。"""
+    pin: list[str]
+    unpin: list[str]
+    too_long: list[str]
+
+
+def plan_pins(attachments: list[Attachment], requested: list[str], limit: int = MAX_SELECTED_TOKENS) -> PinPlan:
+    """
+    全文で添付した資料(新しく貼ったもの・「全文で添付」した既存のもの)を全文で読む枠に入れる。
+    枠(選択中の合計MAX_SELECTED_TOKENS)を超えるときは、新しく頼まれた方を優先し、すでに全文で読んでいる
+    資料のうち、全文にした・最後にメンションした時刻(selected_at)が古いものから外す(2026-10-07にユーザーと合意。
+    気づかずに次々と貼っても、最新の資料は必ず全文で読まれ、費用は枠で頭打ちになる。外したことは画面に知らせる)。
+    頼まれた資料どうしで枠を超えるときは、後(文中で後ろ・後に貼った方)を優先する。
+    """
+    by_id = {a.id: a for a in attachments}
+    req = [by_id[i] for i in dict.fromkeys(requested) if i in by_id]
+    too_long = [a.id for a in req if a.token_count > limit]
+    used = 0
+    keep: list[Attachment] = []
+    for a in reversed([a for a in req if a.token_count <= limit]):
+        if used + a.token_count <= limit:
+            keep.append(a)
+            used += a.token_count
+        else:
+            too_long.append(a.id)
+    keep_ids = {a.id for a in keep}
+    unpin: list[str] = []
+    for a in sorted((a for a in attachments if a.selected and a.id not in keep_ids),
+                    key=lambda a: a.selected_at or a.created_at, reverse=True):
+        if used + a.token_count <= limit:
+            used += a.token_count
+        else:
+            unpin.append(a.id)
+    return PinPlan(pin=[a.id for a in req if a.id in keep_ids], unpin=unpin, too_long=too_long)
 
 
 def estimate_tokens(text: str) -> int:
@@ -491,20 +589,6 @@ def estimate_tokens(text: str) -> int:
     """
     non_ascii = sum(1 for ch in text if ord(ch) > 127)
     return -(-(len(text) - non_ascii) // 4) + non_ascii
-
-
-def auto_select(existing: list[Attachment], new: list[Attachment], limit: int = MAX_SELECTED_TOKENS) -> set[str]:
-    """
-    新しく添付した資料のうち、自動で選ぶもの(添付した順に、選択中の合計が上限に収まるものだけ)。
-    貼った直後はたいてい全文で読んでほしいので、収まるなら選ぶ。収まらない資料は目次と検索で読む。
-    """
-    used = sum(a.token_count for a in existing if a.selected)
-    picked: set[str] = set()
-    for a in new:
-        if used + a.token_count <= limit:
-            picked.add(a.id)
-            used += a.token_count
-    return picked
 
 
 def _line(a: Attachment) -> str:
@@ -529,16 +613,18 @@ def render_for_answer(attachments: list[Attachment], vis: Visibility) -> str:
             blocks.append(f'<material handle="{a.handle}" title="{a.title}">\n{a.content.strip()}\n</material>')
     listed = [a for a in attachments if not vis.is_full(a)]
     if listed:
-        lines = [f"- {_line(a)}: {a.summary or '(no summary)'}" for a in listed]
+        lines = [f"- {_line(a)}: {a.summary or '(no summary)'}"
+                 + (" (the student refers to this in their message)" if vis.is_mentioned(a) else "")
+                 for a in listed]
         blocks.append("Also attached, but not shown in full here: you see only these summaries and the parts in <sources>, "
                       "if any. Do not state what else they say; if a reply needs a part you were not given, say you "
-                      "could not check it, and that the student can turn on \"Read in full\" (全文で読む) for that "
-                      "material in the materials list:\n" + "\n".join(lines))
+                      "could not check it, and that the student can attach that material in full (全文で添付) from "
+                      "the materials list or by typing @ in the message box:\n" + "\n".join(lines))
     return "\n\n".join(blocks)
 
 
 def answer_image_attachments(attachments: list[Attachment], vis: Visibility) -> list[Attachment]:
-    """回答役に画像そのものを渡す資料(選択中の画像の資料、render_for_answerと同じ順)。"""
+    """回答役に画像そのものを渡す資料(全文で添付した・メンションした画像の資料、render_for_answerと同じ順)。"""
     return [a for a in attachments if vis.is_full(a) and a.kind == "image" and a.image_path]
 
 
@@ -564,7 +650,8 @@ def render_for_router(attachments: list[Attachment], vis: Visibility) -> str:
     for a in attachments:
         seen = ("FULL TEXT visible to the answerer (questions about it never need a fetch)" if vis.is_full(a)
                 else "only this summary is visible to the answerer (questions about its contents need a fetch)")
-        lines.append(f"- {_line(a)} — {seen}. Summary: {a.summary or '(none)'}")
+        mention = " The student refers to it in this message." if vis.is_mentioned(a) else ""
+        lines.append(f"- {_line(a)} — {seen}.{mention} Summary: {a.summary or '(none)'}")
     return "\n".join(lines)
 
 
@@ -574,7 +661,8 @@ def render_for_navigator(attachments: list[Attachment], vis: Visibility) -> str:
         if vis.is_full(a):
             lines.append(f"{_line(a)} — the answerer already sees its full text; never open it.")
         else:
-            lines.append(f"{_line(a)} — {a.summary or '(no summary)'}")
+            mention = " [THE STUDENT REFERS TO THIS IN THEIR MESSAGE]" if vis.is_mentioned(a) else ""
+            lines.append(f"{_line(a)} — {a.summary or '(no summary)'}{mention}")
     return "\n".join(lines)
 
 

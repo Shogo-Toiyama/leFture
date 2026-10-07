@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from app.core.supabase import get_supabase_client
+from app.services.chat_attachments import plain_mentions
 from app.services.helpers.credits import consume_chat_summary_credits
 from app.services.helpers.helpers import _load_prompt
 from app.services.helpers.llm_unified import BillingEngine, LLMOptions, Message, UnifiedLLM
@@ -146,7 +147,9 @@ def pair_turns(rows: list[dict], first_number: int = 1) -> list[Turn]:
                     number=first_number + len(turns),
                     user_message_id=pending_user.get("id"),
                     assistant_message_id=row.get("id"),
-                    user_content=pending_user.get("content") or "",
+                    # 資料の印(⟦att:id⟧)は、資料の一覧が無いところ(要約・過去のチャットの検索・索引・プロフィール)
+                    # では [attached material] にする。回答役の履歴はrun_chat_turnが呼び名つきに直してから渡す
+                    user_content=plain_mentions(pending_user.get("content") or ""),
                     assistant_content=row.get("content") or "",
                     assistant_created_at=row.get("created_at"),
                     reply_language=(row.get("router") or {}).get("reply_language"),

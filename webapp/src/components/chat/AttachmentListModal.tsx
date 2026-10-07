@@ -1,22 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronRight, Paperclip, X } from 'lucide-react';
+import { AtSign, BookOpenText, ChevronDown, FileStack, Paperclip, X } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { extractErrorCode } from '../../lib/api';
 import {
   CHAT_CREDITS_PER_10K_TOKENS,
   CHAT_MAX_ATTACHMENTS_PER_THREAD,
   CHAT_MAX_SELECTED_TOKENS,
   type ChatAttachment,
+  type ChatAttachmentRef,
 } from '../../types/chat';
+import { useAttachmentImageUrl } from '../../hooks/useAttachmentImageUrl';
 import { AttachmentKindIcon, AttachmentStatusBadge } from './AttachmentViewerModal';
 
 interface AttachmentListModalProps {
   open: boolean;
   /** このスレッドの資料(外したものを除く、添付順)。断った・失敗した資料は渡さない。 */
   attachments: ChatAttachment[];
-  onOpen: (attachment: ChatAttachment) => void;
-  /** 「全文で読む」の切り替え。上限などで断られたら例外を投げる。 */
-  onToggleSelected: (attachmentId: string, selected: boolean) => Promise<void>;
+  /** 中身を見る。 */
+  onView: (attachment: ChatAttachment) => void;
+  /** 入力欄で指している資料(送る前。全文で添付する予定 / メンションする予定)。 */
+  pendingRefs?: ChatAttachmentRef[];
+  /** 入力欄に入れる(全文で添付 / メンション)・入力欄から外す。一覧は開いたまま。 */
+  onAttach: (attachment: ChatAttachment, mode: 'full' | 'mention' | 'remove') => void;
+  /** 全文で読むのをやめる。失敗したら例外を投げる。 */
+  onUnpin: (attachment: ChatAttachment) => Promise<void>;
   onClose: () => void;
 }
 
@@ -27,25 +33,31 @@ function useTokenFormat() {
 }
 
 /**
- * この会話の資料の一覧(ヘッダーのクリップのボタン・＋メニューの「既存の資料を選ぶ」から開く)。
- * 行を押すと目次付きで全文を読める。「全文で読む」にした資料は、AIが毎回全文を読む
- * (選択中の合計はCHAT_MAX_SELECTED_TOKENSまで。超える選択は、押す前に理由を出して止める)。
+ * この会話の資料の一覧(ヘッダーのクリップのボタン・＋メニューの「この会話の資料」から開く)。
+ * 行を押すと「全文で添付」「メンション」「中身を見る」を選べる(2026-10-07にユーザーと合意。以前の
+ * 「全文で読む / 目次で読む」の切り替えは、何もしていない状態がどちらなのか分かりにくかったのでやめた)。
+ * - 全文で添付: 入力欄に「@名前」を入れ、送るとAIが毎回全文を読む(外すまで続く)
+ * - メンション: 入力欄に「@名前」を入れ、そのメッセージでこの資料を指していることをAIに伝える
+ * 何もしていない資料も、名前と要約はAIが知っていて、必要なら目次と検索で読む。
  */
 export const AttachmentListModal: React.FC<AttachmentListModalProps> = ({
   open,
   attachments,
-  onOpen,
-  onToggleSelected,
+  onView,
+  pendingRefs = [],
+  onAttach,
+  onUnpin,
   onClose,
 }) => {
   const { t, formatNumber, formatDate } = useLanguage();
   const formatTokens = useTokenFormat();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [failed, setFailed] = useState<{ id: string; message: string } | null>(null);
+  const [failedId, setFailedId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    setFailed(null);
+    setFailedId(null);
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -57,33 +69,21 @@ export const AttachmentListModal: React.FC<AttachmentListModalProps> = ({
 
   // 新しく添付したものを上に(一緒に読んでいるのはたいてい最後に貼った資料)
   const ordered = [...attachments].reverse();
-  const selectedTokens = attachments.filter((a) => a.selected).reduce((sum, a) => sum + a.token_count, 0);
+  const pendingMode = new Map(pendingRefs.map((r) => [r.attachment_id, r.mode]));
+  // 送ったときに全文で読む資料: 今全文で読んでいる資料 + 入力欄で「全文で添付」にした資料
+  const pinnedTokens = attachments
+    .filter((a) => a.selected || pendingMode.get(a.id) === 'full')
+    .reduce((sum, a) => sum + a.token_count, 0);
+  const hasPendingFull = attachments.some((a) => !a.selected && pendingMode.get(a.id) === 'full');
   const limitText = formatTokens(CHAT_MAX_SELECTED_TOKENS);
 
-  /** 選べない理由(選べるならnull)。 */
-  const blockReason = (a: ChatAttachment): string | null => {
-    if (a.selected || a.status !== 'ready') return null;
-    if (a.token_count > CHAT_MAX_SELECTED_TOKENS) return t('chatAttachmentTooLongToSelect');
-    if (selectedTokens + a.token_count > CHAT_MAX_SELECTED_TOKENS) {
-      return t('chatAttachmentSelectionLimit', { max: limitText });
-    }
-    return null;
-  };
-
-  const toggle = async (a: ChatAttachment) => {
-    setFailed(null);
+  const unpin = async (a: ChatAttachment) => {
+    setFailedId(null);
     setPendingId(a.id);
     try {
-      await onToggleSelected(a.id, !a.selected);
-    } catch (e) {
-      const code = extractErrorCode(e);
-      const message =
-        code === 'ATTACHMENT_TOO_LONG_TO_SELECT'
-          ? t('chatAttachmentTooLongToSelect')
-          : code === 'ATTACHMENT_SELECTION_LIMIT'
-            ? t('chatAttachmentSelectionLimit', { max: limitText })
-            : t('chatAttachmentSelectFailed');
-      setFailed({ id: a.id, message });
+      await onUnpin(a);
+    } catch {
+      setFailedId(a.id);
     } finally {
       setPendingId(null);
     }
@@ -125,10 +125,21 @@ export const AttachmentListModal: React.FC<AttachmentListModalProps> = ({
           ) : (
             <>
               <div className="chat-attachment-list-budget">
-                <span>{t('chatAttachmentSelectedTotal', { used: formatTokens(selectedTokens), max: limitText })}</span>
-                <span className="chat-attachment-list-budget-bar" aria-hidden="true">
-                  <span style={{ width: `${Math.min(100, (selectedTokens / CHAT_MAX_SELECTED_TOKENS) * 100)}%` }} />
+                <span>
+                  {t(hasPendingFull ? 'chatAttachmentSelectedPending' : 'chatAttachmentSelectedTotal', {
+                    used: formatTokens(pinnedTokens),
+                    max: limitText,
+                  })}
                 </span>
+                <span
+                  className={`chat-attachment-list-budget-bar ${pinnedTokens > CHAT_MAX_SELECTED_TOKENS ? 'is-over' : ''}`}
+                  aria-hidden="true"
+                >
+                  <span style={{ width: `${Math.min(100, (pinnedTokens / CHAT_MAX_SELECTED_TOKENS) * 100)}%` }} />
+                </span>
+                {pinnedTokens > CHAT_MAX_SELECTED_TOKENS && (
+                  <p className="chat-attachment-list-note">{t('chatAttachmentOverLimitNote')}</p>
+                )}
                 <p>{t('chatAttachmentListHint')}</p>
               </div>
               <ul className="chat-attachment-list">
@@ -138,18 +149,26 @@ export const AttachmentListModal: React.FC<AttachmentListModalProps> = ({
                   else if (a.kind === 'pdf' && a.page_count) meta.push(t('chatFilePages', { count: a.page_count }));
                   else if (a.kind === 'pptx' && a.page_count) meta.push(t('chatFileSlides', { count: a.page_count }));
                   if (a.kind !== 'image') meta.push(t('chatAttachmentChars', { count: formatNumber(a.char_count) }));
-                  if (a.sections.length > 1) meta.push(t('chatAttachmentSections', { count: a.sections.length }));
                   meta.push(formatDate(a.created_at, { month: 'numeric', day: 'numeric' }));
-                  const reason = blockReason(a);
+                  const ready = a.status === 'ready';
+                  const tooLong = a.token_count > CHAT_MAX_SELECTED_TOKENS;
                   const cost = formatNumber((a.token_count / 10_000) * CHAT_CREDITS_PER_10K_TOKENS, {
                     maximumFractionDigits: 1,
                   });
+                  const expanded = expandedId === a.id;
+                  const pending = pendingMode.get(a.id);
                   return (
-                    <li key={a.id} className={`chat-attachment-list-item ${a.selected ? 'is-selected' : ''}`}>
-                      <button type="button" className="chat-attachment-list-row" onClick={() => onOpen(a)}>
-                        <span className="chat-attachment-list-icon">
-                          <AttachmentKindIcon kind={a.kind} size={17} />
-                        </span>
+                    <li
+                      key={a.id}
+                      className={`chat-attachment-list-item ${a.selected ? 'is-selected' : ''} ${expanded ? 'is-expanded' : ''}`}
+                    >
+                      <button
+                        type="button"
+                        className="chat-attachment-list-row"
+                        onClick={() => setExpandedId(expanded ? null : a.id)}
+                        aria-expanded={expanded}
+                      >
+                        <RowIcon attachment={a} />
                         <span className="chat-attachment-list-text">
                           <span className="chat-attachment-list-title">
                             {a.title || a.file_name || t('chatAttachmentUntitled')}
@@ -157,33 +176,73 @@ export const AttachmentListModal: React.FC<AttachmentListModalProps> = ({
                           {a.summary && <span className="chat-attachment-list-summary">{a.summary}</span>}
                           <span className="chat-attachment-list-meta">{meta.join('・')}</span>
                         </span>
-                        <AttachmentStatusBadge status={a.status} />
-                        <ChevronRight size={16} className="chat-attachment-list-chevron" />
-                      </button>
-                      {a.status === 'ready' && (
-                        <div className="chat-attachment-list-select">
-                          <label className={`chat-switch ${reason ? 'is-disabled' : ''}`}>
-                            <input
-                              type="checkbox"
-                              role="switch"
-                              checked={a.selected}
-                              disabled={pendingId === a.id || Boolean(reason)}
-                              onChange={() => void toggle(a)}
-                            />
-                            <span className="chat-switch-track" aria-hidden="true">
-                              <span className="chat-switch-thumb" />
-                            </span>
-                            <span className="chat-switch-label">
-                              {a.selected ? t('chatAttachmentFullRead') : t('chatAttachmentTocRead')}
-                            </span>
-                          </label>
-                          <span className="chat-attachment-list-cost">
-                            {t('chatAttachmentTokens', { count: formatTokens(a.token_count) })}
-                            {!reason && ` · ${t('chatAttachmentCostPerTurn', { credits: cost })}`}
+                        {pending && (
+                          <span className={`chat-attachment-pending-badge is-${pending}`}>
+                            {pending === 'full' ? t('chatAttachPendingFull') : t('chatAttachPendingMention')}
                           </span>
-                          {(reason || failed?.id === a.id) && (
-                            <p className="chat-attachment-list-note" role={failed?.id === a.id ? 'alert' : undefined}>
-                              {failed?.id === a.id ? failed.message : reason}
+                        )}
+                        {a.selected && !pending && (
+                          <span className="chat-attachment-pinned-badge">{t('chatAttachPinned')}</span>
+                        )}
+                        <AttachmentStatusBadge status={a.status} />
+                        <ChevronDown size={16} className="chat-attachment-list-chevron" />
+                      </button>
+                      {expanded && (
+                        <div className="chat-attachment-list-actions">
+                          {ready && !a.selected && pending !== 'full' && (
+                            <button
+                              type="button"
+                              className="chat-attachment-action is-primary"
+                              disabled={tooLong}
+                              onClick={() => onAttach(a, 'full')}
+                            >
+                              <FileStack size={15} />
+                              <span>
+                                {t('chatAttachFull')}
+                                <small>
+                                  {tooLong
+                                    ? t('chatAttachmentTooLongToSelect')
+                                    : `${t('chatAttachmentTokens', { count: formatTokens(a.token_count) })} · ${t('chatAttachmentCostPerTurn', { credits: cost })}`}
+                                </small>
+                              </span>
+                            </button>
+                          )}
+                          {ready && pending !== 'mention' && (
+                            <button type="button" className="chat-attachment-action" onClick={() => onAttach(a, 'mention')}>
+                              <AtSign size={15} />
+                              <span>
+                                {t('chatAttachMention')}
+                                <small>{t('chatAttachMentionHint')}</small>
+                              </span>
+                            </button>
+                          )}
+                          {pending && (
+                            <button type="button" className="chat-attachment-action" onClick={() => onAttach(a, 'remove')}>
+                              <X size={15} />
+                              <span>{t('chatAttachUndo')}</span>
+                            </button>
+                          )}
+                          <button type="button" className="chat-attachment-action" onClick={() => onView(a)}>
+                            <BookOpenText size={15} />
+                            <span>{t('chatAttachView')}</span>
+                          </button>
+                          {a.selected && (
+                            <button
+                              type="button"
+                              className="chat-attachment-action"
+                              disabled={pendingId === a.id}
+                              onClick={() => void unpin(a)}
+                            >
+                              <X size={15} />
+                              <span>
+                                {t('chatAttachmentUnselect')}
+                                <small>{t('chatAttachUnpinHint')}</small>
+                              </span>
+                            </button>
+                          )}
+                          {failedId === a.id && (
+                            <p className="chat-attachment-list-note" role="alert">
+                              {t('chatAttachmentSelectFailed')}
                             </p>
                           )}
                         </div>
@@ -197,6 +256,17 @@ export const AttachmentListModal: React.FC<AttachmentListModalProps> = ({
         </div>
       </div>
     </div>
+  );
+};
+
+/** 一覧の行の左: 画像は小さな見本、それ以外は種類のアイコン。 */
+const RowIcon: React.FC<{ attachment: ChatAttachment }> = ({ attachment }) => {
+  const url = useAttachmentImageUrl(attachment.kind === 'image' && attachment.status === 'ready' ? attachment.id : null);
+  if (url) return <img className="chat-attachment-list-thumb" src={url} alt="" />;
+  return (
+    <span className="chat-attachment-list-icon">
+      <AttachmentKindIcon kind={attachment.kind} size={17} />
+    </span>
   );
 };
 

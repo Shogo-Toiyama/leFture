@@ -17,7 +17,7 @@ import {
 } from '../../lib/chatCitations';
 import { fixBoldPunctuationSpacing, prepareMath } from '../../lib/markdownText';
 import type { LocalChatMessage } from '../../hooks/useChatConversation';
-import type { ChatAttachment, ChatAttachmentKind, ChatCitation } from '../../types/chat';
+import { CHAT_MAX_SELECTED_TOKENS, type ChatAttachment, type ChatAttachmentKind, type ChatCitation } from '../../types/chat';
 import {
   AttachmentKindIcon,
   AttachmentStatusBadge,
@@ -25,11 +25,15 @@ import {
   type ViewableAttachment,
 } from './AttachmentViewerModal';
 import { CitationPreviewModal } from './CitationPreviewModal';
+import { messageMentionIds, splitMessageText } from '../../lib/chatMentions';
+import { useAttachmentImageUrl } from '../../hooks/useAttachmentImageUrl';
 
 interface ChatMessageItemProps {
   message: LocalChatMessage;
   /** このメッセージで添付した資料(userのみ。サーバーの一覧から)。 */
   attachments?: ChatAttachment[];
+  /** この会話の資料(外したものも含む)。本文の中のチップ・外した知らせの名前に使う。 */
+  attachmentsById?: Map<string, ChatAttachment>;
   /** 資料のチップを押したとき。idは送った資料のとき(外せる)。 */
   onOpenAttachment?: (attachment: ViewableAttachment, id?: string) => void;
   /** 出典を押したとき。画面遷移は呼び出し側(パネルなら狭い画面で閉じる等)。 */
@@ -41,14 +45,29 @@ interface ChatMessageItemProps {
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   message,
   attachments,
+  attachmentsById,
   onOpenAttachment,
   onOpenCitation,
   onResend,
 }) => {
   if (message.role === 'user') {
-    return <UserMessage message={message} attachments={attachments} onOpenAttachment={onOpenAttachment} />;
+    return (
+      <UserMessage
+        message={message}
+        attachments={attachments}
+        attachmentsById={attachmentsById}
+        onOpenAttachment={onOpenAttachment}
+      />
+    );
   }
-  return <AssistantMessage message={message} onOpenCitation={onOpenCitation} onResend={onResend} />;
+  return (
+    <AssistantMessage
+      message={message}
+      attachmentsById={attachmentsById}
+      onOpenCitation={onOpenCitation}
+      onResend={onResend}
+    />
+  );
 };
 
 /** 送ったメッセージの資料のチップ。サーバーの一覧に載るまでは、送ったときの下書きで見せる。 */
@@ -63,13 +82,24 @@ interface AttachmentChip {
   selected?: boolean;
   viewable: ViewableAttachment;
   id?: string;
+  /** 送ったばかりの画像: 端末の小さな見本(サーバーの一覧に載るまで) */
+  previewUrl?: string;
 }
+
+/** チップの左: 画像は小さな見本(どこに何を入れたかが分かるように)、それ以外は種類のアイコン。 */
+const ChipIcon: React.FC<{ chip: AttachmentChip; size: number }> = ({ chip, size }) => {
+  const url = useAttachmentImageUrl(chip.kind === 'image' && chip.id && chip.status === 'ready' ? chip.id : null);
+  const src = url ?? chip.previewUrl;
+  if (chip.kind === 'image' && src) return <img className="chat-chip-thumb" src={src} alt="" />;
+  return <AttachmentKindIcon kind={chip.kind} size={size} />;
+};
 
 const UserMessage: React.FC<{
   message: LocalChatMessage;
   attachments?: ChatAttachment[];
+  attachmentsById?: Map<string, ChatAttachment>;
   onOpenAttachment?: (attachment: ViewableAttachment, id?: string) => void;
-}> = ({ message, attachments, onOpenAttachment }) => {
+}> = ({ message, attachments, attachmentsById, onOpenAttachment }) => {
   const { t, formatNumber } = useLanguage();
   const selected = message.context?.selected_text;
   const metaFor = (kind: ChatAttachmentKind, chars: number, pages: number | null | undefined) => {
@@ -78,7 +108,7 @@ const UserMessage: React.FC<{
     if (kind === 'pptx' && pages) return t('chatFileSlides', { count: pages });
     return t('chatAttachmentChars', { count: formatNumber(chars) });
   };
-  const chips: AttachmentChip[] = attachments?.length
+  const allChips: AttachmentChip[] = attachments?.length
     ? attachments.map((a) => ({
         key: a.id,
         title: a.title || a.file_name || t('chatAttachmentUntitled'),
@@ -97,6 +127,7 @@ const UserMessage: React.FC<{
               kind: d.fileKind,
               meta: metaFor(d.fileKind, d.info?.text_chars ?? 0, d.info?.page_count),
               viewable: { title: d.fileName, content: '', kind: d.fileKind, status: 'processing' as const },
+              previewUrl: d.previewUrl,
             }
           : {
               key: d.localId,
@@ -107,6 +138,29 @@ const UserMessage: React.FC<{
               viewable: { title: d.title || null, content: d.content },
             }
       );
+  // 本文の中で指している資料はその位置のチップで見せるので、上には出さない(指していない添付だけ上に出す)
+  const inlineIds = new Set(messageMentionIds(message.content));
+  const localIdOf = (chip: AttachmentChip) => {
+    const d = message.localAttachments?.find((x) => x.localId === chip.key);
+    return d?.kind === 'file' ? d.attachmentId : d?.localId;
+  };
+  const chips = allChips.filter((chip) => !inlineIds.has(chip.id ?? '') && !inlineIds.has(localIdOf(chip) ?? ''));
+  const modeOf = (id: string) => message.context?.attachments?.find((a) => a.id === id)?.mode;
+  /** 本文の印 → チップの中身(サーバーの一覧 → 送ったときの下書き の順に探す) */
+  const inlineChip = (id: string): AttachmentChip | null => {
+    const a = attachmentsById?.get(id);
+    if (a) return allChips.find((c) => c.id === id) ?? {
+      key: a.id,
+      title: a.title || a.file_name || t('chatAttachmentUntitled'),
+      kind: a.kind,
+      meta: '',
+      status: a.status,
+      selected: a.selected,
+      viewable: viewableFromAttachment(a),
+      id: a.id,
+    };
+    return allChips.find((c) => localIdOf(c) === id) ?? null;
+  };
   return (
     <div className={`chat-msg is-user ${message.failedCode ? 'is-failed' : ''}`}>
       {chips.length > 0 && (
@@ -119,13 +173,11 @@ const UserMessage: React.FC<{
               onClick={() => onOpenAttachment?.(chip.viewable, chip.id)}
               title={chip.title}
             >
-              <AttachmentKindIcon kind={chip.kind} size={13} />
+              <ChipIcon chip={chip} size={13} />
               <span className="chat-msg-attachment-title">{chip.title}</span>
               <span className="chat-msg-attachment-meta">{chip.meta}</span>
-              {chip.status === 'ready' && (
-                <span className={`chat-attachment-mode ${chip.selected ? 'is-full' : ''}`}>
-                  {chip.selected ? t('chatAttachmentFullRead') : t('chatAttachmentTocRead')}
-                </span>
+              {chip.status === 'ready' && chip.selected && (
+                <span className="chat-attachment-mode is-full">{t('chatAttachPinned')}</span>
               )}
               {chip.status && <AttachmentStatusBadge status={chip.status} />}
             </button>
@@ -135,7 +187,36 @@ const UserMessage: React.FC<{
       {(message.content || selected) && (
         <div className="chat-bubble">
           {selected && <blockquote className="chat-bubble-quote">{selected}</blockquote>}
-          {message.content && <p className="chat-bubble-text">{message.content}</p>}
+          {message.content && (
+            <p className="chat-bubble-text">
+              {splitMessageText(message.content).map((part, i) => {
+                if (part.type === 'text') return <React.Fragment key={i}>{part.text}</React.Fragment>;
+                const chip = inlineChip(part.id);
+                if (!chip) {
+                  return (
+                    <span key={i} className="chat-inline-mention is-removed">
+                      {t('chatMentionRemoved')}
+                    </span>
+                  );
+                }
+                const full = modeOf(part.id) === 'full';
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`chat-inline-mention ${full ? 'is-full' : ''} ${chip.status && chip.status !== 'ready' ? `is-${chip.status}` : ''}`}
+                    onClick={() => onOpenAttachment?.(chip.viewable, chip.id)}
+                    title={full ? `${chip.title}(${t('chatAttachFull')})` : chip.title}
+                  >
+                    <ChipIcon chip={chip} size={12} />
+                    <span className="chat-inline-mention-title">{chip.title}</span>
+                    {full && <span className="chat-inline-mention-mode">{t('chatMentionFullTag')}</span>}
+                    {chip.status && chip.status !== 'ready' && <AttachmentStatusBadge status={chip.status} />}
+                  </button>
+                );
+              })}
+            </p>
+          )}
         </div>
       )}
       {message.failedCode && (
@@ -165,11 +246,37 @@ interface PreviewState {
   specs?: string[];
 }
 
+/** 全文で読む枠を超えて外した資料・長すぎて全文にできなかった資料の知らせ(返答の下)。 */
+const AttachmentNotice: React.FC<{ message: LocalChatMessage; attachmentsById?: Map<string, ChatAttachment> }> = ({
+  message,
+  attachmentsById,
+}) => {
+  const { t } = useLanguage();
+  const notice = message.context?.attachment_notice;
+  if (!notice || (!notice.unpinned?.length && !notice.too_long?.length)) return null;
+  const names = (ids: string[]) =>
+    ids
+      .map((id) => {
+        const a = attachmentsById?.get(id);
+        return `「${a?.title || a?.file_name || t('chatAttachmentUntitled')}」`;
+      })
+      .join('');
+  return (
+    <div className="chat-attachment-notice" role="note">
+      {notice.unpinned?.length > 0 && (
+        <p>{t('chatNoticeUnpinned', { titles: names(notice.unpinned), max: CHAT_MAX_SELECTED_TOKENS.toLocaleString() })}</p>
+      )}
+      {notice.too_long?.length > 0 && <p>{t('chatNoticeTooLong', { titles: names(notice.too_long) })}</p>}
+    </div>
+  );
+};
+
 const AssistantMessage: React.FC<{
   message: LocalChatMessage;
+  attachmentsById?: Map<string, ChatAttachment>;
   onOpenCitation: (route: string) => void;
   onResend?: () => void;
-}> = ({ message, onOpenCitation, onResend }) => {
+}> = ({ message, attachmentsById, onOpenCitation, onResend }) => {
   const { t, formatNumber } = useLanguage();
   const [preview, setPreview] = useState<PreviewState | null>(null);
 
@@ -292,6 +399,8 @@ const AssistantMessage: React.FC<{
           </ReactMarkdown>
         </div>
       )}
+
+      <AttachmentNotice message={message} attachmentsById={attachmentsById} />
 
       {message.reconnecting && (
         <span className="chat-stage">

@@ -3,6 +3,7 @@ import { BACKEND_API_URL } from './env';
 import { ApiError, apiFetch, extractErrorCode } from './api';
 import type {
   ChatAttachment,
+  ChatAttachmentRef,
   ChatDraftAttachment,
   ChatMessage,
   ChatMessageContext,
@@ -149,8 +150,10 @@ export interface SendChatMessageParams {
   clientMessageId: string;
   content: string;
   context?: ChatMessageContext;
-  /** この送信で添付する資料(下書き)。 */
+  /** この送信で添付する資料(下書き)。いつも全文で添付する。 */
   attachments?: ChatDraftAttachment[];
+  /** この会話の既存の資料を指す(全文で添付 / メンション)。 */
+  references?: ChatAttachmentRef[];
 }
 
 /**
@@ -200,13 +203,21 @@ export async function sendChatMessage(
         client_message_id: params.clientMessageId,
         content: params.content,
         context: params.context ?? null,
-        attachments: params.attachments?.length
-          ? params.attachments.map((a) =>
-              a.kind === 'file'
-                ? { kind: 'file', attachment_id: a.attachmentId, title: a.title.trim() || null }
-                : { kind: a.kind, title: a.title.trim() || null, content: a.content }
-            )
-          : null,
+        attachments:
+          params.attachments?.length || params.references?.length
+            ? [
+                ...(params.attachments ?? []).map((a) =>
+                  a.kind === 'file'
+                    ? { kind: 'file', attachment_id: a.attachmentId, title: a.title.trim() || null }
+                    : { kind: a.kind, ref: a.localId, title: a.title.trim() || null, content: a.content }
+                ),
+                ...(params.references ?? []).map((r) => ({
+                  kind: 'existing',
+                  attachment_id: r.attachment_id,
+                  mode: r.mode,
+                })),
+              ]
+            : null,
         // 「昨日の授業」「今学期」を端末の日付で解決するため(バックエンドは無ければUTC)
         timezone: deviceTimeZone(),
       }),

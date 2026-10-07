@@ -97,12 +97,28 @@ export interface ChatSelection {
   screen?: ChatScreenRef;
 }
 
+/** 送信で既存の資料を指す(full: 全文で添付して全文で読む枠に入れる / mention: 文中で指すだけ)。 */
+export interface ChatAttachmentRef {
+  attachment_id: string;
+  mode: 'full' | 'mention';
+}
+
+/** 全文で読む枠を超えて外した資料・長すぎて全文にできなかった資料(返答の行のcontext、SSEのattachments)。 */
+export interface ChatAttachmentNotice {
+  unpinned: string[];
+  too_long: string[];
+}
+
 export interface ChatMessageContext {
   lecture_id?: string;
   selected_text?: string;
   selection_before?: string;
   selection_after?: string;
   screen?: ChatScreenRef;
+  /** userのみ: このメッセージで添付・指した資料と、その渡し方(新しく添付した資料はいつもfull) */
+  attachments?: Array<{ id: string; mode: 'full' | 'mention' }>;
+  /** assistantのみ: このターンで全文読みを外した資料など */
+  attachment_notice?: ChatAttachmentNotice;
 }
 
 export interface ChatMessage {
@@ -136,6 +152,7 @@ export type ChatStreamEvent =
       handle?: string;
     }
   | { type: 'sources'; sources: ChatCitation[] }
+  | ({ type: 'attachments' } & ChatAttachmentNotice)
   | { type: 'delta'; text: string }
   | { type: 'replace'; text: string }
   | { type: 'done'; status: ChatMessageStatus; citations?: ChatCitation[]; credits_charged: number }
@@ -154,6 +171,7 @@ export type ChatRequestErrorCode =
   | 'TOO_MANY_ATTACHMENTS'
   | 'THREAD_ATTACHMENT_LIMIT'
   | 'ATTACHMENT_NOT_FOUND'
+  | 'TOO_MANY_MENTIONS'
   | 'ATTACHMENT_NOT_READY'
   | 'INSUFFICIENT_CREDITS'
   | 'CHAT_RATE_LIMITED'
@@ -189,8 +207,11 @@ export const CHAT_MAX_SELECTED_TOKENS = 30_000;
 /**
  * 全文で読む資料1万トークンあたりの、1ターンの消費の目安(回答役の入力原価 × チャットの請求倍率)。
  * 一覧の「1回あたり約+Nクレジット」の表示にだけ使う目安で、請求はバックエンドが実際のトークンで計算する。
+ * 回答役 GPT-6 Luna の入力$0.10/100万トークン × CHAT_CREDIT_MARKUP 1.5 × 300クレジット/$ = 0.45
+ * (推論ターンも同じLunaなので同じ)。回答役のモデルを替えたらここも直す
+ * (2026-10-05まで2.5 Flash $0.30 の1.35のままで、表示が約3倍になっていた)。
  */
-export const CHAT_CREDITS_PER_10K_TOKENS = 1.35;
+export const CHAT_CREDITS_PER_10K_TOKENS = 0.45;
 
 /**
  * draft: ファイルをアップロードして、まだ送っていない(一覧には出ない) / processing: 確認・目次づくりの途中 /
@@ -234,7 +255,16 @@ export interface ChatAttachment {
   page_count: number | null;
 }
 
-/** 送る前の資料(入力欄の下書き)。テキストは送るまで何度でも直せる。 */
+/**
+ * 本文の中の資料の印(バックエンドのchat_attachments.MENTION_RE)。保存する本文もこの形。
+ * 送るときの新しいテキストの資料はまだidが無いので、下書きのlocalIdを入れて送る(サーバーが本物のidに直す)。
+ */
+export const CHAT_MENTION_RE = /⟦att:([0-9A-Za-z-]{1,64})⟧/g;
+export const chatMentionToken = (id: string) => `⟦att:${id}⟧`;
+/** バックエンドの MAX_MENTIONS_PER_MESSAGE と揃える。 */
+export const CHAT_MAX_MENTIONS_PER_MESSAGE = 10;
+
+/** 送る前の資料(入力欄の下書き)。テキストは送るまで何度でも直せる。localIdは本文の印の仮のidにもなる。 */
 export interface ChatTextDraft {
   localId: string;
   kind: 'text';
@@ -263,6 +293,8 @@ export interface ChatFileDraft {
   errorDetail?: Record<string, unknown>;
   /** 画像のとき: チップに出す小さな見本(object URL) */
   previewUrl?: string;
+  /** PDFのとき: 送る前に中身を確かめるための端末のファイル(object URL) */
+  localUrl?: string;
 }
 
 export type ChatDraftAttachment = ChatTextDraft | ChatFileDraft;

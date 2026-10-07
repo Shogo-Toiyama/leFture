@@ -321,6 +321,13 @@ class NavigatorInput:
         vis = self.attachment_visibility
         return [a.handle for a in self.attachments if vis is None or not vis.is_full(a)]
 
+    def mentioned_unseen_handles(self) -> list[str]:
+        """生徒が文中で指した資料のうち、回答役に全文で見せていないもの(その中を探しに行く)。"""
+        if not CAPABILITIES["CAN_ATTACHMENTS"] or self.attachment_visibility is None:
+            return []
+        vis = self.attachment_visibility
+        return [a.handle for a in self.attachments if vis.is_mentioned(a) and not vis.is_full(a)]
+
     def screen_topic_handle(self) -> Optional[str]:
         lec = self.student_map.lecture_handle(self.screen_lecture_id)
         return f"{lec}/T{self.screen_topic_index}" if lec and self.screen_topic_index is not None else None
@@ -902,6 +909,13 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
         parts.append("<screen>\n" + "\n".join(screen) + "\n</screen>")
 
     parts.append(f"<student_message>\n{nav_input.message}\n</student_message>")
+    mentioned = nav_input.mentioned_unseen_handles()
+    if lap == 1 and mentioned:
+        parts.append(f"<mention_note>The student points at {', '.join(mentioned)} in their message, and the answerer "
+                     "does not see it in full. Fetch the parts of it that the message is about: attachment.search "
+                     "within it with the term or line in question, or open its table of contents and then the "
+                     "section. If the message only asks about it as a whole, its table of contents is enough."
+                     "</mention_note>")
     if lap == 1 and nav_input.must_check_attachments and nav_input.attachment_scope_handles():
         parts.append("<check_note>This message needs careful checking, and the answerer does not see the attached "
                      "material in full. Unless the message clearly has nothing to do with the material, fetch the "

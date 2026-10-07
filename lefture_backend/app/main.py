@@ -189,9 +189,6 @@ CHAT_QUEUE_NAME = os.getenv("CHAT_QUEUE_NAME", "lefture-chat-queue")
 # /worker/chat-summaryが諦めるまでの試行回数。キュー側のMax Attemptsより小さくても、
 # ここで打ち切れば無駄なLLM呼び出しは止まる(次のチャットのターンでまた積まれる)。
 CHAT_SUMMARY_MAX_ATTEMPTS = int(os.getenv("CHAT_SUMMARY_MAX_ATTEMPTS", "5"))
-# 自分像プロフィール(ロードマップ9章)。マイグレーション(20261007000000)を反映するまでは
-# patrolが動かさないよう、明示的に "true" にしたときだけ観察役・まとめ役を積む。
-PROFILE_EXTRACTION_ENABLED = os.getenv("PROFILE_EXTRACTION_ENABLED", "false").lower() == "true"
 # 観察役・まとめ役のタスクを積むキュー。別に作るまではチャットの要約と同じキューを使う。
 PROFILE_QUEUE_NAME = os.getenv("PROFILE_QUEUE_NAME", CHAT_QUEUE_NAME)
 PROFILE_TASK_MAX_ATTEMPTS = int(os.getenv("PROFILE_TASK_MAX_ATTEMPTS", "3"))
@@ -4463,8 +4460,6 @@ async def _patrol_enqueue_profile_extraction() -> dict:
     観察がたまっている(または古くなった)ユーザーのまとめ役を積む。
     まとめ役は観察役のワーカーが件数を見て積むが、積み損ねや「件数は少ないが1週間たった」はここで拾う。
     """
-    if not PROFILE_EXTRACTION_ENABLED:
-        return {"disabled": True}
     admin_client = get_supabase_client()
     threads = await asyncio.to_thread(lambda: admin_client.rpc("list_threads_pending_profile_observation", {
         "idle_minutes": PROFILE_OBSERVE_IDLE_MINUTES, "max_count": PROFILE_PATROL_MAX_THREADS,
@@ -5822,13 +5817,19 @@ class ChatMessageContext(BaseModel):
 
 class ChatAttachmentRequest(BaseModel):
     """
-    送信と一緒に添付する資料。text: 本文を送る(上限はchat_attachments.pyとprepare_chat_turnが確かめる)。
+    送信と一緒に添付する・指す資料。
+    text: 本文を送る(上限はchat_attachments.pyとprepare_chat_turnが確かめる)。refは本文の印 ⟦att:ref⟧ で
+      使う端末の仮のid(保存するときに本物のidに直す)。
     file: 送る前にアップロードして取り出したファイル(draft)のattachment_idを送る(chat_files.py)。
+    existing: このスレッドの資料を指す。mode=full なら全文で添付(全文で読む枠に入れる)、mention なら指すだけ。
+    新しく添付する資料(text / file)は、いつも全文で添付する。
     """
     kind: str = "text"
     title: Optional[str] = None
     content: str = ""
     attachment_id: Optional[str] = None
+    ref: Optional[str] = None
+    mode: Optional[str] = None
 
 
 class ChatAttachmentUploadRequest(BaseModel):
@@ -5918,14 +5919,16 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
         )
 
     attachments = payload.attachments or []
-    if any(a.kind not in ("text", "file") for a in attachments):
+    if any(a.kind not in ("text", "file", "existing") for a in attachments):
         raise HTTPException(status_code=422, detail={"error_code": "UNSUPPORTED_ATTACHMENT",
                                                      "message": "Unsupported attachment kind."})
     for a in attachments:
-        if a.kind == "file":
+        if a.kind in ("file", "existing"):
             if not a.attachment_id:
                 raise HTTPException(status_code=422, detail={"error_code": "INVALID_ID", "message": "attachment_id is required."})
             a.attachment_id = _parse_uuid_or_422(a.attachment_id, "attachment_id")
+        if a.ref is not None and not re.fullmatch(r"[0-9A-Za-z-]{1,64}", a.ref):
+            raise HTTPException(status_code=422, detail={"error_code": "INVALID_ID", "message": "ref is invalid."})
 
     try:
         turn = await prepare_chat_turn(
@@ -6055,9 +6058,11 @@ async def update_chat_attachment(attachment_id: str, payload: ChatAttachmentUpda
                 "error_code": "ATTACHMENT_SELECTION_LIMIT",
                 "message": "Selected attachments would exceed the limit.",
                 "max_tokens": MAX_SELECTED_TOKENS, "selected_tokens": selected_tokens, "token_count": row["token_count"]})
+    # 全文で読み始めた時刻(枠を超えたら古いものから外す。chat_attachments.plan_pins)
+    update = {"selected": True, "selected_at": datetime.now(timezone.utc).isoformat()} if payload.selected \
+        else {"selected": False}
     await asyncio.to_thread(
-        lambda: admin_client.table("chat_attachments").update({"selected": payload.selected})
-            .eq("id", attachment_id).execute()
+        lambda: admin_client.table("chat_attachments").update(update).eq("id", attachment_id).execute()
     )
     return {"success": True}
 
@@ -6165,6 +6170,15 @@ async def create_chat_attachment_upload(payload: ChatAttachmentUploadRequest, re
             "kind": kind, "max_bytes": max_bytes}
 
 
+# 取り出し(ダウンロード + 解析 + 画像のR2保存)を、1つのインスタンスで同時に何件まで走らせるか。
+# 100MBのスキャンPDFで1件あたり約300MB使う(/tmpもメモリに数える。2026-10-07に実測: 99MB・23ページで
+# 処理のメモリ+約195MB)。インスタンスはメモリ2GiBで、講義の分析やチャットも同じプロセスで動くので、
+# 大きなファイルが重なってもメモリ不足で落ちないように絞る。3件目以降は前の取り出しが終わるまで待つ
+# (1件は数秒で終わる)。uvicornは1コンテナ1プロセスなので、この数がそのままインスタンスあたりの上限になる。
+EXTRACT_MAX_CONCURRENT = 2
+_EXTRACT_SEMAPHORE = asyncio.Semaphore(EXTRACT_MAX_CONCURRENT)
+
+
 async def _require_own_draft(admin_client, attachment_id: str, uid: str) -> dict:
     res = await asyncio.to_thread(
         lambda: admin_client.table("chat_attachments")
@@ -6184,8 +6198,6 @@ async def extract_chat_attachment(attachment_id: str, request: Request):
     (ページ数・文字数・画像として読む数)を返す。取り出せない・上限を超えるファイルは、draftを消して
     理由(error_code)を返す。同じdraftに2回呼ばれたら、前の結果をそのまま返す。
     """
-    import tempfile
-
     uid = await _get_authenticated_user_id(request)
     attachment_id = _parse_uuid_or_422(attachment_id, "attachment_id")
     admin_client = get_supabase_client()
@@ -6202,6 +6214,15 @@ async def extract_chat_attachment(attachment_id: str, request: Request):
         _delete_attachment_files_later(prefix)
         return _file_error(status, e)
 
+    async with _EXTRACT_SEMAPHORE:
+        return await _extract_draft(admin_client, attachment_id, row, key, discard)
+
+
+async def _extract_draft(admin_client, attachment_id: str, row: dict, key: str, discard) -> dict:
+    """extract_chat_attachmentの本体(同時実行の上限_EXTRACT_SEMAPHOREの中で動く)。"""
+    import tempfile
+
+    kind, prefix = row["kind"], row["storage_prefix"]
     size = await asyncio.to_thread(storage_service.object_size, key)
     if size is None:
         raise HTTPException(status_code=409, detail={"error_code": "FILE_NOT_UPLOADED",

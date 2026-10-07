@@ -16808,6 +16808,8 @@ a.lecture-tile-card:hover {
   font: inherit;
   font-size: 0.9rem;
   text-align: left;
+  /* 全体のbutton{white-space: nowrap}だと説明が折り返さず、メニューからはみ出す */
+  white-space: normal;
   cursor: pointer;
 }
 
@@ -17087,6 +17089,43 @@ a.lecture-tile-card:hover {
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.chat-attachment-toc > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--comet);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.chat-attachment-toc > summary::-webkit-details-marker {
+  display: none;
+}
+
+.chat-attachment-toc > summary > svg {
+  transition: transform 0.15s ease;
+}
+
+.chat-attachment-toc[open] > summary {
+  margin-bottom: 0.5rem;
+}
+
+.chat-attachment-toc[open] > summary > svg {
+  transform: rotate(90deg);
+}
+
+.chat-attachment-toc > summary:hover {
+  color: var(--starlight);
+}
+
+.chat-attachment-toc li {
+  min-width: 0;
+}
+
 .chat-attachment-toc h4,
 .chat-attachment-viewer-heading {
   margin: 0 0 0.5rem;
@@ -17115,6 +17154,9 @@ a.lecture-tile-card:hover {
   color: var(--starlight);
   font: inherit;
   text-align: left;
+  /* 全体のbutton{white-space: nowrap}だと説明が1行のまま横にはみ出す */
+  white-space: normal;
+  overflow-wrap: anywhere;
   cursor: pointer;
 }
 
@@ -17149,6 +17191,10 @@ a.lecture-tile-card:hover {
   color: var(--gold);
   font-size: 0.76rem;
   font-weight: 700;
+}
+
+.chat-attachment-viewer {
+  overflow-x: hidden;
 }
 
 .chat-attachment-viewer-text {
@@ -17344,6 +17390,7 @@ a.lecture-tile-card:hover {
   color: var(--starlight);
   font: inherit;
   text-align: left;
+  white-space: normal;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
@@ -18076,4 +18123,776 @@ button.ai-forget-btn { align-self: flex-start; background: rgba(229, 57, 53, 0.1
 .chat-page.is-paper .chat-attachment-viewer-image,
 .chat-panel.is-paper .chat-attachment-viewer-image {
   background: #f1e9da;
+}
+
+/* ---------------------------------------------------------------------------
+ * 資料のメンション(本文の中で「@名前」で資料を指す。ChatComposer / ChatMessageItem / AttachmentListModal)
+ * ------------------------------------------------------------------------- */
+
+.chat-input-row {
+  position: relative;
+}
+
+/* 入力欄: textareaの裏に同じ文字を描いた層を重ね、「@名前」にだけ色を付ける(文字の幅は変えない) */
+.chat-input-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+.chat-input-field textarea {
+  position: relative;
+  z-index: 1;
+}
+
+.chat-input-mirror {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  padding: 6px 0;
+  overflow: hidden;
+  color: transparent;
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  pointer-events: none;
+}
+
+.chat-mention-mark {
+  color: transparent;
+  border-radius: 5px;
+  /* 文字の幅を変えずに少し外側まで色を付ける */
+  box-shadow: 0 0 0 2px var(--mention-bg);
+  background: var(--mention-bg);
+}
+
+.chat-mention-mark.is-full {
+  --mention-bg: rgba(255, 179, 0, 0.24);
+}
+
+.chat-mention-mark.is-mention {
+  --mention-bg: rgba(120, 170, 255, 0.24);
+}
+
+.chat-fullscreen.is-paper .chat-mention-mark.is-full,
+.chat-page.is-paper .chat-mention-mark.is-full,
+.chat-panel.is-paper .chat-mention-mark.is-full {
+  --mention-bg: rgba(217, 119, 6, 0.2);
+}
+
+.chat-fullscreen.is-paper .chat-mention-mark.is-mention,
+.chat-page.is-paper .chat-mention-mark.is-mention,
+.chat-panel.is-paper .chat-mention-mark.is-mention {
+  --mention-bg: rgba(37, 99, 235, 0.14);
+}
+
+/* @の候補 */
+.chat-mention-picker {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 30;
+  display: grid;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--void-raised, #171b2e);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+  animation: modalPopIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chat-mention-picker-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 6px;
+  color: var(--comet);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.chat-mention-picker-head small {
+  margin-left: auto;
+  font-weight: 500;
+}
+
+.chat-mention-picker-empty {
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--comet);
+  font-size: 0.8rem;
+}
+
+.chat-mention-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 10px;
+}
+
+.chat-mention-option.is-active {
+  background: var(--glass-high);
+}
+
+.chat-mention-option-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--starlight);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-mention-option-main > svg {
+  flex-shrink: 0;
+  color: var(--gold);
+}
+
+.chat-mention-option-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-mention-option-badge,
+.chat-attachment-pinned-badge {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 179, 0, 0.14);
+  color: var(--gold);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.chat-mention-option-full {
+  flex-shrink: 0;
+  margin-right: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 179, 0, 0.45);
+  background: transparent;
+  color: var(--gold);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.chat-mention-option-full:hover:not(:disabled) {
+  background: rgba(255, 179, 0, 0.12);
+}
+
+.chat-mention-option-full:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.chat-fullscreen.is-paper .chat-mention-picker,
+.chat-page.is-paper .chat-mention-picker,
+.chat-panel.is-paper .chat-mention-picker {
+  background: #fffdf8;
+  border-color: #e6ded0;
+  box-shadow: 0 14px 36px rgba(60, 40, 20, 0.16);
+}
+
+.chat-fullscreen.is-paper .chat-mention-option.is-active,
+.chat-page.is-paper .chat-mention-option.is-active,
+.chat-panel.is-paper .chat-mention-option.is-active {
+  background: #f5eedf;
+}
+
+.chat-fullscreen.is-paper .chat-mention-option-main,
+.chat-page.is-paper .chat-mention-option-main,
+.chat-panel.is-paper .chat-mention-option-main {
+  color: #2b2118;
+}
+
+.chat-fullscreen.is-paper .chat-mention-option-main > svg,
+.chat-page.is-paper .chat-mention-option-main > svg,
+.chat-panel.is-paper .chat-mention-option-main > svg,
+.chat-fullscreen.is-paper .chat-mention-option-full,
+.chat-page.is-paper .chat-mention-option-full,
+.chat-panel.is-paper .chat-mention-option-full {
+  color: #b45309;
+  border-color: rgba(180, 83, 9, 0.4);
+}
+
+.chat-fullscreen.is-paper .chat-mention-option-badge,
+.chat-page.is-paper .chat-mention-option-badge,
+.chat-panel.is-paper .chat-mention-option-badge,
+.chat-fullscreen.is-paper .chat-attachment-pinned-badge,
+.chat-page.is-paper .chat-attachment-pinned-badge,
+.chat-panel.is-paper .chat-attachment-pinned-badge {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+/* 全文で読んでいる資料の件数と目安(入力欄の上) */
+.chat-pinned-summary {
+  color: var(--comet);
+  font-size: 0.72rem;
+}
+
+.chat-fullscreen.is-paper .chat-pinned-summary,
+.chat-page.is-paper .chat-pinned-summary,
+.chat-panel.is-paper .chat-pinned-summary {
+  color: #7a6a5a;
+}
+
+/* 送ったメッセージの中の資料のチップ */
+.chat-inline-mention {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  margin: 0 2px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(120, 170, 255, 0.4);
+  background: rgba(120, 170, 255, 0.12);
+  color: var(--starlight);
+  font: inherit;
+  font-size: 0.85em;
+  font-weight: 600;
+  line-height: 1.5;
+  vertical-align: baseline;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chat-inline-mention.is-full {
+  border-color: rgba(255, 179, 0, 0.45);
+  background: rgba(255, 179, 0, 0.12);
+}
+
+.chat-inline-mention > svg {
+  flex-shrink: 0;
+}
+
+.chat-inline-mention-title {
+  min-width: 0;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-inline-mention-mode {
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(255, 179, 0, 0.2);
+  color: var(--gold);
+  font-size: 0.75em;
+}
+
+.chat-inline-mention.is-removed {
+  border-style: dashed;
+  border-color: var(--glass-border);
+  background: transparent;
+  color: var(--comet);
+  cursor: default;
+}
+
+.chat-fullscreen.is-paper .chat-inline-mention,
+.chat-page.is-paper .chat-inline-mention,
+.chat-panel.is-paper .chat-inline-mention {
+  border-color: rgba(37, 99, 235, 0.3);
+  background: rgba(37, 99, 235, 0.08);
+  color: #2b2118;
+}
+
+.chat-fullscreen.is-paper .chat-inline-mention.is-full,
+.chat-page.is-paper .chat-inline-mention.is-full,
+.chat-panel.is-paper .chat-inline-mention.is-full {
+  border-color: rgba(180, 83, 9, 0.35);
+  background: rgba(217, 119, 6, 0.1);
+}
+
+.chat-fullscreen.is-paper .chat-inline-mention-mode,
+.chat-page.is-paper .chat-inline-mention-mode,
+.chat-panel.is-paper .chat-inline-mention-mode {
+  color: #b45309;
+}
+
+/* 全文読みを外した知らせ(返答の下) */
+.chat-attachment-notice {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 179, 0, 0.25);
+  background: rgba(255, 179, 0, 0.06);
+  color: #cfd4dc;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.chat-attachment-notice p {
+  margin: 0;
+}
+
+.chat-attachment-notice p + p {
+  margin-top: 4px;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-notice,
+.chat-page.is-paper .chat-attachment-notice,
+.chat-panel.is-paper .chat-attachment-notice {
+  border-color: rgba(217, 119, 6, 0.3);
+  background: #fdf6e7;
+  color: #5c4a3a;
+}
+
+/* 資料の一覧: 行を押すと出る操作 */
+.chat-attachment-list-item:not(.is-expanded) .chat-attachment-list-row {
+  border-radius: 12px;
+}
+
+.chat-attachment-list-chevron {
+  transition: transform 0.15s ease;
+}
+
+.chat-attachment-list-item.is-expanded .chat-attachment-list-chevron {
+  transform: rotate(180deg);
+}
+
+.chat-attachment-list-actions {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.chat-attachment-list-item.is-selected .chat-attachment-list-actions {
+  border-color: rgba(255, 179, 0, 0.35);
+}
+
+.chat-attachment-action {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-low);
+  color: var(--starlight);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: normal;
+}
+
+.chat-attachment-action:hover:not(:disabled) {
+  background: var(--glass-high);
+}
+
+.chat-attachment-action:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.chat-attachment-action > svg {
+  flex-shrink: 0;
+  color: var(--comet);
+}
+
+.chat-attachment-action > span {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.chat-attachment-action small {
+  color: var(--comet);
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.chat-attachment-action.is-primary {
+  border-color: rgba(255, 179, 0, 0.45);
+  background: rgba(255, 179, 0, 0.1);
+}
+
+.chat-attachment-action.is-primary > svg {
+  color: var(--gold);
+}
+
+.chat-fullscreen.is-paper .chat-attachment-list-actions,
+.chat-page.is-paper .chat-attachment-list-actions,
+.chat-panel.is-paper .chat-attachment-list-actions {
+  border-color: #e6ded0;
+  background: #fffdf8;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-action,
+.chat-page.is-paper .chat-attachment-action,
+.chat-panel.is-paper .chat-attachment-action {
+  border-color: #e6ded0;
+  background: #ffffff;
+  color: #2b2118;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-action:hover:not(:disabled),
+.chat-page.is-paper .chat-attachment-action:hover:not(:disabled),
+.chat-panel.is-paper .chat-attachment-action:hover:not(:disabled) {
+  background: #fdf6e7;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-action.is-primary,
+.chat-page.is-paper .chat-attachment-action.is-primary,
+.chat-panel.is-paper .chat-attachment-action.is-primary {
+  border-color: rgba(217, 119, 6, 0.45);
+  background: #fdf3df;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-action.is-primary > svg,
+.chat-page.is-paper .chat-attachment-action.is-primary > svg,
+.chat-panel.is-paper .chat-attachment-action.is-primary > svg {
+  color: #b45309;
+}
+
+/* ---------------------------------------------------------------------------
+ * 2026-10-07 見直し: はみ出し・中身の確認・一覧の「添付する予定」
+ * ------------------------------------------------------------------------- */
+
+/* 入力欄の下の列: 中身の最小幅で広がらないように(長いチップで全体が右にはみ出し、注意書きの中央もずれていた) */
+.chat-footer {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* チップは横幅に収め、長い文言は省略して×を押せるようにする */
+.chat-attachment {
+  min-width: 0;
+}
+
+.chat-attachment .chat-attachment-open {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.chat-attachment-text {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.chat-attachment-meta {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-attachment > button:not(.chat-attachment-open) {
+  flex-shrink: 0;
+}
+
+.chat-attachment.is-upload .chat-attachment-open {
+  cursor: pointer;
+}
+
+/* ヘッダーの資料の数: 通知のような強調はしない */
+.chat-attachments-btn-count {
+  top: -2px;
+  right: -3px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  background: var(--void-raised, #171b2e);
+  border: 1px solid var(--glass-border);
+  color: var(--comet);
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.chat-fullscreen.is-paper .chat-attachments-btn-count,
+.chat-page.is-paper .chat-attachments-btn-count,
+.chat-panel.is-paper .chat-attachments-btn-count {
+  background: #fffdf8;
+  border-color: #e6ded0;
+  color: #8a7a6c;
+}
+
+/* 画像の小さな見本(送ったメッセージのチップ・一覧) */
+.chat-chip-thumb {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.chat-attachment-list-thumb {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+/* 「@名前」にカーソルがあるときの操作 */
+.chat-mention-actions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 10px;
+  border-radius: 14px;
+  background: var(--void-raised, #171b2e);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+  animation: modalPopIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chat-mention-actions-thumb {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.chat-mention-actions-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--glass-low);
+  color: var(--gold);
+}
+
+.chat-mention-actions-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.chat-mention-actions-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--starlight);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.chat-mention-actions-text small {
+  color: var(--comet);
+  font-size: 0.72rem;
+}
+
+.chat-mention-actions button {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-low);
+  color: var(--starlight);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.chat-mention-actions button:hover {
+  background: var(--glass-high);
+}
+
+.chat-mention-actions button.is-danger {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--comet);
+}
+
+.chat-fullscreen.is-paper .chat-mention-actions,
+.chat-page.is-paper .chat-mention-actions,
+.chat-panel.is-paper .chat-mention-actions {
+  background: #fffdf8;
+  border-color: #e6ded0;
+  box-shadow: 0 14px 36px rgba(60, 40, 20, 0.16);
+}
+
+.chat-fullscreen.is-paper .chat-mention-actions-title,
+.chat-page.is-paper .chat-mention-actions-title,
+.chat-panel.is-paper .chat-mention-actions-title {
+  color: #2b2118;
+}
+
+.chat-fullscreen.is-paper .chat-mention-actions button,
+.chat-page.is-paper .chat-mention-actions button,
+.chat-panel.is-paper .chat-mention-actions button {
+  background: #ffffff;
+  border-color: #e6ded0;
+  color: #2b2118;
+}
+
+.chat-fullscreen.is-paper .chat-mention-actions-icon,
+.chat-page.is-paper .chat-mention-actions-icon,
+.chat-panel.is-paper .chat-mention-actions-icon {
+  background: #f5eedf;
+  color: #b45309;
+}
+
+/* 一覧: 入力欄で指している資料(送る前) */
+.chat-attachment-pending-badge {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.chat-attachment-pending-badge.is-full {
+  background: rgba(255, 179, 0, 0.18);
+  color: var(--gold);
+}
+
+.chat-attachment-pending-badge.is-mention {
+  background: rgba(120, 170, 255, 0.18);
+  color: #a9c6ff;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-pending-badge.is-full,
+.chat-page.is-paper .chat-attachment-pending-badge.is-full,
+.chat-panel.is-paper .chat-attachment-pending-badge.is-full {
+  background: rgba(217, 119, 6, 0.14);
+  color: #b45309;
+}
+
+.chat-fullscreen.is-paper .chat-attachment-pending-badge.is-mention,
+.chat-page.is-paper .chat-attachment-pending-badge.is-mention,
+.chat-panel.is-paper .chat-attachment-pending-badge.is-mention {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+
+.chat-attachment-list-budget-bar.is-over > span {
+  background: #ff8a80;
+}
+
+/* 送る前のファイルの確認 */
+.chat-draft-preview-pdf {
+  display: block;
+  width: 100%;
+  height: 60vh;
+  border: none;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.chat-draft-preview-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(229, 57, 53, 0.1);
+  color: #ff8a80;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.chat-draft-preview-error > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.chat-draft-preview-facts {
+  margin: 12px 0 0;
+  color: var(--starlight);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.chat-draft-preview-note {
+  margin: 8px 0 0;
+  color: var(--comet);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.chat-fullscreen.is-paper .chat-draft-preview-facts,
+.chat-page.is-paper .chat-draft-preview-facts,
+.chat-panel.is-paper .chat-draft-preview-facts {
+  color: #2b2118;
+}
+
+.chat-fullscreen.is-paper .chat-draft-preview-error,
+.chat-page.is-paper .chat-draft-preview-error,
+.chat-panel.is-paper .chat-draft-preview-error {
+  background: #fdecea;
+  color: #b3261e;
+}
+
+/* 入力欄の外枠もグリッドなので、列の幅を中身の最小幅で広げない(パネル幅460pxで、長いチップが右にはみ出していた) */
+.chat-composer {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.chat-attachments {
+  min-width: 0;
+}
+
+/* 準備できなかったファイル: 1行目にファイル名と×、2行目に理由を全文で(省略しない) */
+.chat-attachment.is-error {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  padding: 6px 6px 6px 10px;
+  border-radius: 12px;
+}
+
+.chat-attachment.is-error .chat-attachment-open {
+  flex: 1 1 0;
+  flex-wrap: wrap;
+  row-gap: 2px;
+  white-space: normal;
+  text-align: left;
+}
+
+.chat-attachment.is-error .chat-attachment-open > svg {
+  margin-top: 2px;
+}
+
+.chat-attachment.is-error .chat-attachment-text {
+  flex: 1 1 0;
+  max-width: none;
+}
+
+.chat-attachment.is-error .chat-attachment-meta {
+  flex-basis: 100%;
+  max-width: none;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  line-height: 1.45;
 }
