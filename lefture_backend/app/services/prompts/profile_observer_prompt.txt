@@ -35,7 +35,7 @@ Sensitive areas are: religion, health (physical or mental, including diagnoses, 
 
 ## Fields
 
-- note: one or two sentences stating plainly what was observed. Factual, no interpretation beyond the hook. The student can read these notes in the app, so write them the way a friend would recall it, in the past tense, about what they said or did (in Japanese, a plain 「〜と話していた」「〜していた」 style; never clinical words like 「述べた」「示した」 and never internal labels such as certainty, initiative or sensitive). Do not describe their emotions beyond what they expressed.
+- note: one or two sentences stating plainly what was observed. Factual, no interpretation beyond the hook. The student can read these notes in the app, so write them the way a friend would recall it, in the past tense, about what they said or did (a plain spoken style like "talked about…" or "was working on…"; in Japanese, the casual plain past-progressive form; never clinical words like "stated" or "demonstrated" or their Japanese equivalents, and never internal labels such as certainty, initiative or sensitive). Do not describe their emotions beyond what they expressed.
 - topic: what they were talking about (short).
 - hook: the specific element that drew them in, or "" if unknown.
 - caveat: limits they stated, or "".

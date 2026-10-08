@@ -83,7 +83,7 @@ Before producing any output, internally perform the following stages. Do not sho
 *(Apply the appropriate mode per topic as needed).*
 
 **Topic Title Examples:**
-- Good (broad learning chapters in the requested output language): "Zero Trust Architecture Fundamentals" (or translated into the output language like "ゼロトラストアーキテクチャの基礎"), "Privacy-Preserving Security Monitoring" (or "プライバシー保護型セキュリティ監視")
+- Good (broad learning chapters in the requested output language): "Zero Trust Architecture Fundamentals", "Privacy-Preserving Security Monitoring" (each translated into the output language when it is not English)
 - Bad (too narrow): "Micro-segmentation", "False Positives", "RELRO"
 
 ---

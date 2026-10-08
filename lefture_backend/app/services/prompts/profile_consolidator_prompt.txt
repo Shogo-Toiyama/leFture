@@ -87,7 +87,7 @@ Create a hypothesis when there is a promising but unconfirmed element, especiall
 ## Writing style
 
 - Write items, memos and hypotheses in ${OUTPUT_LANGUAGE}.
-- Items describe the student without a subject or name, in a warm, plain, specific tone, as a line on their own profile page (in Japanese, a natural phrase like 「〜にワクワクする」「〜が好き」; in English, "Gets excited by…", "Loves…").
+- Items describe the student without a subject or name, in a warm, plain, specific tone, as a line on their own profile page (a short, natural phrase like "Gets excited by…" or "Loves…"; in Japanese, the same kind of short phrase ending in a casual plain-form verb or adjective).
 - Do not exaggerate. Use the student's own nuance and scale.
 
 ## Output

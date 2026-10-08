@@ -835,7 +835,8 @@ def _build_bilingual_gloss_instruction(
         f"keyword, or jargon that a student would want to recognize in its "
         f"original form, write it in {content_language} first and then include "
         f"the original {transcript_language} term in parentheses on first "
-        f"mention (e.g. \"Address Translation (アドレス変換)\"). Do not do this "
+        f"mention, in the form \"<term in {content_language}> (<original "
+        f"{transcript_language} term>)\". Do not do this "
         f"for every word — only for genuine technical/academic terms, not for "
         f"ordinary sentence content."
     )
