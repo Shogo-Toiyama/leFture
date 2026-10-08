@@ -46,6 +46,13 @@ PRICE_MATRIX = {
         # 代替として採用（安価かつ知識ワーク系ベンチマークで上回るため）。
         # 自動でキャッシュに書き込まれ、書き込みは通常入力の1.25倍(272K以下の短文脈の価格)。
         "gpt-6-luna": {"input": 0.10, "output": 0.50, "cache_read": 0.01, "cache_write": 0.125},
+        # 2026-10-07リリース。チャットの回答役(2026-10-07にLunaから変更)。プロンプトが10万トークンを超えると、
+        # そのリクエストは入力も出力も5倍の単価になる(long_context)。回答役はchat_serviceの
+        # ANSWER_MAX_INPUT_ESTIMATEで超えないように組み立てる。キャッシュ(cache_control)は今は使っていない。
+        "anthropic/claude-haiku-5-5": {
+            "input": 0.10, "output": 0.50,
+            "long_context": {"above_input_tokens": 100_000, "input": 0.50, "output": 2.50},
+        },
         # 横断チャットボット段階0(knowledge_chunks)の埋め込みモデル。
         # 埋め込みAPIには出力トークン課金が無いのでoutputは0。
         "gemini/gemini-embedding-2": {"input": 0.20, "output": 0.0},
@@ -131,6 +138,10 @@ class BillingEngine:
         if rates is None:
             warn_unknown_price("tokens", model)
             rates = {"input": 0.0, "output": 0.0}
+        # プロンプトが長いと、そのリクエスト全体(入力も出力も)が別の単価になるモデル
+        long_context = rates.get("long_context")
+        if long_context and input_tokens > long_context["above_input_tokens"]:
+            rates = long_context
 
         cache_read_tokens = max(0, min(cache_read_tokens, input_tokens))
         cache_write_tokens = max(0, min(cache_write_tokens, input_tokens - cache_read_tokens))

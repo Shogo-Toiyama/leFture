@@ -143,8 +143,17 @@ from app.services.knowledge_index import embed_queries, index_now
 ROUTER_MODEL = "gemini/gemini-2.5-flash-lite"
 # 2026-10-02に3.1 Flash Lite(推論なし)から変更。同じ材料で比べると、最初の1文字までの時間は同じくらい
 # (約0.6秒)で、「1文に出典は1つ」「同じ内容を言う出典は1つにまとめる」をよく守った(7回中まとめ付け0回)。
-ANSWER_MODEL = "gpt-6-luna"
-# 2026-10-05にGemini 2.5 Flashから変更(ユーザー判断、数日試す)。2.5 Flashは、正しい確かめ役(Luna)のメモを
+ANSWER_MODEL = "anthropic/claude-haiku-5-5"
+# 2026-10-07にLunaから変更(ユーザー判断)。Lunaは長さの指示にほとんど従わず、「プログラミング言語の宿題」の
+# スレッドで返答が短すぎた。同じ5ターン+LeetCodeの「できた！」をHaiku 5.5(effort low)で書き直すと、
+# 中身は全部正確で、長さはLunaの約1.2〜1.4倍、口調はLunaよりはっきり温かかった(絵文字・受け止めてから説明)。
+# 単価はLunaと同じ(入力$0.10/M・出力$0.50/M)で、最初の1文字までは0.4〜0.9秒。mediumは長くなる代わりに
+# 書き始めが3〜6秒に遅れたのでlowにした。プロンプトが10万トークンを超えると単価が5倍になるので、
+# 入力はANSWER_MAX_INPUT_ESTIMATEに収める(fit_answer_input)。推論が要るターンもHaiku 5.5(effort medium、
+# chat_reasoning.REASONING_CONFIG)。LiteLLM 1.90.2はreasoning_effortを thinking: adaptive +
+# output_config.effort に変換し、既定値以外のtemperatureは外して送る(2026-10-07に実際に送って確認)。
+#
+# 以下はLunaを選んだときの記録。2026-10-05にGemini 2.5 Flashから変更(ユーザー判断、数日試す)。2.5 Flashは、正しい確かめ役(Luna)のメモを
 # 受け取っても生徒のコードを別物に書き換えて「君のコード」として示し、コードが依存している行を消すよう
 # 勧めた(LeetCodeのスレッド「Best Time to Buy and Sell Stock」、作り直し3回中3回)。同じターンをLunaが
 # 直接書くと3回とも正確で、1ターンの原価も安い(入力$0.10/M・出力$0.50/M)。口調はVOICEの節で補う
@@ -160,11 +169,13 @@ ANSWER_MODEL = "gpt-6-luna"
 # 6問中5問はlowがnoneと同じか安く、「詳しく教えて」系の1問だけlowが約+1credit高かった。
 # その1問で中身を読み比べても、低い方(low)が考えた分だけ良い回答になっている様子は無く
 # (むしろnoneの方が短い出力トークンでより詳しい回答を書いていた)、厚くする理由が無いと判断した。
-ANSWER_REASONING_EFFORT = "none"
+# (ここまでのnone/lowの比較はGeminiのとき。Haiku 5.5はlow、上のANSWER_MODELの説明を参照)
+ANSWER_REASONING_EFFORT = "low"
 # max_tokensには思考のトークンも含まれるので、その分を足しておく(回答の途中で切れないように)。
-# 推論ありのターン(Luna low)は考える量が多いので別に取る(評価では8192で切れなかった)
+# 推論するとき(ふだんのeffort low・推論ターンのmedium)は考える量が多いので別に取る。推論ターンのHaiku medium は
+# 計算の追い直しで出力(思考込み)が7,756トークンまで出た(2026-10-08)ので、回答の分と合わせて切れないよう広めに取る
 ANSWER_THINKING_TOKENS = 1024
-ANSWER_REASONING_THINKING_TOKENS = 8192
+ANSWER_REASONING_THINKING_TOKENS = 16384
 ANSWER_MAX_OUTPUT_TOKENS = 2048
 # 広い質問(探索役のゴールが多い・コースの講義一覧を開いた)だけ、回答の上限を引き上げる(3-8)
 ANSWER_MAX_OUTPUT_TOKENS_WIDE = 4096
@@ -1297,6 +1308,9 @@ def answer_options(model: str, effort: Optional[str], max_output_tokens: int) ->
     limit = max_output_tokens + (ANSWER_THINKING_TOKENS if effort in (None, "none") else ANSWER_REASONING_THINKING_TOKENS)
     if model.startswith("gpt-"):
         return LLMOptions(temperature=1.0, max_completion_tokens=limit, reasoning_effort=effort)
+    if model.startswith("anthropic/"):
+        # Claude 5系も既定値(1)以外のtemperatureを受け付けない(LiteLLMが外して送るが、明示しておく)
+        return LLMOptions(temperature=1.0, max_tokens=limit, reasoning_effort=effort)
     return LLMOptions(max_tokens=limit, reasoning_effort=effort)
 
 
@@ -1395,6 +1409,36 @@ def _build_answer_messages(
     # 選択中の画像の資料(render_for_answerが「image N」と書いた順)。回答役は画像を読めるモデルであること
     return [Message(role="system", content=system), *history,
             Message(role="user", content=turn_message, images=turn.answer_images)]
+
+
+# 回答役の入力の上限(estimate_tokensの概算で数える)。回答役のHaiku 5.5は、プロンプトが10万トークンを超えると
+# そのターンの単価が入力も出力も5倍になる(1ターン約4→約24クレジット)。Claudeの数え方は概算の1.1〜1.2倍
+# (日本語の会話)、英語だけの長文では1.4倍だった(2026-10-07にcount_tokensで実測)ので、英語の資料ばかりでも
+# 10万に届かないよう65,000にしている。ふだんのターンは5,000〜10,000、資料を3万トークン分全文で読んでいても
+# 4〜5万で、届くのは長い資料・長い履歴・長い教材が重なったときだけ。
+ANSWER_MAX_INPUT_ESTIMATE = 65_000
+
+
+def fit_answer_input(messages: list[Message], limit: int = ANSWER_MAX_INPUT_ESTIMATE) -> tuple[list[Message], int]:
+    """
+    回答役の入力が上限を超えるなら、古い履歴から1往復ずつ外す。外した往復の数も返す。
+    system(指示・要約)と最後のメッセージ(資料・出典・画面・質問)はそのまま残す。全文で読む資料は
+    生徒が選んだものなので、削るのは履歴を先にする(古い往復の中身は、畳まれれば要約にも残る)。
+    """
+    if len(messages) < 2:
+        return messages, 0
+    system, history, last = messages[0], list(messages[1:-1]), messages[-1]
+    fixed = (estimate_tokens(system.content) + estimate_tokens(last.content)
+             + sum(image_tokens(i) for i in last.images))
+    history_tokens = [estimate_tokens(m.content) for m in history]
+    dropped = 0
+    # build_history_messagesは user → assistant の往復で並べるので、2つずつ外せば交互の並びが保たれる
+    while history and fixed + sum(history_tokens) > limit:
+        del history[:2], history_tokens[:2]
+        dropped += 1
+    if fixed + sum(history_tokens) > limit:
+        print(f"⚠️ [chat] answer input is still over the limit without any history: ~{fixed} tokens")
+    return [system, *history, last], dropped
 
 
 async def _load_answer_images(turn: PreparedTurn, vis: Visibility) -> list[bytes]:
@@ -1843,7 +1887,11 @@ async def run_chat_turn(
             student_memos=student_memos, open_questions=open_questions,
             attachment_visibility=attachment_visibility,
         )
+        messages, trimmed_turns = fit_answer_input(messages)
         answer_model, answer_effort = ANSWER_MODEL, ANSWER_REASONING_EFFORT
+        # 「じっくり考えています…」を出すのは推論が要るターンだけ(Haiku 5.5はふだんからeffort lowで少し考えるが、
+        # 最初の1文字まで1秒もかからないので、ふだんの「書いています」のままにする)
+        thinking = False
         checked: Optional[CheckedWork] = None
         # 推論が要るターン: 二段構えなら確かめ役のメモを足し、一段ならそのモデルで直接答える(chat_reasoning.py)
         if decision.needs_reasoning:
@@ -1856,10 +1904,11 @@ async def run_chat_turn(
                 else:
                     # メモが無くても答えは出す(ふだんの回答役だけで答える)
                     print(f"⚠️ [chat] checking step failed for message {turn.assistant_message_id}: {checked.error}")
-            elif REASONING_CONFIG.single_model:
-                answer_model, answer_effort = REASONING_CONFIG.single_model, REASONING_CONFIG.single_effort
-        # 一段で推論するときは、考えている間(最初の1文字まで)「じっくり考えています…」を出す
-        thinking = answer_effort not in (None, "none")
+            else:
+                answer_model = REASONING_CONFIG.single_model or ANSWER_MODEL
+                answer_effort = REASONING_CONFIG.single_effort
+                # 一段で推論するときは、考えている間(最初の1文字まで)「じっくり考えています…」を出す
+                thinking = answer_effort not in (None, "none")
         await emit("status", {"stage": "reasoning" if thinking else "writing"})
         state = StreamState()
         options = answer_options(answer_model, answer_effort, _answer_max_tokens(navigation, materials))
@@ -1880,6 +1929,7 @@ async def run_chat_turn(
             "answer_output_tokens": state.output_tokens,
             "answer_cache_read_tokens": state.cache_read_tokens,
             "answer_cache_write_tokens": state.cache_write_tokens,
+            "answer_history_trimmed_turns": trimmed_turns or None,
             "usage_estimated": state.usage_estimated,
             "materials": [{"key": m.key, "handle": m.handle} for m in materials],
             "retrieval_forced_for_attachments": retrieval_forced or None,
