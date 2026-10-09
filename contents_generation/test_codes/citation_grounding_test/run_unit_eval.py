@@ -240,7 +240,7 @@ async def run_case(llm, case, variant: str, profile: str, cost: dict, emb_cache:
                                content=case["question"], screen_page=None)
         history = cs.build_history_messages(case["history_rows"], cs.RAW_MAX_TURNS, cs.HISTORY_MAX_CHARS_PER_MESSAGE)
         messages = cs._build_answer_messages(turn, SimpleNamespace(reply_language=case["reply_language"]),
-                                             cs.ConversationMemory(), history, profile, marked, case["goal"])
+                                             cs.ConversationMemory(), history, profile, marked)
     finally:
         cs._load_prompt = orig
 

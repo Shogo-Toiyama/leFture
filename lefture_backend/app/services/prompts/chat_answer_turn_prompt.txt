@@ -7,12 +7,6 @@ ${SOURCES}
 </sources>
 <!--IF:HAS_SOURCES-->Use only the sources the reply needs. Cite at most one source per sentence: when several sources say the same thing, pick the clearest one. Write "…a new record.⟦W1.2⟧", not "…a new record.⟦W1.2⟧⟦W3.1⟧". Cite the unit, never a bare source number.
 <!--END_IF-->
-<!--IF:HAS_GOAL-->
-<goal>
-${GOAL}
-</goal>
-
-<!--END_IF-->
 <!--IF:HAS_ATTACHMENTS-->
 <attached_materials>
 ${ATTACHMENTS}

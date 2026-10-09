@@ -1358,7 +1358,6 @@ def _build_answer_messages(
     history: list[Message],
     profile: str,
     materials: list[Material],
-    goal: Optional[list[str]] = None,
     student_memos: Optional[list[dict]] = None,
     open_questions: Optional[list[str]] = None,
     attachment_visibility: Optional[Visibility] = None,
@@ -1392,14 +1391,12 @@ def _build_answer_messages(
     ai_code_rule = render_ai_code_rule(turn.attachments)
     turn_template = _render_conditional_sections(_load_prompt("chat_answer_turn_prompt.txt"), {
         "HAS_SOURCES": bool(materials),
-        "HAS_GOAL": bool(goal),
         "HAS_ATTACHMENTS": bool(attachments_text),
         "HAS_AI_CODE_RULE": bool(ai_code_rule),
         "HAS_SCREEN_CONTEXT": bool(screen_context),
     })
     turn_message = fill_placeholders(turn_template, {
         "SOURCES": format_sources_block(materials),
-        "GOAL": "\n".join(f"- {g}" for g in goal or []),
         "ATTACHMENTS": attachments_text,
         "AI_CODE_RULE": ai_code_rule,
         "SCREEN_CONTEXT": screen_context,
@@ -1882,8 +1879,12 @@ async def run_chat_turn(
 
         # --- 4. 回答 ---
         turn.answer_images = await answer_images_task
+        # 探索役のgoal(返答で何を書くか)は回答役に渡さない。探索役は回答役より少ない情報で会話の意味を
+        # 決めつけ、回答役がそれに従ってしまう(2026-10-08「コマンドを決めつけず」でコマンドを出さなかった、
+        # 10-09「3と4」を生徒のコードのコメントの番号と読み違えた。goalなしなら回答役は3/3で正しく読めた)。
+        # 会話の読み取りは、会話全体と資料を見ている回答役に任せる。goalは探索役の周回と出力の長さの判断にだけ使う
         messages = _build_answer_messages(
-            turn, decision, memory, history, profile, materials, navigation.goal if navigation else None,
+            turn, decision, memory, history, profile, materials,
             student_memos=student_memos, open_questions=open_questions,
             attachment_visibility=attachment_visibility,
         )

@@ -100,7 +100,7 @@ def build_messages(case: dict, materials: list[Material], profile: str) -> list[
                                content=case["question"], screen_page=None)
         history = cs.build_history_messages(case["history_rows"], cs.RAW_MAX_TURNS, cs.HISTORY_MAX_CHARS_PER_MESSAGE)
         return cs._build_answer_messages(turn, SimpleNamespace(reply_language=case["reply_language"]),
-                                         cs.ConversationMemory(), history, profile, materials, case["goal"])
+                                         cs.ConversationMemory(), history, profile, materials)
     finally:
         cs._load_prompt = orig
 

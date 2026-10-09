@@ -114,7 +114,7 @@ async def generate(llm, t: dict, prompts: dict[str, str], variant: str) -> dict:
     try:
         history = cs.build_history_messages(t["history_rows"], cs.RAW_MAX_TURNS, cs.HISTORY_MAX_CHARS_PER_MESSAGE)
         messages = cs._build_answer_messages(t["turn"], SimpleNamespace(reply_language=t["reply_language"]),
-                                             cs.ConversationMemory(), history, t["profile"], t["materials"], t["goal"])
+                                             cs.ConversationMemory(), history, t["profile"], t["materials"])
     finally:
         cs._load_prompt, chat_materials.mark_units = orig_load, orig_mark
     state = StreamState()
