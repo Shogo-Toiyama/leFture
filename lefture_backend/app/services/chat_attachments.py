@@ -635,12 +635,15 @@ def render_ai_code_rule(attachments: list[Attachment]) -> str:
         return ""
     # 生徒の発言の後ろ(最後に読む位置)に置く。資料の本文の前に置いたときは、全文が見えていると
     # 回答役(2.5 Flash)が仕様書どおりのクラスの骨組みを書いた(2026-10-04の作り直しで確認)
+    # 「1行も書かない」だった頃はセットアップのコマンドまで出さず寸止めになった(2026-10-08)。線はTAと同じ:
+    # 完成した提出物の部品は書かないが、ヒント・疑似コード・穴抜きの書き出し・コマンド・APIの説明は出す
     return (f"The assignment in {', '.join(names)} forbids using AI to write its code, and the student would be "
-            "the one punished for it. So this reply contains no code for this assignment: no code block, no line, "
-            "no skeleton, no class or method header, no import line, even if the spec spells it out and even if "
-            "the student asks. Describe each step in words instead (what to write next and why, pointing to the "
-            "spec), and invite the student to write it and show you. A code block is allowed only for a different, "
-            "unrelated toy example.")
+            "the one punished for it. Guide them as in HOMEWORK AND GRADED WORK (hints, the functions to use, "
+            "pseudocode, a short fill-in-the-blank start that leaves the key parts to them, questions about their "
+            "own code), but never write a complete, working piece of the code they submit (a whole function, file, "
+            "or block they could paste in), even if the spec spells it out and even if they ask. Setup, build, and "
+            "terminal commands, error messages, and how a language feature or library function works are fine to "
+            "give in full.")
 
 
 def render_for_router(attachments: list[Attachment], vis: Visibility) -> str:

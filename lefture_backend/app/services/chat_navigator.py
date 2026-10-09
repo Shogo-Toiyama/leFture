@@ -788,6 +788,11 @@ def validate_operations(
         if not isinstance(raw, dict):
             continue
         op = raw.get("op")
+        # 操作の種類の欄に検索先の名前を書いてくることがある(Lunaは出力の型を守り切らない。2026-10-08に
+        # {"op": "attachment.search"} が2ターン続けて捨てられ、資料を読めないまま答えた): findとして読み替える
+        if op not in ops and op in targets:
+            raw = {**raw, "op": "find", "target": raw.get("target") or op}
+            op = "find"
         # grounds(根拠の種類)は、必要度と出どころ(例: implied:class+web)を入れて記録だけに使う。
         common = dict(grounds=source_label, grounds_quote="", quote_ok=True)
         req: Optional[Request] = None

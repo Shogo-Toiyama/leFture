@@ -499,10 +499,16 @@ class UnifiedLLM:
             else:
                 kwargs["response_format"] = {"type": "json_object"}
 
-        # Gemini 3+ の場合は警告を避けるため temperature などのパラメータを削除する
-        # (LiteLLMはGoogle AI StudioのGemini 3+に対してこれらのパラメータを非推奨警告として出力するため)
-        if ("gemini-3" in model or "gemini/gemini-3" in model) and "temperature" in kwargs:
-            del kwargs["temperature"]
+        # Gemini 3系以降は、サンプリングパラメータ (temperature, top_p, top_k) を指定すると
+        # 将来的にエラー (400) になるため、完全に除外する。
+        # また、thinking_budget は廃止され thinking_level ("minimal", "low", "medium", "high") に
+        # 統一されるため、thinking_budget が混入しないよう確実に除去する。
+        is_gemini_3_plus = any(
+            m in model for m in ["gemini-3", "gemini/gemini-3", "gemini-4", "gemini/gemini-4"]
+        )
+        if is_gemini_3_plus:
+            for param in ("temperature", "top_p", "top_k", "thinking_budget"):
+                kwargs.pop(param, None)
 
         return kwargs
 
