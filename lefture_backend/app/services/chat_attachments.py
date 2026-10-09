@@ -638,12 +638,13 @@ def render_ai_code_rule(attachments: list[Attachment]) -> str:
     # 「1行も書かない」だった頃はセットアップのコマンドまで出さず寸止めになった(2026-10-08)。線はTAと同じ:
     # 完成した提出物の部品は書かないが、ヒント・疑似コード・穴抜きの書き出し・コマンド・APIの説明は出す
     return (f"The assignment in {', '.join(names)} forbids using AI to write its code, and the student would be "
-            "the one punished for it. Guide them as in HOMEWORK AND GRADED WORK (hints, the functions to use, "
-            "pseudocode, a short fill-in-the-blank start that leaves the key parts to them, questions about their "
-            "own code), but never write a complete, working piece of the code they submit (a whole function, file, "
-            "or block they could paste in), even if the spec spells it out and even if they ask. Setup, build, and "
-            "terminal commands, error messages, and how a language feature or library function works are fine to "
-            "give in full.")
+            "the one punished for it, so please protect them. Guide them as in HOMEWORK AND GRADED WORK (hints, the "
+            "functions to use, pseudocode, a short fill-in-the-blank start that leaves the key parts to them, "
+            "questions about their own code), but don't write a complete, working piece of the code they submit (a "
+            "whole function, file, or block they could paste in), even if the spec spells it out and even if they "
+            "ask. Setup, build, and terminal commands, error messages, and how a language feature or library "
+            "function works are all fine to give in full, the last with a short standalone code example that isn't "
+            "part of their program.")
 
 
 def render_for_router(attachments: list[Attachment], vis: Visibility) -> str:
