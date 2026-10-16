@@ -486,6 +486,12 @@ class UnifiedLLM:
             # 頼まないとUnsupportedParamsErrorになる(gpt-6-lunaで2026-09-30に確認)
             if model in _REASONING_EFFORT_PASSTHROUGH_MODELS:
                 kwargs["allowed_openai_params"] = ["reasoning_effort"]
+            # Claudeは思考の表示をomittedに固定する。litellm 1.104.2はreasoning_effortを
+            # display: "summarized" に変換するが、summarizedだとAPIが思考の要約を流し終えるまで
+            # 本文を溜めるので、推論ターンの返答が最後にまとめて届く(2026-10-16に確認。思考は使わないので要約も不要)。
+            # thinkingを明示すれば、どのバージョンでも引数の順に関係なくこれがそのまま送られる
+            if model.startswith("anthropic/") and options.reasoning_effort != "none":
+                kwargs["thinking"] = {"type": "adaptive", "display": "omitted"}
 
         # JSONモードの指定
         # NOTE: GPT-OSS models have a known token conflict between Harmony format and response_format,

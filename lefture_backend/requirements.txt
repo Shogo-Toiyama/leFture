@@ -15,7 +15,9 @@ nltk
 pydub
 httpx
 boto3
-litellm
+# 固定する。上げるとClaudeへの送り方が黙って変わることがある(1.104.2でthinkingのdisplayが変わり、
+# 推論ターンの返答がまとめて届くようになった。llm_unified._build_kwargsで対処済み)。上げるときは推論ターンの流れ方も確かめる
+litellm==1.104.2
 tenacity
 resend
 standardwebhooks
