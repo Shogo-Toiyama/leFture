@@ -10,7 +10,7 @@ class FunFactBrainstormingService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
         self.logger = logger
-        self.model_alias = "gemini/gemini-3.1-flash-lite"
+        self.model_alias = "gpt-6-luna"
 
     async def run_from_memory(
         self,
@@ -29,7 +29,7 @@ class FunFactBrainstormingService:
         prompt = prompt.replace("${COURSE_TITLE}", course_title)
         prompt = prompt.replace("${CONCEPT_INTRO_LINE}", concept_intro_line)
 
-        options_json = LLMOptions(output_type="json", temperature=0.8)
+        options_json = LLMOptions(output_type="json", temperature=0.8, reasoning_effort="none")
 
         messages = [
             Message(role="system", content=prompt),

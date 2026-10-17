@@ -10,7 +10,7 @@ class TopicMappingService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
         self.logger = logger
-        self.model_alias = "together_ai/openai/gpt-oss-120b"
+        self.model_alias = "gpt-6-luna"
 
     async def run_from_memory(
         self,
@@ -23,7 +23,7 @@ class TopicMappingService:
 
         # 1. プロンプトの読み込み
         prompt = _load_prompt("topic_mapping_prompt.txt")
-        options_json = LLMOptions(output_type="json", temperature=0.3, reasoning_effort="medium")
+        options_json = LLMOptions(output_type="json", reasoning_effort="none")
 
         # 2. プロンプト内の変数をJSON文字列に置換
         # ※ インデントを無しにしてトークンを節約しつつ、構造を伝える

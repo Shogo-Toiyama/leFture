@@ -16,7 +16,7 @@ class TopicMapReconciliationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
         self.logger = logger
-        self.model_alias = "together_ai/openai/gpt-oss-120b"
+        self.model_alias = "gpt-6-luna"
 
     async def run_from_memory(
         self,
@@ -29,7 +29,7 @@ class TopicMapReconciliationService:
         start_time = time.perf_counter()
 
         prompt = _load_prompt("topic_map_reconciliation_prompt.txt")
-        options_json = LLMOptions(output_type="json", temperature=0.3, reasoning_effort="medium")
+        options_json = LLMOptions(output_type="json", reasoning_effort="none")
 
         prompt_text = prompt.replace(
             "${CURRENT_GRAPH_JSON}",

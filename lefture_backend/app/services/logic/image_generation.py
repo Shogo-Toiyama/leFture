@@ -8,7 +8,7 @@ class ImageGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
         self.logger = logger
-        self.model_alias = "together_ai/Prism-ML/Ternary-Bonsai-27B"
+        self.model_alias = "gpt-6-luna"
 
     async def run_from_memory(self, review_cards_results: List[Dict[str, Any]], core_data: Dict[str, Any]) -> Dict[str, Any]:
         self.logger.log(f"   [Logic] Starting Image Prompt Generation")
@@ -18,7 +18,7 @@ class ImageGenerationService:
             return {}
             
         prompt_template = _load_prompt("image_generation_prompt.txt")
-        options_json = LLMOptions(output_type="json", temperature=0.5, reasoning_effort="medium")
+        options_json = LLMOptions(output_type="json", reasoning_effort="low")
 
         # Core Extractionのトピック情報から学術名(title)をマッピングする辞書を作成
         academic_titles = {}

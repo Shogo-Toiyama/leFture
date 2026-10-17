@@ -550,6 +550,16 @@ class UnifiedLLM:
             for param in ("temperature", "top_p", "top_k", "thinking_budget"):
                 kwargs.pop(param, None)
 
+        # gpt-6-luna 等のOpenAI推論モデルは reasoning_effort が有効な場合、
+        # temperature は 1 (デフォルト) 以外を渡すと 400 エラーになるため除外する。
+        is_openai_reasoning = (
+            ("gpt-6-luna" in model or "o1" in model or "o3" in model)
+            and options.reasoning_effort != "none"
+        )
+        if is_openai_reasoning:
+            for param in ("temperature", "top_p"):
+                kwargs.pop(param, None)
+
         return kwargs
 
     async def generate(
