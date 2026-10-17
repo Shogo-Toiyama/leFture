@@ -12,7 +12,8 @@ export function buildChatSelection(
   startIdx: number,
   endIdx: number,
   text: string,
-  screen: ChatScreenRef
+  /** 選択したページ。無ければ(会話の中の選択など)今いる画面のページが使われる。 */
+  screen?: ChatScreenRef
 ): ChatSelection {
   return {
     text,

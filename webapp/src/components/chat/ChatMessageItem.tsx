@@ -18,7 +18,14 @@ import {
 } from '../../lib/chatCitations';
 import { fixBoldPunctuationSpacing, prepareMath } from '../../lib/markdownText';
 import type { LocalChatMessage } from '../../hooks/useChatConversation';
-import { CHAT_MAX_SELECTED_TOKENS, type ChatAttachment, type ChatAttachmentKind, type ChatCitation } from '../../types/chat';
+import {
+  CHAT_MAX_SELECTED_TOKENS,
+  type ChatAttachment,
+  type ChatAttachmentKind,
+  type ChatCitation,
+  type ChatSelection,
+} from '../../types/chat';
+import { SelectionAskArea } from '../annotations/SelectionAskArea';
 import {
   AttachmentKindIcon,
   AttachmentStatusBadge,
@@ -44,6 +51,8 @@ interface ChatMessageItemProps {
   onResend?: () => void;
   /** assistantのみ: この回答のもとになった質問の本文(問題の報告に添える)。 */
   question?: string;
+  /** assistantのみ: 回答の一部を選んで「返信」したとき(次の送信に添える引用にする)。 */
+  onReplyToSelection?: (selection: ChatSelection) => void;
 }
 
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
@@ -54,6 +63,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   onOpenCitation,
   onResend,
   question,
+  onReplyToSelection,
 }) => {
   if (message.role === 'user') {
     return (
@@ -72,6 +82,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       onOpenCitation={onOpenCitation}
       onResend={onResend}
       question={question}
+      onReplyToSelection={onReplyToSelection}
     />
   );
 };
@@ -341,7 +352,8 @@ const AssistantMessage: React.FC<{
   onOpenCitation: (route: string) => void;
   onResend?: () => void;
   question?: string;
-}> = ({ message, attachmentsById, onOpenCitation, onResend, question }) => {
+  onReplyToSelection?: (selection: ChatSelection) => void;
+}> = ({ message, attachmentsById, onOpenCitation, onResend, question, onReplyToSelection }) => {
   const { t } = useLanguage();
   const [preview, setPreview] = useState<PreviewState | null>(null);
 
@@ -417,6 +429,43 @@ const AssistantMessage: React.FC<{
     stageLabel = t('chatStageWriting');
   }
 
+  const markdownBody = (
+        <div className={`chat-markdown ${isGenerating ? 'is-streaming' : ''}`}>
+      <ReactMarkdown
+        remarkPlugins={MARKDOWN_REMARK_PLUGINS}
+        rehypePlugins={MARKDOWN_REHYPE_PLUGINS}
+        components={{
+          a: ({ href, children }) => {
+            const parsed = parseCitationHref(href);
+            if (parsed !== null) {
+              const { ref, specs } = parsed;
+              const citation = byRef.get(ref);
+              return (
+                <button
+                  type="button"
+                  className="chat-cite-marker"
+                  title={citation?.label}
+                  disabled={!canOpenCitation(citation)}
+                  // 押した引用の区切りをハイライトして見せる
+                  onClick={() => citation && setPreview({ citation, specs })}
+                >
+                  {ref}
+                </button>
+              );
+            }
+            return (
+              <a href={href} target="_blank" rel="noreferrer">
+                {children}
+              </a>
+            );
+          },
+        }}
+      >
+        {markdown}
+      </ReactMarkdown>
+    </div>
+  );
+
   return (
     <div className={`chat-msg is-assistant ${message.status === 'blocked' ? 'is-blocked' : ''}`}>
       {showStage && !message.reconnecting && (
@@ -430,42 +479,19 @@ const AssistantMessage: React.FC<{
         </span>
       )}
 
-      {message.content && (
-        <div className={`chat-markdown ${isGenerating ? 'is-streaming' : ''}`}>
-          <ReactMarkdown
-            remarkPlugins={MARKDOWN_REMARK_PLUGINS}
-            rehypePlugins={MARKDOWN_REHYPE_PLUGINS}
-            components={{
-              a: ({ href, children }) => {
-                const parsed = parseCitationHref(href);
-                if (parsed !== null) {
-                  const { ref, specs } = parsed;
-                  const citation = byRef.get(ref);
-                  return (
-                    <button
-                      type="button"
-                      className="chat-cite-marker"
-                      title={citation?.label}
-                      disabled={!canOpenCitation(citation)}
-                      // 押した引用の区切りをハイライトして見せる
-                      onClick={() => citation && setPreview({ citation, specs })}
-                    >
-                      {ref}
-                    </button>
-                  );
-                }
-                return (
-                  <a href={href} target="_blank" rel="noreferrer">
-                    {children}
-                  </a>
-                );
-              },
-            }}
+      {message.content &&
+        (message.status === 'complete' && onReplyToSelection ? (
+          <SelectionAskArea
+            className="chat-selectable"
+            askLabel={t('chatReplyToSelection')}
+            ignoreSelector=".chat-cite-marker"
+            onAsk={(selection) => onReplyToSelection({ ...selection, replyToMessageId: message.id })}
           >
-            {markdown}
-          </ReactMarkdown>
-        </div>
-      )}
+            {markdownBody}
+          </SelectionAskArea>
+        ) : (
+          markdownBody
+        ))}
 
       <AttachmentNotice message={message} attachmentsById={attachmentsById} />
 

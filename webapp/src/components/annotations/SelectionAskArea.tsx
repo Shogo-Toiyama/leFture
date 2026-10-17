@@ -1,14 +1,24 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useChatPanel } from '../../context/ChatPanelContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 import { buildChatSelection } from '../../lib/chatSelection';
 import { readSelectionOffsets, type SelectionOffsets } from '../../lib/markdownAnnotations';
-import type { ChatScreenRef } from '../../types/chat';
+import type { ChatScreenRef, ChatSelection } from '../../types/chat';
 import { floatingStyle } from './AnnotationLayer';
 
 interface SelectionAskAreaProps {
   /** この中の文章を選んで「Ask」したときに添えるページ。 */
-  screen: ChatScreenRef;
+  screen?: ChatScreenRef;
+  /**
+   * 渡すと、「Ask」でチャットパネルを開く代わりに、これを呼ぶ(会話の中のAIの回答を選んで返信するときなど、
+   * すでに会話の入力欄がある場所で使う)。チャットパネルの外でも出る。
+   */
+  onAsk?: (selection: ChatSelection) => void;
+  /** 「Ask」ボタンの文言(既定は「Ask」) */
+  askLabel?: string;
+  /** 選択テキストから除く要素(出典の番号ボタンなど、本文の文字ではないもの) */
+  ignoreSelector?: string;
   className?: string;
   children: React.ReactNode;
 }
@@ -19,11 +29,12 @@ interface SelectionAskAreaProps {
  * (selectionchangeを主に、ポインタの上下をドラッグ確定の合図に)を、この領域の中だけで行う。
  * チャットパネルの外(ログイン前など)では何もしない。
  */
-export const SelectionAskArea: React.FC<SelectionAskAreaProps> = ({ screen, className, children }) => {
+export const SelectionAskArea: React.FC<SelectionAskAreaProps> = ({ screen, onAsk, askLabel, ignoreSelector, className, children }) => {
   const chatPanel = useChatPanel();
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState<(SelectionOffsets & { flattenedText: string }) | null>(null);
-  const enabled = chatPanel !== null;
+  const enabled = chatPanel !== null || Boolean(onAsk);
 
   useEffect(() => {
     if (!enabled) return;
@@ -34,6 +45,16 @@ export const SelectionAskArea: React.FC<SelectionAskAreaProps> = ({ screen, clas
     const evaluate = () => {
       const container = containerRef.current;
       const offsets = container ? readSelectionOffsets(container, { clip: true }) : null;
+      if (offsets && container && ignoreSelector) {
+        // 出典の番号ボタンなど、本文の文字ではないものを、コピー・質問に添える文字から除く
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const fragment = sel.getRangeAt(0).cloneContents();
+          fragment.querySelectorAll(ignoreSelector).forEach((node) => node.remove());
+          const cleaned = fragment.textContent ?? '';
+          if (cleaned.trim()) offsets.text = cleaned;
+        }
+      }
       setSelection(offsets && container ? { ...offsets, flattenedText: container.textContent ?? '' } : null);
     };
     const schedule = () => {
@@ -70,7 +91,7 @@ export const SelectionAskArea: React.FC<SelectionAskAreaProps> = ({ screen, clas
       document.removeEventListener('pointerup', onPointerUp, true);
       document.removeEventListener('pointercancel', onPointerUp, true);
     };
-  }, [enabled]);
+  }, [enabled, ignoreSelector]);
 
   // スクロールしてもツールバーが選択範囲に貼りついたままになるよう、位置だけ追従させる
   const hasSelection = selection !== null;
@@ -101,16 +122,16 @@ export const SelectionAskArea: React.FC<SelectionAskAreaProps> = ({ screen, clas
   }, []);
 
   const ask = () => {
-    if (!selection || !chatPanel) return;
-    chatPanel.open({
-      selection: buildChatSelection(
-        selection.flattenedText,
-        selection.startIdx,
-        selection.endIdx,
-        selection.text,
-        screen
-      ),
-    });
+    if (!selection) return;
+    const built = buildChatSelection(
+      selection.flattenedText,
+      selection.startIdx,
+      selection.endIdx,
+      selection.text,
+      screen
+    );
+    if (onAsk) onAsk(built);
+    else chatPanel?.open({ selection: built });
     dismiss();
   };
 
@@ -138,10 +159,10 @@ export const SelectionAskArea: React.FC<SelectionAskAreaProps> = ({ screen, clas
         >
           <div className="annotation-toolbar-row">
             <button type="button" className="annotation-ask-btn" onClick={ask}>
-              Ask
+              {askLabel ?? t('annotationAsk')}
             </button>
             <button type="button" onClick={copy}>
-              Copy
+              {t('annotationCopy')}
             </button>
           </div>
         </div>,

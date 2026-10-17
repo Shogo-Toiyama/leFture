@@ -95,6 +95,8 @@ export interface ChatSelection {
   after?: string;
   /** 選択したページ。今いる画面のページより優先する。 */
   screen?: ChatScreenRef;
+  /** 会話の中のAIの回答の一部を選んだとき、その回答のメッセージID(この場合screenは無い)。 */
+  replyToMessageId?: string;
 }
 
 /** 送信で既存の資料を指す(full: 全文で添付して全文で読む枠に入れる / mention: 文中で指すだけ)。 */
@@ -115,6 +117,8 @@ export interface ChatMessageContext {
   selection_before?: string;
   selection_after?: string;
   screen?: ChatScreenRef;
+  /** 会話の中のAIの回答の一部を選んで返信したとき、その回答のメッセージID(サーバーが本物と確かめられたものだけ残る) */
+  reply_to_message_id?: string;
   /** userのみ: このメッセージで添付・指した資料と、その渡し方(新しく添付した資料はいつもfull) */
   attachments?: Array<{ id: string; mode: 'full' | 'mention' }>;
   /** assistantのみ: このターンで全文読みを外した資料など */

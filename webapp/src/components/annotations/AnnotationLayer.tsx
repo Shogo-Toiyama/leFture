@@ -14,6 +14,7 @@ import { HIGHLIGHT_PRESET_COLORS, noteText, type Annotation } from '../../types/
 import type { ContentMetadata } from '../../types/content';
 import { AnnotationContext, type RegisteredBlock } from './AnnotationContext';
 import { useChatPanel } from '../../context/ChatPanelContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 import { buildChatSelection } from '../../lib/chatSelection';
 
 type HighlightStyle = 'marker' | 'line' | 'wave';
@@ -98,6 +99,7 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
   children,
 }) => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const blocksRef = useRef(new Map<string, RegisteredBlock>());
   // ノート編集中かどうか。選択の追従はドキュメント購読なので、編集中に
   // 走って編集中のノートを閉じてしまわないよう ref で見張る。
@@ -443,6 +445,11 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
           onMouseDown={(e) => e.preventDefault()}
         >
           <div className="annotation-toolbar-row">
+            {chatPanel && (
+              <button type="button" className="annotation-ask-btn" onClick={askAboutSelection}>
+                {t('annotationAsk')}
+              </button>
+            )}
             {!selection.askOnly && (
               <>
                 <button
@@ -451,25 +458,20 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                   onClick={() => setShowHighlightRow((v) => !v)}
                 >
                   <span className="annotation-swatch" style={{ background: color }} />
-                  Highlight
+                  {t('annotationHighlight')}
                 </button>
                 <button type="button" onClick={startNote}>
-                  Note
+                  {t('annotationNote')}
                 </button>
               </>
             )}
             {hasSource && !selection.askOnly && (
               <button type="button" onClick={jumpToSource}>
-                Source
-              </button>
-            )}
-            {chatPanel && (
-              <button type="button" className="annotation-ask-btn" onClick={askAboutSelection}>
-                Ask
+                {t('annotationSource')}
               </button>
             )}
             <button type="button" onClick={copySelection}>
-              Copy
+              {t('annotationCopy')}
             </button>
           </div>
 
@@ -480,7 +482,7 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                 className={style === 'line' ? 'is-active' : ''}
                 onClick={() => applyHighlight('line')}
                 disabled={busy}
-                title="Underline"
+                title={t('annotationUnderline')}
               >
                 <span className="hl-preview hl-preview-line" style={{ ['--hl' as string]: color }}>
                   Aa
@@ -491,7 +493,7 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                 className={style === 'wave' ? 'is-active' : ''}
                 onClick={() => applyHighlight('wave')}
                 disabled={busy}
-                title="Wavy underline"
+                title={t('annotationWavy')}
               >
                 <span className="hl-preview hl-preview-wave" style={{ ['--hl' as string]: color }}>
                   Aa
@@ -502,21 +504,21 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
                 className={style === 'marker' ? 'is-active' : ''}
                 onClick={() => applyHighlight('marker')}
                 disabled={busy}
-                title="Marker"
+                title={t('annotationMarker')}
               >
                 <span className="hl-preview hl-preview-marker" style={{ ['--hl' as string]: color }}>
                   Aa
                 </span>
               </button>
-              <button type="button" onClick={erase} disabled={busy} title="Erase annotations here">
-                Erase
+              <button type="button" onClick={erase} disabled={busy} title={t('annotationEraseTitle')}>
+                {t('annotationErase')}
               </button>
               <span className="annotation-toolbar-divider" />
               <button
                 type="button"
                 className={showColors ? 'is-active' : ''}
                 onClick={() => setShowColors((v) => !v)}
-                title="Colour"
+                title={t('annotationColor')}
               >
                 <span className="annotation-swatch" style={{ background: color }} />
               </button>
@@ -555,20 +557,20 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
             autoFocus
             rows={4}
             value={noteEditor.draft}
-            placeholder="Write a note…"
+            placeholder={t('annotationNotePlaceholder')}
             onChange={(e) => setNoteEditor((prev) => (prev ? { ...prev, draft: e.target.value } : prev))}
           />
           <div className="annotation-note-actions">
             {noteEditor.annotation && (
               <button type="button" className="danger" onClick={deleteNote} disabled={busy}>
-                Delete
+                {t('delete')}
               </button>
             )}
             <button type="button" className="ghost" onClick={() => setNoteEditor(null)}>
-              Cancel
+              {t('cancel')}
             </button>
             <button type="button" onClick={saveNote} disabled={busy || !noteEditor.draft.trim()}>
-              Save
+              {t('save')}
             </button>
           </div>
         </div>

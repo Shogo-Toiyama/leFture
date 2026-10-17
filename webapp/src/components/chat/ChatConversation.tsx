@@ -193,7 +193,22 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     if (el && stickToBottomRef.current) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
-  const selectedText = selection?.text ?? null;
+  // 会話の中のAIの回答を選んで「返信」したときの引用。パネルの「Ask」(selection)とは別に持ち、
+  // どちらかがあれば次の送信に添える(新しい「Ask」が来たら、そちらを優先して返信の引用は外す)
+  const [replySelection, setReplySelection] = useState<ChatSelection | null>(null);
+  useEffect(() => {
+    if (selection) setReplySelection(null);
+  }, [selection]);
+  useEffect(() => {
+    setReplySelection(null);
+  }, [threadId]);
+  const activeSelection = replySelection ?? selection;
+  const clearSelection = useCallback(() => {
+    setReplySelection(null);
+    onClearSelection?.();
+  }, [onClearSelection]);
+
+  const selectedText = activeSelection?.text ?? null;
   const selectedTooLong = (selectedText?.length ?? 0) > CHAT_MAX_SELECTED_TEXT_CHARS;
 
   const handleSend = useCallback(
@@ -202,18 +217,19 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
       const context: ChatMessageContext = {};
       if (lectureId) context.lecture_id = lectureId;
       // 選んだページ(「Ask」)を優先し、無ければ今いる画面のページ
-      const screenRef = selection?.screen ?? screen;
+      const screenRef = activeSelection?.screen ?? screen;
       if (screenRef) context.screen = screenRef;
-      if (selection) {
-        context.selected_text = selection.text;
-        if (selection.before) context.selection_before = selection.before;
-        if (selection.after) context.selection_after = selection.after;
+      if (activeSelection) {
+        context.selected_text = activeSelection.text;
+        if (activeSelection.before) context.selection_before = activeSelection.before;
+        if (activeSelection.after) context.selection_after = activeSelection.after;
+        if (activeSelection.replyToMessageId) context.reply_to_message_id = activeSelection.replyToMessageId;
       }
       void send(content, context, drafts, references);
       // 選択テキストは1回の質問にだけ添える
-      if (selection) onClearSelection?.();
+      if (activeSelection) clearSelection();
     },
-    [lectureId, selection, screen, send, onClearSelection]
+    [lectureId, activeSelection, screen, send, clearSelection]
   );
 
   /** 返答に失敗したassistantメッセージの直前のuserメッセージを、もう一度送る。 */
@@ -359,6 +375,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
                   onOpenAttachment={(attachment, id) => setViewing({ attachment, id })}
                   onOpenCitation={onOpenCitation}
                   onResend={message.status === 'error' && !sending ? resendFor(index) : undefined}
+                  onReplyToSelection={setReplySelection}
                   question={
                     message.role === 'assistant'
                       ? [...messages.slice(0, index)].reverse().find((m) => m.role === 'user')?.content
@@ -383,7 +400,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           placeholder={messages.length > 0 ? t('chatInputPlaceholderFollowUp') : t('chatInputPlaceholder')}
           onSend={handleSend}
           selectedText={selectedText}
-          onClearSelectedText={onClearSelection}
+          onClearSelectedText={clearSelection}
           lectureTitle={lectureTitle}
           onDetachLecture={onDetachLecture}
           selectedAttachments={listedAttachments.filter((a) => a.selected)}

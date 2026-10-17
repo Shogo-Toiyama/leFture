@@ -15442,6 +15442,11 @@ a.lecture-tile-card:hover {
   cursor: default;
 }
 
+/* 回答の一部を選んで返信する(SelectionAskAreaの外枠。回答の幅をそのまま使う) */
+.chat-selectable {
+  min-width: 0;
+}
+
 /* 自分のメッセージの折りたたみ(6行 + フェード + 「もっと見る」) */
 .chat-bubble-text {
   line-height: 1.6;
