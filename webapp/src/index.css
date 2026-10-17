@@ -15131,6 +15131,174 @@ a.lecture-tile-card:hover {
   font-variant-numeric: tabular-nums;
 }
 
+/* メッセージの下の操作行(コピー・「…」)。色はトークンで持ち、ペーパー(ライト)側で上書きする */
+.chat-msg {
+  --chat-act-fg: #8e99a6;
+  --chat-act-fg-hover: #e8eaee;
+  --chat-act-bg-hover: rgba(255, 255, 255, 0.09);
+  --chat-act-done: #66bb6a;
+  --chat-act-menu-bg: #171b2b;
+  --chat-act-menu-line: rgba(255, 255, 255, 0.12);
+  --chat-act-menu-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+  --chat-act-more: var(--gold);
+}
+
+.chat-fullscreen.is-paper .chat-msg,
+.chat-page.is-paper .chat-msg,
+.chat-panel.is-paper .chat-msg {
+  --chat-act-fg: #8c7a6b;
+  --chat-act-fg-hover: #3e3228;
+  --chat-act-bg-hover: rgba(62, 50, 40, 0.08);
+  --chat-act-done: #2f7d4a;
+  --chat-act-menu-bg: #ffffff;
+  --chat-act-menu-line: #dfd5c2;
+  --chat-act-menu-shadow: 0 12px 30px rgba(62, 50, 40, 0.18);
+  --chat-act-more: #b45309;
+}
+
+.chat-msg-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: -2px;
+}
+
+.chat-act-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--chat-act-fg);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.chat-act-btn:hover,
+.chat-act-btn[aria-expanded='true'] {
+  background: var(--chat-act-bg-hover);
+  color: var(--chat-act-fg-hover);
+}
+
+.chat-act-btn:focus-visible {
+  outline: 2px solid var(--chat-act-more);
+  outline-offset: 1px;
+}
+
+.chat-act-btn.is-done {
+  color: var(--chat-act-done);
+}
+
+.chat-act-menu-anchor {
+  position: relative;
+}
+
+/* 下端のメッセージでも切れないよう、メニューは上に開く */
+.chat-act-menu {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  bottom: calc(100% + 4px);
+  min-width: 170px;
+  padding: 5px;
+  background: var(--chat-act-menu-bg);
+  border: 1px solid var(--chat-act-menu-line);
+  border-radius: 12px;
+  box-shadow: var(--chat-act-menu-shadow);
+}
+
+.chat-act-menu button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--chat-act-fg-hover);
+  font: inherit;
+  font-size: 0.84rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chat-act-menu button svg {
+  color: var(--chat-act-fg);
+  flex-shrink: 0;
+}
+
+.chat-act-menu button:hover {
+  background: var(--chat-act-bg-hover);
+}
+
+/* 回答の詳細 */
+.chat-detail-card {
+  max-width: 400px;
+}
+
+.chat-detail-list {
+  margin: 0;
+  padding: 1.1rem 1.4rem 1.4rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 18px;
+  font-size: 0.9rem;
+}
+
+.chat-detail-list dt {
+  color: var(--chat-act-fg);
+}
+
+.chat-detail-list dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 自分のメッセージの折りたたみ(6行 + フェード + 「もっと見る」) */
+.chat-bubble-text {
+  line-height: 1.6;
+}
+
+.chat-bubble-text.is-collapsed {
+  max-height: calc(1.6em * 6);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(#000 65%, transparent);
+  mask-image: linear-gradient(#000 65%, transparent);
+}
+
+.chat-bubble-more {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 3px 0 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--chat-act-more, var(--gold));
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.chat-bubble-more svg {
+  transition: transform 0.15s;
+}
+
+.chat-bubble-more svg.is-open {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-bubble-more svg {
+    transition: none;
+  }
+}
+
 .chat-stage {
   display: inline-flex;
   align-items: center;

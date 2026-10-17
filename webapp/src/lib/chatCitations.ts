@@ -175,3 +175,11 @@ export function parseCitationHref(href: string | undefined): { ref: string; spec
   if (!match) return null;
   return { ref: match[1], specs: match[2] ? match[2].split(',').filter(Boolean) : [] };
 }
+
+/**
+ * 回答のMarkdownをコピー用にする: 出典の印(⟦3⟧・[3]など)だけを取り除き、ほかの本文はそのまま残す。
+ * 画面に出る出典番号と同じ判定(linkifyCitations)を通すので、配列の添字 a[1] などは消えない。
+ */
+export function stripCitationMarkers(markdown: string, refs: ReadonlySet<string>): string {
+  return linkifyCitations(markdown, refs).replace(/[ \t]?\[(?:W?\d{1,2})\]\(#cite-[^)]*\)/g, '');
+}

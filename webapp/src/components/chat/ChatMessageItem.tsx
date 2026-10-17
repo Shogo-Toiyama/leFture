@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import { AlertCircle, HeartHandshake, RotateCw } from 'lucide-react';
+import { AlertCircle, ChevronDown, HeartHandshake, RotateCw } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import {
   CHAT_SOURCE_LABEL_KEYS,
@@ -14,6 +14,7 @@ import {
   citationUrl,
   linkifyCitations,
   parseCitationHref,
+  stripCitationMarkers,
 } from '../../lib/chatCitations';
 import { fixBoldPunctuationSpacing, prepareMath } from '../../lib/markdownText';
 import type { LocalChatMessage } from '../../hooks/useChatConversation';
@@ -25,6 +26,7 @@ import {
   type ViewableAttachment,
 } from './AttachmentViewerModal';
 import { CitationPreviewModal } from './CitationPreviewModal';
+import { ChatMessageActions } from './ChatMessageActions';
 import { messageMentionIds, splitMessageText } from '../../lib/chatMentions';
 import { useAttachmentImageUrl } from '../../hooks/useAttachmentImageUrl';
 
@@ -94,6 +96,57 @@ const ChipIcon: React.FC<{ chip: AttachmentChip; size: number }> = ({ chip, size
   return <AttachmentKindIcon kind={chip.kind} size={size} />;
 };
 
+/** 自分のメッセージは、表示でこの行数を超えたら、先頭のこの行数だけ見せて「もっと見る」で全文にする。 */
+const COLLAPSE_OVER_LINES = 10;
+
+/**
+ * 吹き出しの本文。長いときだけ折りたたむ。行数は改行の数ではなく、折り返しを含む表示の行数
+ * (scrollHeight ÷ 行の高さ)で数える。幅が変わる(パネルの開閉・画面の回転)たびに数え直す。
+ */
+const CollapsibleBubbleText: React.FC<{ contentKey: string; children: React.ReactNode }> = ({
+  contentKey,
+  children,
+}) => {
+  const { t } = useLanguage();
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [overflowing, setOverflowing] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => {
+      const style = getComputedStyle(el);
+      const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.6;
+      setOverflowing(el.scrollHeight / lineHeight > COLLAPSE_OVER_LINES + 0.5);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [contentKey]);
+
+  const collapsed = overflowing && !expanded;
+  return (
+    <>
+      <p ref={ref} className={`chat-bubble-text ${collapsed ? 'is-collapsed' : ''}`}>
+        {children}
+      </p>
+      {overflowing && (
+        <button
+          type="button"
+          className="chat-bubble-more"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((open) => !open)}
+        >
+          {expanded ? t('chatShowLess') : t('chatShowMore')}
+          <ChevronDown size={13} className={expanded ? 'is-open' : ''} />
+        </button>
+      )}
+    </>
+  );
+};
+
 const UserMessage: React.FC<{
   message: LocalChatMessage;
   attachments?: ChatAttachment[];
@@ -161,6 +214,12 @@ const UserMessage: React.FC<{
     };
     return allChips.find((c) => localIdOf(c) === id) ?? null;
   };
+  // コピーする本文: 資料の印(⟦att:…⟧)は資料の名前に直す
+  const copyText = splitMessageText(message.content)
+    .map((part) =>
+      part.type === 'text' ? part.text : (inlineChip(part.id)?.title ?? t('chatMentionRemoved'))
+    )
+    .join('');
   return (
     <div className={`chat-msg is-user ${message.failedCode ? 'is-failed' : ''}`}>
       {chips.length > 0 && (
@@ -188,7 +247,7 @@ const UserMessage: React.FC<{
         <div className="chat-bubble">
           {selected && <blockquote className="chat-bubble-quote">{selected}</blockquote>}
           {message.content && (
-            <p className="chat-bubble-text">
+            <CollapsibleBubbleText contentKey={message.content}>
               {splitMessageText(message.content).map((part, i) => {
                 if (part.type === 'text') return <React.Fragment key={i}>{part.text}</React.Fragment>;
                 const chip = inlineChip(part.id);
@@ -215,10 +274,11 @@ const UserMessage: React.FC<{
                   </button>
                 );
               })}
-            </p>
+            </CollapsibleBubbleText>
           )}
         </div>
       )}
+      {message.content && <ChatMessageActions copyText={copyText} />}
       {message.failedCode && (
         <span className="chat-msg-failed">
           <AlertCircle size={13} />
@@ -277,7 +337,7 @@ const AssistantMessage: React.FC<{
   onOpenCitation: (route: string) => void;
   onResend?: () => void;
 }> = ({ message, attachmentsById, onOpenCitation, onResend }) => {
-  const { t, formatNumber } = useLanguage();
+  const { t } = useLanguage();
   const [preview, setPreview] = useState<PreviewState | null>(null);
 
   // 生成中は出典の候補(pendingSources)、完了後は本文で実際に使われた出典(citations)
@@ -295,6 +355,9 @@ const AssistantMessage: React.FC<{
     () => fixBoldPunctuationSpacing(linkifyCitations(prepareMath(message.content), refs)),
     [message.content, refs]
   );
+
+  // コピーは出典の印だけ取り除いた元のMarkdown(prepareMath等で整形する前のもの)
+  const copyText = useMemo(() => stripCitationMarkers(message.content, refs).trim(), [message.content, refs]);
 
   if (message.status === 'crisis') {
     return (
@@ -348,7 +411,6 @@ const AssistantMessage: React.FC<{
   } else if (message.stage === 'writing') {
     stageLabel = t('chatStageWriting');
   }
-  const credits = (message.credits_charged_micro ?? 0) / 1_000_000;
 
   return (
     <div className={`chat-msg is-assistant ${message.status === 'blocked' ? 'is-blocked' : ''}`}>
@@ -447,11 +509,7 @@ const AssistantMessage: React.FC<{
         </div>
       )}
 
-      {message.status === 'complete' && credits > 0 && (
-        <span className="chat-msg-meta">
-          {t('chatCreditsUsed', { credits: formatNumber(credits, { maximumFractionDigits: 1 }) })}
-        </span>
-      )}
+      {message.status === 'complete' && <ChatMessageActions copyText={copyText} detailsFor={message} />}
 
       <CitationPreviewModal
         citation={preview?.citation ?? null}
