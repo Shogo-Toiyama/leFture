@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 import { AnnotatedMarkdown } from './annotations/AnnotatedMarkdown';
+import { AskOnlyRegion } from './annotations/AskOnlyRegion';
 import { blockMarkdownSource, blockRawMarkdownSource, isAnnotatableBlock } from '../lib/reviewCardBlocks';
 import { stripSidCitations } from '../lib/sidCitation';
 import { annotationsForBlock } from '../lib/annotations';
@@ -26,17 +27,26 @@ export const ReviewCardBlockView: React.FC<ReviewCardBlockViewProps> = ({
   annotations,
 }) => {
   if (block.type === 'code') {
-    return (
-      <div className="rc-block rc-block-code">
-        {block.language?.toLowerCase() === 'latex' ? (
+    const explanation = block.explanation && (
+      <p className="rc-code-explanation">{stripSidCitations(block.explanation)}</p>
+    );
+    // 数式(KaTeXの出力)はtextContentにMathMLの複製が混ざり、選択の文字列が崩れるので選択の対象にしない。
+    // 注釈(ハイライト等)は結べないので、コードと説明文は「Ask」「Copy」だけの領域にする。
+    if (block.language?.toLowerCase() === 'latex') {
+      return (
+        <div className="rc-block rc-block-code">
           <LatexBlock source={block.code_string ?? ''} />
-        ) : (
-          <pre>
-            <code>{block.code_string}</code>
-          </pre>
-        )}
-        {block.explanation && <p className="rc-code-explanation">{stripSidCitations(block.explanation)}</p>}
-      </div>
+          {explanation && <AskOnlyRegion>{explanation}</AskOnlyRegion>}
+        </div>
+      );
+    }
+    return (
+      <AskOnlyRegion className="rc-block rc-block-code">
+        <pre>
+          <code>{block.code_string}</code>
+        </pre>
+        {explanation}
+      </AskOnlyRegion>
     );
   }
 

@@ -24,6 +24,8 @@ interface PendingSelection {
   endIdx: number;
   text: string;
   rawMarkdown: string;
+  /** Ask・Copyだけを出す領域(コードブロック等) */
+  askOnly: boolean;
   /** 描画済みブロックのtextContent。選択オフセットの座標系そのもの。 */
   flattenedText: string;
   rect: DOMRect;
@@ -194,6 +196,7 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
             endIdx: offsets.endIdx,
             text: offsets.text,
             rawMarkdown: block.rawMarkdown,
+            askOnly: block.askOnly ?? false,
             flattenedText: block.element.textContent ?? '',
             rect: offsets.rect,
           });
@@ -436,22 +439,26 @@ export const AnnotationLayer: React.FC<AnnotationLayerProps> = ({
         <div
           data-annotation-ui
           className="annotation-toolbar"
-          style={floatingStyle(selection.rect, 320)}
+          style={floatingStyle(selection.rect, selection.askOnly ? 160 : 320)}
           onMouseDown={(e) => e.preventDefault()}
         >
           <div className="annotation-toolbar-row">
-            <button
-              type="button"
-              className={showHighlightRow ? 'is-active' : ''}
-              onClick={() => setShowHighlightRow((v) => !v)}
-            >
-              <span className="annotation-swatch" style={{ background: color }} />
-              Highlight
-            </button>
-            <button type="button" onClick={startNote}>
-              Note
-            </button>
-            {hasSource && (
+            {!selection.askOnly && (
+              <>
+                <button
+                  type="button"
+                  className={showHighlightRow ? 'is-active' : ''}
+                  onClick={() => setShowHighlightRow((v) => !v)}
+                >
+                  <span className="annotation-swatch" style={{ background: color }} />
+                  Highlight
+                </button>
+                <button type="button" onClick={startNote}>
+                  Note
+                </button>
+              </>
+            )}
+            {hasSource && !selection.askOnly && (
               <button type="button" onClick={jumpToSource}>
                 Source
               </button>
