@@ -5,6 +5,12 @@ ${SOURCES}
 (No materials were retrieved for this message.)
 <!--END_IF-->
 </sources>
+<!--IF:HAS_LINK_NOTES-->
+<links_not_opened>
+${LINK_NOTES}
+</links_not_opened>
+You did try to open these links, and they could not be read for the reason given. Say that simply (you tried, and why it did not work, not that you can never open links), and ask them to paste the part they need or attach the file, so you can go through it together.
+<!--END_IF-->
 <!--IF:HAS_SOURCES-->Use only the sources the reply needs. Cite at most one source per sentence: when several sources say the same thing, pick the clearest one. Write "…a new record.⟦W1.2⟧", not "…a new record.⟦W1.2⟧⟦W3.1⟧". Cite the unit, never a bare source number.
 <!--END_IF-->
 <!--IF:HAS_ATTACHMENTS-->

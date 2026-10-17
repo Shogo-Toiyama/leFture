@@ -24,6 +24,9 @@ MATERIALS_MAX_CHARS = 12000
 MATERIALS_MAX_ITEMS = 12
 # 1つの材料の上限(ほかの材料が入る余地を残す)
 MATERIAL_MAX_CHARS = 4000
+# 生徒が示したリンクのページ(課題の指示・参照先)は、それ自体が質問の中心なので長めに渡す。
+# 合計の枠にはMATERIAL_MAX_CHARS分だけ数える(ほかの材料を押し出さない)
+LINK_PAGE_MAX_CHARS = 10000
 
 # 深いもの・具体的なものほど先に入れる(同じ関係の中での順番)
 PRIORITY = {
@@ -35,19 +38,20 @@ PRIORITY = {
     "lecture": 3,
     "course": 4,
     "chat_thread": 4,
+    "link_page": 0,  # 生徒が示したリンクのページ(探索役が開いた)
     "web_page": 1,  # 探索役が開いたWebのページ(断片すべて)
     "web": 2,       # Web検索で当たったページ(最初の断片)
     "attachment_section": 1,  # 添付資料の節(本文)
     "attachment_toc": 3,      # 添付資料の目次
 }
 
-WEB_KINDS = ("web", "web_page")
+WEB_KINDS = ("web", "web_page", "link_page")
 
 
 @dataclass
 class Material:
     key: str
-    kind: str  # course / lecture / topic / transcript / chunk / chat_* / web / web_page / attachment_*
+    kind: str  # course / lecture / topic / transcript / chunk / chat_* / web / web_page / link_page / attachment_*
     label: str
     content: str
     source_type: str = ""
@@ -138,11 +142,12 @@ def select_materials(materials: list[Material]) -> list[Material]:
         room = MATERIALS_MAX_CHARS - used
         if room < 300:
             break
-        limit = min(MATERIAL_MAX_CHARS, room)
+        is_link = m.kind == "link_page"
+        limit = LINK_PAGE_MAX_CHARS if is_link else min(MATERIAL_MAX_CHARS, room)
         if len(m.content) > limit:
             m.content = m.content[:limit].rstrip() + " …"
         out.append(m)
-        used += len(m.content) + len(m.label)
+        used += min(len(m.content), MATERIAL_MAX_CHARS if is_link else len(m.content)) + len(m.label)
     return out
 
 

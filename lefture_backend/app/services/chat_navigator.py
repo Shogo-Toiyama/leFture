@@ -35,10 +35,11 @@ from datetime import date
 from typing import Any, Awaitable, Callable, Optional, Union
 from urllib.parse import urlparse
 
-from app.services.chat_attachments import Attachment, Visibility, render_for_navigator
+from app.services.chat_attachments import Attachment, Visibility, render_for_navigator, split_sections
+from app.services.chat_links import Link, LinkPage, render_for_navigator as render_links_for_navigator
 from app.services.chat_lecture_source import LectureSource, first_sentence
 from app.services.chat_map import ChatMap, MapLecture, StudentMap
-from app.services.chat_materials import Material, material_from_chunk
+from app.services.chat_materials import LINK_PAGE_MAX_CHARS, Material, material_from_chunk
 from app.services.chat_thread_source import ChatThreadSource
 from app.services.helpers.helpers import _load_prompt, _render_conditional_sections
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
@@ -95,6 +96,15 @@ WEB_PAGE_CHARS = 3000
 # 検索で当たっただけ(開いていない)のページを回答役に渡すときの長さ
 WEB_HIT_MATERIAL_CHARS = 1000
 
+# 会話に出てきたリンク(U1…)を開く回数の上限(1ターン)。1回数秒かかり、Tavilyに頼むと無料枠を使う
+MAX_LINK_OPENS_PER_TURN = 3
+# 開いたリンクのページを探索役に見せる長さ(回答役にはchat_materials.LINK_PAGE_MAX_CHARSまで渡す)
+LINK_NAVIGATOR_CHARS = 3000
+# 回答役に渡しきれない長いページは、節(U1/S3)に区切って目次を探索役に見せる(課題が「9.3節を読め」と
+# 指すような場合、先頭だけでは届かない。2026-10-16、Pythonのチュートリアル3.5万字で確認)
+LINK_SECTION_TITLE_CHARS = 80
+LINK_MAX_SECTIONS_SHOWN = 60
+
 # 今の段階で使える操作(3-12の順に増やす)。プロンプトの<!--IF:CAN_...-->と対応する。
 CAPABILITIES = {
     "CAN_OPEN": True,      # 目次を開く(lecture.outline)・文字起こしの範囲を開く
@@ -102,6 +112,7 @@ CAPABILITIES = {
     "CAN_CHAT": True,      # この会話の畳んだ部分・過去のチャット
     "CAN_WEB": True,       # Web検索
     "CAN_ATTACHMENTS": True,  # このスレッドに添付された資料(目次・節を開く。ロードマップ10章)
+    "CAN_LINKS": True,     # 会話に出てきたリンクのページを開く(chat_links.py、2026-10-16)
 }
 
 STATUSES = ["nothing_needed", "enough_now", "need_more"]
@@ -111,7 +122,8 @@ STATUSES = ["nothing_needed", "enough_now", "need_more"]
 NEEDS = ["explicit", "implied", "maybe", "none"]
 FETCH_NEEDS = ("explicit", "implied")
 # 出どころ → 操作の行き先。選んだ出どころの外への操作(例: classだけなのにweb.search)はコードで捨てる。
-_SOURCE_KINDS: dict[str, str] = {"class": "lecture", "web": "web", "past_chat": "chat", "attachment": "attachment"}
+_SOURCE_KINDS: dict[str, str] = {"class": "lecture", "web": "web", "past_chat": "chat", "attachment": "attachment",
+                                  "link": "link"}
 
 # 講義の材料の種類(knowledge_chunks.source_type)。layer → 種類の組。
 # allも講義の種類だけに絞る(チャットのチャンクが入ったときに講義の検索へ混ざらないように、3-14)。
@@ -147,6 +159,10 @@ _CHAT_HANDLE_RE = re.compile(r"^(S|P|H)(\d+)(?:/(?:S(\d+)|T(\d+)|H(\d+)))?$")
 _WEB_HANDLE_RE = re.compile(r"^W\d+$")
 # A{n}(このスレッドに添付された資料。開くと目次) / A{n}/S{k}(その資料の節の本文)
 _ATTACHMENT_HANDLE_RE = re.compile(r"^A(\d+)(?:/S(\d+))?$")
+# U{n}(この会話に出てきたリンク。開くとそのページの本文を今取ってくる) /
+# U{n}/S{k}(長いページの節。開いたページから区切るので、取り直しはしない)
+_LINK_HANDLE_RE = re.compile(r"^U\d+$")
+_LINK_SECTION_RE = re.compile(r"^(U\d+)/S(\d+)$")
 
 
 def available_ops() -> list[str]:
@@ -166,6 +182,8 @@ def available_fetch_sources() -> list[str]:
         sources.append("past_chat")
     if CAPABILITIES["CAN_ATTACHMENTS"]:
         sources.append("attachment")
+    if CAPABILITIES["CAN_LINKS"] and CAPABILITIES["CAN_OPEN"]:
+        sources.append("link")
     return sources
 
 
@@ -306,6 +324,8 @@ class NavigatorInput:
     attachment_visibility: Optional[Visibility] = None
     # 推論が要るターンで、全文が見えていない資料がある: 資料の該当箇所を取ってくるよう明示する(10章)
     must_check_attachments: bool = False
+    # この会話に出てきたリンク(呼び名U1…を振ったもの。chat_links.collect_links)
+    links: list[Link] = field(default_factory=list)
 
     @property
     def can_transcript(self) -> bool:
@@ -313,6 +333,14 @@ class NavigatorInput:
 
     def attachment(self, handle: str) -> Optional[Attachment]:
         return next((a for a in self.attachments if a.handle == handle), None)
+
+    def link(self, handle: str) -> Optional[Link]:
+        return next((x for x in self.links if x.handle == handle), None)
+
+    def link_handles(self) -> list[str]:
+        if not (CAPABILITIES["CAN_LINKS"] and CAPABILITIES["CAN_OPEN"]):
+            return []
+        return [x.handle for x in self.links]
 
     def attachment_scope_handles(self) -> list[str]:
         """1周目から開ける資料: 回答役に全文で見せていないものだけ(全文で見えているものは開く意味が無い)。"""
@@ -557,6 +585,16 @@ class NavState:
     search_materials: list[Material] = field(default_factory=list)
     # このターンのWeb検索で当たったページ(呼び名 → ページ)
     web_pages: dict[str, WebPage] = field(default_factory=dict)
+    # 開いたリンクの結果(取れた・取れなかった・どの取り方か。記録用)
+    link_fetches: list[dict] = field(default_factory=list)
+    # 開けなかったリンク(URL, 理由)。回答役に「開こうとしたが読めなかった」と伝える
+    link_failures: list[tuple[str, str]] = field(default_factory=list)
+    # 節に区切った長いページ(U1 → (ページの名前, URL, 本文, 節の位置))
+    link_sections: dict[str, tuple[str, str, str, list[tuple[int, int]]]] = field(default_factory=dict)
+
+    def link_opens_left(self) -> int:
+        used = sum(1 for h in self.opened if _LINK_HANDLE_RE.match(h))
+        return max(0, MAX_LINK_OPENS_PER_TURN - used)
 
     def web_searches_left(self) -> int:
         used = sum(1 for o in self.outcomes if isinstance(o, WebSearchOutcome))
@@ -593,6 +631,10 @@ class NavigationResult:
     opened_refs: list[dict]
     # 1周目の前に前のターンで開いたものを読み直した時間(速度の計測用)
     prepare_ms: int = 0
+    # 開いたリンクの結果(どのサイトがよく失敗するかを見て、専用の取り方を足すため)
+    links: list[dict] = field(default_factory=list)
+    # 開けなかったリンク(URL, 理由)。回答役に渡す
+    link_failures: list[tuple[str, str]] = field(default_factory=list)
 
     @property
     def failed_before_any_fetch(self) -> bool:
@@ -606,6 +648,7 @@ class NavigationResult:
             "goal": self.goal,
             "prepare_ms": self.prepare_ms,
             "laps": [lap.to_json() for lap in self.laps],
+            **({"links": self.links} if self.links else {}),
         }
 
 
@@ -614,6 +657,8 @@ class NavigationResult:
 SearchFn = Callable[[list[FindRequest]], Awaitable[list[Union[list[dict], Exception]]]]
 # Web検索1回(クエリ → [{title, url, snippets}])。失敗は例外。
 WebSearchFn = Callable[[str], Awaitable[list[dict]]]
+# リンク先の本文を取る(chat_links.fetch_link)。例外は投げず、取れなかったらLinkPage.errorに理由
+LinkFetchFn = Callable[[str], Awaitable[LinkPage]]
 
 
 @dataclass
@@ -622,6 +667,7 @@ class NavigatorTools:
     source: LectureSource
     chat_source: Optional[ChatThreadSource] = None
     web_search: Optional[WebSearchFn] = None
+    link_fetch: Optional[LinkFetchFn] = None
 
 
 # =========================================================
@@ -659,6 +705,7 @@ def build_system_prompt(can_transcript: bool = True) -> str:
         "CAN_OPEN_CHAT": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_CHAT"],
         "CAN_OPEN_WEB": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_WEB"],
         "CAN_OPEN_ATTACHMENTS": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_ATTACHMENTS"],
+        "CAN_OPEN_LINKS": CAPABILITIES["CAN_OPEN"] and CAPABILITIES["CAN_LINKS"],
     })
     return template.replace("${MAX_LAPS}", str(MAX_LAPS)).replace("${MAX_OPS_PER_LAP}", str(MAX_OPS_PER_LAP))
 
@@ -669,7 +716,8 @@ def openable_handles(nav_input: NavigatorInput, state: NavState) -> list[str]:
     m = nav_input.student_map
     screen_topic = [nav_input.screen_topic_handle()] if nav_input.screen_topic_handle() else []
     chat_scope = nav_input.chat_map.scope_handles() if nav_input.chat_map and CAPABILITIES["CAN_CHAT"] else []
-    handles = (m.scope_handles() + chat_scope + nav_input.attachment_scope_handles() + screen_topic
+    links = nav_input.link_handles() if state.link_opens_left() > 0 else []
+    handles = (m.scope_handles() + chat_scope + nav_input.attachment_scope_handles() + links + screen_topic
                + state.previous_turn_handles + state.surfaced_not_opened())
     return [h for h in _dedupe(handles) if h not in state.opened and _plan_allows_handle(nav_input, h)]
 
@@ -754,6 +802,8 @@ def _op_kind(raw: dict) -> Optional[str]:
             return "web"
         if _ATTACHMENT_HANDLE_RE.match(handle):
             return "attachment"
+        if _LINK_HANDLE_RE.match(handle) or _LINK_SECTION_RE.match(handle):
+            return "link"
         return "chat" if handle[:1] in ("S", "P", "H") else "lecture"
     return None
 
@@ -778,6 +828,7 @@ def validate_operations(
     layers = set(available_layers(nav_input.blocked_source_types))
     web_left = state.web_searches_left()
     search_left = state.searches_left()
+    link_left = state.link_opens_left()
 
     allowed_kinds = None
     if need is not None:
@@ -829,9 +880,12 @@ def validate_operations(
             parsed_chat = parse_chat_handle(handle or "") if CAPABILITIES["CAN_CHAT"] else None
             is_web = bool(_WEB_HANDLE_RE.match(handle or "")) and handle in state.web_pages
             is_attachment = CAPABILITIES["CAN_ATTACHMENTS"] and bool(_ATTACHMENT_HANDLE_RE.match(handle or ""))
+            is_link = ((bool(_LINK_HANDLE_RE.match(handle or "")) and handle in nav_input.link_handles())
+                       or _link_section(handle or "", state) is not None)
             if not _plan_allows_handle(nav_input, handle or ""):
                 reason = "transcript_not_in_plan"
-            elif handle not in openable or (parsed is None and parsed_chat is None and not is_web and not is_attachment):
+            elif (handle not in openable
+                  or (parsed is None and parsed_chat is None and not is_web and not is_attachment and not is_link)):
                 reason = "handle_not_openable"
             elif parsed and parsed.kind == "transcript" and parsed.sid_end - parsed.sid_start + 1 > TRANSCRIPT_MAX_SENTENCES:
                 reason = "transcript_range_too_long"
@@ -868,6 +922,11 @@ def validate_operations(
                 dropped.append({"op": raw, "reason": "web_search_limit"})
                 continue
             web_left -= 1
+        if isinstance(req, OpenRequest) and _LINK_HANDLE_RE.match(req.handle):
+            if link_left <= 0:
+                dropped.append({"op": raw, "reason": "link_limit"})
+                continue
+            link_left -= 1
         seen.add(req.key())
         requests.append(req)
     return requests, dropped
@@ -884,6 +943,8 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
         if CAPABILITIES["CAN_ATTACHMENTS"] and nav_input.attachments:
             map_text += "\n\n" + render_for_navigator(
                 nav_input.attachments, nav_input.attachment_visibility or Visibility(full=set()))
+        if nav_input.link_handles():
+            map_text += "\n\n" + render_links_for_navigator(nav_input.links)
         parts.append(f"<map>\n{map_text}\n</map>")
         if state.previous_turn_text and CAPABILITIES["CAN_OPEN"]:
             parts.append(f"<previous_turn_opened>\n{state.previous_turn_text}\n</previous_turn_opened>")
@@ -958,6 +1019,11 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
         left = state.web_searches_left()
         nxt.append(f"Web searches left for this reply: {left} of {MAX_WEB_SEARCHES_PER_TURN}"
                    + (" (web.search is no longer available)" if left == 0 else ""))
+    if nav_input.link_handles():
+        left = state.link_opens_left()
+        unopened = [h for h in nav_input.link_handles() if h not in state.opened]
+        nxt.append(f"Links you can still open for this reply: {left} of {MAX_LINK_OPENS_PER_TURN}"
+                   + (f" (not opened yet: {', '.join(unopened)})" if left and unopened else ""))
     if CAPABILITIES["CAN_OPEN"]:
         nxt.append("Seen but not opened yet (open one only if it likely holds what is still missing): "
                    + (", ".join(state.surfaced_not_opened()) or "nothing"))
@@ -1611,6 +1677,86 @@ def open_web_page(page: WebPage) -> Opened:
     return Opened(handle=page.handle, text=text, material=web_material(page, opened=True))
 
 
+# 取れなかった理由 → 探索役に見せる説明(回答役には、開けなかったことをgoalで伝える)
+_LINK_ERRORS = {
+    "login_required": "the page needs a login (a course site or a private document)",
+    "not_found": "the page does not exist (check the link)",
+    "blocked": "the site blocks automated access",
+    "no_text": "no readable text could be taken from it",
+    "unsafe_url": "this link cannot be opened",
+    "too_large": "the file is too large",
+    "unsupported_type": "the file type cannot be read",
+    "unreadable_pdf": "the PDF could not be read",
+}
+
+
+async def open_link(link: Link, fetch: Optional[LinkFetchFn], state: NavState) -> Opened:
+    """会話に出てきたリンクを開く。取れたら本文を材料に、取れなければ理由だけを探索役に見せる。"""
+    if fetch is None:
+        return Opened(handle=link.handle, text=f"{link.handle}: (links cannot be opened right now)", material=None)
+    page = await fetch(link.url)
+    state.link_fetches.append({"handle": link.handle, **page.log()})
+    if not page.ok:
+        reason = _LINK_ERRORS.get(page.error or "", "it could not be read")
+        state.link_failures.append((link.url, reason))
+        return Opened(handle=link.handle, material=None,
+                      text=f"{link.handle} {link.url}: could not be opened — {reason}. The reply should say so and "
+                           "ask the student to paste the part they need or attach the file.")
+    domain = link.domain
+    title = page.title or domain
+    label = f"{title} ({domain})" if domain and title != domain else title
+    shown = page.text[:LINK_NAVIGATOR_CHARS]
+    more, surfaced = "", []
+    if len(page.text) > LINK_PAGE_MAX_CHARS:
+        # 回答役にも先頭しか渡らない長いページ: 節の目次を見せ、要る節を開けるようにする
+        bounds = split_sections(page.text)
+        state.link_sections[link.handle] = (label, link.url, page.text, bounds)
+        rows = [f"{link.handle}/S{i} {_section_title(page.text[a:b])} ({b - a} chars)"
+                for i, (a, b) in enumerate(bounds, start=1)][:LINK_MAX_SECTIONS_SHOWN]
+        surfaced = [r.split(" ", 1)[0] for r in rows]
+        more = (f"\n(the page continues; the answerer sees only the first {LINK_PAGE_MAX_CHARS} characters. "
+                "If the message is about a later part, open that section.)\nSections:\n" + "\n".join(rows))
+    elif len(page.text) > LINK_NAVIGATOR_CHARS:
+        more = "\n(the page continues; the answerer sees all of it)"
+    return Opened(
+        handle=link.handle,
+        text=f"{link.handle} — {label}\n{link.url}\n{shown}{more}",
+        material=Material(key=f"link:{link.url}", kind="link_page", label=label, content=page.text,
+                          source_type="web", url=link.url,
+                          metadata={"title": page.title, "domain": domain, "via": page.via}, handle=link.handle),
+        surfaced=surfaced,
+    )
+
+
+def _section_title(text: str) -> str:
+    """節の名前: 最初の空でない行(見出しのことが多い)。"""
+    first = next((ln.strip().lstrip("#").strip() for ln in text.splitlines() if ln.strip()), "")
+    return first[:LINK_SECTION_TITLE_CHARS] + ("…" if len(first) > LINK_SECTION_TITLE_CHARS else "")
+
+
+def _link_section(handle: str, state: NavState) -> Optional[tuple[str, int]]:
+    """U1/S3 → ("U1", 3)。そのページを開いて節に区切ってあり、番号が範囲内のときだけ。"""
+    m = _LINK_SECTION_RE.match(handle)
+    if not m or m.group(1) not in state.link_sections:
+        return None
+    index = int(m.group(2))
+    return (m.group(1), index) if 1 <= index <= len(state.link_sections[m.group(1)][3]) else None
+
+
+def open_link_section(handle: str, state: NavState) -> Opened:
+    base, index = _link_section(handle, state)
+    label, url, text, bounds = state.link_sections[base]
+    a, b = bounds[index - 1]
+    body = text[a:b].strip()
+    title = _section_title(body)
+    return Opened(
+        handle=handle,
+        text=f"{handle} — {label} / {title}\n{body[:LINK_NAVIGATOR_CHARS]}",
+        material=Material(key=f"link:{url}#S{index}", kind="link_page", label=f"{label} — {title}", content=body,
+                          source_type="web", url=url, metadata={"section": index}, handle=handle),
+    )
+
+
 async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavState, tools: NavigatorTools) -> None:
     """検証済みの操作を並列に実行し、stateに足す。"""
     finds = [r for r in record.requests if isinstance(r, FindRequest) and r.target != "web.search"]
@@ -1645,6 +1791,11 @@ async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavSt
     async def run_open(req: OpenRequest) -> Opened:
         if req.handle in state.web_pages:
             return open_web_page(state.web_pages[req.handle])
+        link = nav_input.link(req.handle)
+        if link is not None:
+            return await open_link(link, tools.link_fetch, state)
+        if _link_section(req.handle, state) is not None:
+            return open_link_section(req.handle, state)
         try:
             return await open_handle(req.handle, nav_input, tools.source, tools.chat_source)
         except Exception as e:
@@ -1767,7 +1918,8 @@ async def navigate(
     materials = opened_materials + [m for m in state.search_materials if not _covered_by_opened(m, opened_materials)]
     refs = [op.ref for op in state.opened.values() if op.ref]
     return NavigationResult(materials=materials, goal=goal, laps=state.laps, stop_reason=stop_reason,
-                            opened_refs=refs, prepare_ms=prepare_ms)
+                            opened_refs=refs, prepare_ms=prepare_ms, links=state.link_fetches,
+                            link_failures=state.link_failures)
 
 
 def _covered_by_opened(hit: Material, opened: list[Material]) -> bool:
@@ -1806,7 +1958,8 @@ def _find_kind(target: str) -> str:
 
 def _open_kind(handle: str) -> str:
     """開く呼び名の種類(画面の表示用): web / attachments / chats / lectures。"""
-    if _WEB_HANDLE_RE.match(handle):
+    # リンクを開くのも、画面ではWebを見ている表示にする(Web・Flutterどちらの画面もそのまま出せる)
+    if _WEB_HANDLE_RE.match(handle) or _LINK_HANDLE_RE.match(handle) or _LINK_SECTION_RE.match(handle):
         return "web"
     if _ATTACHMENT_HANDLE_RE.match(handle):
         return "attachments"

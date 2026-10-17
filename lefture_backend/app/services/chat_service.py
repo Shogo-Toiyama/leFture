@@ -109,6 +109,7 @@ from app.services.chat_screen import (
     load_screen_page,
 )
 from app.services.chat_thread_source import DbChatThreadSource
+from app.services.chat_links import collect_links, fetch_link
 from app.services.profile_store import load_chat_memory
 from app.services.chat_summary import (
     FOLD_TRIGGER_TURNS,
@@ -1250,6 +1251,7 @@ async def _gather_materials(
             attachments=turn.attachments,
             attachment_visibility=attachment_visibility,
             must_check_attachments=must_check_attachments,
+            links=_turn_links(turn),
         )
         # 速度の計測: ベクトル化1回ごと・検索RPC1本ごとの所要時間(ユーザー用クライアントの
         # 1本目が接続の張り直しで遅いかどうかも、rpc_msの先頭で分かる)
@@ -1271,6 +1273,7 @@ async def _gather_materials(
             source=DbLectureSource(admin_client, turn.user_id, blocked_source_types),
             chat_source=chat_source,
             web_search=lambda q: brave_search(q, billing, timeout=WEB_SEARCH_TIMEOUT_SECONDS),
+            link_fetch=lambda url: fetch_link(url, billing),
         )
 
         async def on_lap(lap: int) -> None:
@@ -1312,6 +1315,19 @@ def answer_options(model: str, effort: Optional[str], max_output_tokens: int) ->
         # Claude 5系も既定値(1)以外のtemperatureを受け付けない(LiteLLMが外して送るが、明示しておく)
         return LLMOptions(temperature=1.0, max_tokens=limit, reasoning_effort=effort)
     return LLMOptions(max_tokens=limit, reasoning_effort=effort)
+
+
+def _turn_links(turn: PreparedTurn) -> list:
+    """
+    探索役が開けるリンク(U1…)。大事な順に集める: 今のメッセージ → 選択テキスト → 画面のページ →
+    添付資料 → それより前の生徒の発言(新しい順)。開けるのは会話に出てきたURLだけ(chat_links.py)。
+    """
+    sources: list[tuple[str, str]] = [("message", turn.content or ""), ("selection", turn.selected_text or "")]
+    if turn.screen_page is not None:
+        sources.append(("screen", turn.screen_page.text))
+    sources += [(f"attachment:{a.handle}", a.content) for a in turn.attachments]
+    sources += [("earlier", r.get("content") or "") for r in reversed(turn.history_rows) if r.get("role") == "user"]
+    return collect_links(sources)
 
 
 def _previous_turn_refs(history_rows: list[dict]) -> list[dict]:
@@ -1361,6 +1377,7 @@ def _build_answer_messages(
     student_memos: Optional[list[dict]] = None,
     open_questions: Optional[list[str]] = None,
     attachment_visibility: Optional[Visibility] = None,
+    link_failures: Optional[list[tuple[str, str]]] = None,
 ) -> list[Message]:
     """
     並びは「system(固定の指示+プロフィール → 要約 → 会話の前提) → 原文の履歴 → 今回の文脈+質問」。
@@ -1394,12 +1411,15 @@ def _build_answer_messages(
         "HAS_ATTACHMENTS": bool(attachments_text),
         "HAS_AI_CODE_RULE": bool(ai_code_rule),
         "HAS_SCREEN_CONTEXT": bool(screen_context),
+        "HAS_LINK_NOTES": bool(link_failures),
     })
     turn_message = fill_placeholders(turn_template, {
         "SOURCES": format_sources_block(materials),
         "ATTACHMENTS": attachments_text,
         "AI_CODE_RULE": ai_code_rule,
         "SCREEN_CONTEXT": screen_context,
+        # 探索役が開こうとして読めなかったリンク(ログインが要る授業サイトなど)
+        "LINK_NOTES": "\n".join(f"- {url}: {reason}" for url, reason in link_failures or []),
         "REPLY_LANGUAGE": decision.reply_language,
         "MESSAGE": turn.message_for_prompt,
     })
@@ -1887,6 +1907,7 @@ async def run_chat_turn(
             turn, decision, memory, history, profile, materials,
             student_memos=student_memos, open_questions=open_questions,
             attachment_visibility=attachment_visibility,
+            link_failures=navigation.link_failures if navigation else None,
         )
         messages, trimmed_turns = fit_answer_input(messages)
         answer_model, answer_effort = ANSWER_MODEL, ANSWER_REASONING_EFFORT

@@ -28,3 +28,6 @@ pypdfium2
 python-docx
 python-pptx
 Pillow
+# チャットでリンクを開く(app/services/chat_links.py)。HTMLの本文の取り出しと、YouTubeの字幕
+trafilatura==2.3.1
+youtube-transcript-api==1.2.4

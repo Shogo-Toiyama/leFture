@@ -82,6 +82,8 @@ PRICE_MATRIX = {
     },
     "count": {  # $ per unit
         "brave/llm_context": 0.005,
+        # 成功1件0.2クレジット × 従量課金$0.008/クレジット(失敗は無料。月1,000クレジットまでは無料枠)
+        "tavily/extract_basic": 0.0016,
     }
 }
 
