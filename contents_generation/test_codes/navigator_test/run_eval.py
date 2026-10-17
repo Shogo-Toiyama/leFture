@@ -413,9 +413,12 @@ async def main() -> None:
     ap.add_argument("--only", nargs="*", help="case ids")
     ap.add_argument("--concurrency", type=int, default=6)
     ap.add_argument("--model", help="探索役のモデルを差し替えて比べる(例: gemini/gemini-2.5-flash-lite)")
+    ap.add_argument("--effort", help="推論の深さを差し替える(none/low/medium、'default'でモデルの既定)")
     args = ap.parse_args()
     if args.model:
         nav.NAVIGATOR_MODEL = args.model
+    if args.effort:
+        nav.NAVIGATOR_REASONING_EFFORT = None if args.effort == "default" else args.effort
 
     billing = BillingEngine(task_type="navigator_eval")
     llm = UnifiedLLM(billing)
@@ -431,6 +434,8 @@ async def main() -> None:
 
     RESULTS_DIR.mkdir(exist_ok=True)
     prefix = "prod" if not args.model else "prod-" + args.model.split("/")[-1]
+    if args.effort:
+        prefix += f"-{args.effort}"
     path = RESULTS_DIR / f"{prefix}_{args.set}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     path.write_text(json.dumps({"model": nav.NAVIGATOR_MODEL, "capabilities": nav.CAPABILITIES, "set": args.set,
                                 "runs": [rows], "cost_usd": billing.total_usd()}, ensure_ascii=False, indent=2), encoding="utf-8")
