@@ -14740,6 +14740,83 @@ a.lecture-tile-card:hover {
   outline-offset: 3px;
 }
 
+/* ── パネルの幅を変えるつかみ部分(ChatDockResizer) ────────────────────────
+   パネルの左端に重ねる。当たり判定は14pxで、見える線は普段は出さずホバーで太くする。
+   ドラッグ中はbodyに .is-resizing-chat を付け、文字の選択と、iframeへのポインターを止める。 */
+
+.chat-dock-resizer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: var(--chat-dock-width, 460px);
+  width: 14px;
+  transform: translateX(50%);
+  z-index: 71; /* パネル(70)の手前 */
+  display: flex;
+  justify-content: center;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+
+.chat-dock-resizer::before {
+  content: '';
+  width: 1px;
+  height: 100%;
+  background: transparent;
+  transition: width 0.15s ease, background-color 0.15s ease;
+}
+
+/* 真ん中の持ち手(縦の丸い棒)。ホバーしたときだけ出る */
+.chat-dock-resizer::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 44px;
+  border-radius: 3px;
+  background: var(--gold);
+  transform: translate(-50%, -50%) scaleY(0.6);
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.chat-dock-resizer:hover::before,
+.chat-dock-resizer:focus-visible::before,
+.chat-dock-resizer.is-dragging::before {
+  width: 4px;
+  background: rgba(255, 179, 0, 0.55);
+}
+
+.chat-dock-resizer:hover::after,
+.chat-dock-resizer:focus-visible::after,
+.chat-dock-resizer.is-dragging::after {
+  opacity: 1;
+  transform: translate(-50%, -50%) scaleY(1);
+}
+
+.chat-dock-resizer.is-dragging::before {
+  background: rgba(255, 179, 0, 0.8);
+}
+
+body.is-resizing-chat {
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body.is-resizing-chat iframe {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-dock-resizer::before,
+  .chat-dock-resizer::after {
+    transition: none;
+  }
+}
+
 /* ── パネル(右固定 / ボトムシート) ──────────────────────────────────── */
 
 .chat-panel {

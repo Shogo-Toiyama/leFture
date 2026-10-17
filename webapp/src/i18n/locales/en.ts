@@ -748,6 +748,7 @@ export const en = {
   // Chat (横断チャットボット)
   chatTitle: 'Chat',
   chatOpen: 'Open chat',
+  chatPanelResize: 'Drag to resize the chat (double-click to reset)',
   chatNewConversation: 'New chat',
   chatHistory: 'Conversations',
   chatOpenFullScreen: 'Open full screen',

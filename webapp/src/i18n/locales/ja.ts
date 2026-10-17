@@ -746,6 +746,7 @@ export const ja: Record<keyof typeof en, string> = {
   // Chat (横断チャットボット)
   chatTitle: 'チャット',
   chatOpen: 'チャットを開く',
+  chatPanelResize: 'ドラッグでチャットの幅を変える(ダブルクリックで元に戻す)',
   chatNewConversation: '新しい会話',
   chatHistory: '会話の一覧',
   chatOpenFullScreen: '全画面で開く',
