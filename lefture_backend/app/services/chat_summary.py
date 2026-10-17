@@ -31,7 +31,17 @@ LEVEL2_TRIGGER_BLOCKS = 15
 LEVEL2_FOLD_BLOCKS = 10
 
 # 履歴・要約に使う返答の状態。途中停止(stopped)を足すときはここに加える。
-KEPT_ASSISTANT_STATUSES = ("complete",)
+# 往復として残す返答の状態。stopped(生徒が途中で止めた)も、止めたところまでの本文を残す
+# (返答の前に止めて本文が空のときは、往復にせず、その質問を次の質問の前につなげる。pair_turnsを参照)
+KEPT_ASSISTANT_STATUSES = ("complete", "stopped")
+# 返答の前に止めた質問と、次の質問の間に挟む一行。打ちかけで送って止め続きを送ったのか、取り下げて
+# 聞き直したのかは、意図を決めつけずにモデルに次の質問の中身から判断させる(2026-10-17に合意)
+STOPPED_BEFORE_REPLY_NOTE = "[Stopped before you replied. The next message may continue or replace this one.]"
+
+
+def join_after_stop(stopped: list[str], current: str) -> str:
+    """返答の前に止めた質問(古い順)を、今の質問の前につなげる(間に止めたことの一行を挟む)。"""
+    return "\n\n".join([*(f"{text}\n\n{STOPPED_BEFORE_REPLY_NOTE}" for text in stopped), current])
 
 HEADER_CATEGORIES = ("style_preferences", "context", "purpose", "unresolved")
 EMPTY_HEADER: dict[str, list] = {k: [] for k in HEADER_CATEGORIES}
@@ -128,35 +138,63 @@ class Turn:
     user_selected_text: Optional[str] = None
 
 
-def pair_turns(rows: list[dict], first_number: int = 1) -> list[Turn]:
-    """
-    古い順のメッセージ行を往復にまとめる。返答が完了していない往復
-    (blocked/crisis/error/streaming)は、そのuserメッセージごと捨てる。
-    番号は捨てなかった往復だけで数える(後ろの往復の状態は後から変わらないので、
-    一度付いた番号はずれない)。
-    """
+def _is_unanswered_stop(row: dict) -> bool:
+    """返答の前に止めた(本文が空のstopped)返答。"""
+    return row.get("status") == "stopped" and not (row.get("content") or "").strip()
+
+
+def _pair(rows: list[dict], first_number: int) -> tuple[list[Turn], list[dict]]:
     turns: list[Turn] = []
     pending_user: Optional[dict] = None
+    # 返答の前に止めた質問(打ちかけで送って慌てて止めた、など)。往復にはせず、次の質問の前につなげる
+    # (間にSTOPPED_BEFORE_REPLY_NOTEを挟む。続きか置き換えかは、モデルが次の質問の中身から判断する)
+    carried: list[dict] = []
     for row in rows:
         if row.get("role") == "user":
             pending_user = row
             continue
         if row.get("role") == "assistant":
-            if row.get("status") in KEPT_ASSISTANT_STATUSES and pending_user is not None:
+            if pending_user is not None and _is_unanswered_stop(row):
+                carried.append(pending_user)
+            elif row.get("status") in KEPT_ASSISTANT_STATUSES and pending_user is not None:
+                carried_now, carried = carried, []
+                users = [*carried_now, pending_user]
                 turns.append(Turn(
                     number=first_number + len(turns),
                     user_message_id=pending_user.get("id"),
                     assistant_message_id=row.get("id"),
                     # 資料の印(⟦att:id⟧)は、資料の一覧が無いところ(要約・過去のチャットの検索・索引・プロフィール)
                     # では [attached material] にする。回答役の履歴はrun_chat_turnが呼び名つきに直してから渡す
-                    user_content=plain_mentions(pending_user.get("content") or ""),
+                    user_content=join_after_stop([plain_mentions(u.get("content") or "") for u in carried_now],
+                                                 plain_mentions(pending_user.get("content") or "")),
                     assistant_content=row.get("content") or "",
                     assistant_created_at=row.get("created_at"),
                     reply_language=(row.get("router") or {}).get("reply_language"),
-                    user_selected_text=(pending_user.get("context") or {}).get("selected_text"),
+                    user_selected_text=next(
+                        (sel for u in reversed(users) if (sel := (u.get("context") or {}).get("selected_text"))),
+                        None),
                 ))
             pending_user = None
-    return turns
+    return turns, carried
+
+
+def pair_turns(rows: list[dict], first_number: int = 1) -> list[Turn]:
+    """
+    古い順のメッセージ行を往復にまとめる。返答が完了していない往復
+    (blocked/crisis/error/streaming)は、そのuserメッセージごと捨てる。
+    返答の前に止めた往復(本文が空のstopped)は、その質問を次の往復の質問の前につなげる。
+    番号は捨てなかった往復だけで数える(後ろの往復の状態は後から変わらないので、
+    一度付いた番号はずれない)。
+    """
+    return _pair(rows, first_number)[0]
+
+
+def unanswered_after_stop(rows: list[dict]) -> list[dict]:
+    """
+    最後の往復の後ろに残った、返答の前に止めた質問の行(古い順)。次に送る質問の前につなげて読ませる
+    (pair_turnsでは、つなげる先の質問がまだ無いので往復に入らない)。
+    """
+    return _pair(rows, 1)[1]
 
 
 def rows_after_fold_point(rows: list[dict], fold_end_message_id: Optional[str]) -> list[dict]:

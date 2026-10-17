@@ -9,8 +9,9 @@ export type ChatMessageRole = 'user' | 'assistant';
 /**
  * streaming: 生成中 / complete: 完了 / error: 失敗(課金なし)
  * blocked: 不適切な内容として断った(課金なし) / crisis: 危機対応の定型文(課金なし)
+ * stopped: 生徒が途中で止めた(止めたところまでの本文。空のこともある。発生した原価の分だけ課金)
  */
-export type ChatMessageStatus = 'streaming' | 'complete' | 'error' | 'blocked' | 'crisis';
+export type ChatMessageStatus = 'streaming' | 'complete' | 'error' | 'blocked' | 'crisis' | 'stopped';
 
 /**
  * knowledge_chunks.source_type と同じ値。出典からどの画面へ飛ぶかを決める。
@@ -123,6 +124,8 @@ export interface ChatMessageContext {
   attachments?: Array<{ id: string; mode: 'full' | 'mention' }>;
   /** assistantのみ: このターンで全文読みを外した資料など */
   attachment_notice?: ChatAttachmentNotice;
+  /** assistantのみ: 読み込みの途中で止めたため使えなくなった資料 */
+  stopped_attachments?: string[];
 }
 
 export interface ChatMessage {

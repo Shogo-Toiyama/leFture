@@ -59,6 +59,17 @@ export async function listChatMessages(threadId: string): Promise<ChatMessage[]>
   return (data ?? []).map(normalizeMessage);
 }
 
+/**
+ * 生成中の返答を止める。サーバーが止めたところまでで確定した行を返す(押したのと同時に完了していれば、その行)。
+ * 走っている呼び出しは待たないので、ふつうは1秒ほどで返る。
+ */
+export async function stopChatMessage(messageId: string): Promise<ChatMessage> {
+  const { message } = await apiFetch<{ message: Record<string, unknown> }>(`/chat/messages/${messageId}/stop`, {
+    method: 'POST',
+  });
+  return normalizeMessage(message);
+}
+
 export async function getChatMessage(messageId: string): Promise<ChatMessage | null> {
   const { data, error } = await supabase
     .from('chat_messages')

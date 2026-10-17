@@ -1,6 +1,7 @@
 # app/services/helpers/llm_unified.py
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, Dict, List, Optional, Literal
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional, Literal
+import asyncio
 import base64
 import json
 import time
@@ -435,6 +436,8 @@ class StreamState:
     cache_write_tokens: int = 0
     elapsed_seconds: float = 0.0
     usage_estimated: bool = False
+    # stop_eventで途中で打ち切った(output_textは打ち切ったところまで、使用量は概算)
+    stopped: bool = False
 
 
 def _cache_token_counts(usage: Any) -> tuple[int, int]:
@@ -454,9 +457,38 @@ def _cache_token_counts(usage: Any) -> tuple[int, int]:
 _REASONING_EFFORT_PASSTHROUGH_MODELS = frozenset({"gpt-6-luna"})
 
 
+async def _until_stopped(response: Any, stop_wait: "Optional[asyncio.Future]") -> AsyncIterator[Any]:
+    """ストリームのチャンクを、stop_waitが終わるまで流す(次のチャンクと停止を競わせる)。"""
+    iterator = response.__aiter__()
+    while True:
+        if stop_wait is None:
+            try:
+                yield await iterator.__anext__()
+            except StopAsyncIteration:
+                return
+            continue
+        if stop_wait.done():
+            return
+        next_chunk = asyncio.ensure_future(iterator.__anext__())
+        await asyncio.wait({next_chunk, stop_wait}, return_when=asyncio.FIRST_COMPLETED)
+        if not next_chunk.done():
+            next_chunk.cancel()
+            try:
+                await next_chunk
+            except BaseException:
+                pass
+            return
+        try:
+            yield next_chunk.result()
+        except StopAsyncIteration:
+            return
+
+
 class UnifiedLLM:
-    def __init__(self, billing_engine: BillingEngine):
+    def __init__(self, billing_engine: BillingEngine, guard: Optional[Callable[[], Awaitable[None]]] = None):
         self.billing = billing_engine
+        # 呼ぶ直前に待つ確認(チャットの途中停止、chat_stop.TurnStop.check)。例外を投げれば呼ばない
+        self.guard = guard
 
     def _build_kwargs(
         self,
@@ -527,6 +559,8 @@ class UnifiedLLM:
         options: Optional[LLMOptions] = None,
     ) -> LLMResult:
         options = options or LLMOptions()
+        if self.guard is not None:
+            await self.guard()
         kwargs = self._build_kwargs(model, messages, options)
 
         # 実行時間の概算計測
@@ -592,6 +626,7 @@ class UnifiedLLM:
         messages: List[Message],
         state: StreamState,
         options: Optional[LLMOptions] = None,
+        stop_event: Optional[asyncio.Event] = None,
     ) -> AsyncIterator[str]:
         """
         テキストの差分(delta)を順次yieldするストリーミング版。終了後、
@@ -603,8 +638,13 @@ class UnifiedLLM:
             async for delta in llm.generate_stream(model, messages, state):
                 ...
             # ここでstate.output_text / state.finish_reason が確定している
+
+        stop_event: 立つとすぐ接続を閉じて打ち切る(チャットの途中停止)。思考中でチャンクが来ない間も効く。
+        打ち切ったときはstate.stopped、使用量は入力と書いた分の概算(見えない思考トークンは数えられない)。
         """
         options = options or LLMOptions()
+        if self.guard is not None:
+            await self.guard()
         kwargs = self._build_kwargs(model, messages, options)
         kwargs["stream"] = True
         kwargs["stream_options"] = {"include_usage": True}
@@ -616,23 +656,39 @@ class UnifiedLLM:
             raise RuntimeError(f"LiteLLM Error with model {model}: {e}") from e
 
         parts: List[str] = []
-        async for chunk in response:
-            usage = getattr(chunk, "usage", None)
-            if usage is not None:
-                state.input_tokens = int(getattr(usage, "prompt_tokens", 0) or 0) or state.input_tokens
-                state.output_tokens = int(getattr(usage, "completion_tokens", 0) or 0) or state.output_tokens
-                read, write = _cache_token_counts(usage)
-                state.cache_read_tokens = read or state.cache_read_tokens
-                state.cache_write_tokens = write or state.cache_write_tokens
-            if not chunk.choices:
-                continue
-            choice = chunk.choices[0]
-            if getattr(choice, "finish_reason", None):
-                state.finish_reason = choice.finish_reason
-            delta = getattr(getattr(choice, "delta", None), "content", None)
-            if delta:
-                parts.append(delta)
-                yield delta
+        stop_wait = asyncio.ensure_future(stop_event.wait()) if stop_event is not None else None
+        try:
+            async for chunk in _until_stopped(response, stop_wait):
+                usage = getattr(chunk, "usage", None)
+                if usage is not None:
+                    state.input_tokens = int(getattr(usage, "prompt_tokens", 0) or 0) or state.input_tokens
+                    state.output_tokens = int(getattr(usage, "completion_tokens", 0) or 0) or state.output_tokens
+                    read, write = _cache_token_counts(usage)
+                    state.cache_read_tokens = read or state.cache_read_tokens
+                    state.cache_write_tokens = write or state.cache_write_tokens
+                if not chunk.choices:
+                    continue
+                choice = chunk.choices[0]
+                if getattr(choice, "finish_reason", None):
+                    state.finish_reason = choice.finish_reason
+                delta = getattr(getattr(choice, "delta", None), "content", None)
+                if delta:
+                    parts.append(delta)
+                    yield delta
+        finally:
+            if stop_wait is not None:
+                if stop_wait.done() and stop_event is not None and stop_event.is_set() \
+                        and state.finish_reason is None:
+                    state.stopped = True
+                stop_wait.cancel()
+            if state.stopped:
+                # 接続を閉じる(プロバイダー側の生成もここで止まり、出力の課金も止まる)
+                closer = getattr(response, "aclose", None)
+                if closer is not None:
+                    try:
+                        await closer()
+                    except Exception:
+                        pass
 
         state.output_text = "".join(parts)
         state.elapsed_seconds = time.perf_counter() - start_time
@@ -640,7 +696,7 @@ class UnifiedLLM:
         # 通常は最後のチャンクにusageが載る。載らなかった場合だけ概算で埋める
         # (思考トークン分は数えられないので過小になる。課金の取りこぼしを
         # 目立たせるためusage_estimatedを立てて呼び出し側で記録する)。
-        if state.input_tokens == 0 and state.output_tokens == 0:
+        if state.stopped or (state.input_tokens == 0 and state.output_tokens == 0):
             state.usage_estimated = True
             try:
                 state.input_tokens = litellm.token_counter(model=model, messages=kwargs["messages"])

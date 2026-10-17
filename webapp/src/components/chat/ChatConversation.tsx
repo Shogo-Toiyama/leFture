@@ -120,6 +120,8 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     loadError,
     sending,
     send,
+    stop,
+    stopping,
     retry,
     discard,
     reload,
@@ -397,6 +399,8 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           // パネル ⇄ 全画面の切り替えで、入力中の中身をこの名前で預けて戻す
           draftKey={threadId ?? 'new'}
           disabled={sending || selectedTooLong}
+          onStop={sending ? stop : undefined}
+          stopping={stopping}
           placeholder={messages.length > 0 ? t('chatInputPlaceholderFollowUp') : t('chatInputPlaceholder')}
           onSend={handleSend}
           selectedText={selectedText}

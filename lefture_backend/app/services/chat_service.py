@@ -118,12 +118,17 @@ from app.services.chat_summary import (
     pair_turns,
     render_notes_for_answer,
     render_summary_for_answer,
+    join_after_stop,
     rows_after_fold_point,
+    unanswered_after_stop,
 )
+from app.services.chat_stop import TurnStop, TurnStopped, guarded, register as register_stop, \
+    unregister as unregister_stop
 from app.services.helpers.credits import (
     CHAT_MIN_BALANCE_CREDITS,
     MICRO_CREDITS_PER_CREDIT,
     consume_chat_credits,
+    consume_chat_stop_tail_credits,
 )
 from app.services.helpers.helpers import _load_prompt, _render_conditional_sections
 from app.services.helpers.plan_features import TIER_FREE, blocked_knowledge_source_types, get_user_tier_level
@@ -575,15 +580,24 @@ class PreparedTurn:
     pin_requests: list[str] = field(default_factory=list)
     # 全文で読む枠を超えて外した資料など(返答の行のcontextに残し、画面に知らせる)
     attachment_notice: Optional[dict] = None
+    # 直前に「返答の前に止めた」質問の本文(古い順)。打ちかけで送って止め、続きを今回送ったときなど。
+    # 今回の質問の前につなげて読ませる(間に止めたことの一行を挟む。chat_summary.join_after_stop)
+    carried_messages: list[str] = field(default_factory=list)
+    # 途中停止の状態(run_chat_turnが入れる)。課金のある呼び出しの入口で確認する
+    stop: Optional[TurnStop] = None
 
     @property
     def message_for_prompt(self) -> str:
         """LLMに渡す本文(資料の印は呼び名と名前に直す。資料だけ送ったときは、その旨の一文)。"""
-        return render_mentions(self.content, self.attachments).strip() or ATTACHMENT_ONLY_MESSAGE
+        current = render_mentions(self.content, self.attachments).strip()
+        if self.carried_messages:
+            stopped = [render_mentions(c, self.attachments).strip() for c in self.carried_messages]
+            return join_after_stop([t for t in stopped if t], current or ATTACHMENT_ONLY_MESSAGE)
+        return current or ATTACHMENT_ONLY_MESSAGE
 
     def language_hint(self) -> str:
         """振り分け役を通る前に返答言語を推すための文(本文、無ければ添付した資料の冒頭)。"""
-        text = plain_mentions(self.content).replace("[attached material]", "").strip()
+        text = plain_mentions("\n".join([*self.carried_messages, self.content])).replace("[attached material]", "").strip()
         return text or " ".join((r.get("content") or r.get("file_name") or "")[:200]
                                 for r in self.new_attachment_rows)
 
@@ -968,6 +982,7 @@ async def prepare_chat_turn(
 
     if context_lecture_id and lecture_label is None:
         context_lecture_id = None
+    carried_messages = [r.get("content") or "" for r in unanswered_after_stop(history_rows)]
 
     # --- エラーの優先順位は元の逐次コードと同じ ---
     if balance_micro < CHAT_MIN_BALANCE_CREDITS * MICRO_CREDITS_PER_CREDIT:
@@ -1077,6 +1092,7 @@ async def prepare_chat_turn(
         screen_ref=screen_ref,
         screen_task=screen_task,
         reply_quote=reply_quote,
+        carried_messages=carried_messages,
         attachments=[Attachment.from_row(r) for r in attachment_rows if r.get("status") == "ready"],
         new_attachment_rows=new_attachment_rows,
         mentions=mentions,
@@ -1191,6 +1207,7 @@ async def _retrieve(
     queries: list[str],
     context_lecture_id: Optional[str],
     blocked_source_types: frozenset[str] = frozenset(),
+    stop: Optional[TurnStop] = None,
 ) -> list[dict]:
     """
     検索は必ずユーザー本人のJWTで作ったクライアント(user_client)で呼ぶ。
@@ -1200,6 +1217,8 @@ async def _retrieve(
     今のプランで使えない種類(blocked_source_types)は検索しない。
     """
     source_types = [t for t in [*LECTURE_SOURCE_TYPES, "chat_turn"] if t not in blocked_source_types]
+    if stop is not None:
+        await stop.check()
     embeddings = await embed_queries(queries, billing=billing)
     tasks = [asyncio.to_thread(_search_sync, user_client, emb, None, source_types) for emb in embeddings]
     if context_lecture_id and embeddings:
@@ -1302,6 +1321,8 @@ async def _gather_materials(
         rpc_ms: list[int] = turn.timer.details.setdefault("rpc_ms", [])
 
         async def embed(qs: list[str]) -> list[list[float]]:
+            if turn.stop is not None:
+                await turn.stop.check()
             t = time.perf_counter()
             try:
                 return await embed_queries(qs, billing=billing)
@@ -1315,8 +1336,8 @@ async def _gather_materials(
             ),
             source=DbLectureSource(admin_client, turn.user_id, blocked_source_types),
             chat_source=chat_source,
-            web_search=lambda q: brave_search(q, billing, timeout=WEB_SEARCH_TIMEOUT_SECONDS),
-            link_fetch=lambda url: fetch_link(url, billing),
+            web_search=guarded(turn.stop, lambda q: brave_search(q, billing, timeout=WEB_SEARCH_TIMEOUT_SECONDS)),
+            link_fetch=guarded(turn.stop, lambda url: fetch_link(url, billing)),
         )
 
         async def on_lap(lap: int) -> None:
@@ -1332,8 +1353,11 @@ async def _gather_materials(
 
     if not turn.content:
         return [], navigation  # 資料だけの送信: 本文で検索するものが無い
+    if turn.stop is not None:
+        turn.stop.raise_if_stopped()
     try:
-        chunks = await _retrieve(user_client, billing, [plain_mentions(turn.content)[:200]], turn.context_lecture_id, blocked_source_types)
+        chunks = await _retrieve(user_client, billing, [plain_mentions(turn.content)[:200]], turn.context_lecture_id, blocked_source_types,
+                                 turn.stop)
     except Exception as e:
         print(f"⚠️ [chat] retrieval failed, answering without sources: {e}")
         chunks = []
@@ -1526,6 +1550,12 @@ async def _load_answer_images(turn: PreparedTurn, vis: Visibility) -> list[bytes
     return images
 
 
+def _chargeable_usd(records: list) -> float:
+    """請求の元にする原価(トークンと、Web検索の回数)。Cloud Runの時間の概算は含めない。"""
+    return sum(r.cost_usd for r in records
+               if r.dimension == "tokens" or (r.dimension == "count" and r.resource in CHARGEABLE_COUNT_RESOURCES))
+
+
 async def _finalize(
     admin_client,
     turn: PreparedTurn,
@@ -1545,14 +1575,33 @@ async def _finalize(
     請求の元にするのはLLM/Embedding APIのトークン原価と、Web検索(Brave)の回数の原価だけ。UnifiedLLMが
     一緒に記録するCloud Runの実行時間コストは「実際より少し高めの概算」
     なので、ユーザーへの請求には含めず、記録(cost_usd列・usage)にだけ残す。
+
+    行はまだ生成中(streaming)のときだけ確定する。途中停止では、停止のエンドポイント(生成していた
+    インスタンスが落ちたとき)と、このターンの締めが同じ行を確定しようとするので、先に確定した方だけが
+    課金する(後の方は何もせず0を返す)。課金は確定の後(二重に課金しないため)。
     """
     cost_usd = billing.total_usd()
-    chargeable_usd = sum(r.cost_usd for r in billing.records
-                         if r.dimension == "tokens" or (r.dimension == "count" and r.resource in CHARGEABLE_COUNT_RESOURCES))
+    chargeable_usd = _chargeable_usd(billing.records)
     breakdown = [vars(r) for r in billing.records]
 
+    claimed = await asyncio.to_thread(
+        lambda: admin_client.table("chat_messages").update({
+            "content": content,
+            "status": status,
+            "citations": citations,
+            "router": decision.to_json() if decision else None,
+            "usage": {"records": breakdown, "chargeable_usd": chargeable_usd, **usage_extra},
+            "cost_usd": cost_usd,
+            "credits_charged_micro": 0,
+            **({"context": message_context} if message_context else {}),
+        }).eq("id", turn.assistant_message_id).eq("status", "streaming").execute()
+    )
+    if not claimed.data:
+        print(f"⚠️ [chat] message {turn.assistant_message_id} was already finalized; skipping status={status}")
+        return 0
+
     charged_micro = 0
-    if charge and status == "complete" and chargeable_usd > 0:
+    if charge and status in ("complete", "stopped") and chargeable_usd > 0:
         try:
             charged_micro = await asyncio.to_thread(
                 consume_chat_credits, turn.user_id, turn.thread_id,
@@ -1561,19 +1610,11 @@ async def _finalize(
         except Exception as e:
             # 課金の失敗で返答自体を失敗扱いにはしない(講義のFINALIZE_JOBと同じ方針)
             print(f"⚠️ [chat] failed to consume credits for message {turn.assistant_message_id}: {e}")
-
-    await asyncio.to_thread(
-        lambda: admin_client.table("chat_messages").update({
-            "content": content,
-            "status": status,
-            "citations": citations,
-            "router": decision.to_json() if decision else None,
-            "usage": {"records": breakdown, "chargeable_usd": chargeable_usd, **usage_extra},
-            "cost_usd": cost_usd,
-            "credits_charged_micro": charged_micro,
-            **({"context": message_context} if message_context else {}),
-        }).eq("id", turn.assistant_message_id).execute()
-    )
+        if charged_micro:
+            await asyncio.to_thread(
+                lambda: admin_client.table("chat_messages").update({"credits_charged_micro": charged_micro})
+                    .eq("id", turn.assistant_message_id).execute()
+            )
 
     thread_update: dict[str, Any] = {"last_message_at": _now_iso()}
     if decision and decision.thread_title and not turn.thread_has_title:
@@ -1684,7 +1725,10 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
                 "usage": {**res.usage_json(), **({"file": file_usage} if file_usage else {})},
                 "selected": a.selected,
                 "forbids_ai_code": a.forbids_ai_code,
-            }).eq("id", a.id).execute()
+            }).eq("id", a.id).eq("status", "processing").execute()
+    # 読んでいる間に止められた: 停止の締めが読み終わっていない資料をfailedにしているので、readyに戻さない
+    if turn.stop is not None:
+        turn.stop.raise_if_stopped()
     await asyncio.to_thread(save)
     turn.attachments.extend(new)
     # 資料の中の検索(attachment.search)に、次のターンから使えるように今すぐ入れる(返答は待たせない)。
@@ -1773,28 +1817,23 @@ async def _maybe_enqueue_summary(turn: PreparedTurn, enqueue_summary: Optional[E
         print(f"⚠️ [chat] failed to enqueue summary for thread {turn.thread_id}: {e}")
 
 
-async def run_chat_turn(
+async def _run_turn_steps(
     turn: PreparedTurn,
     user_client,
-    queue: "asyncio.Queue[Optional[str]]",
-    enqueue_summary: Optional[EnqueueSummary] = None,
+    admin_client,
+    billing: BillingEngine,
+    llm: UnifiedLLM,
+    stop: TurnStop,
+    progress: "TurnProgress",
+    emit: Callable[[str, dict], Awaitable[None]],
+    enqueue_summary: Optional[EnqueueSummary],
 ) -> None:
     """
-    SSEで送るイベントをqueueに積みながら1ターンを最後まで実行する。
-    エンドポイントとは別のasyncioタスクで動かすので、途中でクライアントが
-    切断しても締め処理(保存・課金)まで走り切る。最後に必ずNoneを積む。
-
-    イベント: meta → status(reading_attachments/thinking/searching/reasoning/writing) → sources → delta… →
-              (replace) → done  /  失敗時は error
+    1ターンの本体(仕分け → 探索 → 回答 → 締め)。完了・断った・失敗はここで締める。
+    止められたらTurnStoppedを投げ、締めはrun_chat_turnが行う(途中までの本文はprogressに残す)。
     """
-    admin_client = get_supabase_client()
-    billing = BillingEngine(task_type="CHAT_MESSAGE")
-    llm = UnifiedLLM(billing)
     decision: Optional[RouterDecision] = None
     timer = turn.timer
-
-    async def emit(event: str, data: dict) -> None:
-        await queue.put(sse_event(event, data))
 
     try:
         await emit("meta", {
@@ -1808,6 +1847,7 @@ async def run_chat_turn(
             await emit("status", {"stage": "reading_attachments"})
             attachments_blocked, attachments_read = await _read_new_attachments(llm, admin_client, turn)
             timer.mark("attachments_read")
+            stop.raise_if_stopped()
             if attachments_blocked:
                 decision = RouterDecision(intent="blocked", needs_retrieval=False,
                                           reply_language=guess_language(turn.language_hint()), thread_title=None)
@@ -1888,7 +1928,9 @@ async def run_chat_turn(
             router_map = None
         decision = await _run_router(llm, turn, memory, history, router_courses_text(router_map),
                                      render_for_router(turn.attachments, attachment_visibility))
+        progress.decision = decision
         timer.mark("router_done")
+        stop.raise_if_stopped()
 
         # --- 3. 分岐: 断る / 危機対応(LLMの回答は作らない、課金しない) ---
         if decision.intent in ("blocked", "crisis"):
@@ -1939,6 +1981,9 @@ async def run_chat_turn(
                 llm, billing, user_client, turn, history, map_task, chat_map_task, await blocked_task, on_fetch,
                 attachment_visibility, must_check_attachments)
             timer.mark("retrieval_done")
+            # 探索役の中で握りつぶされた停止を、ここで拾い直す
+            stop.raise_if_stopped()
+            progress.materials = materials
             await emit("sources", {"sources": sources_event(materials)})
 
         # --- 4. 回答 ---
@@ -1965,6 +2010,7 @@ async def run_chat_turn(
                 await emit("status", {"stage": "reasoning"})
                 checked = await check_work(llm, messages)
                 timer.mark("reasoning_done")
+                stop.raise_if_stopped()
                 if checked.notes:
                     messages = with_checked_work(messages, checked.notes)
                 else:
@@ -1979,11 +2025,17 @@ async def run_chat_turn(
         state = StreamState()
         options = answer_options(answer_model, answer_effort, _answer_max_tokens(navigation, materials))
         timer.mark("answer_started")
-        async for delta in llm.generate_stream(answer_model, messages, state, options):
+        stop.raise_if_stopped()
+        async for delta in llm.generate_stream(answer_model, messages, state, options, stop_event=stop.event):
             if "answer_first_token" not in timer.marks:
                 timer.mark("answer_first_token")
+            progress.answer_parts.append(delta)
             await emit("delta", {"text": delta})
         timer.mark("answer_done")
+        # 止められてストリームを閉じた: 途中までの本文で、run_chat_turnが締める
+        progress.answer_usage = {"answer_input_tokens": state.input_tokens, "answer_output_tokens": state.output_tokens,
+                                 "usage_estimated": state.usage_estimated}
+        stop.raise_if_stopped()
 
         usage_extra = {
             "router_model": ROUTER_MODEL,
@@ -2047,7 +2099,12 @@ async def run_chat_turn(
         })
         await _maybe_enqueue_summary(turn, enqueue_summary)
 
+    except TurnStopped:
+        raise
     except Exception as e:
+        if stop.stopped:
+            # 止めたことで起きた失敗(読み込みの途中で打ち切った等)。失敗ではなく停止として締める
+            raise TurnStopped() from e
         print(f"❌ [chat] turn failed for message {turn.assistant_message_id}: {e}")
         try:
             await asyncio.to_thread(_mark_new_attachments_failed, admin_client, turn)
@@ -2063,7 +2120,163 @@ async def run_chat_turn(
             # ここでも失敗したら、行はstreamingのまま残り、patrolがerrorにする
             print(f"❌ [chat] failed to mark message {turn.assistant_message_id} as error: {finalize_error}")
         await emit("error", {"error_code": "CHAT_FAILED", "message": "Failed to generate a reply."})
+
+
+# 停止のとき、ストリームを閉じる・段階の境目に着くなど、すぐ終わる本体だけを待つ時間。これを過ぎたら
+# 走っている呼び出し(非ストリームの呼び出しは止められない)を待たずに締め、その原価は終わってから請求する
+STOP_SETTLE_SECONDS = 0.5
+
+
+@dataclass
+class TurnProgress:
+    """止めたときの締めに使う、ここまでの進み具合。"""
+    decision: Optional[RouterDecision] = None
+    materials: list = field(default_factory=list)
+    answer_parts: list[str] = field(default_factory=list)
+    answer_usage: Optional[dict] = None
+
+
+def _fail_unread_attachments(admin_client, turn: PreparedTurn) -> list[str]:
+    """止めたとき、読み終わっていない(processingの)資料をfailedにし、そのidを返す(画面で知らせる)。"""
+    ids = [r["id"] for r in turn.new_attachment_rows]
+    if not ids:
+        return []
+    res = admin_client.table("chat_attachments").update({"status": "failed"}) \
+        .in_("id", ids).eq("status", "processing").execute()
+    return [r["id"] for r in res.data or []]
+
+
+async def _finalize_stopped(
+    admin_client, turn: PreparedTurn, billing: BillingEngine, progress: TurnProgress,
+) -> int:
+    """止めたところまでを返答として確定し、ここまでに発生した原価を請求する。消費したμクレジットを返す。"""
+    text = "".join(progress.answer_parts)
+    citations: list[dict] = []
+    if text.strip():
+        text = normalize_citations(text, progress.materials)
+        citations = extract_citations(text, progress.materials)
+    try:
+        failed_ids = await asyncio.to_thread(_fail_unread_attachments, admin_client, turn)
+    except Exception as e:
+        print(f"⚠️ [chat] failed to mark unread attachments as failed for message {turn.assistant_message_id}: {e}")
+        failed_ids = []
+    context = {
+        **({"attachment_notice": turn.attachment_notice} if turn.attachment_notice else {}),
+        **({"stopped_attachments": failed_ids} if failed_ids else {}),
+    }
+    return await _finalize(
+        admin_client, turn, content=text, status="stopped", decision=progress.decision,
+        citations=citations, billing=billing,
+        usage_extra={"stopped": True, **(progress.answer_usage or {}), "timings": turn.timer.to_json()},
+        charge=True, message_context=context or None,
+    )
+
+
+async def _charge_after_stop(
+    work: "asyncio.Task", admin_client, turn: PreparedTurn, billing: BillingEngine, charged_records: int,
+) -> None:
+    """
+    止めた後も走り切らせた呼び出しが終わるのを待ち、その原価を別の取引として請求する
+    (CHAT_MESSAGEはmessage_idで二重課金を弾くので、同じメッセージに上乗せできない。要約と同じやり方)。
+    本体はTurnStoppedで終わる(次の呼び出しの入口で止まる)ので、結果は捨てる。
+    """
+    try:
+        await work
+    except BaseException:
+        pass
+    tail = billing.records[charged_records:]
+    tail_usd = _chargeable_usd(tail)
+    if tail_usd <= 0:
+        return
+    try:
+        tail_micro = await asyncio.to_thread(
+            consume_chat_stop_tail_credits, turn.user_id, turn.thread_id, turn.assistant_message_id,
+            tail_usd, [vars(r) for r in tail],
+        )
+
+        def add_to_row() -> None:
+            row = admin_client.table("chat_messages").select("credits_charged_micro, usage") \
+                .eq("id", turn.assistant_message_id).maybe_single().execute()
+            data = (row.data if row else None) or {}
+            usage = {**(data.get("usage") or {}), "after_stop": {"records": [vars(r) for r in tail],
+                                                                  "chargeable_usd": tail_usd}}
+            admin_client.table("chat_messages").update({
+                "credits_charged_micro": (data.get("credits_charged_micro") or 0) + tail_micro,
+                "cost_usd": billing.total_usd(),
+                "usage": usage,
+            }).eq("id", turn.assistant_message_id).execute()
+        await asyncio.to_thread(add_to_row)
+    except Exception as e:
+        print(f"⚠️ [chat] failed to charge the calls that finished after the stop for message "
+              f"{turn.assistant_message_id}: {e}")
+
+
+async def run_chat_turn(
+    turn: PreparedTurn,
+    user_client,
+    queue: "asyncio.Queue[Optional[str]]",
+    enqueue_summary: Optional[EnqueueSummary] = None,
+) -> None:
+    """
+    SSEで送るイベントをqueueに積みながら1ターンを最後まで実行する。
+    エンドポイントとは別のasyncioタスクで動かすので、途中でクライアントが
+    切断しても締め処理(保存・課金)まで走り切る。最後に必ずNoneを積む。
+
+    イベント: meta → status(reading_attachments/thinking/searching/reasoning/writing) → sources → delta… →
+              (replace) → done  /  失敗時は error
+
+    途中停止(chat_stop.py): 本体(_run_turn_steps)と停止の信号を競わせる。止められたら、走っている
+    呼び出しを待たずに止めたところまでで締め(スレッドがすぐ空き、次の送信と履歴に使える)、
+    走り切らせた呼び出しの原価は終わってから請求する。停止の後の課金のある呼び出しは、入口で止まる。
+    """
+    admin_client = get_supabase_client()
+    billing = BillingEngine(task_type="CHAT_MESSAGE")
+    stop = TurnStop(admin_client, turn.assistant_message_id)
+    turn.stop = stop
+    llm = UnifiedLLM(billing, guard=stop.check)
+    progress = TurnProgress()
+    timer = turn.timer
+
+    async def emit(event: str, data: dict) -> None:
+        # 止めた後は流さない(画面は停止のエンドポイントの返す行で確定する)
+        if stop.stopped:
+            return
+        await queue.put(sse_event(event, data))
+
+    register_stop(stop)
+    watcher = asyncio.create_task(stop.watch())
+    watcher.add_done_callback(_ignore_task_exception)
+    work = asyncio.create_task(_run_turn_steps(
+        turn, user_client, admin_client, billing, llm, stop, progress, emit, enqueue_summary))
+    stop_wait = asyncio.create_task(stop.event.wait())
+    try:
+        await asyncio.wait({work, stop_wait}, return_when=asyncio.FIRST_COMPLETED)
+        if not work.done():
+            await asyncio.wait({work}, timeout=STOP_SETTLE_SECONDS)
+        if work.done() and not (work.cancelled() or isinstance(work.exception(), TurnStopped)):
+            return  # 完了・断った・失敗は本体の中で締めた
+        if work.done() and work.cancelled():
+            return
+
+        timer.mark("stopped")
+        charged_records = len(billing.records)
+        try:
+            charged_micro = await _finalize_stopped(admin_client, turn, billing, progress)
+        except Exception as e:
+            # ここで失敗したら、行はstreamingのまま残る。停止のエンドポイントが待ちきれずにstoppedにする
+            print(f"❌ [chat] failed to finalize the stopped message {turn.assistant_message_id}: {e}")
+            charged_micro = 0
+        await queue.put(sse_event("done", {"status": "stopped", "credits_charged": charged_micro / MICRO_CREDITS_PER_CREDIT}))
+        if not work.done():
+            task = asyncio.create_task(_charge_after_stop(work, admin_client, turn, billing, charged_records))
+            _BACKGROUND_TASKS.add(task)
+            task.add_done_callback(_BACKGROUND_TASKS.discard)
+            task.add_done_callback(_ignore_task_exception)
+        await _maybe_enqueue_summary(turn, enqueue_summary)
     finally:
+        stop_wait.cancel()
+        watcher.cancel()
+        unregister_stop(stop)
         timer.mark("finalized")
         print(timer.log_line(turn.assistant_message_id))
         await queue.put(None)

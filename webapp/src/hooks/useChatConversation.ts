@@ -7,6 +7,7 @@ import {
   newClientMessageId,
   removeChatAttachment,
   sendChatMessage,
+  stopChatMessage,
   setChatAttachmentSelected,
 } from '../lib/chat';
 import type {
@@ -45,6 +46,10 @@ export interface LocalChatMessage extends ChatMessage {
   localAttachments?: ChatDraftAttachment[];
   /** この送信で指した既存の資料(userのみ。送れなかったときの再送に使う)。 */
   localReferences?: ChatAttachmentRef[];
+  /** 停止を押して、サーバーが止めたところまでで確定するのを待っている(assistantのみ) */
+  stopping?: boolean;
+  /** 停止のリクエストが届かなかった(受信は続いている。もう一度押せる) */
+  stopFailed?: boolean;
 }
 
 interface Options {
@@ -65,6 +70,8 @@ export function useChatConversation(threadId: string | null, options: Options = 
   const [loading, setLoading] = useState(Boolean(threadId));
   const [loadError, setLoadError] = useState<unknown>(null);
   const [sending, setSending] = useState(false);
+  /** 停止を押してから、止まった行が返るまで */
+  const [stopping, setStopping] = useState(false);
   /** このスレッドの資料(外したものを除く、添付順)。 */
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
 
@@ -74,6 +81,13 @@ export function useChatConversation(threadId: string | null, options: Options = 
   const activeThreadIdRef = useRef<string | null>(threadId);
   const mountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
+  /**
+   * 今受信している返答。返答のIDはmetaイベントで届くので、それより前に停止を押したら
+   * stopRequestedを立てておき、metaが届いた瞬間に止める。
+   */
+  const streamRef = useRef<{ assistantId: string | null; controller: AbortController; stopRequested: boolean } | null>(
+    null
+  );
   const onThreadCreatedRef = useRef(options.onThreadCreated);
   onThreadCreatedRef.current = options.onThreadCreated;
 
@@ -90,6 +104,42 @@ export function useChatConversation(threadId: string | null, options: Options = 
     if (!mountedRef.current) return;
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
   }, []);
+
+  /**
+   * 停止のリクエストを送り、サーバーが止めたところまでで確定した行に差し替える。受信もここで止める
+   * (止めた後はサーバーも流さない)。確定した行が返るので、完了をDBで待つ必要は無い。
+   */
+  const performStop = useCallback(async (assistantId: string, controller: AbortController) => {
+    patchMessage(assistantId, { stopping: true, stopFailed: false });
+    try {
+      const row = await stopChatMessage(assistantId);
+      controller.abort();
+      if (!mountedRef.current) return;
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? { ...m, ...row, stopping: false, stage: undefined, pendingSources: undefined, reconnecting: false }
+            : m
+        )
+      );
+    } catch {
+      patchMessage(assistantId, { stopping: false, stopFailed: true });
+    } finally {
+      if (mountedRef.current) setStopping(false);
+    }
+  }, [patchMessage]);
+
+  /** 生成中の返答を止める。止めても送ったメッセージは残り、そのまま次を送れる。 */
+  const stop = useCallback(() => {
+    const current = streamRef.current;
+    if (!current || stopping) return;
+    setStopping(true);
+    if (!current.assistantId) {
+      current.stopRequested = true;
+      return;
+    }
+    void performStop(current.assistantId, current.controller);
+  }, [stopping, performStop]);
 
   /** サーバー側の生成が終わるまでDBを見に行き、終わったら差し替える。 */
   const waitForServerCompletion = useCallback(
@@ -244,6 +294,8 @@ export function useChatConversation(threadId: string | null, options: Options = 
 
       const controller = new AbortController();
       abortRef.current = controller;
+      const stream = { assistantId: null as string | null, controller, stopRequested: false };
+      streamRef.current = stream;
 
       const onEvent = (event: ChatStreamEvent) => {
         if (!mountedRef.current) return;
@@ -264,6 +316,9 @@ export function useChatConversation(threadId: string | null, options: Options = 
               })
             );
             if (isNewThread) onThreadCreatedRef.current?.(event.thread_id);
+            stream.assistantId = assistantId;
+            // 返答のIDが届く前に停止が押されていた
+            if (stream.stopRequested) void performStop(assistantId, controller);
             break;
           }
           case 'status':
@@ -341,12 +396,17 @@ export function useChatConversation(threadId: string | null, options: Options = 
         }
       } finally {
         if (abortRef.current === controller) abortRef.current = null;
-        if (mountedRef.current) setSending(false);
+        if (streamRef.current === stream) streamRef.current = null;
+        if (mountedRef.current) {
+          setSending(false);
+          // 返答のIDが届く前に終わった(送れなかった等)ので、待っていた停止は要らない
+          if (stream.stopRequested && !stream.assistantId) setStopping(false);
+        }
         // 添付した資料の状態(確認済み・断った)と、AIが付けた名前を読み直す
         if ((localAttachments || localReferences) && receivedMeta) void refreshAttachments(activeThreadIdRef.current);
       }
     },
-    [sending, patchMessage, waitForServerCompletion, refreshAttachments]
+    [sending, patchMessage, waitForServerCompletion, refreshAttachments, performStop]
   );
 
   /** 送れなかったuserメッセージを取り除き、同じ内容でもう一度送る。 */
@@ -397,6 +457,8 @@ export function useChatConversation(threadId: string | null, options: Options = 
     loadError,
     sending,
     send,
+    stop,
+    stopping,
     retry,
     discard,
     reload,

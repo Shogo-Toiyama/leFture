@@ -120,6 +120,23 @@ def consume_chat_credits(
     )
 
 
+def consume_chat_stop_tail_credits(
+    user_id: str,
+    thread_id: str,
+    message_id: str,
+    cost_usd: float,
+    cost_breakdown: list[dict[str, Any]],
+) -> int:
+    """
+    途中停止した返答の、止めた後に走り切った呼び出しの分(非ストリームの呼び出しは途中で止められず、
+    プロバイダー側で最後まで生成されて全額かかる)。返答はそれより前に止めたところまでで確定・課金済みなので、
+    CHAT_MESSAGEとは別の行にする(CHAT_MESSAGEはmessage_idで二重課金を弾くため)。二重課金の判定はmessage_idごと。
+    """
+    return _consume_chat_cost(
+        user_id, thread_id, "CHAT_MESSAGE_AFTER_STOP", "message_id", message_id, cost_usd, cost_breakdown,
+    )
+
+
 def consume_chat_summary_credits(
     user_id: str,
     thread_id: str,

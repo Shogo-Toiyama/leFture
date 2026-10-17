@@ -346,6 +346,27 @@ const AttachmentNotice: React.FC<{ message: LocalChatMessage; attachmentsById?: 
   );
 };
 
+/** 資料の読み込みの途中で止めたため、使えなくなった資料の知らせ(もう一度添付してもらう)。 */
+const StoppedAttachmentsNotice: React.FC<{
+  message: LocalChatMessage;
+  attachmentsById?: Map<string, ChatAttachment>;
+}> = ({ message, attachmentsById }) => {
+  const { t } = useLanguage();
+  const ids = message.context?.stopped_attachments;
+  if (!ids?.length) return null;
+  const titles = ids
+    .map((id) => {
+      const a = attachmentsById?.get(id);
+      return `「${a?.title || a?.file_name || t('chatAttachmentUntitled')}」`;
+    })
+    .join('');
+  return (
+    <div className="chat-attachment-notice" role="note">
+      <p>{t('chatStoppedAttachments', { titles })}</p>
+    </div>
+  );
+};
+
 const AssistantMessage: React.FC<{
   message: LocalChatMessage;
   attachmentsById?: Map<string, ChatAttachment>;
@@ -389,7 +410,19 @@ const AssistantMessage: React.FC<{
     );
   }
 
+  // 返答の前に止めた: 大きな空の枠は出さず、質問の下に小さく一行だけ(続きを次のメッセージで送ると、
+  // 自分のメッセージが続いて並んで見えるように)
+  if (message.status === 'stopped' && !message.content.trim()) {
+    return (
+      <div className="chat-msg is-assistant is-stopped-empty">
+        <span className="chat-stopped-line">{t('chatStopped')}</span>
+        <StoppedAttachmentsNotice message={message} attachmentsById={attachmentsById} />
+      </div>
+    );
+  }
+
   const isGenerating = message.status === 'streaming';
+  const hasFinalText = message.status === 'complete' || message.status === 'stopped';
   const showStage = isGenerating && !message.content;
   // 探しているものが複数なら、Web → 過去のチャット → 講義の順に1つだけ出す
   const detail = message.searchDetail ?? [];
@@ -468,7 +501,7 @@ const AssistantMessage: React.FC<{
 
   return (
     <div className={`chat-msg is-assistant ${message.status === 'blocked' ? 'is-blocked' : ''}`}>
-      {showStage && !message.reconnecting && (
+      {showStage && !message.reconnecting && !message.stopping && (
         <span className="chat-stage" aria-live="polite">
           <span className="chat-dots" aria-hidden="true">
             <i />
@@ -480,7 +513,7 @@ const AssistantMessage: React.FC<{
       )}
 
       {message.content &&
-        (message.status === 'complete' && onReplyToSelection ? (
+        (hasFinalText && onReplyToSelection ? (
           <SelectionAskArea
             className="chat-selectable"
             askLabel={t('chatReplyToSelection')}
@@ -518,7 +551,25 @@ const AssistantMessage: React.FC<{
         </div>
       )}
 
-      {message.status === 'complete' && message.citations.length > 0 && (
+      {message.stopping && (
+        <span className="chat-stage" aria-live="polite">
+          <span className="chat-dots" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          {t('chatStopping')}
+        </span>
+      )}
+      {message.stopFailed && (
+        <div className="chat-inline-error" role="alert">
+          <span>{t('chatStopFailed')}</span>
+        </div>
+      )}
+      {message.status === 'stopped' && <span className="chat-stopped-tag">{t('chatStopped')}</span>}
+      <StoppedAttachmentsNotice message={message} attachmentsById={attachmentsById} />
+
+      {hasFinalText && message.citations.length > 0 && (
         <div className="chat-citations" aria-label={t('chatSourcesLabel')}>
           {message.citations.map((citation) => {
             return (
@@ -540,7 +591,7 @@ const AssistantMessage: React.FC<{
         </div>
       )}
 
-      {message.status === 'complete' && <ChatMessageActions copyText={copyText} detailsFor={message} question={question} />}
+      {hasFinalText && <ChatMessageActions copyText={copyText} detailsFor={message} question={question} />}
 
       <CitationPreviewModal
         citation={preview?.citation ?? null}

@@ -10,6 +10,7 @@ import {
   Paperclip,
   Plus,
   Quote,
+  Square,
   Upload,
   X,
 } from 'lucide-react';
@@ -70,6 +71,10 @@ interface ChatComposerProps {
   draftKey: string;
   disabled: boolean;
   placeholder: string;
+  /** 返答の生成中: 送信ボタンの代わりに停止ボタンを出す(入力はそのまま続けられる) */
+  onStop?: () => void;
+  /** 停止を押して、止まるのを待っている */
+  stopping?: boolean;
   /**
    * 送信。contentの「@名前」は資料の印(⟦att:id⟧)に置き換え済み。draftsはこの送信で新しく添付する資料
    * (いつも全文で添付)、referencesはこの会話の既存の資料を指したもの(全文で添付 / メンション)。
@@ -168,6 +173,8 @@ export function fileErrorCopy(code: string | undefined, detail: Record<string, u
 export const ChatComposer: React.FC<ChatComposerProps> = ({
   draftKey,
   disabled,
+  onStop,
+  stopping = false,
   placeholder,
   onSend,
   selectedText,
@@ -1019,15 +1026,28 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
             aria-label={placeholder}
           />
         </div>
-        <button
-          type="submit"
-          className="chat-send-btn"
-          disabled={!canSend}
-          aria-label={t('chatSend')}
-          title={filesPending ? t('chatFileNotReadyHint') : undefined}
-        >
-          <ArrowUp size={18} />
-        </button>
+        {onStop ? (
+          <button
+            type="button"
+            className="chat-send-btn is-stop"
+            onClick={onStop}
+            disabled={stopping}
+            aria-label={t('chatStop')}
+            title={t('chatStop')}
+          >
+            {stopping ? <LoaderCircle size={16} className="chat-attachment-spin" /> : <Square size={13} fill="currentColor" />}
+          </button>
+        ) : (
+          <button
+            type="submit"
+            className="chat-send-btn"
+            disabled={!canSend}
+            aria-label={t('chatSend')}
+            title={filesPending ? t('chatFileNotReadyHint') : undefined}
+          >
+            <ArrowUp size={18} />
+          </button>
+        )}
       </div>
 
       {value.length > COUNTER_THRESHOLD && (

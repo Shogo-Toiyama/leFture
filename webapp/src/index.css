@@ -15519,6 +15519,32 @@ body.is-resizing-chat iframe {
   cursor: default;
 }
 
+/* 途中停止: 返答の前に止めたときの一行と、途中まで出た返答の下の印 */
+.chat-stopped-line,
+.chat-stopped-tag {
+  font-size: 0.76rem;
+  color: var(--chat-act-fg);
+}
+
+.chat-msg.is-stopped-empty {
+  gap: 4px;
+  margin-top: -6px;
+  align-items: flex-end;
+}
+
+/* 停止ボタン(生成中は送信ボタンの位置に出る) */
+.chat-send-btn.is-stop {
+  background: var(--chat-act-fg-hover, #e8eaee);
+  color: var(--void, #111422);
+}
+
+.chat-fullscreen.is-paper .chat-send-btn.is-stop,
+.chat-page.is-paper .chat-send-btn.is-stop,
+.chat-panel.is-paper .chat-send-btn.is-stop {
+  background: #3e3228;
+  color: #ffffff;
+}
+
 /* 回答の一部を選んで返信する(SelectionAskAreaの外枠。回答の幅をそのまま使う) */
 .chat-selectable {
   min-width: 0;

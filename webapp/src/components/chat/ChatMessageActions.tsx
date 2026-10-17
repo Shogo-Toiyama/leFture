@@ -201,6 +201,12 @@ const MessageDetailsModal: React.FC<{ message: ChatMessage; onClose: () => void 
         <dl className="chat-detail-list">
           <dt>{t('chatDetailSentAt')}</dt>
           <dd>{sentAt}</dd>
+          {message.status === 'stopped' && (
+            <>
+              <dt>{t('chatDetailStatus')}</dt>
+              <dd>{t('chatDetailStatusStopped')}</dd>
+            </>
+          )}
           <dt>{t('chatDetailCredits')}</dt>
           <dd>
             {credits > 0

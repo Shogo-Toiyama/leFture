@@ -91,6 +91,7 @@ from app.services.chat_service import (
 from app.services.chat_attachments import MAX_ATTACHMENT_CHARS, MAX_SELECTED_TOKENS
 from app.services import chat_files
 from app.services.chat_screen import SCREEN_KINDS, ScreenRef
+from app.services.chat_stop import request_local_stop
 from app.services.chat_summary import run_fold as run_chat_summary_fold
 from app.services import profile_store
 
@@ -4419,6 +4420,15 @@ async def _patrol_fail_stale_chat_messages() -> dict:
     """
     admin_client = get_supabase_client()
     cutoff = (datetime.now(timezone.utc) - timedelta(minutes=STREAMING_STALE_MINUTES)).isoformat()
+    # 停止が求められていたものは、止めた扱いにする(本文は空。課金はしない)
+    await asyncio.to_thread(
+        lambda: admin_client.table("chat_messages")
+            .update({"status": "stopped"})
+            .eq("status", "streaming")
+            .not_.is_("stop_requested_at", "null")
+            .lt("created_at", cutoff)
+            .execute()
+    )
     res = await asyncio.to_thread(
         lambda: admin_client.table("chat_messages")
             .update({"status": "error"})
@@ -5965,6 +5975,60 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+# 停止のリクエストが、生成しているインスタンスが止めたところまでで締めるのを待つ上限。生成しているのが
+# このインスタンスならすぐ、別のインスタンスでも1秒ごとの見回り+0.5秒で締まる。過ぎたら(インスタンスが
+# 落ちた等)ここでstoppedにする
+CHAT_STOP_WAIT_SECONDS = 6.0
+CHAT_STOP_POLL_SECONDS = 0.25
+_CHAT_MESSAGE_ROW_COLUMNS = "id, thread_id, user_id, role, content, status, citations, context, credits_charged_micro, created_at, deleted_at"
+
+
+@app.post("/chat/messages/{message_id}/stop")
+async def stop_chat_message(message_id: str, request: Request):
+    """
+    生成中の返答を止める(docs/chatbot_context_and_retrieval_roadmap.md 2-12)。message_idは返答(assistant)の行。
+    返答の行に停止の印を付け、生成しているインスタンスが止めたところまでで締めるのを待って、確定した行を返す。
+    走っている非ストリームの呼び出しは待たない(その原価は終わってから別に請求される)。
+    もう終わっていれば、何もせずその行を返す(押したのと同時に完了した等)。
+    """
+    uid = await _get_authenticated_user_id(request)
+    message_id = _parse_uuid_or_422(message_id, "message_id")
+    admin_client = get_supabase_client()
+
+    def fetch() -> Optional[dict]:
+        r = admin_client.table("chat_messages").select(_CHAT_MESSAGE_ROW_COLUMNS) \
+            .eq("id", message_id).maybe_single().execute()
+        return r.data if r else None
+
+    row = await asyncio.to_thread(fetch)
+    if not row or row.get("user_id") != uid or row.get("role") != "assistant" or row.get("deleted_at"):
+        raise HTTPException(status_code=404, detail={"error_code": "MESSAGE_NOT_FOUND", "message": "Message not found."})
+
+    if row.get("status") == "streaming":
+        await asyncio.to_thread(
+            lambda: admin_client.table("chat_messages").update({"stop_requested_at": datetime.now(timezone.utc).isoformat()})
+                .eq("id", message_id).eq("status", "streaming").is_("stop_requested_at", "null").execute()
+        )
+        request_local_stop(message_id)
+        deadline = time.monotonic() + CHAT_STOP_WAIT_SECONDS
+        while time.monotonic() < deadline:
+            await asyncio.sleep(CHAT_STOP_POLL_SECONDS)
+            row = await asyncio.to_thread(fetch) or row
+            if row.get("status") != "streaming":
+                break
+        else:
+            # 生成していたインスタンスから返事が無い: ここで止めた扱いにする(締めていないので課金も無い)
+            print(f"⚠️ [chat] no instance finalized the stopped message {message_id}; marking it stopped here")
+            await asyncio.to_thread(
+                lambda: admin_client.table("chat_messages").update({"status": "stopped"})
+                    .eq("id", message_id).eq("status", "streaming").execute()
+            )
+            row = await asyncio.to_thread(fetch) or row
+
+    row = {k: v for k, v in row.items() if k not in ("user_id", "deleted_at")}
+    return {"message": row}
 
 
 async def _require_own_chat_thread(admin_client, thread_id: str, uid: str) -> dict:
