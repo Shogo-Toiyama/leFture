@@ -42,6 +42,8 @@ interface ChatMessageItemProps {
   onOpenCitation: (route: string) => void;
   /** 返答の生成に失敗したとき、直前の質問をもう一度送る。 */
   onResend?: () => void;
+  /** assistantのみ: この回答のもとになった質問の本文(問題の報告に添える)。 */
+  question?: string;
 }
 
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
@@ -51,6 +53,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   onOpenAttachment,
   onOpenCitation,
   onResend,
+  question,
 }) => {
   if (message.role === 'user') {
     return (
@@ -68,6 +71,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       attachmentsById={attachmentsById}
       onOpenCitation={onOpenCitation}
       onResend={onResend}
+      question={question}
     />
   );
 };
@@ -336,7 +340,8 @@ const AssistantMessage: React.FC<{
   attachmentsById?: Map<string, ChatAttachment>;
   onOpenCitation: (route: string) => void;
   onResend?: () => void;
-}> = ({ message, attachmentsById, onOpenCitation, onResend }) => {
+  question?: string;
+}> = ({ message, attachmentsById, onOpenCitation, onResend, question }) => {
   const { t } = useLanguage();
   const [preview, setPreview] = useState<PreviewState | null>(null);
 
@@ -509,7 +514,7 @@ const AssistantMessage: React.FC<{
         </div>
       )}
 
-      {message.status === 'complete' && <ChatMessageActions copyText={copyText} detailsFor={message} />}
+      {message.status === 'complete' && <ChatMessageActions copyText={copyText} detailsFor={message} question={question} />}
 
       <CitationPreviewModal
         citation={preview?.citation ?? null}

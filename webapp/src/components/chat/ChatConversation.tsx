@@ -359,6 +359,11 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
                   onOpenAttachment={(attachment, id) => setViewing({ attachment, id })}
                   onOpenCitation={onOpenCitation}
                   onResend={message.status === 'error' && !sending ? resendFor(index) : undefined}
+                  question={
+                    message.role === 'assistant'
+                      ? [...messages.slice(0, index)].reverse().find((m) => m.role === 'user')?.content
+                      : undefined
+                  }
                 />
                 {renderFailure(message)}
               </React.Fragment>

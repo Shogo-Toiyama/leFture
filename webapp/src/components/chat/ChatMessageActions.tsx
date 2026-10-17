@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Copy, Info, MoreHorizontal, X } from 'lucide-react';
+import { Check, Copy, Flag, Info, MoreHorizontal, X } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
-import type { ChatMessage } from '../../types/chat';
+import { CHAT_MENTION_RE, type ChatMessage } from '../../types/chat';
+import { ReportSheet } from '../ReportSheet';
 
 /** クリップボードへ書く。権限が無い・古い環境では、一時的なtextareaを選択してコピーする。 */
 async function writeClipboard(text: string): Promise<boolean> {
@@ -31,17 +32,20 @@ interface ChatMessageActionsProps {
   copyText: string;
   /** 渡すと「…」メニュー(回答の詳細)を出す。userのメッセージには渡さない。 */
   detailsFor?: ChatMessage;
+  /** この回答のもとになった質問(報告に添える)。detailsForと一緒に渡す。 */
+  question?: string;
 }
 
 /**
  * メッセージの下の操作行(コピー・「…」メニュー)。
  * 色はCSS変数(--chat-act-*)で決め、ダーク/ペーパー(.is-paper)の両方に合わせる。
  */
-export const ChatMessageActions: React.FC<ChatMessageActionsProps> = ({ copyText, detailsFor }) => {
+export const ChatMessageActions: React.FC<ChatMessageActionsProps> = ({ copyText, detailsFor, question }) => {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const copiedTimer = useRef<number | undefined>(undefined);
 
@@ -109,12 +113,47 @@ export const ChatMessageActions: React.FC<ChatMessageActionsProps> = ({ copyText
                 <Info size={15} />
                 {t('chatActionDetails')}
               </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setShowReport(true);
+                }}
+              >
+                <Flag size={15} />
+                {t('chatActionReport')}
+              </button>
             </div>
           )}
         </span>
       )}
 
       {detailsFor && showDetails && <MessageDetailsModal message={detailsFor} onClose={() => setShowDetails(false)} />}
+      {detailsFor && showReport && (
+        <ReportSheet
+          title={t('chatActionReport')}
+          categories={['inappropriate', 'incorrect', 'bug', 'feature_request', 'other']}
+          context={{
+            source: 'ai_chat',
+            thread_id: detailsFor.thread_id,
+            message_id: detailsFor.id,
+            message_status: detailsFor.status,
+            message_sent_at: detailsFor.created_at,
+            credits_charged_micro: detailsFor.credits_charged_micro,
+          }}
+          attachment={{
+            label: t('chatReportAttach'),
+            sections: [
+              ...(question?.trim()
+                ? [{ heading: t('chatReportQuestion'), text: question.replace(CHAT_MENTION_RE, '[material]') }]
+                : []),
+              { heading: t('chatReportReply'), text: copyText },
+            ],
+          }}
+          onClose={() => setShowReport(false)}
+        />
+      )}
     </div>
   );
 };

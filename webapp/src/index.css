@@ -15167,6 +15167,8 @@ a.lecture-tile-card:hover {
   appearance: none;
   border: 0;
   background: transparent;
+  /* 全体の button { padding: 0.55rem 1rem } を消す。残すと30pxの中身が負になり、アイコンが右へはみ出す */
+  padding: 0;
   color: var(--chat-act-fg);
   width: 30px;
   height: 30px;
@@ -15222,7 +15224,9 @@ a.lecture-tile-card:hover {
   color: var(--chat-act-fg-hover);
   font: inherit;
   font-size: 0.84rem;
+  font-weight: 400;
   text-align: left;
+  white-space: normal;
   cursor: pointer;
 }
 
@@ -15257,6 +15261,185 @@ a.lecture-tile-card:hover {
   margin: 0;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+/* 問題を報告(ReportSheet)。枠は引用モーダルを借り、中身はcurrentColor基準でダーク/ペーパーの両方に合わせる */
+.report-sheet {
+  max-width: 460px;
+}
+
+.report-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 1.1rem 1.4rem 1.4rem;
+  overflow-y: auto;
+  font-size: 0.9rem;
+}
+
+.report-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+/* 全体の label { flex-direction: column; color: var(--comet); font-size: 0.85rem } を、このシートでは使わない */
+.report-sheet label {
+  color: inherit;
+  font-size: inherit;
+}
+
+.report-field legend,
+.report-legend {
+  padding: 0;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.report-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.report-chip {
+  position: relative;
+  flex-direction: row;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.report-chip input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+
+.report-chip.is-active {
+  font-weight: 700;
+  border-color: var(--chat-act-more, var(--gold));
+  background: color-mix(in srgb, var(--chat-act-more, var(--gold)) 16%, transparent);
+}
+
+.report-chip:has(input:focus-visible) {
+  outline: 2px solid var(--chat-act-more, var(--gold));
+  outline-offset: 1px;
+}
+
+.report-textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 110px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, currentColor 5%, transparent);
+  color: inherit;
+  font: inherit;
+  line-height: 1.6;
+}
+
+.report-textarea:focus-visible {
+  outline: 2px solid var(--chat-act-more, var(--gold));
+  outline-offset: 1px;
+}
+
+.report-check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* 全体の input { width: 100%; padding… } を、チェックボックスでは打ち消す */
+.report-check input {
+  width: auto;
+  padding: 0;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.report-preview {
+  font-size: 0.8rem;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 10px;
+  padding: 8px 11px;
+}
+
+.report-preview summary {
+  cursor: pointer;
+  opacity: 0.75;
+}
+
+.report-preview-section p {
+  margin: 2px 0 8px;
+  max-height: 9em;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  opacity: 0.85;
+}
+
+.report-note {
+  margin: 0;
+  font-size: 0.78rem;
+  opacity: 0.65;
+}
+
+.report-error {
+  margin: 0;
+  color: #e57373;
+  font-size: 0.84rem;
+}
+
+.chat-fullscreen.is-paper .report-error,
+.chat-page.is-paper .report-error,
+.chat-panel.is-paper .report-error {
+  color: #c62828;
+}
+
+.report-sent {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.report-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.report-btn {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.86rem;
+  padding: 8px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.report-btn.is-primary {
+  background: var(--chat-act-more, var(--gold));
+  border-color: transparent;
+  color: #1a140f;
+  font-weight: 600;
+}
+
+.report-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* 自分のメッセージの折りたたみ(6行 + フェード + 「もっと見る」) */
