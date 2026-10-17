@@ -5813,6 +5813,8 @@ class ChatMessageContext(BaseModel):
     selection_before: Optional[str] = None
     selection_after: Optional[str] = None
     screen: Optional[ChatScreenRef] = None
+    # 会話の中のAIの回答の一部を選んで返信するとき、その回答のメッセージID(selected_textがその中の文章)
+    reply_to_message_id: Optional[str] = None
 
 
 class ChatAttachmentRequest(BaseModel):
@@ -5938,6 +5940,7 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
             selection_before=context.selection_before,
             selection_after=context.selection_after,
             attachments=attachments,
+            reply_to_message_id=_parse_uuid_or_422(context.reply_to_message_id, "context.reply_to_message_id"),
         )
     except ChatRequestError as e:
         raise HTTPException(

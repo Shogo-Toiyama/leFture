@@ -106,6 +106,7 @@ from app.services.chat_screen import (
     ScreenPage,
     ScreenRef,
     ScreenSelection,
+    build_reply_quote,
     load_screen_page,
 )
 from app.services.chat_thread_source import DbChatThreadSource
@@ -427,11 +428,13 @@ def format_screen_context(
     page: Optional[ScreenPage] = None,
     *,
     full_page: bool = True,
+    reply_quote: Optional[str] = None,
 ) -> str:
     """
     画面の文脈。full_page=Trueは回答役用(見ているページの本文まで)、Falseは振り分け役用
     (ページの名前だけ。本文が回答役に見えていることが分かれば足りる)。
     選択テキストは本文の中で見つかれば<selected>で囲んであるので、別には添えない。
+    reply_quote: 会話の中のAIの回答の一部を選んで返信したときの、その回答の抜粋(選択箇所は<selected>で囲んである)。
     """
     parts = []
     if lecture_label:
@@ -447,7 +450,12 @@ def format_screen_context(
                      f"<page>\n{page.text}\n</page>")
     elif page:
         parts.append(f"They have this page open: {page.title} (its full text is visible to the answerer).")
-    if selected_text and not (page and full_page and page.selection_marked):
+    if reply_quote:
+        parts.append(
+            "The student selected a passage of your earlier answer in this conversation and is replying to it. "
+            f"Here is that answer around the passage (the passage itself is wrapped in {SELECTED_OPEN}…{SELECTED_CLOSE}):\n"
+            f"<earlier_answer>\n{reply_quote}\n</earlier_answer>")
+    elif selected_text and not (page and full_page and page.selection_marked):
         parts.append(f"The student selected this text on screen:\n\"\"\"\n{selected_text}\n\"\"\"")
     return "\n\n".join(parts)
 
@@ -553,6 +561,9 @@ class PreparedTurn:
     screen_ref: Optional[ScreenRef] = None
     screen_task: "Optional[asyncio.Task[Optional[ScreenPage]]]" = None
     screen_page: Optional[ScreenPage] = None
+    # 会話の中のAIの回答の一部を選んで返信したとき、その回答の抜粋(本人の回答で、選択が本当にその中にあると
+    # 確かめられたときだけ入る。確かめられなければ、ただの選択として扱う)
+    reply_quote: Optional[str] = None
     # このスレッドの使える資料(審査を通ったもの、添付順)と、この送信で添付された資料の行(processing)
     attachments: list[Attachment] = field(default_factory=list)
     new_attachment_rows: list[dict] = field(default_factory=list)
@@ -631,6 +642,13 @@ def _fetch_thread_row(admin_client, thread_id: str) -> Optional[dict]:
     return t.data if t else None
 
 
+def _fetch_reply_target(admin_client, message_id: str) -> Optional[dict]:
+    r = admin_client.table("chat_messages") \
+        .select("id, thread_id, user_id, role, status, content, deleted_at") \
+        .eq("id", message_id).maybe_single().execute()
+    return r.data if r else None
+
+
 def _fetch_busy(admin_client, thread_id: str) -> bool:
     busy = admin_client.table("chat_messages").select("id") \
         .eq("thread_id", thread_id).eq("status", "streaming") \
@@ -683,6 +701,7 @@ def _write_turn_rows(
     screen_ref: Optional[ScreenRef] = None,
     attachments: Optional[list[NewAttachment]] = None,
     attachment_modes: Optional[list[dict]] = None,
+    reply_to_message_id: Optional[str] = None,
 ) -> tuple[str, str, str, list[dict]]:
     """
     スレッド作成(新規のみ) → ファイルのdraftをこのスレッドに結び付ける → userメッセージ →
@@ -729,6 +748,8 @@ def _write_turn_rows(
         message_context["lecture_id"] = context_lecture_id
     if selected_text:
         message_context["selected_text"] = selected_text
+    if reply_to_message_id:
+        message_context["reply_to_message_id"] = reply_to_message_id
     if screen_ref:
         message_context["screen"] = {
             k: v for k, v in {"kind": screen_ref.kind, "id": screen_ref.id,
@@ -818,6 +839,7 @@ async def prepare_chat_turn(
     selection_before: Optional[str] = None,
     selection_after: Optional[str] = None,
     attachments: Optional[list[NewAttachment]] = None,
+    reply_to_message_id: Optional[str] = None,
 ) -> PreparedTurn:
     """
     事前チェック→保存。お互いに依存しない読み取り(残高・送信頻度・断られた
@@ -887,11 +909,12 @@ async def prepare_chat_turn(
     # 本人の行かどうかはload_screen_page自身が確かめる
     screen_task = None
     if screen_ref:
+        # 会話の中の回答を選んで返信するときの選択は、見ているページには無いので、ページ側では探さない
         selection = ScreenSelection(
             text=selected_text,
             before=(selection_before or "")[-MAX_SELECTION_CONTEXT_CHARS:],
             after=(selection_after or "")[:MAX_SELECTION_CONTEXT_CHARS],
-        ) if selected_text else None
+        ) if selected_text and not (reply_to_message_id and thread_id) else None
 
         async def _load_screen() -> Optional[ScreenPage]:
             blocked = await blocked_task
@@ -920,6 +943,7 @@ async def prepare_chat_turn(
     (
         balance_micro, rate_count, blocked_count, dup_row, lecture_label,
         thread_row, is_busy, history_rows, summary_blocks, summary_level2, attachment_rows, draft_rows,
+        reply_row,
     ) = await asyncio.gather(
         to_thread(_fetch_balance_micro, admin_client, user_id),
         to_thread(_fetch_rate_limit_count, admin_client, user_id),
@@ -933,6 +957,8 @@ async def prepare_chat_turn(
         to_thread(fetch_active_blocks, admin_client, thread_id, 2) if not is_new_thread else none(),
         to_thread(_fetch_thread_attachments, admin_client, thread_id) if not is_new_thread else none(),
         to_thread(_fetch_drafts, admin_client, [a.attachment_id for a in attachments if a.is_file]),
+        to_thread(_fetch_reply_target, admin_client, reply_to_message_id)
+        if reply_to_message_id and selected_text and not is_new_thread else none(),
     )
     timer.mark("prep_checks")
     summary_blocks = summary_blocks or []
@@ -984,6 +1010,20 @@ async def prepare_chat_turn(
         if row.get("status") != "draft" or not row.get("extraction"):
             raise ChatRequestError(409, "ATTACHMENT_NOT_READY", "An attached file is not ready to send.")
 
+    # 返信先: 本人のこのスレッドの、完了したAIの回答で、選択した文章が本当にその中にあるときだけ。
+    # 1つでも合わなければ、ただの選択として扱う(回答でないものを「あなたの回答」と見せないため)
+    reply_quote: Optional[str] = None
+    if reply_row and selected_text:
+        if (reply_row.get("thread_id") == thread_id and reply_row.get("user_id") == user_id
+                and reply_row.get("role") == "assistant" and reply_row.get("status") in ("complete", "stopped")
+                and not reply_row.get("deleted_at")):
+            reply_quote = build_reply_quote(reply_row.get("content") or "", ScreenSelection(
+                text=selected_text,
+                before=(selection_before or "")[-MAX_SELECTION_CONTEXT_CHARS:],
+                after=(selection_after or "")[:MAX_SELECTION_CONTEXT_CHARS],
+            ))
+    validated_reply_to_id = reply_row["id"] if reply_quote and reply_row else None
+
     attachment_rows = attachment_rows or []
     # 既存の資料を指すのは、このスレッドの使える(ready)資料だけ
     ready_ids = {r["id"] for r in attachment_rows if r.get("status") == "ready"}
@@ -1012,6 +1052,7 @@ async def prepare_chat_turn(
     thread_id, user_message_id, assistant_message_id, new_attachment_rows = await to_thread(
         _write_turn_rows, admin_client, is_new_thread, thread_id, user_id, content,
         client_message_id, context_lecture_id, selected_text, screen_ref, attachments, attachment_modes,
+        validated_reply_to_id,
     )
     timer.mark("prep_saved")
 
@@ -1035,6 +1076,7 @@ async def prepare_chat_turn(
         blocked_task=blocked_task,
         screen_ref=screen_ref,
         screen_task=screen_task,
+        reply_quote=reply_quote,
         attachments=[Attachment.from_row(r) for r in attachment_rows if r.get("status") == "ready"],
         new_attachment_rows=new_attachment_rows,
         mentions=mentions,
@@ -1094,7 +1136,8 @@ async def _run_router(
         "EARLIER_CONVERSATION": memory.for_router(),
         "RECENT_CONVERSATION": format_router_conversation(history),
         "SCREEN_CONTEXT": format_screen_context(
-            turn.lecture_label, turn.selected_text, turn.screen_page, full_page=False) or "(none)",
+            turn.lecture_label, turn.selected_text, turn.screen_page, full_page=False,
+            reply_quote=turn.reply_quote) or "(none)",
         "COURSES": courses_text,
         "ATTACHMENTS": attachments_text,
         "IS_FIRST_MESSAGE": "true" if is_first_message else "false",
@@ -1401,7 +1444,8 @@ def _build_answer_messages(
         "CONVERSATION_SUMMARY": memory.summary,
         "CONVERSATION_NOTES": memory.notes,
     })
-    screen_context = format_screen_context(turn.lecture_label, turn.selected_text, turn.screen_page)
+    screen_context = format_screen_context(
+        turn.lecture_label, turn.selected_text, turn.screen_page, reply_quote=turn.reply_quote)
     # 資料は毎ターン変わりうる(添付・外す・全文で渡す1本の入れ替わり)ので最後のメッセージに置く。
     # 確かめ役(chat_reasoning)はsystemだけ差し替えるので、同じ資料が見える
     attachments_text = render_for_answer(turn.attachments, attachment_visibility or plan_visibility(turn.attachments))

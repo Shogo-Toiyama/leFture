@@ -95,20 +95,23 @@ class ScreenPage:
 _IGNORED_CHARS = set("*_`#>|~")
 
 
-def _normalized_with_map(text: str) -> tuple[str, list[int]]:
-    """比較用に、空白とMarkdownの記号を除いた文字列と、その各文字の元の位置。"""
+def _normalized_with_map(text: str, ignore_digits: bool = False) -> tuple[str, list[int]]:
+    """
+    比較用に、空白とMarkdownの記号を除いた文字列と、その各文字の元の位置。
+    ignore_digits: 数字も除く(AIの回答の選択用。画面の出典番号のボタン「1」が選択テキストに混ざるため)。
+    """
     chars: list[str] = []
     positions: list[int] = []
     for i, ch in enumerate(text):
-        if ch.isspace() or ch in _IGNORED_CHARS:
+        if ch.isspace() or ch in _IGNORED_CHARS or (ignore_digits and ch.isdigit()):
             continue
         chars.append(ch.lower())
         positions.append(i)
     return "".join(chars), positions
 
 
-def _normalized(text: str) -> str:
-    return _normalized_with_map(text)[0]
+def _normalized(text: str, ignore_digits: bool = False) -> str:
+    return _normalized_with_map(text, ignore_digits)[0]
 
 
 def _common_suffix_len(a: str, b: str) -> int:
@@ -125,18 +128,18 @@ def _common_prefix_len(a: str, b: str) -> int:
     return n
 
 
-def locate_selection(text: str, selection: ScreenSelection) -> Optional[tuple[int, int]]:
+def locate_selection(text: str, selection: ScreenSelection, ignore_digits: bool = False) -> Optional[tuple[int, int]]:
     """
     選択テキストが本文のどこか(元の文字位置の[start, end))。画面の文字列(Markdownの記号や
     改行が消えたtextContent)とDBの本文は一致しないので、空白とMarkdownの記号を除いて比べる。
     同じ文言が何度も出てくるときは、選択の前後の文字がより長く一致する方を選ぶ。
     """
-    needle = _normalized(selection.text)
+    needle = _normalized(selection.text, ignore_digits)
     if not needle:
         return None
-    hay, positions = _normalized_with_map(text)
-    before = _normalized(selection.before)
-    after = _normalized(selection.after)
+    hay, positions = _normalized_with_map(text, ignore_digits)
+    before = _normalized(selection.before, ignore_digits)
+    after = _normalized(selection.after, ignore_digits)
 
     best: Optional[tuple[int, int]] = None
     best_score = -1
@@ -156,6 +159,32 @@ def locate_selection(text: str, selection: ScreenSelection) -> Optional[tuple[in
     while end < len(text) and text[end] in "*_`":
         end += 1
     return start, end
+
+
+# AIの回答に入っている出典の印(⟦3⟧ ⟦3.5⟧ ⟦W1⟧)。画面ではボタンになるので、選択の文字とは別物
+_ANSWER_CITATION_RE = re.compile(r"⟦[^⟦⟧\n]{1,60}⟧")
+# 返信の引用で、選択箇所の前後に付ける文字数
+REPLY_QUOTE_CONTEXT_CHARS = 300
+
+
+def build_reply_quote(answer_text: str, selection: ScreenSelection) -> Optional[str]:
+    """
+    チャットの回答の一部を選んで返信するとき、その回答のどこかを示す抜粋(選択箇所を<selected>で囲み、
+    前後に少し文脈を付ける)。選択テキストが回答の中に見つからなければNone
+    (そのときは、ただの選択として扱う。回答でないものを「あなたの回答」と見せないための確認を兼ねる)。
+    """
+    text = _ANSWER_CITATION_RE.sub("", answer_text or "")
+    span = locate_selection(text, selection, ignore_digits=True)
+    if not span:
+        return None
+    a, b = span
+    lo = max(0, a - REPLY_QUOTE_CONTEXT_CHARS)
+    hi = min(len(text), b + REPLY_QUOTE_CONTEXT_CHARS)
+    return (
+        ("… " if lo > 0 else "")
+        + text[lo:a] + SELECTED_OPEN + text[a:b] + SELECTED_CLOSE + text[b:hi]
+        + (" …" if hi < len(text) else "")
+    )
 
 
 def _mark(text: str, span: tuple[int, int]) -> str:
