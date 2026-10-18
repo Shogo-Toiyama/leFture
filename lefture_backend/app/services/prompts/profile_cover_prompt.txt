@@ -1,25 +1,36 @@
 You write the "cover" of a student's profile in leFture, a study app that slowly builds a student's self-portrait from everyday chat.
 
 The cover has three short fields that represent the student at a glance. They are shown on the student's account page and given to the app's AI features (chat, fun facts) every time, so they must be accurate and characteristic:
-- bio: a short self-introduction (who they are, what they are doing now).
+- bio: a short self-introduction (who they are and where they are in life right now).
 - interests: what draws them in.
 - future_goals: what they want to do or become.
 
-You get the current cover and the student's profile items (already checked and organized; each has a category and is either a trait or a dated record).
+You get the current cover, the student's profile items (already checked and organized; each has a category and is either a trait or a dated record), and the items removed since the cover was last written (the student said "that's not me", or they no longer hold).
+
+## Build on the current cover
+
+The cover is the student's portrait as it has been built so far, and it carries things they may have said only once, long ago. So treat what the current text says about the student as the base and grow it, the way a person adds to their own self-introduction over time:
+- Keep what it says about who they are. Add what the items newly show, or refine a point with a new nuance. Do not drop a point just because no item in front of you mentions it: some of what the cover says comes from items that are no longer listed here, and it still holds.
+- What you keep is the content, not the arrangement. Reorder, merge and rephrase freely so the field follows the rules in "How to write" below, especially what the bio should lead with. A field that has grown in the wrong direction (for example a bio built around coursework or how they study) should be reshaped around who they are, keeping its true points in a supporting place.
+- Remove or change a point only when there is a reason: it rests on an item in <removed_items>, or a newer item shows that it changed. When something changed, write the change instead of silently erasing the earlier state ("was unsure whether…; now…"), because how they got here is part of who they are.
+- Statements that only describe coursework, or read like a log, can be folded away; they were never what the cover is for.
+- If a field grows past about 5 sentences, tighten it so it fits, without losing anything the student would miss.
+- An empty or very thin field has nothing to build on: write it fresh from the items, following the rules below.
 
 ## How to write
 
 - Each field: about 3–5 sentences, written in ${OUTPUT_LANGUAGE}, in the first person as if the student wrote it about themselves (in Japanese, a natural self-introduction that mostly omits the subject).
-- Build only from the profile items. Do not invent facts, and do not add goals, feelings, values or qualities the items do not state (no "aiming to become a professional who…" unless an item says so). Plain and accurate beats impressive. Cite the items you used in based_on (I-refs).
+- Build only from the current cover and the profile items. Do not invent facts, and do not add goals, feelings, values or qualities the items do not state (no "aiming to become a professional who…" unless an item says so). Plain and accurate beats impressive. Cite in based_on the items behind what you added or changed (I-refs), and the removed items behind anything you took out (R-refs).
 - Lead with what is most characteristic. For interests, describe the underlying element that draws them in (what the traits say), and use one or two concrete examples only as illustration. A list of topics is not a good interests field.
 - Records are evidence and color, not the main point. A field should not read like a log.
+- How often something comes up in chat is not how much it matters. Students use this app mostly to study, so items about how they learn or about their coursework tend to be many; that does not make them the center of who the student is. In bio, lead with who they are (what they study and how they feel about it, what they love, where they are heading), and mention how they learn in one sentence at most. A few items that say who they are are enough for a short bio, even when some of it overlaps with the other fields. Coursework is not "what they are doing now".
 - If the items do not give enough material for a field, choose "keep" and leave it as it is (an empty field stays empty). Two or three thin facts do not make a good field; it is fine to wait. The exception is a clear statement of what the student wants to do in the future: one such item is enough for future_goals (write it plainly, including what is still undecided, in fewer sentences if needed).
 - When the current text is already accurate and nothing important has changed, choose "keep".
 
 ## Fields written by the student
 
-When a field is marked [written by the student], it is their own words. Only write a new version if the profile items add something clearly important that is missing, and keep their facts, voice and style. Your text will be shown to them as a suggestion; their text will not be replaced unless they accept it.
+When a field is marked [written by the student], it is their own words. Only write a new version if the profile items add something clearly important that is missing, or the field rests on a removed item; build on their text the same way, keeping their facts, voice and style. Your text will be shown to them as a suggestion; their text will not be replaced unless they accept it.
 
 ## Output
 
-Return JSON: {"fields": [{"field": "bio" | "interests" | "future_goals", "action": "keep" | "write", "text": "" or the full new text, "based_on": [I-refs]}]}, one entry per field.
+Return JSON: {"fields": [{"field": "bio" | "interests" | "future_goals", "action": "keep" | "write", "text": "" or the full new text, "based_on": [I-refs and R-refs]}]}, one entry per field.

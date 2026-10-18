@@ -562,10 +562,25 @@ async def _cover_has_empty_field(admin_client, user_id: str) -> bool:
     return any(not (row.get(f) or "").strip() for f in COVER_FIELDS)
 
 
+async def _items_removed_since_cover(admin_client, user_id: str) -> list[Item]:
+    """前回表紙を書いた後に外れた項目。表紙をまだ書いていなければ、消す文も無いので空。"""
+    res = await _db(lambda: admin_client.table("profile_extraction_state").select("last_cover_at")
+                    .eq("user_id", user_id).maybe_single().execute())
+    last_cover_at = ((res.data if res else None) or {}).get("last_cover_at")
+    if not last_cover_at:
+        return []
+    rows = (await _db(lambda: admin_client.table("profile_items").select(_ITEM_COLUMNS)
+                      .eq("user_id", user_id).in_("status", ["rejected", "archived", "orphaned"])
+                      .gt("updated_at", last_cover_at).order("updated_at", desc=True).limit(REJECTED_MAX).execute())).data or []
+    return [_item_from_row(r, []) for r in rows]
+
+
 async def write_cover_task(user_id: str) -> dict:
     """
-    表紙(1層)を書き直す。空欄とAIが書いたままの欄はそのまま書き込み、本人が書いた・直した欄は書き直し案にする。
+    表紙(1層)を、今の文を土台に書き足す。空欄とAIが書いたままの欄はそのまま書き込み、本人が書いた・直した欄は書き直し案にする。
     書き込みは「書き手が読んだときのまま」の条件つきで行う(その間に本人が編集していたら上書きしない)。
+    前回の表紙の後に外れた項目(違う / もう当てはまらない / 根拠の会話が消えた)も渡す。書き足し型では、
+    これが表紙から文を消してよい理由になる。
     """
     admin_client = get_supabase_client()
     res = await _db(lambda: admin_client.table("user_profiles")
@@ -583,9 +598,11 @@ async def write_cover_task(user_id: str) -> dict:
     if not items:
         return {"status": "skipped", "reason": "no_items"}
 
+    removed = await _items_removed_since_cover(admin_client, user_id)
+
     billing = BillingEngine(task_type="PROFILE_COVER")
     plan = await write_cover(UnifiedLLM(billing), cover, items, await _categories(admin_client, user_id),
-                             await _user_language(admin_client, user_id))
+                             await _user_language(admin_client, user_id), removed_items=removed)
 
     applied = []
     for field, text in plan.applied.items():
@@ -606,7 +623,7 @@ async def write_cover_task(user_id: str) -> dict:
         "user_id": user_id, "items_changed_since_cover": 0, "last_cover_at": _now_iso(),
     }, on_conflict="user_id").execute())
     cost = await _record_cost(admin_client, user_id, "PROFILE_COVER", billing,
-                              {"applied": applied, "proposals": list(plan.proposals)})
+                              {"applied": applied, "proposals": list(plan.proposals), "removed_items": len(removed)})
     print(f"📇 [profile-cover] user={user_id} applied={applied} proposals={list(plan.proposals)} cost=${cost:.6f}")
     return {"applied": applied, "proposals": list(plan.proposals)}
 
@@ -774,10 +791,13 @@ HYPOTHESES_FOR_CHAT_MAX = 3
 
 
 def load_chat_memory(admin_client, user_id: str) -> tuple[list[dict], list[str]]:
-    """(有効な覚え書き, 開いている仮説)。同期関数(chat_serviceの他の読み込みと同じくto_threadで呼ぶ)。"""
+    """
+    (有効な覚え書き, 開いている仮説)。同期関数(chat_serviceの他の読み込みと同じくto_threadで呼ぶ)。
+    覚え書きは新しい方から渡す(古い順に切ると、上限に達した後の新しい覚え書きがチャットに届かなくなる)。
+    """
     today = date.today().isoformat()
     memos = admin_client.table("ai_memos").select("kind, content, expires_at") \
-        .eq("user_id", user_id).order("created_at").execute().data or []
+        .eq("user_id", user_id).order("created_at", desc=True).execute().data or []
     memos = [m for m in memos if not m.get("expires_at") or m["expires_at"] >= today][:MEMOS_FOR_CHAT_MAX]
     hyps = admin_client.table("profile_hypotheses").select("content") \
         .eq("user_id", user_id).eq("status", "open").order("created_at", desc=True) \

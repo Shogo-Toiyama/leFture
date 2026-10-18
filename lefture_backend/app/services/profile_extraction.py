@@ -9,7 +9,8 @@
 
 - 観察役: 1スレッドの差分を読み、観察(4層)を書く。一般化はしない。惹かれた点(hook)が分からなければ空
 - まとめ役: 新しい観察 + 惹かれた点が近い過去の観察 + 既存の項目などから、2層の項目・覚え書き・仮説を更新する
-- 表紙: 2層の有効な項目から、1層(自己紹介 / 興味 / 将来の夢)を書く。本人が書いた欄は案にとどめる
+- 表紙: 今の表紙を土台に、2層の有効な項目で書き足して1層(自己紹介 / 興味 / 将来の夢)を書く。消すのは、前回の後に
+  外れた項目に基づく文と、新しい項目で変わったことだけ。本人が書いた欄は案にとどめる
 
 LLMの出力は必ずコード側で検証し、設計の「上げるルール」のうち機械的に守れるもの
 (センシティブ・ブロックした分野・本人の文の保護・明言がない項目の下限)はここで強制する。
@@ -20,7 +21,7 @@ import math
 import re
 from dataclasses import dataclass, field
 from datetime import date, timedelta
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 from app.services.helpers.helpers import _load_prompt
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
@@ -29,8 +30,12 @@ from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
 # 観察役は推論なしでも質が落ちず(間違って上げた・観察の一般化とも0)、原価が最も安かった。
 # まとめ役はmediumで十分。highは原価が上がるだけで良くならなかった。速さは要らない処理なので、
 # Gemini 3.5 Flash-Lite(medium、約5倍の原価)ではなくLunaを使う。
+# 2026-10-17: 観察役はlowに変更。本人の実際のチャット23スレッドを流し直すと(各2回)、推論なしは宿題の長いスレッドに
+# 埋もれた本人のプロジェクト(ワークショップの企画)を2回に1回落とし、lowは毎回拾った。lowは別々の授業にまたがる
+# 考え方の特徴も拾い、まとめ役がそれを確かめたい仮説に回す。原価は推論なしと同程度。
+# Haiku 5.5も試したが、観察を2〜3倍書き(本人に見える観察メモが増える)、原価も3〜4倍だったので採らなかった。
 OBSERVER_MODEL = "gpt-6-luna"
-OBSERVER_REASONING: Optional[str] = "none"
+OBSERVER_REASONING: Optional[str] = "low"
 CONSOLIDATOR_MODEL = "gpt-6-luna"
 CONSOLIDATOR_REASONING: Optional[str] = "medium"
 COVER_MODEL = "gpt-6-luna"
@@ -235,7 +240,9 @@ OBSERVER_SCHEMA: dict[str, Any] = {
                 "type": "object",
                 "properties": {
                     "hypothesis": {"type": "string"},
-                    "status": {"type": "string", "enum": ["confirmed", "refuted"]},
+                    # unanswered: 話題には触れたが本人の言葉で答えが出ていない(検証で捨てて、仮説は開いたまま)。
+                    # 2択しかないと、答えが出ていなくてもどちらかを選んで閉じてしまっていた(2026-10-17、実データの流し直し)
+                    "status": {"type": "string", "enum": ["confirmed", "refuted", "unanswered"]},
                     "rounds": {"type": "array", "items": {"type": "integer"}},
                     "note": {"type": "string"},
                 },
@@ -885,11 +892,18 @@ def build_cover_messages(
     items: list[Item],
     categories: list[Category],
     language: str,
+    removed_items: Sequence[Item] = (),
 ) -> tuple[list[Message], dict[str, Item]]:
-    """cover: {"bio": {"text", "origin"}, ...}。items は active のものだけを渡すこと。"""
+    """
+    cover: {"bio": {"text", "origin"}, ...}。items は active のものだけを渡すこと。
+    removed_items: 前回表紙を書いた後に外れた項目(違う / もう当てはまらない / 根拠の会話が消えた)。
+    表紙は今の文を土台に書き足すので、消してよい理由として渡す。
+    戻り値の呼び名は I(有効な項目)と R(外れた項目)の両方を含む。
+    """
     system = _load_prompt("profile_cover_prompt.txt").replace("${OUTPUT_LANGUAGE}", output_language_name(language))
     cat_by_id = {c.id: c for c in categories}
     item_refs = {f"I{i}": it for i, it in enumerate(items, start=1)}
+    removed_refs = {f"R{i}": it for i, it in enumerate(removed_items, start=1)}
 
     def cat_path(cid: str) -> str:
         c = cat_by_id.get(cid)
@@ -908,8 +922,16 @@ def build_cover_messages(
                       if (cover.get(f) or {}).get("text") else "(empty)")
         for f in COVER_FIELDS
     )
-    user_content = f"<current_cover>\n{fields_text}\n</current_cover>\n\n<profile_items>\n{items_text}\n</profile_items>"
-    return [Message(role="system", content=system), Message(role="user", content=user_content)], item_refs
+    removed_reason = {"rejected": "the student said this is not them", "archived": "no longer holds",
+                      "orphaned": "the conversations behind it were deleted"}
+    removed_text = "\n".join(
+        f"- {ref} [{cat_path(it.category_id)} · {it.kind}] {it.content} ({removed_reason.get(it.status, 'removed')}"
+        + (f"; they said: \"{it.rejected_reason}\"" if it.rejected_reason else "") + ")"
+        for ref, it in removed_refs.items()
+    ) or "(none)"
+    user_content = (f"<current_cover>\n{fields_text}\n</current_cover>\n\n<profile_items>\n{items_text}\n</profile_items>\n\n"
+                    f"<removed_items>\n{removed_text}\n</removed_items>")
+    return [Message(role="system", content=system), Message(role="user", content=user_content)], item_refs | removed_refs
 
 
 def validate_cover_output(raw: Any, cover: dict[str, dict], item_refs: dict[str, Item]) -> CoverPlan:
@@ -939,9 +961,10 @@ def validate_cover_output(raw: Any, cover: dict[str, dict], item_refs: dict[str,
 
 
 async def write_cover(llm: UnifiedLLM, cover: dict[str, dict], items: list[Item], categories: list[Category],
-                      language: str, model: str = COVER_MODEL, reasoning_effort: Optional[str] = COVER_REASONING) -> CoverPlan:
+                      language: str, model: str = COVER_MODEL, reasoning_effort: Optional[str] = COVER_REASONING,
+                      removed_items: Sequence[Item] = ()) -> CoverPlan:
     active = [it for it in items if it.status == "active"]
-    messages, item_refs = build_cover_messages(cover, active, categories, language)
+    messages, item_refs = build_cover_messages(cover, active, categories, language, removed_items)
     options = _json_options(model, COVER_SCHEMA, reasoning_effort, 8000)
     last_error: Optional[Exception] = None
     for attempt in range(2):
