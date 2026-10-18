@@ -105,7 +105,6 @@ flutter:
     - assets/images/logo/
     - assets/images/plan_icons/
     - assets/images/credit_icons/
-    - lib/presentation/pages/ai_chat/test_topic_map.json
 
   fonts:
     - family: Orbitron

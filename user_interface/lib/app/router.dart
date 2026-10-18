@@ -28,7 +28,6 @@ import 'package:lefture/presentation/pages/onboarding/device_setup_page.dart';
 import 'package:lefture/presentation/pages/home/home_page.dart';
 import 'package:lefture/presentation/pages/recording/recording_page.dart';
 import 'package:lefture/presentation/pages/learning_galaxy/learning_galaxy_page.dart';
-import 'package:lefture/presentation/pages/ai_chat/ai_chat_page.dart';
 import 'package:lefture/presentation/pages/profile/my_account_page.dart';
 import 'package:lefture/presentation/pages/profile/credit_detail_page.dart';
 import 'package:lefture/presentation/pages/profile/purchase_credits_page.dart';
@@ -539,10 +538,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // 3. Features
-      GoRoute(
-        path: AppRoutes.aiChat,
-        builder: (context, state) => const AiChatPage(),
-      ),
       GoRoute(
         path: AppRoutes.account,
         builder: (context, state) => const MyAccountPage(),

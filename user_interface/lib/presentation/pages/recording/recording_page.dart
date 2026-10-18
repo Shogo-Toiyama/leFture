@@ -12,8 +12,6 @@ import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/themes/app_colors.dart'; // 色追加
-// AIチャットはApple審査対応のため一時的に非表示。再有効化時にコメントアウトを外す。
-// import 'package:lefture/presentation/widgets/ai_chat_sheet.dart';
 import 'package:lefture/application/recording/lecture_moments_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/recording/live_transcript_provider.dart';
@@ -3143,56 +3141,6 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
               ],
             ),
           ),
-          // AIチャットはApple審査対応のため一時的に非表示(Coming Soon的な
-          // 未完成機能を見せないため)。再度有効化する際はこのブロックと
-          // 冒頭の ai_chat_sheet.dart のimportのコメントアウトを外すこと。
-          /*
-          Divider(height: 1, color: AppColors.universe.glassBorder),
-          Opacity(
-            opacity: canInteract ? 1.0 : 0.4,
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Material(
-                      color: AppColors.universe.voidBackground.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(20),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: canInteract ? () => showAiChatSheet(context) : null,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: AppColors.universe.glassBorder),
-                          ),
-                          child: Text(
-                            'Ask AI about this lecture...',
-                            style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Material(
-                    color: AppColors.starGold,
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: canInteract ? () => showAiChatSheet(context) : null,
-                      child: const Padding(
-                        padding: EdgeInsets.all(10),
-                        child: Icon(Icons.auto_awesome, size: 18, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          */
         ],
       ),
     );

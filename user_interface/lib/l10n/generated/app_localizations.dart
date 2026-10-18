@@ -4754,24 +4754,6 @@ abstract class AppLocalizations {
   /// **'Recording Paused'**
   String get recordingMiniPlayerPaused;
 
-  /// Title in AI chat sheet header.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask AI'**
-  String get aiChatSheetTitle;
-
-  /// TextField hint text in AI chat sheet.
-  ///
-  /// In en, this message translates to:
-  /// **'Ask about this lecture...'**
-  String get aiChatSheetInputHint;
-
-  /// Fallback bot response text in dummy AI chat preview.
-  ///
-  /// In en, this message translates to:
-  /// **'This is a UI preview — real AI answers aren\'t wired up yet.'**
-  String get aiChatSheetPreviewFallback;
-
   /// Dialog title when asking to delete a course.
   ///
   /// In en, this message translates to:

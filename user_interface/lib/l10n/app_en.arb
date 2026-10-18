@@ -3563,18 +3563,6 @@
   "@recordingMiniPlayerPaused": {
     "description": "Status text in recording mini player when recording is paused."
   },
-  "aiChatSheetTitle": "Ask AI",
-  "@aiChatSheetTitle": {
-    "description": "Title in AI chat sheet header."
-  },
-  "aiChatSheetInputHint": "Ask about this lecture...",
-  "@aiChatSheetInputHint": {
-    "description": "TextField hint text in AI chat sheet."
-  },
-  "aiChatSheetPreviewFallback": "This is a UI preview — real AI answers aren't wired up yet.",
-  "@aiChatSheetPreviewFallback": {
-    "description": "Fallback bot response text in dummy AI chat preview."
-  },
   "courseDeleteDialogTitle": "Delete Course?",
   "@courseDeleteDialogTitle": {
     "description": "Dialog title when asking to delete a course."

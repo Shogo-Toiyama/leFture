@@ -2599,15 +2599,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get recordingMiniPlayerPaused => '一時停止中';
 
   @override
-  String get aiChatSheetTitle => 'AIに質問';
-
-  @override
-  String get aiChatSheetInputHint => 'この講義について質問する…';
-
-  @override
-  String get aiChatSheetPreviewFallback => 'これはプレビューです。実際のAI回答機能は今後実装予定です。';
-
-  @override
   String get courseDeleteDialogTitle => 'コースを削除しますか？';
 
   @override

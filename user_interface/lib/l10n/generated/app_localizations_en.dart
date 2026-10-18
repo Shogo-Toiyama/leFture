@@ -2711,16 +2711,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recordingMiniPlayerPaused => 'Recording Paused';
 
   @override
-  String get aiChatSheetTitle => 'Ask AI';
-
-  @override
-  String get aiChatSheetInputHint => 'Ask about this lecture...';
-
-  @override
-  String get aiChatSheetPreviewFallback =>
-      'This is a UI preview — real AI answers aren\'t wired up yet.';
-
-  @override
   String get courseDeleteDialogTitle => 'Delete Course?';
 
   @override

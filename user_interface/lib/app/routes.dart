@@ -29,7 +29,6 @@ class AppRoutes {
 
   // Features
   static const learningGalaxy = '/learning_galaxy';
-  static const aiChat = '/ai_chat';
   static const account = '/account';
   static const profile = '/profile';
   static const contact = '/contact';
