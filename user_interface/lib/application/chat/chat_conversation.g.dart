@@ -56,7 +56,7 @@ final class ChatConversationProvider
   }
 }
 
-String _$chatConversationHash() => r'c299cb34d0797fc5665b26d1d08140f6a5cc8988';
+String _$chatConversationHash() => r'ca5f6418d0faf2393fa98603efbc3b72aa545462';
 
 /// 今開いている会話の表示と送信(webappのuseChatConversationと同じ役割)。
 ///

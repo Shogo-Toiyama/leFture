@@ -744,10 +744,19 @@ class ChatTextAttachment extends ChatNewAttachment {
 
 /// 送る前にアップロードして取り出したファイル(draftの行)。
 class ChatFileAttachment extends ChatNewAttachment {
-  const ChatFileAttachment({required this.attachmentId, this.title = ''});
+  const ChatFileAttachment({
+    required this.attachmentId,
+    this.title = '',
+    this.fileName = '',
+    this.fileKind,
+  });
 
   final String attachmentId;
   final String title;
+
+  /// 送れなかったとき入力欄に資料のチップを戻すための、元の名前と種類。
+  final String fileName;
+  final ChatFileKind? fileKind;
 }
 
 /// ファイルのアップロード先(POST /chat/attachments/uploads の返事)。
