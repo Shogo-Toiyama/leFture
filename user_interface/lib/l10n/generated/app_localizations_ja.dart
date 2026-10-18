@@ -2161,6 +2161,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cardSelectionToolbarSourceLabel => '出典';
 
   @override
+  String get cardSelectionToolbarAskLabel => '質問';
+
+  @override
   String get cardSelectionToolbarLikeLabel => 'いいね';
 
   @override

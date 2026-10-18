@@ -639,6 +639,7 @@
   "cardSelectionToolbarNoteLabel": "ノート",
   "cardSelectionToolbarCopyLabel": "コピー",
   "cardSelectionToolbarSourceLabel": "出典",
+  "cardSelectionToolbarAskLabel": "質問",
   "cardSelectionToolbarLikeLabel": "いいね",
   "cardSelectionToolbarDislikeLabel": "低評価",
   "cardSelectionToolbarSaveLabel": "保存",

@@ -17,16 +17,20 @@ import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/core/utils/annotation_text_utils.dart';
+import 'package:lefture/core/utils/chat_selection.dart';
 import 'package:lefture/core/utils/markdown_bold_syntax.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/core/utils/text_preview.dart';
 import 'package:lefture/domain/entities/annotation.dart';
+import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/domain/entities/lecture_topic.dart';
 import 'package:lefture/domain/entities/review_card.dart';
 import 'package:lefture/infrastructure/local_db/repositories/review_card_repository_drift.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_page_context.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 import 'package:lefture/presentation/widgets/card_selection_toolbar.dart';
 import 'package:lefture/presentation/widgets/highlight_sub_toolbar.dart';
 import 'package:lefture/presentation/widgets/selection_swipe_priority.dart';
@@ -872,7 +876,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       temporaryHighlightBlockIdx.value = null;
     }
 
-    return Scaffold(
+    final page = Scaffold(
       backgroundColor: AppColors.paper.background,
       body: Container(
         decoration: BoxDecoration(
@@ -1194,6 +1198,38 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                     );
                                   }
                                 }
+                              },
+                              // 選んだ文章をAIに質問する(「Ask」)。選んだ位置は、選んだブロックの
+                              // 前後の文字で伝える
+                              onAskTap: () async {
+                                final card = flatItems[index].card;
+                                final located = locateSelection();
+                                final text = selectedText.value;
+                                if (card == null ||
+                                    located == null ||
+                                    text == null ||
+                                    text.isEmpty) {
+                                  return;
+                                }
+                                final selection = buildChatSelection(
+                                  reviewCardBlockPlainText(
+                                    card.cardContent[located.blockIdx!],
+                                  ),
+                                  located.startIdx,
+                                  located.endIdx,
+                                  text,
+                                  screen: ChatScreenRef(
+                                    kind: 'review_card',
+                                    id: card.id,
+                                  ),
+                                );
+                                selectionAreaKey.currentState?.selectableRegion
+                                    .clearSelection();
+                                await openAiChat(
+                                  context,
+                                  widgetRef,
+                                  selection: selection,
+                                );
                               },
                               onCopyTap: () async {
                                 final text = selectedText.value;
@@ -1821,6 +1857,16 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
           ),
         ),
       ),
+    );
+    // 見ているカード(表紙ならトピック)をチャットに伝える。本文はバックエンドがDBから読む
+    final currentItem = flatItems[index];
+    return ChatScreenScope(
+      world: ChatWorld.paper,
+      screen: currentItem.isCover
+          ? ChatScreenRef(kind: 'review_card', topicNumber: topic.topicNumber)
+          : ChatScreenRef(kind: 'review_card', id: currentItem.card!.id),
+      lectureId: lectureId,
+      child: page,
     );
   }
 

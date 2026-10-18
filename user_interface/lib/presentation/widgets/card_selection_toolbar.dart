@@ -29,6 +29,7 @@ class CardSelectionToolbar extends HookWidget {
     this.onNoteTap,
     this.onSourceTap,
     this.onCopyTap,
+    this.onAskTap,
   });
 
   final bool hasSelection;
@@ -48,6 +49,9 @@ class CardSelectionToolbar extends HookWidget {
   final VoidCallback? onNoteTap;
   final VoidCallback? onSourceTap;
   final VoidCallback? onCopyTap;
+
+  /// 選んだ文章をAIチャットに質問する。渡されたときだけ「Ask」を出す。
+  final VoidCallback? onAskTap;
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +97,13 @@ class CardSelectionToolbar extends HookWidget {
               color: color,
               onTap: onSourceTap,
             ),
+            if (onAskTap != null)
+              _ToolbarButton(
+                icon: Icons.chat_bubble_outline_rounded,
+                label: l10n.cardSelectionToolbarAskLabel,
+                color: color,
+                onTap: onAskTap,
+              ),
           ]
         : [
             _ToolbarButton(

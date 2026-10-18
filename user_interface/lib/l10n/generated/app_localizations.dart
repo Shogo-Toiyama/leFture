@@ -3938,6 +3938,12 @@ abstract class AppLocalizations {
   /// **'Source'**
   String get cardSelectionToolbarSourceLabel;
 
+  /// Icon+label button in the text-selection state of the CardSelectionToolbar. Opens the AI chat with the selected text attached so the user can ask about it. Must stay short.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask'**
+  String get cardSelectionToolbarAskLabel;
+
   /// Icon+label button in the default (no selection) state of the CardSelectionToolbar shown above Review Cards / Deep Notes content, used to mark the card as liked. Must stay short.
   ///
   /// In en, this message translates to:

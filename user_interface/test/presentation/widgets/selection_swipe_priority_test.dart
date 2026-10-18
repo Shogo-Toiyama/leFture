@@ -73,6 +73,57 @@ void main() {
     });
   });
 
+  group('SwipePrioritySelectionArea の「質問」', () {
+    testWidgets('メニューの先頭に「質問」が出て、選んだ文章が渡る', (tester) async {
+      final asked = <String>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SwipePrioritySelectionArea(
+                askLabel: 'Ask',
+                onAsk: asked.add,
+                child: const Text('heaps are trees'),
+              ),
+            ),
+          ),
+        ),
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('heaps are trees')),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Ask'), findsOneWidget);
+      await tester.tap(find.text('Ask'));
+      await tester.pumpAndSettle();
+      expect(asked.single, isNotEmpty);
+      expect('heaps are trees', contains(asked.single));
+    });
+
+    testWidgets('渡さなければ、標準のメニューのまま', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SwipePrioritySelectionArea(child: Text('heaps are trees')),
+            ),
+          ),
+        ),
+      );
+      final gesture = await tester.startGesture(
+        tester.getCenter(find.text('heaps are trees')),
+      );
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(find.text('Ask'), findsNothing);
+      expect(find.byType(AdaptiveTextSelectionToolbar), findsOneWidget);
+    });
+  });
+
   group('SelectionAwareHorizontalDragRecognizer', () {
     test('shouldDeferがtrueの間はポインタを受け取らない', () {
       var defer = false;

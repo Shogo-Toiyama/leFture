@@ -43,9 +43,18 @@ class SelectionAwareHorizontalDragRecognizer
 /// フリングの物理は純正のまま保たれる。選択は長押し起点のみになり、コピーは
 /// 標準のコンテキストメニューから行える。
 class SwipePrioritySelectionArea extends StatefulWidget {
-  const SwipePrioritySelectionArea({super.key, required this.child});
+  const SwipePrioritySelectionArea({
+    super.key,
+    required this.child,
+    this.askLabel,
+    this.onAsk,
+  });
 
   final Widget child;
+
+  /// 選択のメニューに足す「質問」(AIチャットに、選んだ文章を添えて聞く)。[onAsk]と一緒に渡す。
+  final String? askLabel;
+  final void Function(String selectedText)? onAsk;
 
   @override
   State<SwipePrioritySelectionArea> createState() =>
@@ -55,6 +64,7 @@ class SwipePrioritySelectionArea extends StatefulWidget {
 class _SwipePrioritySelectionAreaState
     extends State<SwipePrioritySelectionArea> {
   bool _hasSelection = false;
+  String _selectedText = '';
   Drag? _drag;
 
   void _handleDragStart(DragStartDetails details) {
@@ -78,13 +88,43 @@ class _SwipePrioritySelectionAreaState
 
   @override
   Widget build(BuildContext context) {
+    final onAsk = widget.onAsk;
+    final askLabel = widget.askLabel;
     return SelectionArea(
       onSelectionChanged: (content) {
         final hasSelection = content != null && content.plainText.isNotEmpty;
+        _selectedText = content?.plainText ?? '';
         if (hasSelection != _hasSelection) {
           setState(() => _hasSelection = hasSelection);
         }
       },
+      contextMenuBuilder: onAsk == null || askLabel == null
+          // 「質問」を足さないときは、SelectionAreaの標準のメニューのまま
+          ? (context, state) => AdaptiveTextSelectionToolbar.selectableRegion(
+              selectableRegionState: state,
+            )
+          : (context, state) {
+              final items = [...state.contextMenuButtonItems];
+              if (_selectedText.trim().isNotEmpty) {
+                // 標準のメニューは幅が足りないと項目を「⋮」に隠すので、先頭に置く
+                items.insert(
+                  0,
+                  ContextMenuButtonItem(
+                    label: askLabel,
+                    onPressed: () {
+                      final text = _selectedText.trim();
+                      state.hideToolbar();
+                      state.clearSelection();
+                      onAsk(text);
+                    },
+                  ),
+                );
+              }
+              return AdaptiveTextSelectionToolbar.buttonItems(
+                anchors: state.contextMenuAnchors,
+                buttonItems: items,
+              );
+            },
       child: RawGestureDetector(
         behavior: HitTestBehavior.translucent,
         gestures: {

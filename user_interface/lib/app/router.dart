@@ -15,6 +15,8 @@ import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/infrastructure/supabase/pending_auth_action.dart';
 
 // Pages
+import 'package:lefture/presentation/widgets/ai_chat/chat_page_context.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 import 'package:lefture/presentation/pages/auth_result/auth_result_page.dart';
 import 'package:lefture/presentation/pages/introduction/introduction_page.dart';
 import 'package:lefture/presentation/pages/sign_in/sign_in_page.dart';
@@ -447,10 +449,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final openAnnouncementId =
                           state.uri.queryParameters['openAnnouncementId'];
                       final scrollTo = state.uri.queryParameters['scrollTo'];
-                      return LectureViewerPage(
-                        lectureId: id!,
-                        initialOpenAnnouncementId: openAnnouncementId,
-                        initialScrollTo: scrollTo,
+                      return ChatScreenScope(
+                        lectureId: id,
+                        child: LectureViewerPage(
+                          lectureId: id!,
+                          initialOpenAnnouncementId: openAnnouncementId,
+                          initialScrollTo: scrollTo,
+                        ),
                       );
                     },
                     routes: [
@@ -465,11 +470,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                           final highlightSidsStr =
                               state.uri.queryParameters['highlight_sids'];
                           final highlightSids = highlightSidsStr?.split(',');
-                          return TranscriptPage(
+                          return ChatScreenScope(
+                            world: ChatWorld.paper,
                             lectureId: id,
-                            startSid: startSid,
-                            endSid: endSid,
-                            highlightSids: highlightSids,
+                            child: TranscriptPage(
+                              lectureId: id,
+                              startSid: startSid,
+                              endSid: endSid,
+                              highlightSids: highlightSids,
+                            ),
                           );
                         },
                       ),
@@ -485,9 +494,13 @@ final routerProvider = Provider<GoRouter>((ref) {
                       final initialIndex = indexStr != null
                           ? int.tryParse(indexStr)
                           : null;
-                      return ReviewCardsViewerPage(
+                      return ChatScreenScope(
+                        world: ChatWorld.paper,
                         lectureId: id,
-                        initialIndex: initialIndex ?? 0,
+                        child: ReviewCardsViewerPage(
+                          lectureId: id,
+                          initialIndex: initialIndex ?? 0,
+                        ),
                       );
                     },
                   ),
@@ -497,7 +510,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: AppRoutes.deepNotesList, // 'dn/:lectureId'
                     builder: (context, state) {
                       final id = state.pathParameters['lectureId']!;
-                      return DeepNotesListPage(lectureId: id);
+                      return ChatScreenScope(
+                        world: ChatWorld.paper,
+                        lectureId: id,
+                        child: DeepNotesListPage(lectureId: id),
+                      );
                     },
                   ),
 
@@ -514,10 +531,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                           0;
                       final topics =
                           (state.extra as List<DeepNoteTopic>?) ?? const [];
-                      return DeepNotesDetailPage(
+                      return ChatScreenScope(
+                        world: ChatWorld.paper,
                         lectureId: id,
-                        topicIndex: index,
-                        topics: topics,
+                        child: DeepNotesDetailPage(
+                          lectureId: id,
+                          topicIndex: index,
+                          topics: topics,
+                        ),
                       );
                     },
                   ),

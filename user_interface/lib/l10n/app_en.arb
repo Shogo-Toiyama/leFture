@@ -2976,6 +2976,10 @@
   "@cardSelectionToolbarSourceLabel": {
     "description": "Icon+label button in the text-selection state of the CardSelectionToolbar, currently a UI-only placeholder action for viewing the transcript source of the selected text. Must stay short."
   },
+  "cardSelectionToolbarAskLabel": "Ask",
+  "@cardSelectionToolbarAskLabel": {
+    "description": "Icon+label button in the text-selection state of the CardSelectionToolbar. Opens the AI chat with the selected text attached so the user can ask about it. Must stay short."
+  },
   "cardSelectionToolbarLikeLabel": "Like",
   "@cardSelectionToolbarLikeLabel": {
     "description": "Icon+label button in the default (no selection) state of the CardSelectionToolbar shown above Review Cards / Deep Notes content, used to mark the card as liked. Must stay short."

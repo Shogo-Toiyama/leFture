@@ -2256,6 +2256,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cardSelectionToolbarSourceLabel => 'Source';
 
   @override
+  String get cardSelectionToolbarAskLabel => 'Ask';
+
+  @override
   String get cardSelectionToolbarLikeLabel => 'Like';
 
   @override

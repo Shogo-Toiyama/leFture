@@ -17,11 +17,15 @@ import 'package:lefture/domain/entities/deep_note.dart';
 import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/infrastructure/local_db/repositories/deep_note_repository_drift.dart';
 import 'package:lefture/core/utils/annotation_text_utils.dart';
+import 'package:lefture/core/utils/chat_selection.dart';
+import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/core/utils/markdown_bold_syntax.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_page_context.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 import 'package:lefture/presentation/widgets/blurred_summary_placeholder.dart';
 import 'package:lefture/presentation/widgets/custom_scrollbar.dart';
 import 'package:lefture/presentation/widgets/card_selection_toolbar.dart';
@@ -360,7 +364,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
       temporaryHighlight.value = null;
     }
 
-    return Scaffold(
+    final page = Scaffold(
       backgroundColor: AppColors.paper.background,
       body: Container(
         decoration: BoxDecoration(
@@ -607,6 +611,26 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                     );
                   }
                 },
+                // 選んだ文章をAIに質問する(「Ask」)。選んだ位置は前後の文字で伝える
+                onAskTap: () async {
+                  final located = locateSelection();
+                  final text = selectedText.value;
+                  if (located == null || text == null || text.isEmpty) return;
+                  final selection = buildChatSelection(
+                    flattenMarkdownText(
+                      stripSidCitations(stripFigurePlaceholders(topic.content)),
+                    ),
+                    located.startIdx,
+                    located.endIdx,
+                    text,
+                    screen: topic.noteId == null
+                        ? null
+                        : ChatScreenRef(kind: 'deep_note', id: topic.noteId),
+                  );
+                  selectionAreaKey.currentState?.selectableRegion
+                      .clearSelection();
+                  await openAiChat(context, ref, selection: selection);
+                },
               ),
               Expanded(
                 child: Stack(
@@ -782,6 +806,15 @@ class DeepNotesDetailPage extends HookConsumerWidget {
         ),
       ),
     );
+    // 見ているトピックをチャットに伝える(離れたら外れる)。本文はバックエンドがDBから読む
+    return ChatScreenScope(
+      world: ChatWorld.paper,
+      screen: topic.noteId == null
+          ? null
+          : ChatScreenRef(kind: 'deep_note', id: topic.noteId),
+      lectureId: lectureId,
+      child: page,
+    );
   }
 
   Widget _buildAppBar(
@@ -799,8 +832,9 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     bool noteToolbarOpen,
     VoidCallback onNoteTap,
     VoidCallback? onSourceTap,
-    VoidCallback? onCopyTap,
-  ) {
+    VoidCallback? onCopyTap, {
+    VoidCallback? onAskTap,
+  }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -854,6 +888,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                   onNoteTap: onNoteTap,
                   onSourceTap: onSourceTap,
                   onCopyTap: onCopyTap,
+                  onAskTap: onAskTap,
                   onLike: topic?.noteId == null
                       ? null
                       : () async {
