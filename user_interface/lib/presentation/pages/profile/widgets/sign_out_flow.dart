@@ -16,6 +16,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/auth/local_data_wipe_service.dart';
+import 'package:lefture/application/chat/chat_conversation.dart';
+import 'package:lefture/application/chat/chat_threads.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/recording/recording_state.dart';
@@ -237,6 +239,10 @@ Future<void> _signOutAndWipe(
 }) async {
   // ウィジェットが生きているうちに済ませる処理は、遷移より前にまとめて行う。
   ref.invalidate(courseListProvider);
+  // チャットの会話はプロセス内に生き残る(keepAlive)ので、前のアカウントの会話や一覧が
+  // 次にサインインした人に見えないよう、ここで捨てる。端末のキャッシュはwipeAllで消える。
+  ref.read(chatConversationProvider.notifier).clearConversation();
+  ref.invalidate(chatThreadListProvider);
 
   // onAuthStateChangeによるGoRouterの/sign_inへの割り込みリダイレクトを防ぐため、
   // signOut()の前にまず公開ルートであるWelcome画面へ遷移しておく。
