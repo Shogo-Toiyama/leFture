@@ -34,6 +34,7 @@ import 'package:lefture/presentation/pages/profile/my_account_page.dart';
 import 'package:lefture/presentation/pages/profile/credit_detail_page.dart';
 import 'package:lefture/presentation/pages/profile/purchase_credits_page.dart';
 import 'package:lefture/presentation/pages/profile/plans_page.dart';
+import 'package:lefture/presentation/pages/profile/ai_memory_page.dart';
 import 'package:lefture/presentation/pages/profile/user_profile_detail_page.dart';
 import 'package:lefture/presentation/pages/contact/contact_page.dart';
 import 'package:lefture/presentation/pages/profile/permissions_settings_page.dart';
@@ -585,6 +586,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.profile,
         builder: (context, state) => const UserProfileDetailPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.aiMemory,
+        builder: (context, state) => const AiMemoryPage(),
       ),
       GoRoute(
         path: AppRoutes.contact,

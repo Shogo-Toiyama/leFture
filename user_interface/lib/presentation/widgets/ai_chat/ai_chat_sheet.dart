@@ -12,6 +12,7 @@ import 'package:lefture/core/utils/chat_citation_target.dart';
 import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/ai_chat/ai_settings_sheet.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_citation_sheet.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_colors.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_conversation_view.dart';
@@ -81,7 +82,8 @@ class AiChatSheet extends ConsumerStatefulWidget {
   final ChatSelection? selection;
   final ChatScreenRef? screen;
 
-  /// AIの設定(覚え書き・AIのメモ・自分像への入口)を開く。nullならボタンを出さない。
+  /// AIの設定(覚え書き・AIのメモ・自分像への入口)を開く。nullなら、このシートが持つ設定のシート
+  /// ([showAiSettingsSheet])を開く。
   final VoidCallback? onOpenAiSettings;
 
   @override
@@ -107,6 +109,21 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet> {
       // 開く画面の構築が終わってから読み込みを始める(build中に状態を書き換えない)
       Future(() => _notifier.openThread(id));
     }
+  }
+
+  /// AIチャット設定のシートを開く。ページへの入口を押したら、チャットも閉じてそのページへ進む。
+  void _openAiSettings() {
+    final router = GoRouter.of(context);
+    unawaited(
+      showAiSettingsSheet(
+        context,
+        world: widget.world,
+        onOpenPage: (route) {
+          Navigator.of(context).pop();
+          unawaited(router.push(route));
+        },
+      ),
+    );
   }
 
   // ---- シートの高さ ----
@@ -289,7 +306,7 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet> {
                         ),
                         onNew: _newConversation,
                         onAttachments: _controller.openAttachmentList,
-                        onSettings: widget.onOpenAiSettings,
+                        onSettings: widget.onOpenAiSettings ?? _openAiSettings,
                         onClose: () => Navigator.of(context).maybePop(),
                       ),
                     ],

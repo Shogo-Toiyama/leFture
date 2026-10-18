@@ -239,9 +239,9 @@ void main() {
     expect(find.text(l10n.aiChatOpenInLecture), findsOneWidget);
   });
 
-  testWidgets('AIの設定のボタンは、入口が渡されたときだけ出る', (tester) async {
+  testWidgets('AIの設定のボタンは、いつも出る(入口が渡されなければ設定のシートを開く)', (tester) async {
     await openSheet(tester);
-    expect(find.byTooltip(l10n.aiSettingsButton), findsNothing);
+    expect(find.byTooltip(l10n.aiSettingsButton), findsOneWidget);
   });
 
   testWidgets('AIの設定のボタンを押すと、入口が呼ばれる', (tester) async {

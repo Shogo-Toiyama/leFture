@@ -89,6 +89,18 @@ class MyAccountPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 _ProfileTilesSection(profile: profile),
+                const SizedBox(height: 12),
+                // 自分像のAI: 話し方の覚え書き・AIのメモ
+                _GlassCard(
+                  child: _SettingsTile(
+                    icon: Icons.tune_rounded,
+                    iconColor: AppColors.starGold,
+                    title: l10n.aiSettingsButton,
+                    subtitle: l10n.accountAiSettingsSub,
+                    onTap: () => context.push(AppRoutes.aiMemory),
+                    isLast: true,
+                  ),
+                ),
 
                 const SizedBox(height: 32),
 
