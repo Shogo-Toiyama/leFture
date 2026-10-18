@@ -656,11 +656,40 @@ def _fetch_thread_row(admin_client, thread_id: str) -> Optional[dict]:
     return t.data if t else None
 
 
-def _fetch_reply_target(admin_client, message_id: str) -> Optional[dict]:
+def _fetch_edit_target(admin_client, message_id: str) -> Optional[dict]:
     r = admin_client.table("chat_messages") \
-        .select("id, thread_id, user_id, role, status, content, deleted_at") \
+        .select("id, thread_id, user_id, role, created_at, deleted_at") \
         .eq("id", message_id).maybe_single().execute()
     return r.data if r else None
+
+
+def _fetch_rows_between(admin_client, thread_id: str, after: Optional[str], before: str) -> list[dict]:
+    """編集したとき: 残る要約ブロックの後ろから、編集点の手前までの履歴(新しい方からRAW_FETCH_MESSAGES件)。"""
+    q = admin_client.table("chat_messages").select("id, role, content, status, created_at, context") \
+        .eq("thread_id", thread_id).is_("deleted_at", "null").lt("created_at", before)
+    if after:
+        q = q.gt("created_at", after)
+    h = q.order("created_at", desc=True).limit(RAW_FETCH_MESSAGES).execute()
+    return list(reversed(h.data or []))
+
+
+def _ts(value: Optional[str]) -> Optional[datetime]:
+    """DBのtimestamptzの文字列を比べられる形に(小数秒の桁数が行ごとに違うので、文字列のまま比べない)。"""
+    return datetime.fromisoformat(value) if value else None
+
+
+def _fetch_reply_target(admin_client, message_id: str) -> Optional[dict]:
+    r = admin_client.table("chat_messages") \
+        .select("id, thread_id, user_id, role, status, content, created_at, deleted_at") \
+        .eq("id", message_id).maybe_single().execute()
+    return r.data if r else None
+
+
+def _truncate_thread_from(admin_client, thread_id: str, user_id: str, message_id: str) -> dict:
+    res = admin_client.rpc("truncate_chat_thread_from", {
+        "p_thread_id": thread_id, "p_user_id": user_id, "p_message_id": message_id,
+    }).execute()
+    return res.data or {}
 
 
 def _fetch_busy(admin_client, thread_id: str) -> bool:
@@ -716,6 +745,7 @@ def _write_turn_rows(
     attachments: Optional[list[NewAttachment]] = None,
     attachment_modes: Optional[list[dict]] = None,
     reply_to_message_id: Optional[str] = None,
+    adopt_attachments_from: Optional[str] = None,
 ) -> tuple[str, str, str, list[dict]]:
     """
     スレッド作成(新規のみ) → ファイルのdraftをこのスレッドに結び付ける → userメッセージ →
@@ -802,6 +832,11 @@ def _write_turn_rows(
             raise ChatRequestError(409, "DUPLICATE_MESSAGE", "This message was already received.")
         raise
     user_message_id = u.data[0]["id"]
+    # 編集して送ったとき: 編集したメッセージで添付した資料を、新しいメッセージの資料に付け替える
+    # (資料は残す。本文の @資料 もそのまま使える。消えたのはメッセージの方)
+    if adopt_attachments_from:
+        admin_client.table("chat_attachments").update({"message_id": user_message_id}) \
+            .eq("message_id", adopt_attachments_from).is_("deleted_at", "null").execute()
 
     attachment_rows: list[dict] = []
     if claimed:
@@ -854,6 +889,7 @@ async def prepare_chat_turn(
     selection_after: Optional[str] = None,
     attachments: Optional[list[NewAttachment]] = None,
     reply_to_message_id: Optional[str] = None,
+    replace_from_message_id: Optional[str] = None,
 ) -> PreparedTurn:
     """
     事前チェック→保存。お互いに依存しない読み取り(残高・送信頻度・断られた
@@ -908,6 +944,9 @@ async def prepare_chat_turn(
 
     admin_client = get_supabase_client()
     is_new_thread = thread_id is None
+    # 編集・作り直し: このユーザーメッセージ自身と、それより後ろを消してから、新しい往復を書く(一本道)
+    if replace_from_message_id and is_new_thread:
+        raise ChatRequestError(422, "INVALID_EDIT", "An edit needs the conversation it belongs to.")
 
     # 地図(コース一覧)と今のプランは、ユーザーIDだけで読めるので事前チェックと並行で読み始める。
     # 振り分け役がコース一覧を使うので、ここで始めておくと振り分け役の開始を待たせない。
@@ -957,7 +996,7 @@ async def prepare_chat_turn(
     (
         balance_micro, rate_count, blocked_count, dup_row, lecture_label,
         thread_row, is_busy, history_rows, summary_blocks, summary_level2, attachment_rows, draft_rows,
-        reply_row,
+        reply_row, edit_target,
     ) = await asyncio.gather(
         to_thread(_fetch_balance_micro, admin_client, user_id),
         to_thread(_fetch_rate_limit_count, admin_client, user_id),
@@ -973,12 +1012,29 @@ async def prepare_chat_turn(
         to_thread(_fetch_drafts, admin_client, [a.attachment_id for a in attachments if a.is_file]),
         to_thread(_fetch_reply_target, admin_client, reply_to_message_id)
         if reply_to_message_id and selected_text and not is_new_thread else none(),
+        to_thread(_fetch_edit_target, admin_client, replace_from_message_id) if replace_from_message_id else none(),
     )
     timer.mark("prep_checks")
     summary_blocks = summary_blocks or []
     history_rows = rows_after_fold_point(
         history_rows or [], summary_blocks[-1]["end_message_id"] if summary_blocks else None
     )
+
+    # 編集・作り直し: 編集点より前だけで会話を組み直す(消すのは事前チェックが全部通った後)
+    edit_from: Optional[datetime] = None
+    if replace_from_message_id:
+        if (not edit_target or edit_target.get("thread_id") != thread_id or edit_target.get("user_id") != user_id
+                or edit_target.get("role") != "user" or edit_target.get("deleted_at")):
+            raise ChatRequestError(404, "MESSAGE_NOT_FOUND", "The message to edit was not found.")
+        edit_from = _ts(edit_target["created_at"])
+        summary_blocks = [b for b in summary_blocks if _ts(b["end_message_created_at"]) < edit_from]
+        summary_level2 = [b for b in summary_level2 or [] if _ts(b["end_message_created_at"]) < edit_from]
+        history_rows = await to_thread(
+            _fetch_rows_between, admin_client, thread_id,
+            summary_blocks[-1]["end_message_created_at"] if summary_blocks else None, edit_target["created_at"])
+        # 後ろのメッセージで添付した資料は消える(編集したメッセージ自身の資料は残る)
+        attachment_rows = [r for r in attachment_rows or []
+                           if r.get("message_id") == replace_from_message_id or _ts(r.get("created_at")) < edit_from]
 
     if context_lecture_id and lecture_label is None:
         context_lecture_id = None
@@ -1031,7 +1087,8 @@ async def prepare_chat_turn(
     if reply_row and selected_text:
         if (reply_row.get("thread_id") == thread_id and reply_row.get("user_id") == user_id
                 and reply_row.get("role") == "assistant" and reply_row.get("status") in ("complete", "stopped")
-                and not reply_row.get("deleted_at")):
+                and not reply_row.get("deleted_at")
+                and (edit_from is None or _ts(reply_row.get("created_at")) < edit_from)):
             reply_quote = build_reply_quote(reply_row.get("content") or "", ScreenSelection(
                 text=selected_text,
                 before=(selection_before or "")[-MAX_SELECTION_CONTEXT_CHARS:],
@@ -1064,10 +1121,21 @@ async def prepare_chat_turn(
 
     timer.mark("prep_thread")
 
+    if replace_from_message_id:
+        # 削除・無効化は1つのトランザクションで(migration 20261018000000_chat_edit_truncate.sql)
+        try:
+            truncated = await to_thread(_truncate_thread_from, admin_client, thread_id, user_id, replace_from_message_id)
+        except Exception as e:
+            if "MESSAGE_NOT_FOUND" in str(e):
+                raise ChatRequestError(404, "MESSAGE_NOT_FOUND", "The message to edit was not found.")
+            raise
+        timer.details["edit"] = truncated
+        timer.mark("prep_truncated")
+
     thread_id, user_message_id, assistant_message_id, new_attachment_rows = await to_thread(
         _write_turn_rows, admin_client, is_new_thread, thread_id, user_id, content,
         client_message_id, context_lecture_id, selected_text, screen_ref, attachments, attachment_modes,
-        validated_reply_to_id,
+        validated_reply_to_id, replace_from_message_id,
     )
     timer.mark("prep_saved")
 

@@ -165,6 +165,8 @@ export interface SendChatMessageParams {
   attachments?: ChatDraftAttachment[];
   /** この会話の既存の資料を指す(全文で添付 / メンション)。 */
   references?: ChatAttachmentRef[];
+  /** 編集・作り直し: このユーザーメッセージ自身と、それより後ろを消してから送る(一本道) */
+  replaceFromMessageId?: string;
 }
 
 /**
@@ -229,6 +231,7 @@ export async function sendChatMessage(
                 })),
               ]
             : null,
+        replace_from_message_id: params.replaceFromMessageId ?? null,
         // 「昨日の授業」「今学期」を端末の日付で解決するため(バックエンドは無ければUTC)
         timezone: deviceTimeZone(),
       }),

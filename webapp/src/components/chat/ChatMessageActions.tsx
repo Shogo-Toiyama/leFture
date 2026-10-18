@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Copy, Flag, Info, MoreHorizontal, X } from 'lucide-react';
+import { Check, Copy, Flag, Info, MoreHorizontal, Pencil, RotateCw, X } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { CHAT_MENTION_RE, type ChatMessage } from '../../types/chat';
 import { ReportSheet } from '../ReportSheet';
@@ -34,13 +34,17 @@ interface ChatMessageActionsProps {
   detailsFor?: ChatMessage;
   /** この回答のもとになった質問(報告に添える)。detailsForと一緒に渡す。 */
   question?: string;
+  /** 自分のメッセージを編集する(下の入力欄で直す) */
+  onEdit?: () => void;
+  /** 最後の回答を作り直す */
+  onRegenerate?: () => void;
 }
 
 /**
  * メッセージの下の操作行(コピー・「…」メニュー)。
  * 色はCSS変数(--chat-act-*)で決め、ダーク/ペーパー(.is-paper)の両方に合わせる。
  */
-export const ChatMessageActions: React.FC<ChatMessageActionsProps> = ({ copyText, detailsFor, question }) => {
+export const ChatMessageActions: React.FC<ChatMessageActionsProps> = ({ copyText, detailsFor, question, onEdit, onRegenerate }) => {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -86,6 +90,24 @@ export const ChatMessageActions: React.FC<ChatMessageActionsProps> = ({ copyText
       >
         {copied ? <Check size={16} /> : <Copy size={16} />}
       </button>
+
+      {onEdit && (
+        <button type="button" className="chat-act-btn" onClick={onEdit} aria-label={t('chatActionEdit')} title={t('chatActionEdit')}>
+          <Pencil size={16} />
+        </button>
+      )}
+
+      {onRegenerate && (
+        <button
+          type="button"
+          className="chat-act-btn"
+          onClick={onRegenerate}
+          aria-label={t('chatActionRegenerate')}
+          title={t('chatActionRegenerate')}
+        >
+          <RotateCw size={16} />
+        </button>
+      )}
 
       {detailsFor && (
         <span className="chat-act-menu-anchor">

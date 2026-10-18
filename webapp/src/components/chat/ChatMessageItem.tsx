@@ -53,6 +53,12 @@ interface ChatMessageItemProps {
   question?: string;
   /** assistantのみ: 回答の一部を選んで「返信」したとき(次の送信に添える引用にする)。 */
   onReplyToSelection?: (selection: ChatSelection) => void;
+  /** userのみ: 編集する(下の入力欄で直す)。生成中・送れていないメッセージでは渡さない */
+  onEdit?: () => void;
+  /** assistantのみ: 作り直す(最後の回答だけ) */
+  onRegenerate?: () => void;
+  /** 編集中の表示: target=直しているメッセージ / doomed=送ると消えるメッセージ */
+  editState?: 'target' | 'doomed';
 }
 
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
@@ -64,11 +70,16 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   onResend,
   question,
   onReplyToSelection,
+  onEdit,
+  onRegenerate,
+  editState,
 }) => {
   if (message.role === 'user') {
     return (
       <UserMessage
         message={message}
+        onEdit={onEdit}
+        editState={editState}
         attachments={attachments}
         attachmentsById={attachmentsById}
         onOpenAttachment={onOpenAttachment}
@@ -83,6 +94,8 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
       onResend={onResend}
       question={question}
       onReplyToSelection={onReplyToSelection}
+      onRegenerate={onRegenerate}
+      editState={editState}
     />
   );
 };
@@ -167,7 +180,9 @@ const UserMessage: React.FC<{
   attachments?: ChatAttachment[];
   attachmentsById?: Map<string, ChatAttachment>;
   onOpenAttachment?: (attachment: ViewableAttachment, id?: string) => void;
-}> = ({ message, attachments, attachmentsById, onOpenAttachment }) => {
+  onEdit?: () => void;
+  editState?: 'target' | 'doomed';
+}> = ({ message, attachments, attachmentsById, onOpenAttachment, onEdit, editState }) => {
   const { t, formatNumber } = useLanguage();
   const selected = message.context?.selected_text;
   const metaFor = (kind: ChatAttachmentKind, chars: number, pages: number | null | undefined) => {
@@ -236,7 +251,7 @@ const UserMessage: React.FC<{
     )
     .join('');
   return (
-    <div className={`chat-msg is-user ${message.failedCode ? 'is-failed' : ''}`}>
+    <div className={`chat-msg is-user ${message.failedCode ? 'is-failed' : ''} ${editState ? `is-edit-${editState}` : ''}`}>
       {chips.length > 0 && (
         <div className="chat-msg-attachments">
           {chips.map((chip) => (
@@ -293,7 +308,7 @@ const UserMessage: React.FC<{
           )}
         </div>
       )}
-      {message.content && <ChatMessageActions copyText={copyText} />}
+      {message.content && <ChatMessageActions copyText={copyText} onEdit={onEdit} />}
       {message.failedCode && (
         <span className="chat-msg-failed">
           <AlertCircle size={13} />
@@ -374,7 +389,9 @@ const AssistantMessage: React.FC<{
   onResend?: () => void;
   question?: string;
   onReplyToSelection?: (selection: ChatSelection) => void;
-}> = ({ message, attachmentsById, onOpenCitation, onResend, question, onReplyToSelection }) => {
+  onRegenerate?: () => void;
+  editState?: 'target' | 'doomed';
+}> = ({ message, attachmentsById, onOpenCitation, onResend, question, onReplyToSelection, onRegenerate, editState }) => {
   const { t } = useLanguage();
   const [preview, setPreview] = useState<PreviewState | null>(null);
 
@@ -414,8 +431,16 @@ const AssistantMessage: React.FC<{
   // 自分のメッセージが続いて並んで見えるように)
   if (message.status === 'stopped' && !message.content.trim()) {
     return (
-      <div className="chat-msg is-assistant is-stopped-empty">
-        <span className="chat-stopped-line">{t('chatStopped')}</span>
+      <div className={`chat-msg is-assistant is-stopped-empty ${editState ? `is-edit-${editState}` : ''}`}>
+        <span className="chat-stopped-line">
+          {t('chatStopped')}
+          {onRegenerate && (
+            <button type="button" className="chat-link-btn" onClick={onRegenerate}>
+              <RotateCw size={12} />
+              {t('chatActionRegenerate')}
+            </button>
+          )}
+        </span>
         <StoppedAttachmentsNotice message={message} attachmentsById={attachmentsById} />
       </div>
     );
@@ -500,7 +525,9 @@ const AssistantMessage: React.FC<{
   );
 
   return (
-    <div className={`chat-msg is-assistant ${message.status === 'blocked' ? 'is-blocked' : ''}`}>
+    <div
+      className={`chat-msg is-assistant ${message.status === 'blocked' ? 'is-blocked' : ''} ${editState ? `is-edit-${editState}` : ''}`}
+    >
       {showStage && !message.reconnecting && !message.stopping && (
         <span className="chat-stage" aria-live="polite">
           <span className="chat-dots" aria-hidden="true">
@@ -545,7 +572,7 @@ const AssistantMessage: React.FC<{
           {onResend && (
             <button type="button" className="chat-link-btn" onClick={onResend}>
               <RotateCw size={13} />
-              {t('chatResend')}
+              {t('chatActionRegenerate')}
             </button>
           )}
         </div>
@@ -591,7 +618,9 @@ const AssistantMessage: React.FC<{
         </div>
       )}
 
-      {hasFinalText && <ChatMessageActions copyText={copyText} detailsFor={message} question={question} />}
+      {hasFinalText && (
+        <ChatMessageActions copyText={copyText} detailsFor={message} question={question} onRegenerate={onRegenerate} />
+      )}
 
       <CitationPreviewModal
         citation={preview?.citation ?? null}

@@ -177,6 +177,48 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     return map;
   }, [attachments]);
 
+  // ---- 編集・作り直し(一本道。ロードマップ2-12) ----
+  /** 下の入力欄で直しているユーザーメッセージ。送ると、そのメッセージ自身と後ろが消えて、そこからやり直す */
+  const [editingId, setEditingId] = useState<string | null>(null);
+  /** 編集・作り直しが送る前に弾かれた(残高不足など)。会話は元のまま */
+  const [editError, setEditError] = useState<{ code: string; detail: Record<string, unknown> } | null>(null);
+  /** 後ろで添付した資料も消えるときだけ、送る前に確かめる */
+  const [pendingEdit, setPendingEdit] = useState<{
+    content: string;
+    drafts: ChatDraftAttachment[];
+    references: ChatAttachmentRef[];
+    context: ChatMessageContext;
+  } | null>(null);
+  useEffect(() => {
+    setEditingId(null);
+    setEditError(null);
+    setPendingEdit(null);
+  }, [threadId]);
+
+  const editInfo = useMemo(() => {
+    if (!editingId) return null;
+    const index = messages.findIndex((m) => m.id === editingId);
+    if (index < 0) return null;
+    const later = messages.slice(index + 1);
+    const laterIds = new Set(later.map((m) => m.id));
+    return {
+      laterIds,
+      turns: later.filter((m) => m.role === 'user').length,
+      doomedAttachments: attachments.filter(
+        (a) => a.message_id && laterIds.has(a.message_id) && (a.status === 'ready' || a.status === 'processing')
+      ),
+    };
+  }, [editingId, messages, attachments]);
+
+  /** 送るときに一緒に指す資料(このメッセージで添付・指した資料のうち、今も使えるもの) */
+  const referencesOf = useCallback(
+    (message: LocalChatMessage): ChatAttachmentRef[] =>
+      (message.context.attachments ?? [])
+        .filter((a) => attachmentsById.get(a.id)?.status === 'ready')
+        .map((a) => ({ attachment_id: a.id, mode: a.mode })),
+    [attachmentsById]
+  );
+
   // 1往復が終わった(sending: true → false)ことを親に知らせる
   const wasSendingRef = useRef(false);
   useEffect(() => {
@@ -213,6 +255,52 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   const selectedText = activeSelection?.text ?? null;
   const selectedTooLong = (selectedText?.length ?? 0) > CHAT_MAX_SELECTED_TEXT_CHARS;
 
+  /** 送ったときの文脈から、入力欄の引用(選択・返信)を戻す */
+  const restoreQuote = (context: ChatMessageContext) =>
+    setReplySelection(
+      context.selected_text
+        ? { text: context.selected_text, screen: context.screen, replyToMessageId: context.reply_to_message_id }
+        : null
+    );
+
+  /** 編集を送る。送る前に弾かれたら、会話は元のままなので入力欄を編集中に戻す */
+  const sendEdit = (
+    targetId: string,
+    content: string,
+    drafts: ChatDraftAttachment[],
+    references: ChatAttachmentRef[],
+    context: ChatMessageContext
+  ) => {
+    stickToBottomRef.current = true;
+    setEditingId(null);
+    setEditError(null);
+    void send(content, context, drafts, references, {
+      replaceFromMessageId: targetId,
+      onRejected: (code, detail) => {
+        setEditingId(targetId);
+        setEditError({ code, detail });
+        setPrefill({ text: content, attachments: drafts, references, nonce: Date.now() });
+        restoreQuote(context);
+      },
+    });
+  };
+
+  /** 自分のメッセージを編集する: 本文・資料・引用を下の入力欄に読み込む */
+  const startEdit = (message: LocalChatMessage) => {
+    if (sending) return;
+    setEditingId(message.id);
+    setEditError(null);
+    setPrefill({ text: message.content, attachments: [], references: referencesOf(message), nonce: Date.now() });
+    restoreQuote(message.context);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditError(null);
+    setReplySelection(null);
+    setPrefill({ text: '', attachments: [], references: [], nonce: Date.now() });
+  };
+
   const handleSend = useCallback(
     (content: string, drafts: ChatDraftAttachment[] = [], references: ChatAttachmentRef[] = []) => {
       stickToBottomRef.current = true;
@@ -227,25 +315,41 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
         if (activeSelection.after) context.selection_after = activeSelection.after;
         if (activeSelection.replyToMessageId) context.reply_to_message_id = activeSelection.replyToMessageId;
       }
-      void send(content, context, drafts, references);
       // 選択テキストは1回の質問にだけ添える
       if (activeSelection) clearSelection();
+      if (editingId) {
+        // 後ろで添付した資料も消えるときだけ、送る前に確かめる(往復が消えることはバーに出ている)
+        if (editInfo && editInfo.doomedAttachments.length > 0) {
+          setPendingEdit({ content, drafts, references, context });
+          return;
+        }
+        sendEdit(editingId, content, drafts, references, context);
+        return;
+      }
+      void send(content, context, drafts, references);
     },
-    [lectureId, activeSelection, screen, send, clearSelection]
+    [lectureId, activeSelection, screen, send, clearSelection, editingId, editInfo]
   );
 
-  /** 返答に失敗したassistantメッセージの直前のuserメッセージを、もう一度送る。 */
-  const resendFor = useCallback(
-    (assistantIndex: number) => {
-      const previousUser = [...messages.slice(0, assistantIndex)].reverse().find((m) => m.role === 'user');
-      if (!previousUser) return undefined;
-      return () => {
-        stickToBottomRef.current = true;
-        void send(previousUser.content, previousUser.context);
-      };
-    },
-    [messages, send]
-  );
+  /**
+   * 最後の回答を作り直す: 直前の質問を、同じ内容で編集して送る(その質問と回答を消して、新しい往復を書く)。
+   * 作り直せるのは最後の回答だけ(途中の回答を作り直すと後ろの会話の前提が崩れるので、それは質問の編集で行う)。
+   */
+  const regenerateFor = (assistantIndex: number) => {
+    if (sending || editingId || assistantIndex !== messages.length - 1) return undefined;
+    const target = messages[assistantIndex];
+    if (!['complete', 'stopped', 'error'].includes(target.status)) return undefined;
+    const previousUser = [...messages.slice(0, assistantIndex)].reverse().find((m) => m.role === 'user');
+    if (!previousUser || previousUser.id.startsWith('local-')) return undefined;
+    return () => {
+      stickToBottomRef.current = true;
+      setEditError(null);
+      void send(previousUser.content, previousUser.context, [], referencesOf(previousUser), {
+        replaceFromMessageId: previousUser.id,
+        onRejected: (code, detail) => setEditError({ code, detail }),
+      });
+    };
+  };
 
   const suggestions = useMemo(() => {
     if (selectedText) return [t('chatSuggestionSelection')];
@@ -376,7 +480,16 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
                   attachmentsById={attachmentsById}
                   onOpenAttachment={(attachment, id) => setViewing({ attachment, id })}
                   onOpenCitation={onOpenCitation}
-                  onResend={message.status === 'error' && !sending ? resendFor(index) : undefined}
+                  onResend={message.status === 'error' ? regenerateFor(index) : undefined}
+                  onRegenerate={message.role === 'assistant' ? regenerateFor(index) : undefined}
+                  onEdit={
+                    message.role === 'user' && !sending && !message.failedCode && !message.id.startsWith('local-')
+                      ? () => startEdit(message)
+                      : undefined
+                  }
+                  editState={
+                    message.id === editingId ? 'target' : editInfo?.laterIds.has(message.id) ? 'doomed' : undefined
+                  }
                   onReplyToSelection={setReplySelection}
                   question={
                     message.role === 'assistant'
@@ -392,6 +505,16 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
       </div>
 
       <div className="chat-footer">
+        {editError && (
+          <div className="chat-banner" role="alert">
+            <span>{t(failureCopy(editError.code, editError.detail).key, failureCopy(editError.code, editError.detail).params)}</span>
+            <div className="chat-banner-actions">
+              <button type="button" className="chat-banner-btn" onClick={() => setEditError(null)}>
+                {t('chatDismiss')}
+              </button>
+            </div>
+          </div>
+        )}
         {selectedTooLong && (
           <p className="chat-footer-warning">{t('chatErrorSelectedTooLong', { max: CHAT_MAX_SELECTED_TEXT_CHARS })}</p>
         )}
@@ -401,6 +524,16 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           disabled={sending || selectedTooLong}
           onStop={sending ? stop : undefined}
           stopping={stopping}
+          editingLabel={
+            editInfo
+              ? editInfo.turns === 0
+                ? t('chatEditingLast')
+                : editInfo.doomedAttachments.length > 0
+                  ? t('chatEditingWithAttachments', { turns: editInfo.turns, count: editInfo.doomedAttachments.length })
+                  : t('chatEditing', { turns: editInfo.turns })
+              : null
+          }
+          onCancelEdit={cancelEdit}
           placeholder={messages.length > 0 ? t('chatInputPlaceholderFollowUp') : t('chatInputPlaceholder')}
           onSend={handleSend}
           selectedText={selectedText}
@@ -409,7 +542,12 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           onDetachLecture={onDetachLecture}
           selectedAttachments={listedAttachments.filter((a) => a.selected)}
           onUnselectAttachment={(id) => void selectAttachment(id, false).catch(() => {})}
-          mentionables={readyAttachments}
+          // 編集中は、送ると消える資料を指せないようにする
+          mentionables={
+            editInfo
+              ? readyAttachments.filter((a) => !(a.message_id && editInfo.laterIds.has(a.message_id)))
+              : readyAttachments
+          }
           onOpenAttachmentList={() => setLocalListOpen(true)}
           prefill={prefill}
           droppedFiles={droppedFiles}
@@ -443,6 +581,57 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
         }
         onClose={() => setViewing(null)}
       />
+      {pendingEdit && editingId && (
+        <div className="citation-modal-backdrop" onClick={() => undefined}>
+          <div className="citation-modal-card chat-confirm-card" role="dialog" aria-label={t('chatEditConfirmTitle')}>
+            <div className="citation-modal-header">
+              <div className="citation-modal-title-group">
+                <h3 className="citation-modal-title">{t('chatEditConfirmTitle')}</h3>
+              </div>
+            </div>
+            <div className="chat-confirm-body">
+              <p>
+                {t('chatEditConfirmBody', {
+                  turns: editInfo?.turns ?? 0,
+                  titles: (editInfo?.doomedAttachments ?? [])
+                    .map((a) => `「${a.title || a.file_name || t('chatAttachmentUntitled')}」`)
+                    .join(''),
+                })}
+              </p>
+              <div className="chat-confirm-actions">
+                <button
+                  type="button"
+                  className="chat-banner-btn"
+                  onClick={() => {
+                    // 入力欄は送ったときに空になっているので、書いたものを戻す
+                    setPrefill({
+                      text: pendingEdit.content,
+                      attachments: pendingEdit.drafts,
+                      references: pendingEdit.references,
+                      nonce: Date.now(),
+                    });
+                    restoreQuote(pendingEdit.context);
+                    setPendingEdit(null);
+                  }}
+                >
+                  {t('cancel')}
+                </button>
+                <button
+                  type="button"
+                  className="chat-banner-btn is-danger"
+                  onClick={() => {
+                    const edit = pendingEdit;
+                    setPendingEdit(null);
+                    sendEdit(editingId, edit.content, edit.drafts, edit.references, edit.context);
+                  }}
+                >
+                  {t('chatEditConfirmSend')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

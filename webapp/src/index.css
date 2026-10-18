@@ -15519,6 +15519,87 @@ body.is-resizing-chat iframe {
   cursor: default;
 }
 
+/* 編集: 直しているメッセージに枠、送ると消えるメッセージは薄く。入力欄の上に「編集中」バー */
+.chat-msg.is-edit-target .chat-bubble {
+  outline: 2px solid var(--chat-act-more, var(--gold));
+  outline-offset: 2px;
+}
+
+.chat-msg.is-edit-doomed {
+  opacity: 0.38;
+}
+
+.chat-edit-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: var(--gold);
+  background: rgba(255, 179, 0, 0.1);
+}
+
+.chat-edit-bar span {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-edit-bar button {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 2px;
+  display: grid;
+  place-items: center;
+  color: inherit;
+  cursor: pointer;
+}
+
+.chat-fullscreen.is-paper .chat-edit-bar,
+.chat-page.is-paper .chat-edit-bar,
+.chat-panel.is-paper .chat-edit-bar {
+  color: #b45309;
+  background: rgba(217, 119, 6, 0.1);
+}
+
+.chat-stopped-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 編集の確認(資料も消えるときだけ) */
+.chat-confirm-card {
+  max-width: 420px;
+}
+
+.chat-confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 1.1rem 1.4rem 1.4rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.chat-confirm-body p {
+  margin: 0;
+}
+
+.chat-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.chat-banner-btn.is-danger {
+  background: #e53935;
+  border-color: transparent;
+  color: #ffffff;
+}
+
 /* 途中停止: 返答の前に止めたときの一行と、途中まで出た返答の下の印 */
 .chat-stopped-line,
 .chat-stopped-tag {

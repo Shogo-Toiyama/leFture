@@ -5857,6 +5857,8 @@ class ChatMessageRequest(BaseModel):
     content: str = ""
     context: Optional[ChatMessageContext] = None
     attachments: Optional[list[ChatAttachmentRequest]] = None
+    # 編集・作り直し: このユーザーメッセージ自身と、それより後ろを消してから送る(一本道。ロードマップ2-12)
+    replace_from_message_id: Optional[str] = None
     # 端末のIANAタイムゾーン名(例: Asia/Tokyo)。「昨日の授業」「今学期」をユーザーの日付で
     # 解決するため。古いクライアントは送らないので任意(無ければUTC、不正な名前もUTC)。
     timezone: Optional[str] = None
@@ -5951,6 +5953,7 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
             selection_after=context.selection_after,
             attachments=attachments,
             reply_to_message_id=_parse_uuid_or_422(context.reply_to_message_id, "context.reply_to_message_id"),
+            replace_from_message_id=_parse_uuid_or_422(payload.replace_from_message_id, "replace_from_message_id"),
         )
     except ChatRequestError as e:
         raise HTTPException(

@@ -8,6 +8,7 @@ import {
   Files,
   LoaderCircle,
   Paperclip,
+  Pencil,
   Plus,
   Quote,
   Square,
@@ -75,6 +76,9 @@ interface ChatComposerProps {
   onStop?: () => void;
   /** 停止を押して、止まるのを待っている */
   stopping?: boolean;
+  /** 送ったメッセージを編集中: 入力欄の上に出すバーの文言(「以降の2往復は削除されます」など) */
+  editingLabel?: string | null;
+  onCancelEdit?: () => void;
   /**
    * 送信。contentの「@名前」は資料の印(⟦att:id⟧)に置き換え済み。draftsはこの送信で新しく添付する資料
    * (いつも全文で添付)、referencesはこの会話の既存の資料を指したもの(全文で添付 / メンション)。
@@ -175,6 +179,8 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
   disabled,
   onStop,
   stopping = false,
+  editingLabel,
+  onCancelEdit,
   placeholder,
   onSend,
   selectedText,
@@ -733,6 +739,17 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
         submit();
       }}
     >
+      {editingLabel && (
+        <div className="chat-edit-bar" role="status">
+          <Pencil size={13} />
+          <span>{editingLabel}</span>
+          {onCancelEdit && (
+            <button type="button" onClick={onCancelEdit} aria-label={t('chatEditCancel')} title={t('chatEditCancel')}>
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      )}
       {selectedAttachments.length > 0 && (
         <div className="chat-pinned-summary">
           <span>

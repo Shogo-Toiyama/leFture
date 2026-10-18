@@ -52,6 +52,17 @@ export interface LocalChatMessage extends ChatMessage {
   stopFailed?: boolean;
 }
 
+/** 送信のオプション(編集・作り直し)。 */
+export interface SendOptions {
+  /** このユーザーメッセージ自身と、それより後ろを消してから送る(編集・作り直し。一本道) */
+  replaceFromMessageId?: string;
+  /**
+   * 送る前に弾かれた(残高不足など)。サーバーでは何も消えていないので、画面の会話は元に戻してある。
+   * 呼び出し側は入力欄を編集中に戻すなどする。
+   */
+  onRejected?: (code: string, detail: Record<string, unknown>) => void;
+}
+
 interface Options {
   /** 新しいスレッドがサーバー側で作られた瞬間に呼ばれる(URLを /chat/:id に切り替える等)。 */
   onThreadCreated?: (threadId: string) => void;
@@ -232,9 +243,11 @@ export function useChatConversation(threadId: string | null, options: Options = 
       rawContent: string,
       context?: ChatMessageContext,
       drafts?: ChatDraftAttachment[],
-      references?: ChatAttachmentRef[]
+      references?: ChatAttachmentRef[],
+      sendOptions: SendOptions = {}
     ) => {
       const content = rawContent.trim();
+      const replaceFrom = sendOptions.replaceFromMessageId;
       const localAttachments = drafts?.length ? drafts : undefined;
       const localReferences = references?.length ? references : undefined;
       // 資料だけを送るのは許す
@@ -262,34 +275,41 @@ export function useChatConversation(threadId: string | null, options: Options = 
       let receivedMeta = false;
       const baseThreadId = activeThreadIdRef.current ?? '';
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: userId,
-          thread_id: baseThreadId,
-          role: 'user',
-          content,
-          status: 'complete',
-          citations: [],
-          context: sentContext,
-          credits_charged_micro: null,
-          created_at: now,
-          localAttachments,
-          localReferences,
-        },
-        {
-          id: assistantId,
-          thread_id: baseThreadId,
-          role: 'assistant',
-          content: '',
-          status: 'streaming',
-          citations: [],
-          context: {},
-          credits_charged_micro: null,
-          created_at: now,
-          stage: 'thinking',
-        },
-      ]);
+      // 編集・作り直し: そのメッセージから後ろを画面から外す(送る前に弾かれたら戻す)
+      let removed: LocalChatMessage[] = [];
+      setMessages((prev) => {
+        const cut = replaceFrom ? prev.findIndex((m) => m.id === replaceFrom) : -1;
+        const kept = cut >= 0 ? prev.slice(0, cut) : prev;
+        removed = cut >= 0 ? prev.slice(cut) : [];
+        return [
+          ...kept,
+          {
+            id: userId,
+            thread_id: baseThreadId,
+            role: 'user',
+            content,
+            status: 'complete',
+            citations: [],
+            context: sentContext,
+            credits_charged_micro: null,
+            created_at: now,
+            localAttachments,
+            localReferences,
+          },
+          {
+            id: assistantId,
+            thread_id: baseThreadId,
+            role: 'assistant',
+            content: '',
+            status: 'streaming',
+            citations: [],
+            context: {},
+            credits_charged_micro: null,
+            created_at: now,
+            stage: 'thinking',
+          },
+        ];
+      });
       setSending(true);
 
       const controller = new AbortController();
@@ -373,6 +393,7 @@ export function useChatConversation(threadId: string | null, options: Options = 
             context,
             attachments: localAttachments,
             references: localReferences,
+            replaceFromMessageId: replaceFrom,
           },
           onEvent,
           controller.signal
@@ -388,6 +409,12 @@ export function useChatConversation(threadId: string | null, options: Options = 
           // 届かなかった。userメッセージはサーバーに保存されていないので、
           // 返答の枠を消して「送れなかった」表示にする。
           const detail = e instanceof ChatSendError ? e.detail : {};
+          if (replaceFrom) {
+            // 編集は送る前に弾かれた: サーバーでは何も消えていないので、会話を元に戻す
+            setMessages((prev) => [...prev.filter((m) => m.id !== userId && m.id !== assistantId), ...removed]);
+            sendOptions.onRejected?.(code, detail);
+            return;
+          }
           setMessages((prev) =>
             prev
               .filter((m) => m.id !== assistantId)

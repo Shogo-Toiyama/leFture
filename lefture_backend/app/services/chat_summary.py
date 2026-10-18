@@ -14,6 +14,7 @@
 
 import asyncio
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from app.core.supabase import get_supabase_client
@@ -534,6 +535,20 @@ async def _fold_level2(admin_client, thread_id: str, user_id: str) -> int:
         created += 1
 
 
+def _covers_deleted_range(admin_client, row: dict) -> bool:
+    """ブロックの範囲が編集で消えたか(1段目: 最後のメッセージが消えた / 2段目: 元のブロックが無効になった)。"""
+    if row["level"] == 1:
+        r = admin_client.table("chat_messages").select("deleted_at").eq("id", row["end_message_id"]) \
+            .maybe_single().execute()
+        return not r or not r.data or bool(r.data.get("deleted_at"))
+    children = row.get("child_block_ids") or []
+    if not children:
+        return False
+    r = admin_client.table("chat_summary_blocks").select("id").in_("id", children) \
+        .not_.is_("invalidated_at", "null").limit(1).execute()
+    return bool(r.data)
+
+
 async def _save_block(admin_client, billing: BillingEngine, row: dict) -> bool:
     """ブロックを保存して課金する。別の実行が先に同じ番号を作っていたらFalse。"""
     cost_usd = billing.total_usd()
@@ -556,6 +571,15 @@ async def _save_block(admin_client, billing: BillingEngine, row: dict) -> bool:
         raise
 
     block_id = inserted.data[0]["id"]
+    # 畳んでいる間に編集で範囲が消えた(truncate_chat_thread_fromは、そのとき既にあったブロックしか
+    # 無効にできない)。書いた後に確かめ、消えていればこのブロックも無効にする(課金もしない)
+    if await asyncio.to_thread(_covers_deleted_range, admin_client, row):
+        await asyncio.to_thread(
+            lambda: admin_client.table("chat_summary_blocks").update({"invalidated_at": datetime.now(timezone.utc).isoformat()})
+                .eq("id", block_id).execute()
+        )
+        print(f"⏭️ [chat-summary] level-{level} block {block_index} of thread {thread_id} covers an edited range; invalidated.")
+        return False
     print(f"🗂️ [chat-summary] thread={thread_id} level={level} block={block_index} "
           f"turns={row['turn_start']}-{row['turn_end']} sections={len(row['sections'])} cost=${chargeable_usd:.6f}")
     try:
