@@ -6914,6 +6914,12 @@ abstract class AppLocalizations {
   /// **'Could not open it. Allow access to the camera and photos in Settings, then try again.'**
   String get aiChatAttachPickFailed;
 
+  /// AI chat. Ported from the web app string "aiSettingsButton".
+  ///
+  /// In en, this message translates to:
+  /// **'AI chat settings'**
+  String get aiSettingsButton;
+
   /// AI chat. Ported from the web app string "chatAttachmentFullRead".
   ///
   /// In en, this message translates to:

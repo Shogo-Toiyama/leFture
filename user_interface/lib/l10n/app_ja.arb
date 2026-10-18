@@ -1147,6 +1147,7 @@
   "aiChatAttachPhoto": "写真",
   "aiChatAttachPhotoHint": "写真ライブラリから選ぶ",
   "aiChatAttachPickFailed": "開けませんでした。設定でカメラと写真へのアクセスを許可してから、もう一度お試しください。",
+  "aiSettingsButton": "AIチャット設定",
   "aiChatAttachmentFullRead": "全文で読む",
   "aiChatAttachmentTocRead": "目次で読む",
   "aiChatAttachmentSelectedTotal": "全文で読む資料: {used} / {max}トークン",

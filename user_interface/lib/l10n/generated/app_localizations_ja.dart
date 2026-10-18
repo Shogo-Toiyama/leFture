@@ -3784,6 +3784,9 @@ class AppLocalizationsJa extends AppLocalizations {
       '開けませんでした。設定でカメラと写真へのアクセスを許可してから、もう一度お試しください。';
 
   @override
+  String get aiSettingsButton => 'AIチャット設定';
+
+  @override
   String get aiChatAttachmentFullRead => '全文で読む';
 
   @override

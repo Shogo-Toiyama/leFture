@@ -19,6 +19,14 @@ import 'package:lefture/presentation/widgets/ai_chat/launch_gate_backdrop.dart';
 /// 下端からこの距離以内にいるときだけ、新しい文字に合わせて自動で下へ追従する。
 const _stickToBottomPx = 96.0;
 
+/// 会話の画面を外から操作する(シートのヘッダーのクリップのボタンから、資料の一覧を開く)。
+class ChatConversationController {
+  VoidCallback? _openAttachmentList;
+
+  /// この会話の資料の一覧を開く。会話の画面が出ていなければ何もしない。
+  void openAttachmentList() => _openAttachmentList?.call();
+}
+
 /// 1つの会話の画面(webappのChatConversationと同じ構成): メッセージの一覧 → 入力欄。
 /// 何も話していないときは「出発ゲート」(背景 + 文言 + 質問の候補)を出す。
 ///
@@ -34,6 +42,7 @@ class ChatConversationView extends ConsumerStatefulWidget {
     this.lectureId,
     this.lectureTitle,
     this.onDetachLecture,
+    this.controller,
     this.selection,
     this.onClearSelection,
     this.screen,
@@ -49,6 +58,8 @@ class ChatConversationView extends ConsumerStatefulWidget {
 
   /// クレジット不足のとき、プラン・購入の画面へ案内する。
   final VoidCallback? onBuyCredits;
+
+  final ChatConversationController? controller;
 
   /// 話題にする講義。nullなら講義を指定しない。
   final String? lectureId;
@@ -96,11 +107,16 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
+    widget.controller?._openAttachmentList = _openAttachmentList;
   }
 
   @override
   void didUpdateWidget(ChatConversationView old) {
     super.didUpdateWidget(old);
+    if (widget.controller != old.controller) {
+      old.controller?._openAttachmentList = null;
+      widget.controller?._openAttachmentList = _openAttachmentList;
+    }
     if (widget.selection != null && widget.selection != old.selection) {
       _replySelection = null;
     }
@@ -108,6 +124,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
 
   @override
   void dispose() {
+    widget.controller?._openAttachmentList = null;
     _pendingRefs.dispose();
     _scroll.dispose();
     super.dispose();

@@ -5204,6 +5204,10 @@
   "@aiChatAttachPickFailed": {
     "description": "AI chat. New for the app (the web app picks files with one button)."
   },
+  "aiSettingsButton": "AI chat settings",
+  "@aiSettingsButton": {
+    "description": "AI chat. Ported from the web app string \"aiSettingsButton\"."
+  },
   "aiChatAttachmentFullRead": "Read in full",
   "@aiChatAttachmentFullRead": {
     "description": "AI chat. Ported from the web app string \"chatAttachmentFullRead\"."

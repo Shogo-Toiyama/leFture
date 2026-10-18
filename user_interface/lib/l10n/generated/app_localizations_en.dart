@@ -3959,6 +3959,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Could not open it. Allow access to the camera and photos in Settings, then try again.';
 
   @override
+  String get aiSettingsButton => 'AI chat settings';
+
+  @override
   String get aiChatAttachmentFullRead => 'Read in full';
 
   @override

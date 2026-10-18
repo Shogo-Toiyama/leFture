@@ -60,6 +60,25 @@ class FakeChatRepository extends Fake implements ChatRepository {
     return 'TICKET-123';
   }
 
+  /// fetchThreadRowsが返すスレッドの行(サーバーの一覧)。
+  List<Map<String, dynamic>> threadRows = [];
+  final List<(String, String)> renamedThreads = [];
+  final List<String> deletedThreads = [];
+
+  @override
+  Future<List<Map<String, dynamic>>> fetchThreadRows({int limit = 50}) async =>
+      [...threadRows];
+
+  @override
+  Future<void> renameThread(String threadId, String title) async {
+    renamedThreads.add((threadId, title));
+  }
+
+  @override
+  Future<void> deleteThread(String threadId) async {
+    deletedThreads.add(threadId);
+  }
+
   @override
   Future<List<Map<String, dynamic>>> fetchMessageRows(String threadId) async {
     final rows = serverRows[threadId];
