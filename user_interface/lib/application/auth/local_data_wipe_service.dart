@@ -40,8 +40,8 @@ class PendingSyncSummary {
   });
 
   const PendingSyncSummary.empty()
-    : pendingChangeCount = 0,
-      pendingRecordingCount = 0;
+      : pendingChangeCount = 0,
+        pendingRecordingCount = 0;
 
   /// Outboxに残っている未送信の変更(完了トグル・編集・削除など)の件数。
   final int pendingChangeCount;
@@ -87,14 +87,14 @@ class LocalDataWipeService {
     // 「録音」単位で数える。1回の講義は多数のチャンク(=asset)に分かれるので、
     // asset件数をそのまま出すと「未アップロードの録音 47件」のような誤解を
     // 招く表示になってしまう。
-    final assets =
-        await (_db.select(_db.localLectureAssets)..where(
-              (t) =>
-                  t.userId.equals(userId) &
-                  t.uploadStatus.equals('uploaded').not() &
-                  t.localPath.isNotNull(),
-            ))
-            .get();
+    final assets = await (_db.select(_db.localLectureAssets)
+          ..where(
+            (t) =>
+                t.userId.equals(userId) &
+                t.uploadStatus.equals('uploaded').not() &
+                t.localPath.isNotNull(),
+          ))
+        .get();
 
     return PendingSyncSummary(
       pendingChangeCount: outboxRows.length,
@@ -148,17 +148,15 @@ class LocalDataWipeService {
   /// なお、この「PIIがすべてNULLの行」は
   /// [UserProfileOutboxPushHandler]がサーバーへ書き戻さないよう検知に使っている。
   Future<void> _scrubUserProfiles() async {
-    await _db
-        .update(_db.localUserProfiles)
-        .write(
-          const LocalUserProfilesCompanion(
-            username: Value(null),
-            avatarUrl: Value(null),
-            bio: Value(null),
-            interests: Value(null),
-            futureGoals: Value(null),
-          ),
-        );
+    await _db.update(_db.localUserProfiles).write(
+      const LocalUserProfilesCompanion(
+        username: Value(null),
+        avatarUrl: Value(null),
+        bio: Value(null),
+        interests: Value(null),
+        futureGoals: Value(null),
+      ),
+    );
   }
 
   /// 現在サインインしているユーザー以外の行を消す(サインイン時の保険)。
@@ -170,21 +168,20 @@ class LocalDataWipeService {
   /// 放置しても自然に解消する。
   Future<void> wipeOtherUsers({required String currentUserId}) async {
     // 実ファイルのパスは行を消す前に集めておく。
-    final foreignLectureIds =
-        await (_db.select(_db.localLectures)
-              ..where((t) => t.userId.equals(currentUserId).not()))
-            .get()
-            .then((rows) => rows.map((r) => r.id).toSet());
+    final foreignLectureIds = await (_db.select(_db.localLectures)
+          ..where((t) => t.userId.equals(currentUserId).not()))
+        .get()
+        .then((rows) => rows.map((r) => r.id).toSet());
     final foreignFilePaths = <String>{};
-    for (final asset in await (_db.select(
-      _db.localLectureAssets,
-    )..where((t) => t.userId.equals(currentUserId).not())).get()) {
+    for (final asset in await (_db.select(_db.localLectureAssets)
+          ..where((t) => t.userId.equals(currentUserId).not()))
+        .get()) {
       final path = asset.localPath;
       if (path != null && path.isNotEmpty) foreignFilePaths.add(path);
     }
-    for (final entry in await (_db.select(
-      _db.localCacheEntries,
-    )..where((t) => t.userId.equals(currentUserId).not())).get()) {
+    for (final entry in await (_db.select(_db.localCacheEntries)
+          ..where((t) => t.userId.equals(currentUserId).not()))
+        .get()) {
       foreignFilePaths.add(entry.localFilePath);
     }
 
@@ -199,79 +196,25 @@ class LocalDataWipeService {
     }
 
     await _db.transaction(() async {
-      await deleteForeign(
-        _db.localLectures,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localLectureAssets,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localUploadJobs,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localCourses,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localCourseAttributes,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localAnnouncements,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localLectureMoments,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localFunFacts,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localReviewCards,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localDeepNotes,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localKeywords,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localLectureTopics,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localTopicMaps,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localSyncCursors,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localCacheEntries,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localChatThreads,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
-      await deleteForeign(
-        _db.localChatMessages,
-        (t) => t.userId.equals(currentUserId).not(),
-      );
+      await deleteForeign(_db.localLectures, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localLectureAssets, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localUploadJobs, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localCourses, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localCourseAttributes, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localAnnouncements, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localLectureMoments, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localFunFacts, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localReviewCards, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localDeepNotes, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localKeywords, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localLectureTopics, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localTopicMaps, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localSyncCursors, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localCacheEntries, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localChatThreads, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localChatMessages, (t) => t.userId.equals(currentUserId).not());
       // LocalUserProfilesはPKがユーザーID自身(id)。
-      await deleteForeign(
-        _db.localUserProfiles,
-        (t) => t.id.equals(currentUserId).not(),
-      );
+      await deleteForeign(_db.localUserProfiles, (t) => t.id.equals(currentUserId).not());
     });
 
     if (deleted == 0 && foreignFilePaths.isEmpty && foreignLectureIds.isEmpty) {
@@ -299,9 +242,7 @@ class LocalDataWipeService {
     } catch (e) {
       // 消せなくても致命的ではない(DBの行は消えているので参照されない。
       // 単にディスク容量が残るだけ)。
-      DevLog.add(
-        '⚠️ [LocalDataWipe] Failed to delete user data directories: $e',
-      );
+      DevLog.add('⚠️ [LocalDataWipe] Failed to delete user data directories: $e');
     }
   }
 

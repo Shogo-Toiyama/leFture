@@ -29,9 +29,7 @@ Future<void> _insertAnnouncement(
   required String userId,
   required String lectureId,
 }) {
-  return db
-      .into(db.localAnnouncements)
-      .insert(
+  return db.into(db.localAnnouncements).insert(
         LocalAnnouncementsCompanion.insert(
           id: id,
           userId: userId,
@@ -50,9 +48,7 @@ Future<void> _insertAsset(
   required String uploadStatus,
   String? localPath = '/tmp/does-not-exist.m4a',
 }) {
-  return db
-      .into(db.localLectureAssets)
-      .insert(
+  return db.into(db.localLectureAssets).insert(
         LocalLectureAssetsCompanion.insert(
           id: id,
           userId: userId,
@@ -65,9 +61,7 @@ Future<void> _insertAsset(
 }
 
 Future<void> _insertAsrModel(AppDatabase db) {
-  return db
-      .into(db.localAsrModels)
-      .insert(
+  return db.into(db.localAsrModels).insert(
         LocalAsrModelsCompanion.insert(
           groupKey: '_whisper',
           modelId: 'whisper-small',
@@ -80,14 +74,8 @@ Future<void> _insertAsrModel(AppDatabase db) {
       );
 }
 
-Future<void> _insertChat(
-  AppDatabase db, {
-  required String userId,
-  required String threadId,
-}) async {
-  await db
-      .into(db.localChatThreads)
-      .insert(
+Future<void> _insertChat(AppDatabase db, {required String userId, required String threadId}) async {
+  await db.into(db.localChatThreads).insert(
         LocalChatThreadsCompanion.insert(
           id: threadId,
           userId: userId,
@@ -95,9 +83,7 @@ Future<void> _insertChat(
           rowJson: '{}',
         ),
       );
-  await db
-      .into(db.localChatMessages)
-      .insert(
+  await db.into(db.localChatMessages).insert(
         LocalChatMessagesCompanion.insert(
           id: 'm-$threadId',
           userId: userId,
@@ -125,27 +111,9 @@ void main() {
     test('未アップロードの録音は講義単位で数える(チャンク数ではない)', () async {
       await _insertLecture(db, 'lec-1', _me);
       // 1つの講義が3チャンクに分かれている状態。
-      await _insertAsset(
-        db,
-        id: 'a1',
-        userId: _me,
-        lectureId: 'lec-1',
-        uploadStatus: 'queued',
-      );
-      await _insertAsset(
-        db,
-        id: 'a2',
-        userId: _me,
-        lectureId: 'lec-1',
-        uploadStatus: 'failed',
-      );
-      await _insertAsset(
-        db,
-        id: 'a3',
-        userId: _me,
-        lectureId: 'lec-1',
-        uploadStatus: 'uploading',
-      );
+      await _insertAsset(db, id: 'a1', userId: _me, lectureId: 'lec-1', uploadStatus: 'queued');
+      await _insertAsset(db, id: 'a2', userId: _me, lectureId: 'lec-1', uploadStatus: 'failed');
+      await _insertAsset(db, id: 'a3', userId: _me, lectureId: 'lec-1', uploadStatus: 'uploading');
 
       final pending = await service.countPending(userId: _me);
 
@@ -154,20 +122,8 @@ void main() {
     });
 
     test('アップロード済み・他ユーザー・localPathなしは数えない', () async {
-      await _insertAsset(
-        db,
-        id: 'a1',
-        userId: _me,
-        lectureId: 'lec-1',
-        uploadStatus: 'uploaded',
-      );
-      await _insertAsset(
-        db,
-        id: 'a2',
-        userId: _other,
-        lectureId: 'lec-2',
-        uploadStatus: 'queued',
-      );
+      await _insertAsset(db, id: 'a1', userId: _me, lectureId: 'lec-1', uploadStatus: 'uploaded');
+      await _insertAsset(db, id: 'a2', userId: _other, lectureId: 'lec-2', uploadStatus: 'queued');
       await _insertAsset(
         db,
         id: 'a3',
@@ -184,16 +140,8 @@ void main() {
     });
 
     test('Outboxの保留行を未送信の変更として数える', () async {
-      await db.enqueueOutbox(
-        entityType: 'announcement',
-        entityId: 'ann_1',
-        op: 'update',
-      );
-      await db.enqueueOutbox(
-        entityType: 'lecture',
-        entityId: 'lec-1',
-        op: 'update',
-      );
+      await db.enqueueOutbox(entityType: 'announcement', entityId: 'ann_1', op: 'update');
+      await db.enqueueOutbox(entityType: 'lecture', entityId: 'lec-1', op: 'update');
 
       final pending = await service.countPending(userId: _me);
 
@@ -204,24 +152,9 @@ void main() {
   group('wipeAll', () {
     test('ユーザーデータは全部消え、ASRモデルは残る', () async {
       await _insertLecture(db, 'lec-1', _me);
-      await _insertAnnouncement(
-        db,
-        id: 'ann_1',
-        userId: _me,
-        lectureId: 'lec-1',
-      );
-      await _insertAsset(
-        db,
-        id: 'a1',
-        userId: _me,
-        lectureId: 'lec-1',
-        uploadStatus: 'queued',
-      );
-      await db.enqueueOutbox(
-        entityType: 'announcement',
-        entityId: 'ann_1',
-        op: 'update',
-      );
+      await _insertAnnouncement(db, id: 'ann_1', userId: _me, lectureId: 'lec-1');
+      await _insertAsset(db, id: 'a1', userId: _me, lectureId: 'lec-1', uploadStatus: 'queued');
+      await db.enqueueOutbox(entityType: 'announcement', entityId: 'ann_1', op: 'update');
       await _insertAsrModel(db);
 
       await service.wipeAll();
@@ -252,9 +185,7 @@ void main() {
           bio: const Value('bio'),
           interests: const Value('physics'),
           futureGoals: const Value('researcher'),
-          metadataJson: Value(
-            jsonEncode({'onboarding_completed_at': '2026-01-01T00:00:00Z'}),
-          ),
+          metadataJson: Value(jsonEncode({'onboarding_completed_at': '2026-01-01T00:00:00Z'})),
         ),
       );
 
@@ -273,32 +204,16 @@ void main() {
 
   group('reviveOutboxRetries', () {
     test('ギブアップ済み・バックオフ待ちの行を再試行対象に戻す', () async {
-      await db.enqueueOutbox(
-        entityType: 'announcement',
-        entityId: 'a',
-        op: 'update',
-      );
-      await db.enqueueOutbox(
-        entityType: 'announcement',
-        entityId: 'b',
-        op: 'update',
-      );
-      await db.enqueueOutbox(
-        entityType: 'announcement',
-        entityId: 'c',
-        op: 'update',
-      );
+      await db.enqueueOutbox(entityType: 'announcement', entityId: 'a', op: 'update');
+      await db.enqueueOutbox(entityType: 'announcement', entityId: 'b', op: 'update');
+      await db.enqueueOutbox(entityType: 'announcement', entityId: 'c', op: 'update');
       final rows = await db.select(db.localOutbox).get();
       // 1件をギブアップ、1件をバックオフ待ち(未来のnextRetryAt)にする。
       await (db.update(db.localOutbox)..where((t) => t.id.equals(rows[0].id)))
           .write(const LocalOutboxCompanion(givenUp: Value(true)));
-      await (db.update(
-        db.localOutbox,
-      )..where((t) => t.id.equals(rows[1].id))).write(
+      await (db.update(db.localOutbox)..where((t) => t.id.equals(rows[1].id))).write(
         LocalOutboxCompanion(
-          nextRetryAt: Value(
-            DateTime.now().toUtc().add(const Duration(minutes: 5)),
-          ),
+          nextRetryAt: Value(DateTime.now().toUtc().add(const Duration(minutes: 5))),
         ),
       );
       expect(await db.dequeuePendingOutbox(), hasLength(1));
@@ -316,25 +231,9 @@ void main() {
       await _insertLecture(db, 'lec-other', _other);
       // チュートリアルのアナウンスは全ユーザー共通の固定idを使うため、
       // まさにこの「同じidがuserId違いで並ぶ」状態が実際に起きていた。
-      await _insertAnnouncement(
-        db,
-        id: 'ann_1',
-        userId: _me,
-        lectureId: 'lec-me',
-      );
-      await _insertAnnouncement(
-        db,
-        id: 'ann_1',
-        userId: _other,
-        lectureId: 'lec-other',
-      );
-      await _insertAsset(
-        db,
-        id: 'a-other',
-        userId: _other,
-        lectureId: 'lec-other',
-        uploadStatus: 'queued',
-      );
+      await _insertAnnouncement(db, id: 'ann_1', userId: _me, lectureId: 'lec-me');
+      await _insertAnnouncement(db, id: 'ann_1', userId: _other, lectureId: 'lec-other');
+      await _insertAsset(db, id: 'a-other', userId: _other, lectureId: 'lec-other', uploadStatus: 'queued');
       await _insertAsrModel(db);
 
       await service.wipeOtherUsers(currentUserId: _me);
@@ -356,12 +255,8 @@ void main() {
 
       await service.wipeOtherUsers(currentUserId: _me);
 
-      expect((await db.select(db.localChatThreads).get()).map((t) => t.id), [
-        'T-me',
-      ]);
-      expect((await db.select(db.localChatMessages).get()).map((m) => m.id), [
-        'm-T-me',
-      ]);
+      expect((await db.select(db.localChatThreads).get()).map((t) => t.id), ['T-me']);
+      expect((await db.select(db.localChatMessages).get()).map((m) => m.id), ['m-T-me']);
     });
 
     test('自分のユーザープロフィールは残す(PKがユーザーID自身のテーブル)', () async {
@@ -376,17 +271,8 @@ void main() {
 
     test('残骸が無ければ何も消さない', () async {
       await _insertLecture(db, 'lec-me', _me);
-      await _insertAnnouncement(
-        db,
-        id: 'ann_1',
-        userId: _me,
-        lectureId: 'lec-me',
-      );
-      await db.enqueueOutbox(
-        entityType: 'announcement',
-        entityId: 'ann_1',
-        op: 'update',
-      );
+      await _insertAnnouncement(db, id: 'ann_1', userId: _me, lectureId: 'lec-me');
+      await db.enqueueOutbox(entityType: 'announcement', entityId: 'ann_1', op: 'update');
 
       await service.wipeOtherUsers(currentUserId: _me);
 
