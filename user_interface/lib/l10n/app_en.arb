@@ -2976,7 +2976,7 @@
   "@cardSelectionToolbarSourceLabel": {
     "description": "Icon+label button in the text-selection state of the CardSelectionToolbar, currently a UI-only placeholder action for viewing the transcript source of the selected text. Must stay short."
   },
-  "cardSelectionToolbarAskLabel": "Ask",
+  "cardSelectionToolbarAskLabel": "Ask AI",
   "@cardSelectionToolbarAskLabel": {
     "description": "Icon+label button in the text-selection state of the CardSelectionToolbar. Opens the AI chat with the selected text attached so the user can ask about it. Must stay short."
   },
@@ -5643,5 +5643,400 @@
         "type": "String"
       }
     }
+  },
+  "selfPortraitPageTitle": "Self-portrait",
+  "@selfPortraitPageTitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spPageTitle\"."
+  },
+  "selfPortraitPageSubtitle": "What we've come to know about you, a little more each time you talk",
+  "@selfPortraitPageSubtitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spPageSubtitle\"."
+  },
+  "selfPortraitLoadError": "Couldn't load this. Please try again in a moment.",
+  "@selfPortraitLoadError": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spLoadError\"."
+  },
+  "selfPortraitActionFailed": "That didn't work. Please try again.",
+  "@selfPortraitActionFailed": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionFailed\"."
+  },
+  "selfPortraitNowSection": "Me, right now",
+  "@selfPortraitNowSection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spNowSection\"."
+  },
+  "selfPortraitWrittenFromChats": "Written from your conversations",
+  "@selfPortraitWrittenFromChats": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spWrittenFromChats\"."
+  },
+  "selfPortraitDividerCaption": "What your conversations have shown",
+  "@selfPortraitDividerCaption": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spDividerCaption\"."
+  },
+  "selfPortraitRecentSection": "Recently discovered",
+  "@selfPortraitRecentSection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spRecentSection\"."
+  },
+  "selfPortraitNew": "NEW",
+  "@selfPortraitNew": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spNew\"."
+  },
+  "selfPortraitConnectedTopics": "Connected from",
+  "@selfPortraitConnectedTopics": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spConnectedTopics\"."
+  },
+  "selfPortraitQuote": "“{text}”",
+  "@selfPortraitQuote": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spQuote\".",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitConfirmBanner": "There's something to check",
+  "@selfPortraitConfirmBanner": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spConfirmBanner\"."
+  },
+  "selfPortraitConfirmPendingCount": "{count} to keep or remove",
+  "@selfPortraitConfirmPendingCount": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spConfirmPendingCount\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitProposalTitle": "Suggested rewrite of {field}",
+  "@selfPortraitProposalTitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spProposalTitle\".",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitTabsLabel": "Switch between self-portrait and records",
+  "@selfPortraitTabsLabel": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spTabsLabel\"."
+  },
+  "selfPortraitTabTraits": "Self-portrait",
+  "@selfPortraitTabTraits": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spTabTraits\"."
+  },
+  "selfPortraitTabRecords": "Records",
+  "@selfPortraitTabRecords": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spTabRecords\"."
+  },
+  "selfPortraitFootnote": "The AI adds to this little by little from what you talk about in chat. If something looks off, open it to edit or remove it.",
+  "@selfPortraitFootnote": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spFootnote\"."
+  },
+  "selfPortraitOther": "Other",
+  "@selfPortraitOther": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spOther\"."
+  },
+  "selfPortraitEmptyTraits": "Nothing here yet. As you chat, this fills in little by little.",
+  "@selfPortraitEmptyTraits": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spEmptyTraits\"."
+  },
+  "selfPortraitEmptyRecords": "When you talk about things you made or progress you made, they're kept here with a date.",
+  "@selfPortraitEmptyRecords": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spEmptyRecords\"."
+  },
+  "selfPortraitLatest": "Latest {date}",
+  "@selfPortraitLatest": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spLatest\".",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitMoreCount": "{count} more",
+  "@selfPortraitMoreCount": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spMoreCount\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitFromConversations": "From {count} conversations",
+  "@selfPortraitFromConversations": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spFromConversations\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitItemActions": "Open this item",
+  "@selfPortraitItemActions": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spItemActions\"."
+  },
+  "selfPortraitEditedByYou": "Edited by you",
+  "@selfPortraitEditedByYou": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spEditedByYou\"."
+  },
+  "selfPortraitActionEdit": "Edit",
+  "@selfPortraitActionEdit": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionEdit\"."
+  },
+  "selfPortraitActionEditHint": "Rewrite it in your own words. The AI won't change it after that",
+  "@selfPortraitActionEditHint": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionEditHint\"."
+  },
+  "selfPortraitActionReject": "Not me",
+  "@selfPortraitActionReject": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionReject\"."
+  },
+  "selfPortraitActionRejectHint": "The AI misread you. It won't write anything with the same meaning again",
+  "@selfPortraitActionRejectHint": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionRejectHint\"."
+  },
+  "selfPortraitRejectReasonLabel": "What's off? (optional)",
+  "@selfPortraitRejectReasonLabel": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spRejectReasonLabel\"."
+  },
+  "selfPortraitRejectReasonPlaceholder": "e.g. I only present because it's my role",
+  "@selfPortraitRejectReasonPlaceholder": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spRejectReasonPlaceholder\"."
+  },
+  "selfPortraitActionDiscard": "Don't keep this",
+  "@selfPortraitActionDiscard": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionDiscard\"."
+  },
+  "selfPortraitActionDiscardHint": "Even if it's true, don't keep it. Removes this item and the notes it came from",
+  "@selfPortraitActionDiscardHint": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionDiscardHint\"."
+  },
+  "selfPortraitDiscardConfirmTitle": "Remove this item?",
+  "@selfPortraitDiscardConfirmTitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spDiscardConfirmTitle\"."
+  },
+  "selfPortraitDiscardConfirmMessage": "The AI notes it came from are removed too. This can't be undone.",
+  "@selfPortraitDiscardConfirmMessage": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spDiscardConfirmMessage\"."
+  },
+  "selfPortraitDiscardConfirmButton": "Remove",
+  "@selfPortraitDiscardConfirmButton": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spDiscardConfirmButton\"."
+  },
+  "selfPortraitPendingNotice": "Until you decide, this isn't used anywhere, not in chat or fun facts.",
+  "@selfPortraitPendingNotice": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spPendingNotice\"."
+  },
+  "selfPortraitKeep": "Keep",
+  "@selfPortraitKeep": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spKeep\"."
+  },
+  "selfPortraitDontKeep": "Don't keep",
+  "@selfPortraitDontKeep": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spDontKeep\"."
+  },
+  "selfPortraitEvidenceSection": "Where this came from",
+  "@selfPortraitEvidenceSection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spEvidenceSection\"."
+  },
+  "selfPortraitOpenChat": "Open conversation",
+  "@selfPortraitOpenChat": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spOpenChat\"."
+  },
+  "selfPortraitHistorySection": "How it changed",
+  "@selfPortraitHistorySection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spHistorySection\"."
+  },
+  "selfPortraitUntil": "Until {date}: ",
+  "@selfPortraitUntil": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spUntil\".",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitConfirmSheetTitle": "Things to check",
+  "@selfPortraitConfirmSheetTitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spConfirmSheetTitle\"."
+  },
+  "selfPortraitSensitiveAsk": "This touches on {area}, so please decide whether to keep it",
+  "@selfPortraitSensitiveAsk": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spSensitiveAsk\".",
+    "placeholders": {
+      "area": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitAreaReligion": "religion",
+  "@selfPortraitAreaReligion": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spAreaReligion\"."
+  },
+  "selfPortraitAreaHealth": "health",
+  "@selfPortraitAreaHealth": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spAreaHealth\"."
+  },
+  "selfPortraitAreaSexuality": "sexuality",
+  "@selfPortraitAreaSexuality": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spAreaSexuality\"."
+  },
+  "selfPortraitAreaPolitics": "politics",
+  "@selfPortraitAreaPolitics": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spAreaPolitics\"."
+  },
+  "selfPortraitAreaEthnicity": "background",
+  "@selfPortraitAreaEthnicity": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spAreaEthnicity\"."
+  },
+  "selfPortraitAreaSensitive": "something personal",
+  "@selfPortraitAreaSensitive": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spAreaSensitive\"."
+  },
+  "selfPortraitProposalNow": "Now: ",
+  "@selfPortraitProposalNow": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spProposalNow\"."
+  },
+  "selfPortraitProposalAccept": "Use this",
+  "@selfPortraitProposalAccept": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spProposalAccept\"."
+  },
+  "selfPortraitProposalReject": "Keep mine",
+  "@selfPortraitProposalReject": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spProposalReject\"."
+  },
+  "selfPortraitConfirmEmpty": "Nothing to check right now.",
+  "@selfPortraitConfirmEmpty": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spConfirmEmpty\"."
+  },
+  "selfPortraitLinkSub": "A profile the AI adds to from what you talk about",
+  "@selfPortraitLinkSub": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spLinkSub\"."
+  },
+  "aiSettingsTitle": "What the AI remembers",
+  "@aiSettingsTitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiSettingsTitle\"."
+  },
+  "aiSettingsPageTitle": "AI chat settings",
+  "@aiSettingsPageTitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiSettingsPageTitle\"."
+  },
+  "aiSettingsPageIntro": "What the AI keeps in mind when it talks with you. Stored separately from your self-portrait.",
+  "@aiSettingsPageIntro": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiSettingsPageIntro\"."
+  },
+  "aiMemoStyleSection": "How to explain",
+  "@aiMemoStyleSection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoStyleSection\"."
+  },
+  "aiMemoSituationSection": "Right now",
+  "@aiMemoSituationSection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoSituationSection\"."
+  },
+  "aiMemoUntil": "until {date}",
+  "@aiMemoUntil": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoUntil\".",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "aiMemoEmpty": "Nothing yet",
+  "@aiMemoEmpty": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoEmpty\"."
+  },
+  "aiMemoDelete": "Remove this note",
+  "@aiMemoDelete": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoDelete\"."
+  },
+  "aiMemoOneTimeNote": "Requests just for one conversation, like “fewer formulas this time,” aren't kept here.",
+  "@aiMemoOneTimeNote": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoOneTimeNote\"."
+  },
+  "aiMoreSection": "More",
+  "@aiMoreSection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMoreSection\"."
+  },
+  "aiNotesLink": "AI notes",
+  "@aiNotesLink": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiNotesLink\"."
+  },
+  "aiNotesLinkSub": "{count} things noticed in conversations · material for your self-portrait",
+  "@aiNotesLinkSub": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiNotesLinkSub\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiMemoryIntro": "Things the AI noticed while you talked. When several notes point the same way, they're added to your self-portrait. A one-off stays here and doesn't become part of it.",
+  "@aiMemoryIntro": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryIntro\"."
+  },
+  "aiMemoryEmpty": "No notes yet.",
+  "@aiMemoryEmpty": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryEmpty\"."
+  },
+  "aiMemoryDeleteNote": "Remove this note",
+  "@aiMemoryDeleteNote": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryDeleteNote\"."
+  },
+  "aiMemoryForgetAll": "Remove all AI notes",
+  "@aiMemoryForgetAll": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryForgetAll\"."
+  },
+  "aiMemoryForgetAllNote": "Your self-portrait and explanation notes stay. You can remove those individually on their own screens.",
+  "@aiMemoryForgetAllNote": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryForgetAllNote\"."
+  },
+  "aiMemoryForgetConfirmMessage": "This removes {count} notes. It can't be undone.",
+  "@aiMemoryForgetConfirmMessage": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryForgetConfirmMessage\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "accountAiSettingsSub": "Explanation notes · AI notes",
+  "@accountAiSettingsSub": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"accountAiSettingsSub\"."
+  },
+  "selfPortraitCoverBio": "ABOUT YOU",
+  "@selfPortraitCoverBio": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aboutYouSection\"."
+  },
+  "selfPortraitCoverBioEmpty": "No description set yet.",
+  "@selfPortraitCoverBioEmpty": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"noBioYet\"."
+  },
+  "selfPortraitCoverInterests": "INTERESTS",
+  "@selfPortraitCoverInterests": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"interestsSection\"."
+  },
+  "selfPortraitCoverInterestsEmpty": "No interests set yet.",
+  "@selfPortraitCoverInterestsEmpty": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"noInterestsYet\"."
+  },
+  "selfPortraitCoverFutureGoals": "FUTURE DREAMS",
+  "@selfPortraitCoverFutureGoals": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"futureDreamsSection\"."
+  },
+  "selfPortraitCoverFutureGoalsEmpty": "No future dream set yet.",
+  "@selfPortraitCoverFutureGoalsEmpty": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"noFutureDreamsYet\"."
+  },
+  "selfPortraitSave": "Save",
+  "@selfPortraitSave": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"save\"."
+  },
+  "selfPortraitSaving": "Saving…",
+  "@selfPortraitSaving": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"saving\"."
+  },
+  "selfPortraitEdit": "Edit",
+  "@selfPortraitEdit": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"edit\"."
   }
 }

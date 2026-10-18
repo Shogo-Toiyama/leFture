@@ -2161,7 +2161,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cardSelectionToolbarSourceLabel => '出典';
 
   @override
-  String get cardSelectionToolbarAskLabel => '質問';
+  String get cardSelectionToolbarAskLabel => 'AIに聞く';
 
   @override
   String get cardSelectionToolbarLikeLabel => 'いいね';
@@ -4058,4 +4058,284 @@ class AppLocalizationsJa extends AppLocalizations {
   String aiChatElapsedMinutesSeconds(String minutes, String seconds) {
     return '$minutes分$seconds秒';
   }
+
+  @override
+  String get selfPortraitPageTitle => '自分像';
+
+  @override
+  String get selfPortraitPageSubtitle => '話すたびに、少しずつわかってきたあなたのこと';
+
+  @override
+  String get selfPortraitLoadError => '読み込めませんでした。時間をおいてもう一度お試しください。';
+
+  @override
+  String get selfPortraitActionFailed => 'うまくいきませんでした。もう一度お試しください。';
+
+  @override
+  String get selfPortraitNowSection => 'いまのわたし';
+
+  @override
+  String get selfPortraitWrittenFromChats => '会話から書かれました';
+
+  @override
+  String get selfPortraitDividerCaption => '会話からわかってきたこと';
+
+  @override
+  String get selfPortraitRecentSection => '最近わかったこと';
+
+  @override
+  String get selfPortraitNew => 'NEW';
+
+  @override
+  String get selfPortraitConnectedTopics => 'つながった話';
+
+  @override
+  String selfPortraitQuote(String text) {
+    return '「$text」';
+  }
+
+  @override
+  String get selfPortraitConfirmBanner => '確認してほしいことがあります';
+
+  @override
+  String selfPortraitConfirmPendingCount(String count) {
+    return '残すか決めてほしいこと $count件';
+  }
+
+  @override
+  String selfPortraitProposalTitle(String field) {
+    return '$fieldの書き直し案';
+  }
+
+  @override
+  String get selfPortraitTabsLabel => '自分像と記録の切り替え';
+
+  @override
+  String get selfPortraitTabTraits => '自分像';
+
+  @override
+  String get selfPortraitTabRecords => '記録';
+
+  @override
+  String get selfPortraitFootnote =>
+      'チャットで話したことから、AIがここに少しずつ書き足していきます。違うと思ったら、各項目から直したり消したりできます。';
+
+  @override
+  String get selfPortraitOther => 'その他';
+
+  @override
+  String get selfPortraitEmptyTraits =>
+      'まだ何もありません。チャットで話していると、ここに少しずつ書き足されていきます。';
+
+  @override
+  String get selfPortraitEmptyRecords => '作ったものや進めたことを話すと、ここに日付つきで残ります。';
+
+  @override
+  String selfPortraitLatest(String date) {
+    return '最新 $date';
+  }
+
+  @override
+  String selfPortraitMoreCount(String count) {
+    return 'ほか$count件';
+  }
+
+  @override
+  String selfPortraitFromConversations(String count) {
+    return '$countつの会話から';
+  }
+
+  @override
+  String get selfPortraitItemActions => 'この項目を開く';
+
+  @override
+  String get selfPortraitEditedByYou => '自分で直した文';
+
+  @override
+  String get selfPortraitActionEdit => '直す';
+
+  @override
+  String get selfPortraitActionEditHint => '自分の言葉に書き換える。以後AIはこの文を変えません';
+
+  @override
+  String get selfPortraitActionReject => '違う';
+
+  @override
+  String get selfPortraitActionRejectHint => 'AIの読み違い。同じ意味のことは、もう書きません';
+
+  @override
+  String get selfPortraitRejectReasonLabel => 'どう違うか(任意)';
+
+  @override
+  String get selfPortraitRejectReasonPlaceholder => '例: 発表は役割だからやっているだけ';
+
+  @override
+  String get selfPortraitActionDiscard => '残したくない';
+
+  @override
+  String get selfPortraitActionDiscardHint => '合っていても残さない。この項目と、その元になったメモを消します';
+
+  @override
+  String get selfPortraitDiscardConfirmTitle => 'この項目を消しますか?';
+
+  @override
+  String get selfPortraitDiscardConfirmMessage => '元になったAIのメモも一緒に消えます。元に戻せません。';
+
+  @override
+  String get selfPortraitDiscardConfirmButton => '消す';
+
+  @override
+  String get selfPortraitPendingNotice => '決めるまで、この内容はチャットやFun Factのどこにも使いません。';
+
+  @override
+  String get selfPortraitKeep => '残す';
+
+  @override
+  String get selfPortraitDontKeep => '残さない';
+
+  @override
+  String get selfPortraitEvidenceSection => '根拠になった会話';
+
+  @override
+  String get selfPortraitOpenChat => '会話を開く';
+
+  @override
+  String get selfPortraitHistorySection => '変化';
+
+  @override
+  String selfPortraitUntil(String date) {
+    return '$dateまで: ';
+  }
+
+  @override
+  String get selfPortraitConfirmSheetTitle => '確認してほしいこと';
+
+  @override
+  String selfPortraitSensitiveAsk(String area) {
+    return '$areaなので、残すかどうか決めてください';
+  }
+
+  @override
+  String get selfPortraitAreaReligion => '宗教に関わる話';
+
+  @override
+  String get selfPortraitAreaHealth => '健康に関わる話';
+
+  @override
+  String get selfPortraitAreaSexuality => '性に関わる話';
+
+  @override
+  String get selfPortraitAreaPolitics => '政治に関わる話';
+
+  @override
+  String get selfPortraitAreaEthnicity => '出自に関わる話';
+
+  @override
+  String get selfPortraitAreaSensitive => '大切な話';
+
+  @override
+  String get selfPortraitProposalNow => 'いまの文: ';
+
+  @override
+  String get selfPortraitProposalAccept => '反映する';
+
+  @override
+  String get selfPortraitProposalReject => '今のまま';
+
+  @override
+  String get selfPortraitConfirmEmpty => '確認してほしいことは、今はありません。';
+
+  @override
+  String get selfPortraitLinkSub => '話したことから書き足しているプロフィール';
+
+  @override
+  String get aiSettingsTitle => 'AIが覚えていること';
+
+  @override
+  String get aiSettingsPageTitle => 'AIチャット設定';
+
+  @override
+  String get aiSettingsPageIntro => 'AIがあなたと話すときに覚えていること。自分像とは別に保存しています。';
+
+  @override
+  String get aiMemoStyleSection => '話し方';
+
+  @override
+  String get aiMemoSituationSection => '今の状況';
+
+  @override
+  String aiMemoUntil(String date) {
+    return '$dateまで';
+  }
+
+  @override
+  String get aiMemoEmpty => 'まだありません';
+
+  @override
+  String get aiMemoDelete => 'この覚え書きを消す';
+
+  @override
+  String get aiMemoOneTimeNote => '「今回は数式少なめで」のような、その会話だけの頼みはここには残りません。';
+
+  @override
+  String get aiMoreSection => 'もっと見る';
+
+  @override
+  String get aiNotesLink => 'AIのメモ';
+
+  @override
+  String aiNotesLinkSub(String count) {
+    return '会話から気づいたこと $count件 · 自分像の材料';
+  }
+
+  @override
+  String get aiMemoryIntro =>
+      '会話の中でAIが気づいたことです。いくつか同じ方向のメモがたまると、自分像に書き足されます。1回きりの話は、ここに残るだけで自分像にはなりません。';
+
+  @override
+  String get aiMemoryEmpty => 'まだメモはありません。';
+
+  @override
+  String get aiMemoryDeleteNote => 'このメモを消す';
+
+  @override
+  String get aiMemoryForgetAll => 'AIのメモを全部消す';
+
+  @override
+  String get aiMemoryForgetAllNote => '自分像と話し方の覚え書きは消えません。それぞれの画面で個別に消せます。';
+
+  @override
+  String aiMemoryForgetConfirmMessage(String count) {
+    return '$count件のメモを消します。元に戻せません。';
+  }
+
+  @override
+  String get accountAiSettingsSub => '話し方の覚え書き・AIのメモ';
+
+  @override
+  String get selfPortraitCoverBio => '自己紹介';
+
+  @override
+  String get selfPortraitCoverBioEmpty => 'まだ自己紹介が設定されていません。';
+
+  @override
+  String get selfPortraitCoverInterests => '興味・関心';
+
+  @override
+  String get selfPortraitCoverInterestsEmpty => 'まだ興味・関心が設定されていません。';
+
+  @override
+  String get selfPortraitCoverFutureGoals => '将来の夢';
+
+  @override
+  String get selfPortraitCoverFutureGoalsEmpty => 'まだ将来の夢が設定されていません。';
+
+  @override
+  String get selfPortraitSave => '保存';
+
+  @override
+  String get selfPortraitSaving => '保存中…';
+
+  @override
+  String get selfPortraitEdit => '編集';
 }

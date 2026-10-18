@@ -3941,7 +3941,7 @@ abstract class AppLocalizations {
   /// Icon+label button in the text-selection state of the CardSelectionToolbar. Opens the AI chat with the selected text attached so the user can ask about it. Must stay short.
   ///
   /// In en, this message translates to:
-  /// **'Ask'**
+  /// **'Ask AI'**
   String get cardSelectionToolbarAskLabel;
 
   /// Icon+label button in the default (no selection) state of the CardSelectionToolbar shown above Review Cards / Deep Notes content, used to mark the card as liked. Must stay short.
@@ -7351,6 +7351,516 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{minutes} min {seconds} sec'**
   String aiChatElapsedMinutesSeconds(String minutes, String seconds);
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spPageTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'Self-portrait'**
+  String get selfPortraitPageTitle;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spPageSubtitle".
+  ///
+  /// In en, this message translates to:
+  /// **'What we\'ve come to know about you, a little more each time you talk'**
+  String get selfPortraitPageSubtitle;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spLoadError".
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this. Please try again in a moment.'**
+  String get selfPortraitLoadError;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spActionFailed".
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t work. Please try again.'**
+  String get selfPortraitActionFailed;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spNowSection".
+  ///
+  /// In en, this message translates to:
+  /// **'Me, right now'**
+  String get selfPortraitNowSection;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spWrittenFromChats".
+  ///
+  /// In en, this message translates to:
+  /// **'Written from your conversations'**
+  String get selfPortraitWrittenFromChats;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spDividerCaption".
+  ///
+  /// In en, this message translates to:
+  /// **'What your conversations have shown'**
+  String get selfPortraitDividerCaption;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spRecentSection".
+  ///
+  /// In en, this message translates to:
+  /// **'Recently discovered'**
+  String get selfPortraitRecentSection;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spNew".
+  ///
+  /// In en, this message translates to:
+  /// **'NEW'**
+  String get selfPortraitNew;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spConnectedTopics".
+  ///
+  /// In en, this message translates to:
+  /// **'Connected from'**
+  String get selfPortraitConnectedTopics;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spQuote".
+  ///
+  /// In en, this message translates to:
+  /// **'“{text}”'**
+  String selfPortraitQuote(String text);
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spConfirmBanner".
+  ///
+  /// In en, this message translates to:
+  /// **'There\'s something to check'**
+  String get selfPortraitConfirmBanner;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spConfirmPendingCount".
+  ///
+  /// In en, this message translates to:
+  /// **'{count} to keep or remove'**
+  String selfPortraitConfirmPendingCount(String count);
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spProposalTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested rewrite of {field}'**
+  String selfPortraitProposalTitle(String field);
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spTabsLabel".
+  ///
+  /// In en, this message translates to:
+  /// **'Switch between self-portrait and records'**
+  String get selfPortraitTabsLabel;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spTabTraits".
+  ///
+  /// In en, this message translates to:
+  /// **'Self-portrait'**
+  String get selfPortraitTabTraits;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spTabRecords".
+  ///
+  /// In en, this message translates to:
+  /// **'Records'**
+  String get selfPortraitTabRecords;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spFootnote".
+  ///
+  /// In en, this message translates to:
+  /// **'The AI adds to this little by little from what you talk about in chat. If something looks off, open it to edit or remove it.'**
+  String get selfPortraitFootnote;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spOther".
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get selfPortraitOther;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spEmptyTraits".
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet. As you chat, this fills in little by little.'**
+  String get selfPortraitEmptyTraits;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spEmptyRecords".
+  ///
+  /// In en, this message translates to:
+  /// **'When you talk about things you made or progress you made, they\'re kept here with a date.'**
+  String get selfPortraitEmptyRecords;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spLatest".
+  ///
+  /// In en, this message translates to:
+  /// **'Latest {date}'**
+  String selfPortraitLatest(String date);
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spMoreCount".
+  ///
+  /// In en, this message translates to:
+  /// **'{count} more'**
+  String selfPortraitMoreCount(String count);
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spFromConversations".
+  ///
+  /// In en, this message translates to:
+  /// **'From {count} conversations'**
+  String selfPortraitFromConversations(String count);
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spItemActions".
+  ///
+  /// In en, this message translates to:
+  /// **'Open this item'**
+  String get selfPortraitItemActions;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spEditedByYou".
+  ///
+  /// In en, this message translates to:
+  /// **'Edited by you'**
+  String get selfPortraitEditedByYou;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spActionEdit".
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get selfPortraitActionEdit;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spActionEditHint".
+  ///
+  /// In en, this message translates to:
+  /// **'Rewrite it in your own words. The AI won\'t change it after that'**
+  String get selfPortraitActionEditHint;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spActionReject".
+  ///
+  /// In en, this message translates to:
+  /// **'Not me'**
+  String get selfPortraitActionReject;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spActionRejectHint".
+  ///
+  /// In en, this message translates to:
+  /// **'The AI misread you. It won\'t write anything with the same meaning again'**
+  String get selfPortraitActionRejectHint;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spRejectReasonLabel".
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s off? (optional)'**
+  String get selfPortraitRejectReasonLabel;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spRejectReasonPlaceholder".
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. I only present because it\'s my role'**
+  String get selfPortraitRejectReasonPlaceholder;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spActionDiscard".
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t keep this'**
+  String get selfPortraitActionDiscard;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spActionDiscardHint".
+  ///
+  /// In en, this message translates to:
+  /// **'Even if it\'s true, don\'t keep it. Removes this item and the notes it came from'**
+  String get selfPortraitActionDiscardHint;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spDiscardConfirmTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this item?'**
+  String get selfPortraitDiscardConfirmTitle;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spDiscardConfirmMessage".
+  ///
+  /// In en, this message translates to:
+  /// **'The AI notes it came from are removed too. This can\'t be undone.'**
+  String get selfPortraitDiscardConfirmMessage;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spDiscardConfirmButton".
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get selfPortraitDiscardConfirmButton;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spPendingNotice".
+  ///
+  /// In en, this message translates to:
+  /// **'Until you decide, this isn\'t used anywhere, not in chat or fun facts.'**
+  String get selfPortraitPendingNotice;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spKeep".
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get selfPortraitKeep;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spDontKeep".
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t keep'**
+  String get selfPortraitDontKeep;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spEvidenceSection".
+  ///
+  /// In en, this message translates to:
+  /// **'Where this came from'**
+  String get selfPortraitEvidenceSection;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spOpenChat".
+  ///
+  /// In en, this message translates to:
+  /// **'Open conversation'**
+  String get selfPortraitOpenChat;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spHistorySection".
+  ///
+  /// In en, this message translates to:
+  /// **'How it changed'**
+  String get selfPortraitHistorySection;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spUntil".
+  ///
+  /// In en, this message translates to:
+  /// **'Until {date}: '**
+  String selfPortraitUntil(String date);
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spConfirmSheetTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'Things to check'**
+  String get selfPortraitConfirmSheetTitle;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spSensitiveAsk".
+  ///
+  /// In en, this message translates to:
+  /// **'This touches on {area}, so please decide whether to keep it'**
+  String selfPortraitSensitiveAsk(String area);
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spAreaReligion".
+  ///
+  /// In en, this message translates to:
+  /// **'religion'**
+  String get selfPortraitAreaReligion;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spAreaHealth".
+  ///
+  /// In en, this message translates to:
+  /// **'health'**
+  String get selfPortraitAreaHealth;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spAreaSexuality".
+  ///
+  /// In en, this message translates to:
+  /// **'sexuality'**
+  String get selfPortraitAreaSexuality;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spAreaPolitics".
+  ///
+  /// In en, this message translates to:
+  /// **'politics'**
+  String get selfPortraitAreaPolitics;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spAreaEthnicity".
+  ///
+  /// In en, this message translates to:
+  /// **'background'**
+  String get selfPortraitAreaEthnicity;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spAreaSensitive".
+  ///
+  /// In en, this message translates to:
+  /// **'something personal'**
+  String get selfPortraitAreaSensitive;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spProposalNow".
+  ///
+  /// In en, this message translates to:
+  /// **'Now: '**
+  String get selfPortraitProposalNow;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spProposalAccept".
+  ///
+  /// In en, this message translates to:
+  /// **'Use this'**
+  String get selfPortraitProposalAccept;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spProposalReject".
+  ///
+  /// In en, this message translates to:
+  /// **'Keep mine'**
+  String get selfPortraitProposalReject;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spConfirmEmpty".
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to check right now.'**
+  String get selfPortraitConfirmEmpty;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "spLinkSub".
+  ///
+  /// In en, this message translates to:
+  /// **'A profile the AI adds to from what you talk about'**
+  String get selfPortraitLinkSub;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiSettingsTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'What the AI remembers'**
+  String get aiSettingsTitle;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiSettingsPageTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'AI chat settings'**
+  String get aiSettingsPageTitle;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiSettingsPageIntro".
+  ///
+  /// In en, this message translates to:
+  /// **'What the AI keeps in mind when it talks with you. Stored separately from your self-portrait.'**
+  String get aiSettingsPageIntro;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMemoStyleSection".
+  ///
+  /// In en, this message translates to:
+  /// **'How to explain'**
+  String get aiMemoStyleSection;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMemoSituationSection".
+  ///
+  /// In en, this message translates to:
+  /// **'Right now'**
+  String get aiMemoSituationSection;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMemoUntil".
+  ///
+  /// In en, this message translates to:
+  /// **'until {date}'**
+  String aiMemoUntil(String date);
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMemoEmpty".
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing yet'**
+  String get aiMemoEmpty;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMemoDelete".
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this note'**
+  String get aiMemoDelete;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMemoOneTimeNote".
+  ///
+  /// In en, this message translates to:
+  /// **'Requests just for one conversation, like “fewer formulas this time,” aren\'t kept here.'**
+  String get aiMemoOneTimeNote;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMoreSection".
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get aiMoreSection;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiNotesLink".
+  ///
+  /// In en, this message translates to:
+  /// **'AI notes'**
+  String get aiNotesLink;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiNotesLinkSub".
+  ///
+  /// In en, this message translates to:
+  /// **'{count} things noticed in conversations · material for your self-portrait'**
+  String aiNotesLinkSub(String count);
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMemoryIntro".
+  ///
+  /// In en, this message translates to:
+  /// **'Things the AI noticed while you talked. When several notes point the same way, they\'re added to your self-portrait. A one-off stays here and doesn\'t become part of it.'**
+  String get aiMemoryIntro;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMemoryEmpty".
+  ///
+  /// In en, this message translates to:
+  /// **'No notes yet.'**
+  String get aiMemoryEmpty;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMemoryDeleteNote".
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this note'**
+  String get aiMemoryDeleteNote;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMemoryForgetAll".
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all AI notes'**
+  String get aiMemoryForgetAll;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMemoryForgetAllNote".
+  ///
+  /// In en, this message translates to:
+  /// **'Your self-portrait and explanation notes stay. You can remove those individually on their own screens.'**
+  String get aiMemoryForgetAllNote;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aiMemoryForgetConfirmMessage".
+  ///
+  /// In en, this message translates to:
+  /// **'This removes {count} notes. It can\'t be undone.'**
+  String aiMemoryForgetConfirmMessage(String count);
+
+  /// AI self-portrait / AI memory. Ported from the web app string "accountAiSettingsSub".
+  ///
+  /// In en, this message translates to:
+  /// **'Explanation notes · AI notes'**
+  String get accountAiSettingsSub;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "aboutYouSection".
+  ///
+  /// In en, this message translates to:
+  /// **'ABOUT YOU'**
+  String get selfPortraitCoverBio;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "noBioYet".
+  ///
+  /// In en, this message translates to:
+  /// **'No description set yet.'**
+  String get selfPortraitCoverBioEmpty;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "interestsSection".
+  ///
+  /// In en, this message translates to:
+  /// **'INTERESTS'**
+  String get selfPortraitCoverInterests;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "noInterestsYet".
+  ///
+  /// In en, this message translates to:
+  /// **'No interests set yet.'**
+  String get selfPortraitCoverInterestsEmpty;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "futureDreamsSection".
+  ///
+  /// In en, this message translates to:
+  /// **'FUTURE DREAMS'**
+  String get selfPortraitCoverFutureGoals;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "noFutureDreamsYet".
+  ///
+  /// In en, this message translates to:
+  /// **'No future dream set yet.'**
+  String get selfPortraitCoverFutureGoalsEmpty;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "save".
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get selfPortraitSave;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "saving".
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get selfPortraitSaving;
+
+  /// AI self-portrait / AI memory. Ported from the web app string "edit".
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get selfPortraitEdit;
 }
 
 class _AppLocalizationsDelegate

@@ -33,6 +33,7 @@ import 'package:lefture/presentation/widgets/ai_chat/chat_page_context.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 import 'package:lefture/presentation/widgets/card_selection_toolbar.dart';
 import 'package:lefture/presentation/widgets/highlight_sub_toolbar.dart';
+import 'package:lefture/presentation/widgets/selection_floating_menu.dart';
 import 'package:lefture/presentation/widgets/selection_swipe_priority.dart';
 import 'package:lefture/presentation/widgets/markdown_annotation_builder.dart';
 import 'package:lefture/presentation/widgets/note_sub_toolbar.dart';
@@ -622,6 +623,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     useEffect(() => bodySwipeRecognizer.dispose, [bodySwipeRecognizer]);
     configureSwipeRecognizer(bodySwipeRecognizer);
 
+    // 選択メニュー。中身は下(buildCardより後ろ)で組むので、ここには入れ物だけ置く
+    late Widget Function(BuildContext, SelectableRegionState) selectionMenu;
+
     Widget buildCard(int cardIdx) {
       final item = flatItems[cardIdx.clamp(0, totalCards - 1)];
       final imageFile = imageFiles[item.groupIndex];
@@ -640,6 +644,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
         imagePath: imagePath,
         themeColor: textThemeColor,
         bodySwipeRecognizer: bodySwipeRecognizer,
+        selectionMenuBuilder: (c, s) => selectionMenu(c, s),
         // Only the settled (non-animating) current card gets the live
         // notifier. During a swipe transition this same card is *also*
         // rendered as one of the animated `layers` in a structurally
@@ -876,6 +881,333 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       temporaryHighlightBlockIdx.value = null;
     }
 
+    // 選んだ文章のそばに浮かぶメニュー(AIに聞く / ハイライト / ノート / 出典 / コピー)の動作。
+    void toggleHighlight() {
+      highlightToolbarOpen.value =
+          !highlightToolbarOpen.value;
+      if (highlightToolbarOpen.value) cancelNote();
+    }
+
+    void startNote() {
+      if (noteToolbarOpen.value) {
+        // 既に開いている場合の再タップはキャンセル扱い
+        // (保存しない)。
+        cancelNote();
+        return;
+      }
+      // 開く瞬間の選択範囲をキャッシュする。TextFieldに
+      // フォーカスが移った後は選択が解除されており、
+      // この時点でしか読み取れない。
+      final located = locateSelection();
+      if (located == null) return;
+      cachedNoteLocation.value = located;
+      highlightToolbarOpen.value = false;
+      noteToolbarOpen.value = true;
+
+      // 選択をダミーでハイライトしたまま維持する
+      // (Source機能と同じパターン)。clearSelection()と
+      // 同じフレーム内でMarkdownBodyのKeyを変えると
+      // SelectionAreaが再入アサーションを起こすことが
+      // あるため、次フレームまで遅延させる。
+      selectionAreaKey.currentState?.selectableRegion
+          .clearSelection();
+      WidgetsBinding.instance.addPostFrameCallback((
+        _,
+      ) {
+        temporaryHighlight.value = Annotation(
+          id: '-1',
+          blockIdx: located.blockIdx,
+          startIdx: located.startIdx,
+          endIdx: located.endIdx,
+          annotationType: 'highlight',
+          annotatedWords: '',
+          contents: const {
+            'type': 'marker',
+            'color': '#FFE082',
+          },
+        );
+        temporaryHighlightBlockIdx.value =
+            located.blockIdx;
+      });
+    }
+
+    Future<void> openSource() async {
+      final card = flatItems[index].card;
+      final located = locateSelection();
+      if (card == null || located == null) return;
+
+      try {
+        final block =
+            card.cardContent[located.blockIdx!];
+        final rawText =
+            reviewCardBlockRawMarkdownSource(block);
+
+        final result = findSourceContextRange(
+          rawText,
+          located.startIdx,
+          located.endIdx,
+        );
+
+        if (result == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'No source found for the selection.',
+              ),
+            ),
+          );
+          return;
+        }
+
+        final citation = result.citation;
+
+        // Debug Log
+        final uid = supabase.auth.currentUser?.id;
+        if (uid != null && lectureId.isNotEmpty) {
+          try {
+            final sentences = await widgetRef.read(
+              transcriptProvider(
+                uid: uid,
+                lectureId: lectureId,
+              ).future,
+            );
+            if (!context.mounted) return;
+            if (sentences != null) {
+              final targetSid =
+                  citation.sidStrings.first;
+              TranscriptSentence? targetSentence;
+              for (final s in sentences) {
+                if (s.sid == targetSid) {
+                  targetSentence = s;
+                  break;
+                }
+              }
+              final flattenedMap =
+                  buildFlattenedTextMap(rawText);
+              final rawEnd = flattenedMap.toRaw(
+                located.endIdx,
+              );
+              final citationEndWithMargin =
+                  (citation.end + 5) > rawText.length
+                  ? rawText.length
+                  : (citation.end + 5);
+              final textUntilCitation = rawText
+                  .substring(
+                    rawEnd,
+                    citationEndWithMargin,
+                  );
+
+              debugPrint(
+                "=== Source Navigation Debug Log (Review Card) ===",
+              );
+              debugPrint(
+                "1. Selected Text: '${selectedText.value}'",
+              );
+              debugPrint(
+                "2. Text until citation: '$textUntilCitation'",
+              );
+              debugPrint(
+                "3. Resolved SID: '$targetSid'",
+              );
+              debugPrint(
+                "4. Transcript Sentence: '${targetSentence?.text}'",
+              );
+              debugPrint(
+                "=================================================",
+              );
+            }
+          } catch (e) {
+            debugPrint(
+              "Failed to output debug log: $e",
+            );
+          }
+        }
+
+        // 選択状態をクリア
+        selectionAreaKey
+            .currentState
+            ?.selectableRegion
+            .clearSelection();
+
+        // 一時的ハイライトを設定 (メモリ内アノテーション)
+        // NOTE: この代入はMarkdownBodyのKeyを変え、選択中の
+        // Selectableを即座に破棄・再生成させる。clearSelection()
+        // が同一フレーム内でScrollableのSelection状態をリセットし
+        // 切る前にこれを行うと、SelectionAreaがScrollable内で
+        // '_selectionStartsInScrollable' の再入アサーションを
+        // 起こすことがあるため、次フレームまで遅延させる。
+        WidgetsBinding.instance.addPostFrameCallback((
+          _,
+        ) {
+          temporaryHighlight.value = Annotation(
+            id: '-1', // Dummy ID
+            blockIdx: located.blockIdx,
+            startIdx: result.startIdx,
+            endIdx: result.endIdx,
+            annotationType: 'highlight',
+            annotatedWords: '',
+            contents: const {
+              'type': 'marker',
+              'color': '#FFE082',
+            }, // 琥珀色のマーカー
+          );
+          temporaryHighlightBlockIdx.value =
+              located.blockIdx;
+        });
+
+        final sortedSids = List<int>.from(
+          citation.sids,
+        )..sort();
+        final startSid = formatSid(sortedSids.first);
+        final endSid = formatSid(sortedSids.last);
+
+        final courseIdVal = course?.id;
+        if (!context.mounted) return;
+        if (lectureId.isNotEmpty) {
+          await showTranscriptModalGated(
+            context,
+            widgetRef,
+            lectureId: lectureId,
+            startSid: startSid,
+            endSid: endSid,
+            highlightSids: citation.sidStrings,
+            courseId: courseIdVal,
+          );
+        }
+
+        // モーダルが閉じられたら一時的ハイライトを消去
+        // (同様の理由でクリア後の再構築も次フレームに遅延させる)
+        selectionAreaKey
+            .currentState
+            ?.selectableRegion
+            .clearSelection();
+        WidgetsBinding.instance.addPostFrameCallback((
+          _,
+        ) {
+          temporaryHighlight.value = null;
+          temporaryHighlightBlockIdx.value = null;
+        });
+      } on SelectionTooBroadException catch (e) {
+        if (!context.mounted) return;
+        if (e.options.isNotEmpty) {
+          final selectedCitation =
+              await BroadSelectionSheet.show(
+                context,
+                options: e.options,
+              );
+          if (selectedCitation != null &&
+              context.mounted) {
+            final sortedSids = List<int>.from(
+              selectedCitation.sids,
+            )..sort();
+            final startSid = formatSid(
+              sortedSids.first,
+            );
+            final endSid = formatSid(sortedSids.last);
+            final courseIdVal = course?.id;
+            if (lectureId.isNotEmpty) {
+              await showTranscriptModalGated(
+                context,
+                widgetRef,
+                lectureId: lectureId,
+                startSid: startSid,
+                endSid: endSid,
+                highlightSids:
+                    selectedCitation.sidStrings,
+                courseId: courseIdVal,
+              );
+            }
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message)),
+          );
+        }
+      }
+    }
+
+    // 選んだ文章をAIに質問する。選んだ位置は、選んだブロックの前後の文字で伝える
+    Future<void> askAboutSelection() async {
+      final card = flatItems[index].card;
+      final located = locateSelection();
+      final text = selectedText.value;
+      if (card == null ||
+          located == null ||
+          text == null ||
+          text.isEmpty) {
+        return;
+      }
+      final selection = buildChatSelection(
+        reviewCardBlockPlainText(
+          card.cardContent[located.blockIdx!],
+        ),
+        located.startIdx,
+        located.endIdx,
+        text,
+        screen: ChatScreenRef(
+          kind: 'review_card',
+          id: card.id,
+        ),
+      );
+      selectionAreaKey.currentState?.selectableRegion
+          .clearSelection();
+      await openAiChat(
+        context,
+        widgetRef,
+        selection: selection,
+      );
+    }
+
+    Future<void> copySelection() async {
+      final text = selectedText.value;
+      if (text != null && text.isNotEmpty) {
+        await Clipboard.setData(
+          ClipboardData(text: text),
+        );
+        selectionAreaKey.currentState?.selectableRegion.clearSelection();
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              l10n.cardSelectionToolbarCopiedToClipboardMessage,
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+
+    selectionMenu = (menuContext, regionState) => buildSelectionFloatingMenu(
+      state: regionState,
+      world: ChatWorld.paper,
+      actions: [
+        SelectionMenuAction(
+          label: l10n.cardSelectionToolbarAskLabel,
+          emphasized: true,
+          onTap: askAboutSelection,
+        ),
+        SelectionMenuAction(
+          label: l10n.cardSelectionToolbarHighlightLabel,
+          swatch: highlightColor.value,
+          active: highlightToolbarOpen.value,
+          onTap: toggleHighlight,
+        ),
+        SelectionMenuAction(
+          label: l10n.cardSelectionToolbarNoteLabel,
+          active: noteToolbarOpen.value,
+          onTap: startNote,
+        ),
+        SelectionMenuAction(
+          label: l10n.cardSelectionToolbarSourceLabel,
+          onTap: openSource,
+        ),
+        SelectionMenuAction(
+          label: l10n.cardSelectionToolbarCopyLabel,
+          onTap: copySelection,
+        ),
+      ],
+    );
+
     final page = Scaffold(
       backgroundColor: AppColors.paper.background,
       body: Container(
@@ -952,302 +1284,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                       child: flatItems[index].isCover
                           ? const SizedBox.shrink()
                           : CardSelectionToolbar(
-                              hasSelection: hasSelection.value,
                               accentColor: textThemeColor,
                               reaction: flatItems[index].card?.reaction,
                               saved: flatItems[index].card?.saved ?? false,
-                              isHighlightActive: highlightToolbarOpen.value,
-                              onHighlightTap: () {
-                                highlightToolbarOpen.value =
-                                    !highlightToolbarOpen.value;
-                                if (highlightToolbarOpen.value) cancelNote();
-                              },
-                              isNoteActive: noteToolbarOpen.value,
-                              onNoteTap: () {
-                                if (noteToolbarOpen.value) {
-                                  // 既に開いている場合の再タップはキャンセル扱い
-                                  // (保存しない)。
-                                  cancelNote();
-                                  return;
-                                }
-                                // 開く瞬間の選択範囲をキャッシュする。TextFieldに
-                                // フォーカスが移った後は選択が解除されており、
-                                // この時点でしか読み取れない。
-                                final located = locateSelection();
-                                if (located == null) return;
-                                cachedNoteLocation.value = located;
-                                highlightToolbarOpen.value = false;
-                                noteToolbarOpen.value = true;
-
-                                // 選択をダミーでハイライトしたまま維持する
-                                // (Source機能と同じパターン)。clearSelection()と
-                                // 同じフレーム内でMarkdownBodyのKeyを変えると
-                                // SelectionAreaが再入アサーションを起こすことが
-                                // あるため、次フレームまで遅延させる。
-                                selectionAreaKey.currentState?.selectableRegion
-                                    .clearSelection();
-                                WidgetsBinding.instance.addPostFrameCallback((
-                                  _,
-                                ) {
-                                  temporaryHighlight.value = Annotation(
-                                    id: '-1',
-                                    blockIdx: located.blockIdx,
-                                    startIdx: located.startIdx,
-                                    endIdx: located.endIdx,
-                                    annotationType: 'highlight',
-                                    annotatedWords: '',
-                                    contents: const {
-                                      'type': 'marker',
-                                      'color': '#FFE082',
-                                    },
-                                  );
-                                  temporaryHighlightBlockIdx.value =
-                                      located.blockIdx;
-                                });
-                              },
-                              onSourceTap: () async {
-                                final card = flatItems[index].card;
-                                final located = locateSelection();
-                                if (card == null || located == null) return;
-
-                                try {
-                                  final block =
-                                      card.cardContent[located.blockIdx!];
-                                  final rawText =
-                                      reviewCardBlockRawMarkdownSource(block);
-
-                                  final result = findSourceContextRange(
-                                    rawText,
-                                    located.startIdx,
-                                    located.endIdx,
-                                  );
-
-                                  if (result == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'No source found for the selection.',
-                                        ),
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  final citation = result.citation;
-
-                                  // Debug Log
-                                  final uid = supabase.auth.currentUser?.id;
-                                  if (uid != null && lectureId.isNotEmpty) {
-                                    try {
-                                      final sentences = await widgetRef.read(
-                                        transcriptProvider(
-                                          uid: uid,
-                                          lectureId: lectureId,
-                                        ).future,
-                                      );
-                                      if (!context.mounted) return;
-                                      if (sentences != null) {
-                                        final targetSid =
-                                            citation.sidStrings.first;
-                                        TranscriptSentence? targetSentence;
-                                        for (final s in sentences) {
-                                          if (s.sid == targetSid) {
-                                            targetSentence = s;
-                                            break;
-                                          }
-                                        }
-                                        final flattenedMap =
-                                            buildFlattenedTextMap(rawText);
-                                        final rawEnd = flattenedMap.toRaw(
-                                          located.endIdx,
-                                        );
-                                        final citationEndWithMargin =
-                                            (citation.end + 5) > rawText.length
-                                            ? rawText.length
-                                            : (citation.end + 5);
-                                        final textUntilCitation = rawText
-                                            .substring(
-                                              rawEnd,
-                                              citationEndWithMargin,
-                                            );
-
-                                        debugPrint(
-                                          "=== Source Navigation Debug Log (Review Card) ===",
-                                        );
-                                        debugPrint(
-                                          "1. Selected Text: '${selectedText.value}'",
-                                        );
-                                        debugPrint(
-                                          "2. Text until citation: '$textUntilCitation'",
-                                        );
-                                        debugPrint(
-                                          "3. Resolved SID: '$targetSid'",
-                                        );
-                                        debugPrint(
-                                          "4. Transcript Sentence: '${targetSentence?.text}'",
-                                        );
-                                        debugPrint(
-                                          "=================================================",
-                                        );
-                                      }
-                                    } catch (e) {
-                                      debugPrint(
-                                        "Failed to output debug log: $e",
-                                      );
-                                    }
-                                  }
-
-                                  // 選択状態をクリア
-                                  selectionAreaKey
-                                      .currentState
-                                      ?.selectableRegion
-                                      .clearSelection();
-
-                                  // 一時的ハイライトを設定 (メモリ内アノテーション)
-                                  // NOTE: この代入はMarkdownBodyのKeyを変え、選択中の
-                                  // Selectableを即座に破棄・再生成させる。clearSelection()
-                                  // が同一フレーム内でScrollableのSelection状態をリセットし
-                                  // 切る前にこれを行うと、SelectionAreaがScrollable内で
-                                  // '_selectionStartsInScrollable' の再入アサーションを
-                                  // 起こすことがあるため、次フレームまで遅延させる。
-                                  WidgetsBinding.instance.addPostFrameCallback((
-                                    _,
-                                  ) {
-                                    temporaryHighlight.value = Annotation(
-                                      id: '-1', // Dummy ID
-                                      blockIdx: located.blockIdx,
-                                      startIdx: result.startIdx,
-                                      endIdx: result.endIdx,
-                                      annotationType: 'highlight',
-                                      annotatedWords: '',
-                                      contents: const {
-                                        'type': 'marker',
-                                        'color': '#FFE082',
-                                      }, // 琥珀色のマーカー
-                                    );
-                                    temporaryHighlightBlockIdx.value =
-                                        located.blockIdx;
-                                  });
-
-                                  final sortedSids = List<int>.from(
-                                    citation.sids,
-                                  )..sort();
-                                  final startSid = formatSid(sortedSids.first);
-                                  final endSid = formatSid(sortedSids.last);
-
-                                  final courseIdVal = course?.id;
-                                  if (!context.mounted) return;
-                                  if (lectureId.isNotEmpty) {
-                                    await showTranscriptModalGated(
-                                      context,
-                                      widgetRef,
-                                      lectureId: lectureId,
-                                      startSid: startSid,
-                                      endSid: endSid,
-                                      highlightSids: citation.sidStrings,
-                                      courseId: courseIdVal,
-                                    );
-                                  }
-
-                                  // モーダルが閉じられたら一時的ハイライトを消去
-                                  // (同様の理由でクリア後の再構築も次フレームに遅延させる)
-                                  selectionAreaKey
-                                      .currentState
-                                      ?.selectableRegion
-                                      .clearSelection();
-                                  WidgetsBinding.instance.addPostFrameCallback((
-                                    _,
-                                  ) {
-                                    temporaryHighlight.value = null;
-                                    temporaryHighlightBlockIdx.value = null;
-                                  });
-                                } on SelectionTooBroadException catch (e) {
-                                  if (!context.mounted) return;
-                                  if (e.options.isNotEmpty) {
-                                    final selectedCitation =
-                                        await BroadSelectionSheet.show(
-                                          context,
-                                          options: e.options,
-                                        );
-                                    if (selectedCitation != null &&
-                                        context.mounted) {
-                                      final sortedSids = List<int>.from(
-                                        selectedCitation.sids,
-                                      )..sort();
-                                      final startSid = formatSid(
-                                        sortedSids.first,
-                                      );
-                                      final endSid = formatSid(sortedSids.last);
-                                      final courseIdVal = course?.id;
-                                      if (lectureId.isNotEmpty) {
-                                        await showTranscriptModalGated(
-                                          context,
-                                          widgetRef,
-                                          lectureId: lectureId,
-                                          startSid: startSid,
-                                          endSid: endSid,
-                                          highlightSids:
-                                              selectedCitation.sidStrings,
-                                          courseId: courseIdVal,
-                                        );
-                                      }
-                                    }
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(e.message)),
-                                    );
-                                  }
-                                }
-                              },
-                              // 選んだ文章をAIに質問する(「Ask」)。選んだ位置は、選んだブロックの
-                              // 前後の文字で伝える
-                              onAskTap: () async {
-                                final card = flatItems[index].card;
-                                final located = locateSelection();
-                                final text = selectedText.value;
-                                if (card == null ||
-                                    located == null ||
-                                    text == null ||
-                                    text.isEmpty) {
-                                  return;
-                                }
-                                final selection = buildChatSelection(
-                                  reviewCardBlockPlainText(
-                                    card.cardContent[located.blockIdx!],
-                                  ),
-                                  located.startIdx,
-                                  located.endIdx,
-                                  text,
-                                  screen: ChatScreenRef(
-                                    kind: 'review_card',
-                                    id: card.id,
-                                  ),
-                                );
-                                selectionAreaKey.currentState?.selectableRegion
-                                    .clearSelection();
-                                await openAiChat(
-                                  context,
-                                  widgetRef,
-                                  selection: selection,
-                                );
-                              },
-                              onCopyTap: () async {
-                                final text = selectedText.value;
-                                if (text != null && text.isNotEmpty) {
-                                  await Clipboard.setData(
-                                    ClipboardData(text: text),
-                                  );
-                                  if (!context.mounted) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        l10n.cardSelectionToolbarCopiedToClipboardMessage,
-                                      ),
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
-                              },
                               onLike: flatItems[index].card == null
                                   ? null
                                   : () async {
@@ -2226,6 +2265,7 @@ class _ContentCard extends StatelessWidget {
     this.imagePath,
     required this.themeColor,
     this.bodySwipeRecognizer,
+    this.selectionMenuBuilder,
     this.selectionListenerNotifier,
     this.selectionAreaKey,
     this.onSelectionChanged,
@@ -2243,6 +2283,9 @@ class _ContentCard extends StatelessWidget {
   // 取ってしまうため、それより深い位置からも認識器にポインタを渡す必要がある
   // (詳細は selection_swipe_priority.dart のコメント参照)。
   final SelectionAwareHorizontalDragRecognizer? bodySwipeRecognizer;
+  // 文章を選んだときに選択範囲のそばへ浮かべるメニュー
+  final Widget Function(BuildContext, SelectableRegionState)?
+  selectionMenuBuilder;
   final SelectionListenerNotifier? selectionListenerNotifier;
   final GlobalKey<SelectionAreaState>? selectionAreaKey;
   final ValueChanged<SelectedContent?>? onSelectionChanged;
@@ -2328,8 +2371,10 @@ class _ContentCard extends StatelessWidget {
           if (selectionListenerNotifier != null)
             SelectionArea(
               key: selectionAreaKey,
-              contextMenuBuilder: (context, selectableRegionState) =>
-                  const SizedBox.shrink(),
+              contextMenuBuilder: selectionMenuBuilder == null
+                  ? (context, selectableRegionState) => const SizedBox.shrink()
+                  : (context, selectableRegionState) =>
+                        selectionMenuBuilder!(context, selectableRegionState),
               onSelectionChanged: onSelectionChanged,
               child: SelectionListener(
                 selectionNotifier: selectionListenerNotifier!,

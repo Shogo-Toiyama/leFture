@@ -13,8 +13,13 @@
 // したがってSelectionAreaの *内側* に横ドラッグ認識器を置けば、プラット
 // フォームに関係なくスワイプ側を勝たせられる。指が止まっている長押しは
 // こちらが勝ちを主張しないため、長押し起点のテキスト選択はそのまま生き残る。
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
+import 'package:lefture/presentation/widgets/selection_floating_menu.dart';
 
 /// 選択がある間だけポインタを辞退する横ドラッグ認識器。
 ///
@@ -40,21 +45,29 @@ class SelectionAwareHorizontalDragRecognizer
 /// [SelectionArea]。
 ///
 /// 横ドラッグは最も近い横方向の[Scrollable]へ転送するので、ページスナップや
-/// フリングの物理は純正のまま保たれる。選択は長押し起点のみになり、コピーは
-/// 標準のコンテキストメニューから行える。
+/// フリングの物理は純正のまま保たれる。選択は長押し起点のみになり、選んだ文章の近くに
+/// 浮かぶメニュー(「AIに聞く」「コピー」。Deep Notes・復習カードと同じ形)が出る。
 class SwipePrioritySelectionArea extends StatefulWidget {
   const SwipePrioritySelectionArea({
     super.key,
     required this.child,
     this.askLabel,
     this.onAsk,
+    this.copyLabel,
+    this.world = ChatWorld.universe,
   });
 
   final Widget child;
 
-  /// 選択のメニューに足す「質問」(AIチャットに、選んだ文章を添えて聞く)。[onAsk]と一緒に渡す。
+  /// 選択のメニューに足す「AIに聞く」(AIチャットに、選んだ文章を添えて聞く)。[onAsk]と一緒に渡す。
   final String? askLabel;
   final void Function(String selectedText)? onAsk;
+
+  /// 「コピー」の文言。渡さなければ端末標準の文言。
+  final String? copyLabel;
+
+  /// メニューの色(宇宙の画面は暗く、紙の画面は紙の色)。
+  final ChatWorld world;
 
   @override
   State<SwipePrioritySelectionArea> createState() =>
@@ -98,33 +111,33 @@ class _SwipePrioritySelectionAreaState
           setState(() => _hasSelection = hasSelection);
         }
       },
-      contextMenuBuilder: onAsk == null || askLabel == null
-          // 「質問」を足さないときは、SelectionAreaの標準のメニューのまま
-          ? (context, state) => AdaptiveTextSelectionToolbar.selectableRegion(
-              selectableRegionState: state,
-            )
-          : (context, state) {
-              final items = [...state.contextMenuButtonItems];
-              if (_selectedText.trim().isNotEmpty) {
-                // 標準のメニューは幅が足りないと項目を「⋮」に隠すので、先頭に置く
-                items.insert(
-                  0,
-                  ContextMenuButtonItem(
-                    label: askLabel,
-                    onPressed: () {
-                      final text = _selectedText.trim();
-                      state.hideToolbar();
-                      state.clearSelection();
-                      onAsk(text);
-                    },
-                  ),
-                );
-              }
-              return AdaptiveTextSelectionToolbar.buttonItems(
-                anchors: state.contextMenuAnchors,
-                buttonItems: items,
-              );
-            },
+      contextMenuBuilder: (context, state) {
+        final text = _selectedText.trim();
+        return buildSelectionFloatingMenu(
+          state: state,
+          world: widget.world,
+          actions: [
+            if (onAsk != null && askLabel != null && text.isNotEmpty)
+              SelectionMenuAction(
+                label: askLabel,
+                emphasized: true,
+                onTap: () {
+                  state.clearSelection();
+                  onAsk(text);
+                },
+              ),
+            SelectionMenuAction(
+              label:
+                  widget.copyLabel ??
+                  MaterialLocalizations.of(context).copyButtonLabel,
+              onTap: () {
+                unawaited(Clipboard.setData(ClipboardData(text: text)));
+                state.clearSelection();
+              },
+            ),
+          ],
+        );
+      },
       child: RawGestureDetector(
         behavior: HitTestBehavior.translucent,
         gestures: {

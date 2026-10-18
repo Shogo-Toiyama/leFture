@@ -5,6 +5,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lefture/presentation/widgets/selection_floating_menu.dart';
 import 'package:lefture/presentation/widgets/selection_swipe_priority.dart';
 
 void main() {
@@ -68,13 +69,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(controller.page, 0);
-      // 標準の選択ツールバー(コピー等)が出ていれば、選択はSelectionAreaが取れている。
-      expect(find.byType(AdaptiveTextSelectionToolbar), findsOneWidget);
+      // 選択メニュー(コピー等)が出ていれば、選択はSelectionAreaが取れている。
+      expect(find.byType(SelectionFloatingMenu), findsOneWidget);
     });
   });
 
-  group('SwipePrioritySelectionArea の「質問」', () {
-    testWidgets('メニューの先頭に「質問」が出て、選んだ文章が渡る', (tester) async {
+  group('SwipePrioritySelectionArea の「AIに聞く」', () {
+    testWidgets('メニューの先頭に「AIに聞く」が出て、選んだ文章が渡る', (tester) async {
       final asked = <String>[];
       await tester.pumpWidget(
         MaterialApp(
@@ -103,7 +104,7 @@ void main() {
       expect('heaps are trees', contains(asked.single));
     });
 
-    testWidgets('渡さなければ、標準のメニューのまま', (tester) async {
+    testWidgets('渡さなければ、「コピー」だけのメニュー', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -120,7 +121,8 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
       expect(find.text('Ask'), findsNothing);
-      expect(find.byType(AdaptiveTextSelectionToolbar), findsOneWidget);
+      expect(find.byType(SelectionFloatingMenu), findsOneWidget);
+      expect(find.text('Copy'), findsOneWidget);
     });
   });
 

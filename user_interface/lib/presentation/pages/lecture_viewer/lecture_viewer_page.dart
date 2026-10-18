@@ -1115,6 +1115,7 @@ class _ViewerFunFactCard extends HookConsumerWidget {
             // PageViewへ転送する専用のSelectionAreaを使う。
             SwipePrioritySelectionArea(
               askLabel: l10n.cardSelectionToolbarAskLabel,
+              copyLabel: l10n.cardSelectionToolbarCopyLabel,
               // 選んだ文章をAIに質問する。選んだ位置は、本文の前後の文字で伝える
               onAsk: (selected) {
                 final flattened = [

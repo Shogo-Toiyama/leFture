@@ -2256,7 +2256,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cardSelectionToolbarSourceLabel => 'Source';
 
   @override
-  String get cardSelectionToolbarAskLabel => 'Ask';
+  String get cardSelectionToolbarAskLabel => 'Ask AI';
 
   @override
   String get cardSelectionToolbarLikeLabel => 'Like';
@@ -4245,4 +4245,298 @@ class AppLocalizationsEn extends AppLocalizations {
   String aiChatElapsedMinutesSeconds(String minutes, String seconds) {
     return '$minutes min $seconds sec';
   }
+
+  @override
+  String get selfPortraitPageTitle => 'Self-portrait';
+
+  @override
+  String get selfPortraitPageSubtitle =>
+      'What we\'ve come to know about you, a little more each time you talk';
+
+  @override
+  String get selfPortraitLoadError =>
+      'Couldn\'t load this. Please try again in a moment.';
+
+  @override
+  String get selfPortraitActionFailed => 'That didn\'t work. Please try again.';
+
+  @override
+  String get selfPortraitNowSection => 'Me, right now';
+
+  @override
+  String get selfPortraitWrittenFromChats => 'Written from your conversations';
+
+  @override
+  String get selfPortraitDividerCaption => 'What your conversations have shown';
+
+  @override
+  String get selfPortraitRecentSection => 'Recently discovered';
+
+  @override
+  String get selfPortraitNew => 'NEW';
+
+  @override
+  String get selfPortraitConnectedTopics => 'Connected from';
+
+  @override
+  String selfPortraitQuote(String text) {
+    return '“$text”';
+  }
+
+  @override
+  String get selfPortraitConfirmBanner => 'There\'s something to check';
+
+  @override
+  String selfPortraitConfirmPendingCount(String count) {
+    return '$count to keep or remove';
+  }
+
+  @override
+  String selfPortraitProposalTitle(String field) {
+    return 'Suggested rewrite of $field';
+  }
+
+  @override
+  String get selfPortraitTabsLabel =>
+      'Switch between self-portrait and records';
+
+  @override
+  String get selfPortraitTabTraits => 'Self-portrait';
+
+  @override
+  String get selfPortraitTabRecords => 'Records';
+
+  @override
+  String get selfPortraitFootnote =>
+      'The AI adds to this little by little from what you talk about in chat. If something looks off, open it to edit or remove it.';
+
+  @override
+  String get selfPortraitOther => 'Other';
+
+  @override
+  String get selfPortraitEmptyTraits =>
+      'Nothing here yet. As you chat, this fills in little by little.';
+
+  @override
+  String get selfPortraitEmptyRecords =>
+      'When you talk about things you made or progress you made, they\'re kept here with a date.';
+
+  @override
+  String selfPortraitLatest(String date) {
+    return 'Latest $date';
+  }
+
+  @override
+  String selfPortraitMoreCount(String count) {
+    return '$count more';
+  }
+
+  @override
+  String selfPortraitFromConversations(String count) {
+    return 'From $count conversations';
+  }
+
+  @override
+  String get selfPortraitItemActions => 'Open this item';
+
+  @override
+  String get selfPortraitEditedByYou => 'Edited by you';
+
+  @override
+  String get selfPortraitActionEdit => 'Edit';
+
+  @override
+  String get selfPortraitActionEditHint =>
+      'Rewrite it in your own words. The AI won\'t change it after that';
+
+  @override
+  String get selfPortraitActionReject => 'Not me';
+
+  @override
+  String get selfPortraitActionRejectHint =>
+      'The AI misread you. It won\'t write anything with the same meaning again';
+
+  @override
+  String get selfPortraitRejectReasonLabel => 'What\'s off? (optional)';
+
+  @override
+  String get selfPortraitRejectReasonPlaceholder =>
+      'e.g. I only present because it\'s my role';
+
+  @override
+  String get selfPortraitActionDiscard => 'Don\'t keep this';
+
+  @override
+  String get selfPortraitActionDiscardHint =>
+      'Even if it\'s true, don\'t keep it. Removes this item and the notes it came from';
+
+  @override
+  String get selfPortraitDiscardConfirmTitle => 'Remove this item?';
+
+  @override
+  String get selfPortraitDiscardConfirmMessage =>
+      'The AI notes it came from are removed too. This can\'t be undone.';
+
+  @override
+  String get selfPortraitDiscardConfirmButton => 'Remove';
+
+  @override
+  String get selfPortraitPendingNotice =>
+      'Until you decide, this isn\'t used anywhere, not in chat or fun facts.';
+
+  @override
+  String get selfPortraitKeep => 'Keep';
+
+  @override
+  String get selfPortraitDontKeep => 'Don\'t keep';
+
+  @override
+  String get selfPortraitEvidenceSection => 'Where this came from';
+
+  @override
+  String get selfPortraitOpenChat => 'Open conversation';
+
+  @override
+  String get selfPortraitHistorySection => 'How it changed';
+
+  @override
+  String selfPortraitUntil(String date) {
+    return 'Until $date: ';
+  }
+
+  @override
+  String get selfPortraitConfirmSheetTitle => 'Things to check';
+
+  @override
+  String selfPortraitSensitiveAsk(String area) {
+    return 'This touches on $area, so please decide whether to keep it';
+  }
+
+  @override
+  String get selfPortraitAreaReligion => 'religion';
+
+  @override
+  String get selfPortraitAreaHealth => 'health';
+
+  @override
+  String get selfPortraitAreaSexuality => 'sexuality';
+
+  @override
+  String get selfPortraitAreaPolitics => 'politics';
+
+  @override
+  String get selfPortraitAreaEthnicity => 'background';
+
+  @override
+  String get selfPortraitAreaSensitive => 'something personal';
+
+  @override
+  String get selfPortraitProposalNow => 'Now: ';
+
+  @override
+  String get selfPortraitProposalAccept => 'Use this';
+
+  @override
+  String get selfPortraitProposalReject => 'Keep mine';
+
+  @override
+  String get selfPortraitConfirmEmpty => 'Nothing to check right now.';
+
+  @override
+  String get selfPortraitLinkSub =>
+      'A profile the AI adds to from what you talk about';
+
+  @override
+  String get aiSettingsTitle => 'What the AI remembers';
+
+  @override
+  String get aiSettingsPageTitle => 'AI chat settings';
+
+  @override
+  String get aiSettingsPageIntro =>
+      'What the AI keeps in mind when it talks with you. Stored separately from your self-portrait.';
+
+  @override
+  String get aiMemoStyleSection => 'How to explain';
+
+  @override
+  String get aiMemoSituationSection => 'Right now';
+
+  @override
+  String aiMemoUntil(String date) {
+    return 'until $date';
+  }
+
+  @override
+  String get aiMemoEmpty => 'Nothing yet';
+
+  @override
+  String get aiMemoDelete => 'Remove this note';
+
+  @override
+  String get aiMemoOneTimeNote =>
+      'Requests just for one conversation, like “fewer formulas this time,” aren\'t kept here.';
+
+  @override
+  String get aiMoreSection => 'More';
+
+  @override
+  String get aiNotesLink => 'AI notes';
+
+  @override
+  String aiNotesLinkSub(String count) {
+    return '$count things noticed in conversations · material for your self-portrait';
+  }
+
+  @override
+  String get aiMemoryIntro =>
+      'Things the AI noticed while you talked. When several notes point the same way, they\'re added to your self-portrait. A one-off stays here and doesn\'t become part of it.';
+
+  @override
+  String get aiMemoryEmpty => 'No notes yet.';
+
+  @override
+  String get aiMemoryDeleteNote => 'Remove this note';
+
+  @override
+  String get aiMemoryForgetAll => 'Remove all AI notes';
+
+  @override
+  String get aiMemoryForgetAllNote =>
+      'Your self-portrait and explanation notes stay. You can remove those individually on their own screens.';
+
+  @override
+  String aiMemoryForgetConfirmMessage(String count) {
+    return 'This removes $count notes. It can\'t be undone.';
+  }
+
+  @override
+  String get accountAiSettingsSub => 'Explanation notes · AI notes';
+
+  @override
+  String get selfPortraitCoverBio => 'ABOUT YOU';
+
+  @override
+  String get selfPortraitCoverBioEmpty => 'No description set yet.';
+
+  @override
+  String get selfPortraitCoverInterests => 'INTERESTS';
+
+  @override
+  String get selfPortraitCoverInterestsEmpty => 'No interests set yet.';
+
+  @override
+  String get selfPortraitCoverFutureGoals => 'FUTURE DREAMS';
+
+  @override
+  String get selfPortraitCoverFutureGoalsEmpty => 'No future dream set yet.';
+
+  @override
+  String get selfPortraitSave => 'Save';
+
+  @override
+  String get selfPortraitSaving => 'Saving…';
+
+  @override
+  String get selfPortraitEdit => 'Edit';
 }
