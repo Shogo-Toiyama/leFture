@@ -796,7 +796,7 @@ export const ja: Record<keyof typeof en, string> = {
   chatDetailStatus: '状態',
   chatDetailStatusStopped: '途中で停止',
   chatReplyToSelection: '返信',
-  annotationAsk: '質問',
+  annotationAsk: 'AIに聞く',
   annotationHighlight: 'ハイライト',
   annotationNote: 'ノート',
   annotationSource: '出典',

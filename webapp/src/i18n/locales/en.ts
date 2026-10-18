@@ -798,7 +798,7 @@ export const en = {
   chatDetailStatus: 'Status',
   chatDetailStatusStopped: 'Stopped partway',
   chatReplyToSelection: 'Reply',
-  annotationAsk: 'Ask',
+  annotationAsk: 'Ask AI',
   annotationHighlight: 'Highlight',
   annotationNote: 'Note',
   annotationSource: 'Source',
