@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Minimize2, SlidersHorizontal, SquarePen } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { useAiConsent } from '../../context/AiConsentContext';
 import { useChatThreads } from '../../hooks/useChatThreads';
 import { getChatThread } from '../../lib/chat';
 import { ChatConversation } from '../../components/chat/ChatConversation';
@@ -19,11 +20,35 @@ import { AttachmentListButton } from '../../components/chat/AttachmentListModal'
  */
 export const ChatPage: React.FC = () => {
   const { threadId } = useParams<{ threadId?: string }>();
+  const consented = useChatConsentGate();
+  if (!consented) return null;
   if (!threadId) return <ChatListView />;
   // keyで作り直さない: /chat/new で最初に送ったあと /chat/:id へ置き換えた瞬間に
   // 作り直すと、受信中のストリームが切れてしまう。
   return <ChatThreadView threadId={threadId === 'new' ? null : threadId} />;
 };
+
+/**
+ * チャットで入力した内容・資料をAIサービスへ送ることへの同意(アカウント単位)。まだなら、画面に入る前に聞く。
+ * 断られたら元の画面に戻る。同意済みの人には、聞かずにそのまま開く。
+ */
+function useChatConsentGate(): boolean {
+  const { hasConsent, requestConsent } = useAiConsent();
+  const navigate = useNavigate();
+  const [consented, setConsented] = useState(() => hasConsent('chat'));
+  const asked = useRef(false);
+
+  useEffect(() => {
+    if (consented || asked.current) return;
+    asked.current = true;
+    void requestConsent('chat').then((agreed) => {
+      if (agreed) setConsented(true);
+      else navigateOutOfChat(navigate);
+    });
+  }, [consented, requestConsent, navigate]);
+
+  return consented;
+}
 
 /**
  * チャット画面に入る前の元の画面(講義やコース等)に戻る。

@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
+import { AiConsentProvider } from '../../context/AiConsentContext';
 import { ChatPanelProvider, useChatPanel } from '../../context/ChatPanelContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useMediaQuery, STACKED_PANELS_QUERY } from '../../hooks/useMediaQuery';
@@ -26,10 +27,12 @@ const ChatPanel = lazy(() => import('./ChatPanel').then((m) => ({ default: m.Cha
  * パネルの幅は左端のつかみ部分(ChatDockResizer)で変えられ、端末ごとに覚える(lib/chatDockWidth)。
  */
 export const ChatHost: React.FC = () => (
-  <ChatPanelProvider>
-    <Outlet />
-    <ChatDock />
-  </ChatPanelProvider>
+  <AiConsentProvider>
+    <ChatPanelProvider>
+      <Outlet />
+      <ChatDock />
+    </ChatPanelProvider>
+  </AiConsentProvider>
 );
 
 /** 画面(ウィンドウ)の幅。パネルの幅を、画面に収まるよう丸めるのに使う。 */
