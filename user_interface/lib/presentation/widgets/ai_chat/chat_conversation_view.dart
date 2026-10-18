@@ -7,6 +7,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/chat/chat_conversation.dart';
 import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_attachment_list_sheet.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_attachment_viewer.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_colors.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_composer.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_labels.dart';
@@ -35,7 +37,6 @@ class ChatConversationView extends ConsumerStatefulWidget {
     this.selection,
     this.onClearSelection,
     this.screen,
-    this.onOpenAttachment,
   });
 
   final ChatWorld world;
@@ -61,9 +62,6 @@ class ChatConversationView extends ConsumerStatefulWidget {
   /// 今いる画面のページ。毎回の送信に添える(本文はバックエンドが読む)。
   final ChatScreenRef? screen;
 
-  /// 資料のチップを押したとき。
-  final void Function(ChatAttachment attachment)? onOpenAttachment;
-
   @override
   ConsumerState<ChatConversationView> createState() =>
       _ChatConversationViewState();
@@ -75,6 +73,12 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
 
   /// 入力欄の中身を変える依頼。
   ChatPrefill? _prefill;
+
+  /// 資料の一覧から、入力欄に資料を入れる・外す依頼。
+  ChatInsertRequest? _insertRequest;
+
+  /// 入力欄で指している既存の資料(一覧に「添付する予定」として見せる)。
+  final _pendingRefs = ValueNotifier<List<ChatAttachmentRef>>(const []);
 
   /// 下の入力欄で直しているユーザーメッセージ。送ると、そのメッセージ自身と後ろが消えて、そこからやり直す。
   String? _editingId;
@@ -104,6 +108,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
 
   @override
   void dispose() {
+    _pendingRefs.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -136,6 +141,40 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
       nonce: DateTime.now().microsecondsSinceEpoch,
     ),
   );
+
+  /// 送った資料を読む(外すこともできる)。
+  void _openAttachment(ChatAttachment attachment) {
+    unawaited(
+      showChatAttachmentViewer(
+        context,
+        colors: ChatColors.of(widget.world),
+        attachment: attachment,
+        onRemove: attachment.status == ChatAttachmentStatus.ready
+            ? () => _notifier.removeAttachment(attachment.id)
+            : null,
+      ),
+    );
+  }
+
+  /// この会話の資料の一覧を開く。
+  void _openAttachmentList() {
+    unawaited(
+      showChatAttachmentListSheet(
+        context,
+        colors: ChatColors.of(widget.world),
+        pendingRefs: _pendingRefs,
+        onAttach: (attachment, mode) => setState(
+          () => _insertRequest = ChatInsertRequest(
+            attachment: attachment,
+            mode: mode,
+            nonce: DateTime.now().microsecondsSinceEpoch,
+          ),
+        ),
+        onView: _openAttachment,
+        onUnpin: (attachment) => _notifier.selectAttachment(attachment.id, false),
+      ),
+    );
+  }
 
   /// 全文で読むのをやめる(失敗しても会話は続けられる。次に開いたときサーバーの状態に戻る)。
   Future<void> _unselectAttachment(String id) async {
@@ -533,8 +572,11 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
                 ],
                 onViewAttachment: (id) {
                   final a = attachmentsById[id];
-                  if (a != null) widget.onOpenAttachment?.call(a);
+                  if (a != null) _openAttachment(a);
                 },
+                insertRequest: _insertRequest,
+                onPendingChange: (refs) => _pendingRefs.value = refs,
+                onOpenAttachmentList: _openAttachmentList,
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 6),
@@ -587,7 +629,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
             colors: colors,
             attachments: attachmentsByMessage[message.id] ?? const [],
             attachmentsById: attachmentsById,
-            onOpenAttachment: widget.onOpenAttachment,
+            onOpenAttachment: _openAttachment,
             onEdit:
                 !state.sending &&
                     message.failedCode == null &&

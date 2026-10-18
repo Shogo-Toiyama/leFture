@@ -8,6 +8,7 @@ import 'package:lefture/infrastructure/chat/chat_repository.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
 import 'package:lefture/infrastructure/local_db/repositories/chat_cache_drift.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_composer_parts.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_conversation_view.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 
@@ -665,6 +666,181 @@ void main() {
       await settle(tester);
       expect(find.text(l10n.aiChatCreditsUsed('0.42')), findsOneWidget);
       expect(find.text(l10n.aiChatDetailSourcesCount('0')), findsOneWidget);
+    });
+  });
+
+  group('資料', () {
+    ChatAttachment material(
+      String id,
+      String title, {
+      bool selected = false,
+      String? messageId,
+      String content = 'Heaps are complete binary trees.',
+      List<ChatAttachmentSection> sections = const [],
+    }) => ChatAttachment(
+      id: id,
+      threadId: 'T1',
+      messageId: messageId,
+      kind: 'text',
+      status: ChatAttachmentStatus.ready,
+      title: title,
+      content: content,
+      charCount: content.length,
+      tokenCount: 100,
+      selected: selected,
+      sections: sections,
+      summary: 'About heaps',
+      createdAt: DateTime.utc(2026, 10, 18),
+    );
+
+    String inputText(WidgetTester tester) =>
+        tester.widget<TextField>(find.byType(TextField)).controller!.text;
+
+    testWidgets('「＋」→ この会話の資料 → 全文で添付すると、一覧を開いたまま入力欄に名前が入る', (tester) async {
+      repo.attachments = [material('m1', 'Heap notes')];
+      await pumpView(tester);
+      await openThread(tester, conversation);
+
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await settle(tester);
+      await tester.tap(find.text(l10n.aiChatAttachSelect));
+      await settle(tester);
+      // 「＋」のメニューの項目と同じ文言なので、閉じる途中は2つ見える
+      expect(find.text(l10n.aiChatAttachmentsTitle), findsWidgets);
+      expect(find.text('Heap notes'), findsOneWidget);
+      expect(find.text('About heaps'), findsOneWidget);
+
+      await tester.tap(find.text('Heap notes'));
+      await settle(tester);
+      await tester.tap(find.text(l10n.aiChatAttachFull));
+      await settle(tester);
+
+      // 一覧は開いたまま、「添付する予定」の印が付く
+      expect(find.text(l10n.aiChatAttachmentsTitle), findsWidgets);
+      expect(find.text(l10n.aiChatAttachPendingFull), findsOneWidget);
+      await tester.tap(find.byType(ModalBarrier).last);
+      await settle(tester);
+      expect(inputText(tester), '@Heap notes ');
+    });
+
+    testWidgets('資料が無い会話では、「＋」の「この会話の資料」は選べない', (tester) async {
+      await pumpView(tester);
+      await openThread(tester, conversation);
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await settle(tester);
+      expect(find.text(l10n.aiChatAttachSelectNone), findsOneWidget);
+    });
+
+    testWidgets('全文で読んでいる資料は入力欄の上に出て、×でやめられる', (tester) async {
+      repo.attachments = [material('m1', 'Heap notes', selected: true)];
+      await pumpView(tester);
+      await openThread(tester, conversation);
+      expect(find.text('Heap notes'), findsOneWidget);
+      expect(find.text(l10n.aiChatAttachPinned), findsOneWidget);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ChatPinnedChip),
+          matching: find.byIcon(Icons.close_rounded),
+        ),
+      );
+      await settle(tester);
+      expect(repo.selectCalls, [('m1', false)]);
+      expect(find.byType(ChatPinnedChip), findsNothing);
+    });
+
+    testWidgets('送った資料のチップを押すと中身を読めて、会話から外せる', (tester) async {
+      repo.attachments = [
+        material(
+          'm1',
+          'Heap notes',
+          messageId: 'U2',
+          content: 'Section one text.\nSection two text.',
+          sections: const [
+            ChatAttachmentSection(
+              index: 1,
+              title: 'One',
+              description: 'first',
+              start: 0,
+              end: 17,
+            ),
+            ChatAttachmentSection(
+              index: 2,
+              title: 'Two',
+              description: 'second',
+              start: 18,
+              end: 35,
+            ),
+          ],
+        ),
+      ];
+      await pumpView(tester);
+      await openThread(tester, [
+        ...conversation,
+        chatRow(
+          'U2',
+          'user',
+          'please read this',
+          createdAt: '2026-10-18T00:00:03Z',
+          context: {
+            'attachments': [
+              {'id': 'm1', 'mode': 'full'},
+            ],
+          },
+        ),
+      ]);
+
+      await tester.tap(find.text('Heap notes'));
+      await settle(tester);
+      expect(find.text(l10n.aiChatAttachmentFullText), findsOneWidget);
+      expect(find.text('About heaps'), findsOneWidget);
+      expect(find.text('1. One'), findsOneWidget);
+      expect(find.text('Section two text.'), findsOneWidget);
+
+      await tester.tap(find.text(l10n.aiChatAttachmentRemove));
+      await settle(tester);
+      expect(find.text(l10n.aiChatAttachmentRemoveConfirm), findsOneWidget);
+      await tester.tap(find.text(l10n.aiChatAttachmentRemove).last);
+      await settle(tester);
+      expect(repo.removedAttachments, ['m1']);
+      await settle(tester, 400);
+      expect(find.text(l10n.aiChatAttachmentFullText), findsNothing);
+    });
+
+    testWidgets('資料を指した質問を編集すると、「@名前」と渡し方が入力欄に戻る', (tester) async {
+      repo.attachments = [material('m1', 'Heap notes', messageId: 'U1')];
+      await pumpView(tester);
+      await openThread(tester, [
+        chatRow(
+          'U1',
+          'user',
+          'explain ⟦att:m1⟧ please',
+          context: {
+            'attachments': [
+              {'id': 'm1', 'mode': 'full'},
+            ],
+          },
+        ),
+        chatRow(
+          'A1',
+          'assistant',
+          'Sure.',
+          createdAt: '2026-10-18T00:00:02Z',
+        ),
+      ]);
+      await tester.tap(find.bySemanticsLabel(l10n.aiChatActionEdit));
+      await settle(tester);
+      expect(inputText(tester), 'explain @Heap notes please');
+
+      await tester.tap(find.bySemanticsLabel(l10n.aiChatSend));
+      await settle(tester);
+      final request = repo.lastRequest!;
+      expect(request.content, 'explain ⟦att:m1⟧ please');
+      expect(request.replaceFromMessageId, 'U1');
+      expect(request.references.single.attachmentId, 'm1');
+      expect(request.references.single.mode, ChatAttachmentMode.full);
+      await repo.controller.close();
+      await settle(tester);
     });
   });
 }

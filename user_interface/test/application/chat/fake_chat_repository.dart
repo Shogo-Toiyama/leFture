@@ -67,9 +67,37 @@ class FakeChatRepository extends Fake implements ChatRepository {
     return rows;
   }
 
+  /// listAttachmentsが返す資料。
+  List<ChatAttachment> attachments = [];
+  final List<(String, bool)> selectCalls = [];
+  Object? selectError;
+  final List<String> removedAttachments = [];
+
   @override
-  Future<List<ChatAttachment>> listAttachments(String threadId) async =>
-      const [];
+  Future<List<ChatAttachment>> listAttachments(String threadId) async => [
+    ...attachments,
+  ];
+
+  @override
+  Future<void> setAttachmentSelected(String attachmentId, bool selected) async {
+    final error = selectError;
+    if (error != null) throw error;
+    selectCalls.add((attachmentId, selected));
+  }
+
+  @override
+  Future<void> removeAttachment(String attachmentId) async {
+    removedAttachments.add(attachmentId);
+  }
+
+  @override
+  Future<ChatFileLink> getAttachmentFileLink(String attachmentId) async =>
+      const ChatFileLink(
+        url: 'https://files.example/a.pdf',
+        fileName: 'a.pdf',
+        kind: 'pdf',
+        contentType: 'application/pdf',
+      );
 
   @override
   Future<ChatMessage?> getMessage(String messageId) async {
