@@ -3248,4 +3248,782 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get errAccountSuspended => 'このアカウントは停止されています。';
+
+  @override
+  String get aiChatNewConversation => '新しい会話';
+
+  @override
+  String get aiChatHistory => '会話の一覧';
+
+  @override
+  String get aiChatInputPlaceholder => '何でも聞いてみよう…';
+
+  @override
+  String get aiChatInputPlaceholderFollowUp => '続けて質問…';
+
+  @override
+  String get aiChatSend => '送信';
+
+  @override
+  String get aiChatStageThinking => '考え中…';
+
+  @override
+  String get aiChatStageSearching => '講義ノートを検索中…';
+
+  @override
+  String get aiChatStageSearchingWeb => 'Webで検索中…';
+
+  @override
+  String get aiChatStageSearchingChats => '過去のチャットを確認中…';
+
+  @override
+  String aiChatStageSearchingWebWithQuery(String query) {
+    return 'Webで「$query」を検索中…';
+  }
+
+  @override
+  String aiChatStageSearchingNotesWithQuery(String query) {
+    return '講義ノートから「$query」を検索中…';
+  }
+
+  @override
+  String aiChatStageSearchingTranscriptWithQuery(String query) {
+    return '講義の発言録から「$query」を検索中…';
+  }
+
+  @override
+  String aiChatStageSearchingChatsWithQuery(String query) {
+    return '過去のチャットから「$query」を検索中…';
+  }
+
+  @override
+  String get aiChatStageReadingTranscript => '講義の発言録を確認中…';
+
+  @override
+  String get aiChatStageReadingNotes => '講義資料を確認中…';
+
+  @override
+  String get aiChatStageReasoning => 'じっくり考えています…';
+
+  @override
+  String get aiChatStageWriting => '回答を書いています…';
+
+  @override
+  String get aiChatReconnecting => '接続が切れました。返答ができあがるのを待っています…';
+
+  @override
+  String aiChatCreditsUsed(String credits) {
+    return '$creditsクレジット';
+  }
+
+  @override
+  String get aiChatActionCopy => 'コピー';
+
+  @override
+  String get aiChatActionCopied => 'コピーしました';
+
+  @override
+  String get aiChatActionMore => 'その他';
+
+  @override
+  String get aiChatActionDetails => '回答の詳細';
+
+  @override
+  String get aiChatDetailSentAt => '送信日時';
+
+  @override
+  String get aiChatDetailCredits => '消費クレジット';
+
+  @override
+  String get aiChatDetailNoCharge => 'なし';
+
+  @override
+  String get aiChatDetailSources => '参照した出典';
+
+  @override
+  String aiChatDetailSourcesCount(String count) {
+    return '$count件';
+  }
+
+  @override
+  String get aiChatShowMore => 'もっと見る';
+
+  @override
+  String get aiChatShowLess => '閉じる';
+
+  @override
+  String get aiChatActionEdit => '編集';
+
+  @override
+  String get aiChatActionRegenerate => '作り直す';
+
+  @override
+  String aiChatEditing(String turns) {
+    return 'メッセージを編集中 — 以降の$turns往復は削除されます';
+  }
+
+  @override
+  String aiChatEditingWithAttachments(String turns, String count) {
+    return 'メッセージを編集中 — 以降の$turns往復と、資料$count件が削除されます';
+  }
+
+  @override
+  String get aiChatEditingLast => 'メッセージを編集中';
+
+  @override
+  String get aiChatEditCancel => '編集をやめる';
+
+  @override
+  String get aiChatEditConfirmTitle => '編集して送信しますか？';
+
+  @override
+  String aiChatEditConfirmBody(String turns, String titles) {
+    return 'このメッセージより後の$turns往復と、そこで添付した資料$titlesが削除されます。使ったクレジットは戻りません。';
+  }
+
+  @override
+  String get aiChatEditConfirmSend => '削除して送信';
+
+  @override
+  String get aiChatStop => '停止';
+
+  @override
+  String get aiChatStopping => '停止しています…';
+
+  @override
+  String get aiChatStopped => '停止しました';
+
+  @override
+  String get aiChatStopFailed => '停止できませんでした。もう一度お試しください。';
+
+  @override
+  String aiChatStoppedAttachments(String titles) {
+    return '停止したため、添付した資料$titlesを読み込めませんでした。もう一度添付してください。';
+  }
+
+  @override
+  String get aiChatDetailStatus => '状態';
+
+  @override
+  String get aiChatDetailStatusStopped => '途中で停止';
+
+  @override
+  String get aiChatReplyToSelection => '返信';
+
+  @override
+  String get aiChatActionReport => '問題を報告';
+
+  @override
+  String get aiChatReportAttach => 'この回答と直前の質問を添付する';
+
+  @override
+  String get aiChatReportQuestion => '質問';
+
+  @override
+  String get aiChatReportReply => '回答';
+
+  @override
+  String get aiReportCategoryLabel => '種類';
+
+  @override
+  String get aiReportCategoryInappropriate => '不適切な回答';
+
+  @override
+  String get aiReportCategoryIncorrect => '内容の誤り';
+
+  @override
+  String get aiReportCategoryBug => '不具合';
+
+  @override
+  String get aiReportCategoryFeedback => 'ご意見・ご要望';
+
+  @override
+  String get aiReportCategoryAccount => 'アカウント';
+
+  @override
+  String get aiReportCategoryOther => 'その他';
+
+  @override
+  String get aiReportMessageLabel => '内容';
+
+  @override
+  String get aiReportMessagePlaceholder => '何が起きたか、どうなってほしかったかを教えてください。';
+
+  @override
+  String get aiReportAttachPreview => '送信される内容を確認する';
+
+  @override
+  String get aiReportAutoNote => 'どの回答か、いつ送ったかは、いつも一緒に送られます。';
+
+  @override
+  String get aiReportSubmit => '報告を送る';
+
+  @override
+  String get aiReportSending => '送信中…';
+
+  @override
+  String get aiReportFailed => '報告を送れませんでした。もう一度お試しください。';
+
+  @override
+  String get aiReportSentTitle => '報告を送りました';
+
+  @override
+  String aiReportSentBody(String code) {
+    return 'ありがとうございます。受付コードは $code です。確認のメールをお送りします。';
+  }
+
+  @override
+  String get aiChatReplyFailed => '返答を作れませんでした。クレジットは消費されていません。';
+
+  @override
+  String get aiChatResend => 'もう一度送る';
+
+  @override
+  String get aiChatSourcePreviewEmpty => '引用箇所のテキストプレビューはありません。';
+
+  @override
+  String get aiChatClose => '閉じる';
+
+  @override
+  String get aiChatOpenExternalWeb => 'Webサイトを開く';
+
+  @override
+  String get aiChatOpenInLecture => '講義ページで全体を見る';
+
+  @override
+  String get aiChatNotSent => '送れませんでした';
+
+  @override
+  String aiChatErrorInsufficientCredits(String min) {
+    return 'チャットには$minクレジット以上の残高が必要です。';
+  }
+
+  @override
+  String get aiChatErrorRateLimited => '短い間に送りすぎています。少し待ってからもう一度送ってください。';
+
+  @override
+  String get aiChatErrorBlockedCooldown => 'このアカウントでは、チャットを一時的に使えません。';
+
+  @override
+  String aiChatErrorTooLong(String max) {
+    return 'メッセージが長すぎます。$max文字以内にしてください。';
+  }
+
+  @override
+  String aiChatErrorSelectedTooLong(String max) {
+    return '選んだ文章が長すぎます。$max文字以内の範囲を選んでください。';
+  }
+
+  @override
+  String get aiChatErrorThreadBusy => 'この会話ではまだ返答を作っています。終わってからもう一度送ってください。';
+
+  @override
+  String get aiChatErrorThreadNotFound => 'この会話はもう存在しません。';
+
+  @override
+  String get aiChatErrorSuspended => 'アカウントが停止されているため、チャットを使えません。';
+
+  @override
+  String get aiChatErrorNetwork => 'サーバーにつながりませんでした。通信を確認して、もう一度送ってください。';
+
+  @override
+  String get aiChatErrorGeneric => 'うまくいきませんでした。もう一度試してください。';
+
+  @override
+  String get aiChatLoadFailed => 'この会話を読み込めませんでした。';
+
+  @override
+  String get aiChatBuyCredits => 'クレジットを追加';
+
+  @override
+  String get aiChatDismiss => '閉じる';
+
+  @override
+  String get aiChatEmptyTitle => '何を深めてみる？';
+
+  @override
+  String get aiChatEmptySubtitle => '講義の内容、クラスをまたいだつながり、興味や将来のことまで、何でも一緒に考えます。';
+
+  @override
+  String get aiChatSuggestionLatest => '最近の講義の要点をまとめて';
+
+  @override
+  String get aiChatSuggestionQuiz => '今週習ったことからクイズを出して';
+
+  @override
+  String get aiChatSuggestionGoals => '今学んでいることは、自分の目標とどうつながる？';
+
+  @override
+  String get aiChatSuggestionThisLecture => 'この講義で一番大事なポイントは？';
+
+  @override
+  String get aiChatSuggestionSelection => 'これをもっとかみ砕いて説明して';
+
+  @override
+  String get aiChatSourcesLabel => '出典';
+
+  @override
+  String aiChatAttachedLecture(String title) {
+    return '$titleについて';
+  }
+
+  @override
+  String get aiChatRemoveAttachment => '外す';
+
+  @override
+  String get aiChatThreadsEmpty => 'まだ会話はありません。';
+
+  @override
+  String get aiChatThreadUntitled => '新しい会話';
+
+  @override
+  String get aiChatRename => '名前を変更';
+
+  @override
+  String get aiChatDelete => '削除';
+
+  @override
+  String get aiChatDeleteConfirmTitle => 'この会話を削除しますか？';
+
+  @override
+  String get aiChatDeleteConfirmMessage => '会話の一覧から消え、元に戻せません。';
+
+  @override
+  String get aiChatAiDisclaimer => 'AIは間違えることがあります。大事な点は講義の内容で確かめてください。';
+
+  @override
+  String get aiChatSourceDeepNote => 'Deep Note';
+
+  @override
+  String get aiChatSourceReviewCard => '復習カード';
+
+  @override
+  String get aiChatSourceKeyword => 'キーワード';
+
+  @override
+  String get aiChatSourceAnnouncement => 'お知らせ';
+
+  @override
+  String get aiChatSourceTranscript => '文字起こし';
+
+  @override
+  String get aiChatSourceTopic => 'トピック';
+
+  @override
+  String get aiChatSourceFunFact => 'Fun Fact';
+
+  @override
+  String get aiChatSourceLectureSummary => '講義の要約';
+
+  @override
+  String get aiChatSourceCourse => 'コース';
+
+  @override
+  String get aiChatSourceChat => '過去のチャット';
+
+  @override
+  String get aiChatSourceWeb => 'Web';
+
+  @override
+  String get aiChatSourceMoment => '自分のメモ';
+
+  @override
+  String aiChatPlanExcludedSources(String items) {
+    return '現在のプランでは、$itemsはチャットの検索対象外です';
+  }
+
+  @override
+  String get aiChatPlanExcludedSourcesSeparator => '・';
+
+  @override
+  String get aiChatStageReadingAttachments => '資料を読んでいます…';
+
+  @override
+  String get aiChatStageReadingAttachment => '添付資料を確認中…';
+
+  @override
+  String get aiChatSourceAttachment => '添付資料';
+
+  @override
+  String get aiChatAttach => '資料を添付';
+
+  @override
+  String get aiChatAttachTextHint => '長い文章を資料として貼り付け';
+
+  @override
+  String get aiChatAttachmentEditorTitle => 'テキストを資料として添付';
+
+  @override
+  String get aiChatAttachmentEditorEditTitle => '添付する資料を編集';
+
+  @override
+  String get aiChatAttachmentTitlePlaceholder => '名前(空欄ならAIが付けます)';
+
+  @override
+  String get aiChatAttachmentContentPlaceholder => 'ここに文章を貼り付けてください';
+
+  @override
+  String aiChatAttachmentPasteNotice(String max) {
+    return '$max文字を超える文章は、資料として添付します。';
+  }
+
+  @override
+  String get aiChatAttachmentEditorNote =>
+      '送るまでは編集できます。送った後は編集できません。AIは資料の目次を作り、必要なところを読みながら答えます。';
+
+  @override
+  String get aiChatAttachmentAdd => '添付する';
+
+  @override
+  String get aiChatAttachmentConvert => '資料として添付する';
+
+  @override
+  String get aiChatAttachmentSave => '保存';
+
+  @override
+  String aiChatAttachmentTooLong(String max) {
+    return '資料は$max文字までです。';
+  }
+
+  @override
+  String aiChatAttachmentChars(String count) {
+    return '$count文字';
+  }
+
+  @override
+  String get aiChatAttachmentUntitled => '資料';
+
+  @override
+  String aiChatAttachmentLimitPerMessage(String max) {
+    return '1回に添付できる資料は$max件までです。';
+  }
+
+  @override
+  String get aiChatAttachmentProcessing => '確認中';
+
+  @override
+  String get aiChatAttachmentBlocked => 'この資料は使えませんでした';
+
+  @override
+  String get aiChatAttachmentFailed => '読み込めませんでした';
+
+  @override
+  String get aiChatAttachmentRemove => 'この会話から外す';
+
+  @override
+  String get aiChatAttachmentRemoveConfirm =>
+      '外すと、AIはこの資料を読まなくなります。会話の中の表示は残ります。';
+
+  @override
+  String get aiChatAttachmentRemoveFailed => '外せませんでした。もう一度試してください。';
+
+  @override
+  String get aiChatAttachmentContents => '目次';
+
+  @override
+  String aiChatAttachmentContentsCount(String count) {
+    return '目次($count節)';
+  }
+
+  @override
+  String get aiChatAttachmentFullText => '本文';
+
+  @override
+  String get aiChatAttachmentsTitle => 'この会話の資料';
+
+  @override
+  String get aiChatAttachmentsEmpty => 'この会話にはまだ資料がありません。入力欄の＋から添付できます。';
+
+  @override
+  String aiChatAttachmentsCount(String count) {
+    return '資料 $count';
+  }
+
+  @override
+  String aiChatAttachmentSections(String count) {
+    return '$count節';
+  }
+
+  @override
+  String aiChatAttachmentsOpen(String count) {
+    return 'この会話の資料($count)';
+  }
+
+  @override
+  String get aiChatAttachSelect => 'この会話の資料';
+
+  @override
+  String get aiChatAttachSelectHint => '全文で添付・メンションする(入力欄で @ を打っても呼び出せます)';
+
+  @override
+  String get aiChatAttachSelectNone => 'この会話にはまだ資料がありません';
+
+  @override
+  String get aiChatAttachLongText => '長文テキスト';
+
+  @override
+  String get aiChatAttachFile => 'ファイル添付';
+
+  @override
+  String get aiChatAttachFileHint => 'PDF・Word・PowerPoint・画像・テキスト';
+
+  @override
+  String get aiChatAttachmentFullRead => '全文で読む';
+
+  @override
+  String get aiChatAttachmentTocRead => '目次で読む';
+
+  @override
+  String aiChatAttachmentSelectedTotal(String used, String max) {
+    return '全文で読む資料: $used / $maxトークン';
+  }
+
+  @override
+  String aiChatAttachmentTokens(String count) {
+    return '約$countトークン';
+  }
+
+  @override
+  String aiChatAttachmentCostPerTurn(String credits) {
+    return '1回あたり約+$creditsクレジット';
+  }
+
+  @override
+  String get aiChatAttachmentTooLongToSelect => '長すぎて全文では読めません。目次と検索で読みます。';
+
+  @override
+  String aiChatAttachmentSelectionLimit(String max) {
+    return '選択中の資料と合わせると上限($maxトークン)を超えます。ほかの資料の「全文で読む」を外してください。';
+  }
+
+  @override
+  String get aiChatAttachmentSelectFailed => '切り替えられませんでした。もう一度試してください。';
+
+  @override
+  String get aiChatAttachmentListHint =>
+      '資料を押すと、全文で添付するか、メンションするかを選べます。全文で添付した資料は、AIが毎回全文を読みます(外すまで続きます)。メンションした資料は、そのメッセージで指していることがAIに伝わり、必要なところを探して読みます。何もしなくても、AIは各資料の名前と要約を知っています。';
+
+  @override
+  String get aiChatAttachmentUnselect => '全文読みをやめる';
+
+  @override
+  String get aiChatErrorEmptyAttachment => '空の資料は添付できません。';
+
+  @override
+  String aiChatErrorAttachmentTooLong(String max) {
+    return '資料は$max文字までです。';
+  }
+
+  @override
+  String aiChatErrorTooManyAttachments(String max) {
+    return '1回に添付できる資料は$max件までです。';
+  }
+
+  @override
+  String aiChatErrorThreadAttachmentLimit(String max) {
+    return 'この会話に添付できる資料は$max件までです。不要な資料を外すか、新しい会話で添付してください。';
+  }
+
+  @override
+  String aiChatFileErrorUpload(String status) {
+    return 'アップロードできませんでした(コード$status)。通信を確かめて、外してからもう一度添付してください';
+  }
+
+  @override
+  String get aiChatFileUploadingShort => 'アップロード中';
+
+  @override
+  String get aiChatDraftPreviewBadge => '送る前のファイル';
+
+  @override
+  String aiChatDraftPreviewOpen(String name) {
+    return '$nameの中身を見る';
+  }
+
+  @override
+  String get aiChatDraftPreviewOffice =>
+      'Word・PowerPointはここでは表示できません。送った後は、資料の一覧から本文と元のファイルを開けます。';
+
+  @override
+  String aiChatDraftPreviewVisionPages(String pages) {
+    return '画像として読む部分: $pages';
+  }
+
+  @override
+  String get aiChatMentionNewFull => '新しく添付(全文)';
+
+  @override
+  String get aiChatMentionToFull => '全文にする';
+
+  @override
+  String get aiChatMentionToMention => 'メンションにする';
+
+  @override
+  String get aiChatAttachPendingFull => '全文で添付済み';
+
+  @override
+  String get aiChatAttachPendingMention => 'メンション済み';
+
+  @override
+  String get aiChatAttachUndo => '入力欄から外す';
+
+  @override
+  String aiChatAttachmentSelectedPending(String used, String max) {
+    return '送ると全文で読む資料: $used / $maxトークン';
+  }
+
+  @override
+  String get aiChatAttachmentOverLimitNote =>
+      '上限を超える分は、全文にした時期が古い資料から全文読みが外れます。';
+
+  @override
+  String get aiChatAttachPinned => '全文で読み中';
+
+  @override
+  String get aiChatAttachFull => '全文で添付';
+
+  @override
+  String get aiChatAttachFullHint => '送るとAIが毎回全文を読みます(外すまで続きます)';
+
+  @override
+  String get aiChatAttachMention => 'メンション';
+
+  @override
+  String get aiChatAttachMentionHint => 'このメッセージでこの資料を指していることをAIに伝えます';
+
+  @override
+  String get aiChatAttachView => '中身を見る';
+
+  @override
+  String get aiChatAttachUnpinHint => '以降は目次と検索で、必要なところだけ読みます';
+
+  @override
+  String aiChatPinnedSummary(String count, String credits, String percent) {
+    return '全文で読む資料 $count件 · 1回あたり約+$creditsクレジット(上限の$percent%)';
+  }
+
+  @override
+  String get aiChatMentionPickerTitle => 'この会話の資料';
+
+  @override
+  String get aiChatMentionPickerHint => 'Enterでメンション';
+
+  @override
+  String get aiChatMentionPickerEmpty => '一致する資料がありません';
+
+  @override
+  String get aiChatMentionRemoved => '外した資料';
+
+  @override
+  String get aiChatMentionFullTag => '全文';
+
+  @override
+  String aiChatNoticeUnpinned(String max, String titles) {
+    return '全文で読む資料の上限($maxトークン)を超えたため、$titlesの全文読みを外しました。@で指せば、目次と検索で必要なところを読みます。';
+  }
+
+  @override
+  String aiChatNoticeTooLong(String titles) {
+    return '$titlesは長すぎるため全文では読めません。目次と検索で必要なところを読みます。';
+  }
+
+  @override
+  String aiChatErrorTooManyMentions(String max) {
+    return '1回に指せる資料は$max件までです。';
+  }
+
+  @override
+  String get aiChatFileCompressing => '縮小中…';
+
+  @override
+  String aiChatFileUploading(String percent) {
+    return 'アップロード中 $percent%';
+  }
+
+  @override
+  String get aiChatFileReading => '読み取り中…';
+
+  @override
+  String get aiChatFileImage => '画像';
+
+  @override
+  String aiChatFilePages(String count) {
+    return '$countページ';
+  }
+
+  @override
+  String aiChatFileSlides(String count) {
+    return '$count枚';
+  }
+
+  @override
+  String aiChatFileVisionCount(String count) {
+    return '画像として$count件読む';
+  }
+
+  @override
+  String get aiChatFileNotReadyHint => 'ファイルの準備が終わるまで送れません(読めなかったファイルは外してください)';
+
+  @override
+  String get aiChatFileErrorUnsupported =>
+      'この形式は添付できません。PDF・Word(.docx)・PowerPoint(.pptx)・画像・テキストファイルを選んでください。';
+
+  @override
+  String aiChatFileErrorTooLarge(String max) {
+    return '大きすぎます(上限${max}MB)';
+  }
+
+  @override
+  String aiChatFileErrorTooLargeMedia(String max) {
+    return '動画などが入っていて大きすぎます(上限${max}MB)。動画を外して保存し直してください';
+  }
+
+  @override
+  String get aiChatFileErrorEncrypted => 'パスワード付きのPDFは読めません';
+
+  @override
+  String get aiChatFileErrorEmpty => '文字も画像も見つかりませんでした';
+
+  @override
+  String aiChatFileErrorTooManyPages(String max) {
+    return 'ページが多すぎます(上限$max)。必要な部分だけ保存し直してください';
+  }
+
+  @override
+  String aiChatFileErrorTooManyImages(String max) {
+    return '画像として読む部分が多すぎます(上限$max件)。必要な部分だけ保存し直してください';
+  }
+
+  @override
+  String aiChatFileErrorTooLong(String max) {
+    return '文字が多すぎます(上限$max文字)。必要な部分だけ保存し直してください';
+  }
+
+  @override
+  String get aiChatFileErrorTooComplex => '複雑すぎて読み取れませんでした';
+
+  @override
+  String get aiChatFileErrorTooManyDrafts => '送る前のファイルが多すぎます。いくつか外してください';
+
+  @override
+  String get aiChatFileErrorDecode => 'この画像は読み込めませんでした。JPEGかPNGで保存し直してください';
+
+  @override
+  String get aiChatFileErrorCorrupt => 'ファイルを開けませんでした';
+
+  @override
+  String get aiChatFileErrorGeneric => '準備できませんでした。外してもう一度添付してください';
+
+  @override
+  String get aiChatAttachmentOpenFile => '元のファイルを開く';
+
+  @override
+  String get aiChatAttachmentOpenFileFailed => 'ファイルを開けませんでした。もう一度試してください。';
+
+  @override
+  String get aiChatAttachmentImageLoading => '画像を読み込んでいます…';
+
+  @override
+  String get aiChatErrorAttachmentNotReady =>
+      '添付したファイルが使えなくなりました。外してから、もう一度添付してください。';
 }

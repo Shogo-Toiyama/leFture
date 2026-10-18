@@ -5947,6 +5947,1356 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This account has been suspended.'**
   String get errAccountSuspended;
+
+  /// AI chat. Ported from the web app string "chatNewConversation".
+  ///
+  /// In en, this message translates to:
+  /// **'New chat'**
+  String get aiChatNewConversation;
+
+  /// AI chat. Ported from the web app string "chatHistory".
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get aiChatHistory;
+
+  /// AI chat. Ported from the web app string "chatInputPlaceholder".
+  ///
+  /// In en, this message translates to:
+  /// **'Ask anything…'**
+  String get aiChatInputPlaceholder;
+
+  /// AI chat. Ported from the web app string "chatInputPlaceholderFollowUp".
+  ///
+  /// In en, this message translates to:
+  /// **'Ask a follow-up…'**
+  String get aiChatInputPlaceholderFollowUp;
+
+  /// AI chat. Ported from the web app string "chatSend".
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get aiChatSend;
+
+  /// AI chat. Ported from the web app string "chatStageThinking".
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking…'**
+  String get aiChatStageThinking;
+
+  /// AI chat. Ported from the web app string "chatStageSearching".
+  ///
+  /// In en, this message translates to:
+  /// **'Searching your lecture notes…'**
+  String get aiChatStageSearching;
+
+  /// AI chat. Ported from the web app string "chatStageSearchingWeb".
+  ///
+  /// In en, this message translates to:
+  /// **'Searching the web…'**
+  String get aiChatStageSearchingWeb;
+
+  /// AI chat. Ported from the web app string "chatStageSearchingChats".
+  ///
+  /// In en, this message translates to:
+  /// **'Looking through past chats…'**
+  String get aiChatStageSearchingChats;
+
+  /// AI chat. Ported from the web app string "chatStageSearchingWebWithQuery".
+  ///
+  /// In en, this message translates to:
+  /// **'Searching the web for \"{query}\"…'**
+  String aiChatStageSearchingWebWithQuery(String query);
+
+  /// AI chat. Ported from the web app string "chatStageSearchingNotesWithQuery".
+  ///
+  /// In en, this message translates to:
+  /// **'Searching lecture notes for \"{query}\"…'**
+  String aiChatStageSearchingNotesWithQuery(String query);
+
+  /// AI chat. Ported from the web app string "chatStageSearchingTranscriptWithQuery".
+  ///
+  /// In en, this message translates to:
+  /// **'Searching lecture transcript for \"{query}\"…'**
+  String aiChatStageSearchingTranscriptWithQuery(String query);
+
+  /// AI chat. Ported from the web app string "chatStageSearchingChatsWithQuery".
+  ///
+  /// In en, this message translates to:
+  /// **'Looking through past chats for \"{query}\"…'**
+  String aiChatStageSearchingChatsWithQuery(String query);
+
+  /// AI chat. Ported from the web app string "chatStageReadingTranscript".
+  ///
+  /// In en, this message translates to:
+  /// **'Checking lecture transcript…'**
+  String get aiChatStageReadingTranscript;
+
+  /// AI chat. Ported from the web app string "chatStageReadingNotes".
+  ///
+  /// In en, this message translates to:
+  /// **'Checking lecture materials…'**
+  String get aiChatStageReadingNotes;
+
+  /// AI chat. Ported from the web app string "chatStageReasoning".
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking it through…'**
+  String get aiChatStageReasoning;
+
+  /// AI chat. Ported from the web app string "chatStageWriting".
+  ///
+  /// In en, this message translates to:
+  /// **'Writing…'**
+  String get aiChatStageWriting;
+
+  /// AI chat. Ported from the web app string "chatReconnecting".
+  ///
+  /// In en, this message translates to:
+  /// **'Connection lost. Waiting for the reply to finish…'**
+  String get aiChatReconnecting;
+
+  /// AI chat. Ported from the web app string "chatCreditsUsed".
+  ///
+  /// In en, this message translates to:
+  /// **'{credits} credits'**
+  String aiChatCreditsUsed(String credits);
+
+  /// AI chat. Ported from the web app string "chatActionCopy".
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get aiChatActionCopy;
+
+  /// AI chat. Ported from the web app string "chatActionCopied".
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get aiChatActionCopied;
+
+  /// AI chat. Ported from the web app string "chatActionMore".
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get aiChatActionMore;
+
+  /// AI chat. Ported from the web app string "chatActionDetails".
+  ///
+  /// In en, this message translates to:
+  /// **'Reply details'**
+  String get aiChatActionDetails;
+
+  /// AI chat. Ported from the web app string "chatDetailSentAt".
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get aiChatDetailSentAt;
+
+  /// AI chat. Ported from the web app string "chatDetailCredits".
+  ///
+  /// In en, this message translates to:
+  /// **'Credits used'**
+  String get aiChatDetailCredits;
+
+  /// AI chat. Ported from the web app string "chatDetailNoCharge".
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get aiChatDetailNoCharge;
+
+  /// AI chat. Ported from the web app string "chatDetailSources".
+  ///
+  /// In en, this message translates to:
+  /// **'Sources used'**
+  String get aiChatDetailSources;
+
+  /// AI chat. Ported from the web app string "chatDetailSourcesCount".
+  ///
+  /// In en, this message translates to:
+  /// **'{count}'**
+  String aiChatDetailSourcesCount(String count);
+
+  /// AI chat. Ported from the web app string "chatShowMore".
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get aiChatShowMore;
+
+  /// AI chat. Ported from the web app string "chatShowLess".
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get aiChatShowLess;
+
+  /// AI chat. Ported from the web app string "chatActionEdit".
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get aiChatActionEdit;
+
+  /// AI chat. Ported from the web app string "chatActionRegenerate".
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate'**
+  String get aiChatActionRegenerate;
+
+  /// AI chat. Ported from the web app string "chatEditing".
+  ///
+  /// In en, this message translates to:
+  /// **'Editing this message — the {turns} exchange(s) after it will be deleted'**
+  String aiChatEditing(String turns);
+
+  /// AI chat. Ported from the web app string "chatEditingWithAttachments".
+  ///
+  /// In en, this message translates to:
+  /// **'Editing this message — the {turns} exchange(s) after it and {count} attached material(s) will be deleted'**
+  String aiChatEditingWithAttachments(String turns, String count);
+
+  /// AI chat. Ported from the web app string "chatEditingLast".
+  ///
+  /// In en, this message translates to:
+  /// **'Editing this message'**
+  String get aiChatEditingLast;
+
+  /// AI chat. Ported from the web app string "chatEditCancel".
+  ///
+  /// In en, this message translates to:
+  /// **'Stop editing'**
+  String get aiChatEditCancel;
+
+  /// AI chat. Ported from the web app string "chatEditConfirmTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'Send this edit?'**
+  String get aiChatEditConfirmTitle;
+
+  /// AI chat. Ported from the web app string "chatEditConfirmBody".
+  ///
+  /// In en, this message translates to:
+  /// **'The {turns} exchange(s) after this message will be deleted, along with the materials attached in them: {titles}. Credits already used are not refunded.'**
+  String aiChatEditConfirmBody(String turns, String titles);
+
+  /// AI chat. Ported from the web app string "chatEditConfirmSend".
+  ///
+  /// In en, this message translates to:
+  /// **'Delete and send'**
+  String get aiChatEditConfirmSend;
+
+  /// AI chat. Ported from the web app string "chatStop".
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get aiChatStop;
+
+  /// AI chat. Ported from the web app string "chatStopping".
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping…'**
+  String get aiChatStopping;
+
+  /// AI chat. Ported from the web app string "chatStopped".
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get aiChatStopped;
+
+  /// AI chat. Ported from the web app string "chatStopFailed".
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t stop the reply. Please try again.'**
+  String get aiChatStopFailed;
+
+  /// AI chat. Ported from the web app string "chatStoppedAttachments".
+  ///
+  /// In en, this message translates to:
+  /// **'Because the reply was stopped, {titles} could not be read. Please attach it again.'**
+  String aiChatStoppedAttachments(String titles);
+
+  /// AI chat. Ported from the web app string "chatDetailStatus".
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get aiChatDetailStatus;
+
+  /// AI chat. Ported from the web app string "chatDetailStatusStopped".
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped partway'**
+  String get aiChatDetailStatusStopped;
+
+  /// AI chat. Ported from the web app string "chatReplyToSelection".
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get aiChatReplyToSelection;
+
+  /// AI chat. Ported from the web app string "chatActionReport".
+  ///
+  /// In en, this message translates to:
+  /// **'Report a problem'**
+  String get aiChatActionReport;
+
+  /// AI chat. Ported from the web app string "chatReportAttach".
+  ///
+  /// In en, this message translates to:
+  /// **'Attach this reply and the question before it'**
+  String get aiChatReportAttach;
+
+  /// AI chat. Ported from the web app string "chatReportQuestion".
+  ///
+  /// In en, this message translates to:
+  /// **'Question'**
+  String get aiChatReportQuestion;
+
+  /// AI chat. Ported from the web app string "chatReportReply".
+  ///
+  /// In en, this message translates to:
+  /// **'Reply'**
+  String get aiChatReportReply;
+
+  /// AI chat. Ported from the web app string "reportCategoryLabel".
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get aiReportCategoryLabel;
+
+  /// AI chat. Ported from the web app string "reportCategoryInappropriate".
+  ///
+  /// In en, this message translates to:
+  /// **'Inappropriate answer'**
+  String get aiReportCategoryInappropriate;
+
+  /// AI chat. Ported from the web app string "reportCategoryIncorrect".
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect content'**
+  String get aiReportCategoryIncorrect;
+
+  /// AI chat. Ported from the web app string "reportCategoryBug".
+  ///
+  /// In en, this message translates to:
+  /// **'Bug'**
+  String get aiReportCategoryBug;
+
+  /// AI chat. Ported from the web app string "reportCategoryFeedback".
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback or request'**
+  String get aiReportCategoryFeedback;
+
+  /// AI chat. Ported from the web app string "reportCategoryAccount".
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get aiReportCategoryAccount;
+
+  /// AI chat. Ported from the web app string "reportCategoryOther".
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get aiReportCategoryOther;
+
+  /// AI chat. Ported from the web app string "reportMessageLabel".
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get aiReportMessageLabel;
+
+  /// AI chat. Ported from the web app string "reportMessagePlaceholder".
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us what happened and what you expected.'**
+  String get aiReportMessagePlaceholder;
+
+  /// AI chat. Ported from the web app string "reportAttachPreview".
+  ///
+  /// In en, this message translates to:
+  /// **'Preview what will be sent'**
+  String get aiReportAttachPreview;
+
+  /// AI chat. Ported from the web app string "reportAutoNote".
+  ///
+  /// In en, this message translates to:
+  /// **'Which reply this is, and when it was sent, are always included.'**
+  String get aiReportAutoNote;
+
+  /// AI chat. Ported from the web app string "reportSubmit".
+  ///
+  /// In en, this message translates to:
+  /// **'Send report'**
+  String get aiReportSubmit;
+
+  /// AI chat. Ported from the web app string "reportSending".
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get aiReportSending;
+
+  /// AI chat. Ported from the web app string "reportFailed".
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send the report. Please try again.'**
+  String get aiReportFailed;
+
+  /// AI chat. Ported from the web app string "reportSentTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'Report sent'**
+  String get aiReportSentTitle;
+
+  /// AI chat. Ported from the web app string "reportSentBody".
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you. Your reference code is {code}. We will email you a confirmation.'**
+  String aiReportSentBody(String code);
+
+  /// AI chat. Ported from the web app string "chatReplyFailed".
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t generate a reply. No credits were used.'**
+  String get aiChatReplyFailed;
+
+  /// AI chat. Ported from the web app string "chatResend".
+  ///
+  /// In en, this message translates to:
+  /// **'Send again'**
+  String get aiChatResend;
+
+  /// AI chat. Ported from the web app string "chatSourcePreviewEmpty".
+  ///
+  /// In en, this message translates to:
+  /// **'No text preview available for this source.'**
+  String get aiChatSourcePreviewEmpty;
+
+  /// AI chat. Ported from the web app string "chatClose".
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get aiChatClose;
+
+  /// AI chat. Ported from the web app string "chatOpenExternalWeb".
+  ///
+  /// In en, this message translates to:
+  /// **'Open web page'**
+  String get aiChatOpenExternalWeb;
+
+  /// AI chat. Ported from the web app string "chatOpenInLecture".
+  ///
+  /// In en, this message translates to:
+  /// **'View full context in lecture'**
+  String get aiChatOpenInLecture;
+
+  /// AI chat. Ported from the web app string "chatNotSent".
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent'**
+  String get aiChatNotSent;
+
+  /// AI chat. Ported from the web app string "chatErrorInsufficientCredits".
+  ///
+  /// In en, this message translates to:
+  /// **'Chat needs at least {min} credits.'**
+  String aiChatErrorInsufficientCredits(String min);
+
+  /// AI chat. Ported from the web app string "chatErrorRateLimited".
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re sending messages quickly. Wait a moment and try again.'**
+  String get aiChatErrorRateLimited;
+
+  /// AI chat. Ported from the web app string "chatErrorBlockedCooldown".
+  ///
+  /// In en, this message translates to:
+  /// **'Chat is temporarily unavailable for this account.'**
+  String get aiChatErrorBlockedCooldown;
+
+  /// AI chat. Ported from the web app string "chatErrorTooLong".
+  ///
+  /// In en, this message translates to:
+  /// **'Your message is too long. Keep it under {max} characters.'**
+  String aiChatErrorTooLong(String max);
+
+  /// AI chat. Ported from the web app string "chatErrorSelectedTooLong".
+  ///
+  /// In en, this message translates to:
+  /// **'The selected text is too long. Select a passage under {max} characters.'**
+  String aiChatErrorSelectedTooLong(String max);
+
+  /// AI chat. Ported from the web app string "chatErrorThreadBusy".
+  ///
+  /// In en, this message translates to:
+  /// **'A reply is still being written in this chat. Try again when it finishes.'**
+  String get aiChatErrorThreadBusy;
+
+  /// AI chat. Ported from the web app string "chatErrorThreadNotFound".
+  ///
+  /// In en, this message translates to:
+  /// **'This conversation no longer exists.'**
+  String get aiChatErrorThreadNotFound;
+
+  /// AI chat. Ported from the web app string "chatErrorSuspended".
+  ///
+  /// In en, this message translates to:
+  /// **'This account is suspended, so chat is unavailable.'**
+  String get aiChatErrorSuspended;
+
+  /// AI chat. Ported from the web app string "chatErrorNetwork".
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the server. Check your connection and try again.'**
+  String get aiChatErrorNetwork;
+
+  /// AI chat. Ported from the web app string "chatErrorGeneric".
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Try again.'**
+  String get aiChatErrorGeneric;
+
+  /// AI chat. Ported from the web app string "chatLoadFailed".
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this conversation.'**
+  String get aiChatLoadFailed;
+
+  /// AI chat. Ported from the web app string "chatBuyCredits".
+  ///
+  /// In en, this message translates to:
+  /// **'Add credits'**
+  String get aiChatBuyCredits;
+
+  /// AI chat. Ported from the web app string "chatDismiss".
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get aiChatDismiss;
+
+  /// AI chat. Ported from the web app string "chatEmptyTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like to explore?'**
+  String get aiChatEmptyTitle;
+
+  /// AI chat. Ported from the web app string "chatEmptySubtitle".
+  ///
+  /// In en, this message translates to:
+  /// **'Ask about your lectures, connect ideas across classes, or think through anything on your mind.'**
+  String get aiChatEmptySubtitle;
+
+  /// AI chat. Ported from the web app string "chatSuggestionLatest".
+  ///
+  /// In en, this message translates to:
+  /// **'Summarize the key ideas from my latest lecture'**
+  String get aiChatSuggestionLatest;
+
+  /// AI chat. Ported from the web app string "chatSuggestionQuiz".
+  ///
+  /// In en, this message translates to:
+  /// **'Quiz me on what I learned this week'**
+  String get aiChatSuggestionQuiz;
+
+  /// AI chat. Ported from the web app string "chatSuggestionGoals".
+  ///
+  /// In en, this message translates to:
+  /// **'How does what I\'m learning connect to my goals?'**
+  String get aiChatSuggestionGoals;
+
+  /// AI chat. Ported from the web app string "chatSuggestionThisLecture".
+  ///
+  /// In en, this message translates to:
+  /// **'What are the most important points of this lecture?'**
+  String get aiChatSuggestionThisLecture;
+
+  /// AI chat. Ported from the web app string "chatSuggestionSelection".
+  ///
+  /// In en, this message translates to:
+  /// **'Explain this in simpler words'**
+  String get aiChatSuggestionSelection;
+
+  /// AI chat. Ported from the web app string "chatSourcesLabel".
+  ///
+  /// In en, this message translates to:
+  /// **'Sources'**
+  String get aiChatSourcesLabel;
+
+  /// AI chat. Ported from the web app string "chatAttachedLecture".
+  ///
+  /// In en, this message translates to:
+  /// **'About {title}'**
+  String aiChatAttachedLecture(String title);
+
+  /// AI chat. Ported from the web app string "chatRemoveAttachment".
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get aiChatRemoveAttachment;
+
+  /// AI chat. Ported from the web app string "chatThreadsEmpty".
+  ///
+  /// In en, this message translates to:
+  /// **'No conversations yet.'**
+  String get aiChatThreadsEmpty;
+
+  /// AI chat. Ported from the web app string "chatThreadUntitled".
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation'**
+  String get aiChatThreadUntitled;
+
+  /// AI chat. Ported from the web app string "chatRename".
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get aiChatRename;
+
+  /// AI chat. Ported from the web app string "chatDelete".
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get aiChatDelete;
+
+  /// AI chat. Ported from the web app string "chatDeleteConfirmTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this conversation?'**
+  String get aiChatDeleteConfirmTitle;
+
+  /// AI chat. Ported from the web app string "chatDeleteConfirmMessage".
+  ///
+  /// In en, this message translates to:
+  /// **'It will be removed from your conversations. This can\'t be undone.'**
+  String get aiChatDeleteConfirmMessage;
+
+  /// AI chat. Ported from the web app string "chatAiDisclaimer".
+  ///
+  /// In en, this message translates to:
+  /// **'AI can make mistakes. Check important details against your lecture.'**
+  String get aiChatAiDisclaimer;
+
+  /// AI chat. Ported from the web app string "chatSourceDeepNote".
+  ///
+  /// In en, this message translates to:
+  /// **'Deep Note'**
+  String get aiChatSourceDeepNote;
+
+  /// AI chat. Ported from the web app string "chatSourceReviewCard".
+  ///
+  /// In en, this message translates to:
+  /// **'Review Card'**
+  String get aiChatSourceReviewCard;
+
+  /// AI chat. Ported from the web app string "chatSourceKeyword".
+  ///
+  /// In en, this message translates to:
+  /// **'Keyword'**
+  String get aiChatSourceKeyword;
+
+  /// AI chat. Ported from the web app string "chatSourceAnnouncement".
+  ///
+  /// In en, this message translates to:
+  /// **'Announcement'**
+  String get aiChatSourceAnnouncement;
+
+  /// AI chat. Ported from the web app string "chatSourceTranscript".
+  ///
+  /// In en, this message translates to:
+  /// **'Transcript'**
+  String get aiChatSourceTranscript;
+
+  /// AI chat. Ported from the web app string "chatSourceTopic".
+  ///
+  /// In en, this message translates to:
+  /// **'Topic'**
+  String get aiChatSourceTopic;
+
+  /// AI chat. Ported from the web app string "chatSourceFunFact".
+  ///
+  /// In en, this message translates to:
+  /// **'Fun Fact'**
+  String get aiChatSourceFunFact;
+
+  /// AI chat. Ported from the web app string "chatSourceLectureSummary".
+  ///
+  /// In en, this message translates to:
+  /// **'Lecture summary'**
+  String get aiChatSourceLectureSummary;
+
+  /// AI chat. Ported from the web app string "chatSourceCourse".
+  ///
+  /// In en, this message translates to:
+  /// **'Course'**
+  String get aiChatSourceCourse;
+
+  /// AI chat. Ported from the web app string "chatSourceChat".
+  ///
+  /// In en, this message translates to:
+  /// **'Past chat'**
+  String get aiChatSourceChat;
+
+  /// AI chat. Ported from the web app string "chatSourceWeb".
+  ///
+  /// In en, this message translates to:
+  /// **'Web'**
+  String get aiChatSourceWeb;
+
+  /// AI chat. Ported from the web app string "chatSourceMoment".
+  ///
+  /// In en, this message translates to:
+  /// **'My note'**
+  String get aiChatSourceMoment;
+
+  /// AI chat. Ported from the web app string "chatPlanExcludedSources".
+  ///
+  /// In en, this message translates to:
+  /// **'Not searched by chat on your current plan: {items}'**
+  String aiChatPlanExcludedSources(String items);
+
+  /// AI chat. Ported from the web app string "chatPlanExcludedSourcesSeparator".
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get aiChatPlanExcludedSourcesSeparator;
+
+  /// AI chat. Ported from the web app string "chatStageReadingAttachments".
+  ///
+  /// In en, this message translates to:
+  /// **'Reading your materials…'**
+  String get aiChatStageReadingAttachments;
+
+  /// AI chat. Ported from the web app string "chatStageReadingAttachment".
+  ///
+  /// In en, this message translates to:
+  /// **'Checking your materials…'**
+  String get aiChatStageReadingAttachment;
+
+  /// AI chat. Ported from the web app string "chatSourceAttachment".
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment'**
+  String get aiChatSourceAttachment;
+
+  /// AI chat. Ported from the web app string "chatAttach".
+  ///
+  /// In en, this message translates to:
+  /// **'Attach'**
+  String get aiChatAttach;
+
+  /// AI chat. Ported from the web app string "chatAttachTextHint".
+  ///
+  /// In en, this message translates to:
+  /// **'Paste long text as a material'**
+  String get aiChatAttachTextHint;
+
+  /// AI chat. Ported from the web app string "chatAttachmentEditorTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'Attach text'**
+  String get aiChatAttachmentEditorTitle;
+
+  /// AI chat. Ported from the web app string "chatAttachmentEditorEditTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'Edit attachment'**
+  String get aiChatAttachmentEditorEditTitle;
+
+  /// AI chat. Ported from the web app string "chatAttachmentTitlePlaceholder".
+  ///
+  /// In en, this message translates to:
+  /// **'Name (leave blank and the AI will name it)'**
+  String get aiChatAttachmentTitlePlaceholder;
+
+  /// AI chat. Ported from the web app string "chatAttachmentContentPlaceholder".
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the text here'**
+  String get aiChatAttachmentContentPlaceholder;
+
+  /// AI chat. Ported from the web app string "chatAttachmentPasteNotice".
+  ///
+  /// In en, this message translates to:
+  /// **'Text longer than {max} characters is added as a material.'**
+  String aiChatAttachmentPasteNotice(String max);
+
+  /// AI chat. Ported from the web app string "chatAttachmentEditorNote".
+  ///
+  /// In en, this message translates to:
+  /// **'You can edit it until you send it, but not afterwards. The AI makes a table of contents and reads the parts it needs.'**
+  String get aiChatAttachmentEditorNote;
+
+  /// AI chat. Ported from the web app string "chatAttachmentAdd".
+  ///
+  /// In en, this message translates to:
+  /// **'Attach'**
+  String get aiChatAttachmentAdd;
+
+  /// AI chat. Ported from the web app string "chatAttachmentConvert".
+  ///
+  /// In en, this message translates to:
+  /// **'Attach as a material'**
+  String get aiChatAttachmentConvert;
+
+  /// AI chat. Ported from the web app string "chatAttachmentSave".
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get aiChatAttachmentSave;
+
+  /// AI chat. Ported from the web app string "chatAttachmentTooLong".
+  ///
+  /// In en, this message translates to:
+  /// **'A material can be up to {max} characters.'**
+  String aiChatAttachmentTooLong(String max);
+
+  /// AI chat. Ported from the web app string "chatAttachmentChars".
+  ///
+  /// In en, this message translates to:
+  /// **'{count} chars'**
+  String aiChatAttachmentChars(String count);
+
+  /// AI chat. Ported from the web app string "chatAttachmentUntitled".
+  ///
+  /// In en, this message translates to:
+  /// **'Material'**
+  String get aiChatAttachmentUntitled;
+
+  /// AI chat. Ported from the web app string "chatAttachmentLimitPerMessage".
+  ///
+  /// In en, this message translates to:
+  /// **'You can attach up to {max} materials at a time.'**
+  String aiChatAttachmentLimitPerMessage(String max);
+
+  /// AI chat. Ported from the web app string "chatAttachmentProcessing".
+  ///
+  /// In en, this message translates to:
+  /// **'Checking'**
+  String get aiChatAttachmentProcessing;
+
+  /// AI chat. Ported from the web app string "chatAttachmentBlocked".
+  ///
+  /// In en, this message translates to:
+  /// **'This material could not be used'**
+  String get aiChatAttachmentBlocked;
+
+  /// AI chat. Ported from the web app string "chatAttachmentFailed".
+  ///
+  /// In en, this message translates to:
+  /// **'Could not be read'**
+  String get aiChatAttachmentFailed;
+
+  /// AI chat. Ported from the web app string "chatAttachmentRemove".
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from this conversation'**
+  String get aiChatAttachmentRemove;
+
+  /// AI chat. Ported from the web app string "chatAttachmentRemoveConfirm".
+  ///
+  /// In en, this message translates to:
+  /// **'Once removed, the AI will no longer read this material. It stays visible in the conversation.'**
+  String get aiChatAttachmentRemoveConfirm;
+
+  /// AI chat. Ported from the web app string "chatAttachmentRemoveFailed".
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove it. Please try again.'**
+  String get aiChatAttachmentRemoveFailed;
+
+  /// AI chat. Ported from the web app string "chatAttachmentContents".
+  ///
+  /// In en, this message translates to:
+  /// **'Contents'**
+  String get aiChatAttachmentContents;
+
+  /// AI chat. Ported from the web app string "chatAttachmentContentsCount".
+  ///
+  /// In en, this message translates to:
+  /// **'Contents ({count} sections)'**
+  String aiChatAttachmentContentsCount(String count);
+
+  /// AI chat. Ported from the web app string "chatAttachmentFullText".
+  ///
+  /// In en, this message translates to:
+  /// **'Full text'**
+  String get aiChatAttachmentFullText;
+
+  /// AI chat. Ported from the web app string "chatAttachmentsTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'Materials in this conversation'**
+  String get aiChatAttachmentsTitle;
+
+  /// AI chat. Ported from the web app string "chatAttachmentsEmpty".
+  ///
+  /// In en, this message translates to:
+  /// **'No materials yet. Attach one with the + in the message box.'**
+  String get aiChatAttachmentsEmpty;
+
+  /// AI chat. Ported from the web app string "chatAttachmentsCount".
+  ///
+  /// In en, this message translates to:
+  /// **'Materials {count}'**
+  String aiChatAttachmentsCount(String count);
+
+  /// AI chat. Ported from the web app string "chatAttachmentSections".
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sections'**
+  String aiChatAttachmentSections(String count);
+
+  /// AI chat. Ported from the web app string "chatAttachmentsOpen".
+  ///
+  /// In en, this message translates to:
+  /// **'Materials in this conversation ({count})'**
+  String aiChatAttachmentsOpen(String count);
+
+  /// AI chat. Ported from the web app string "chatAttachSelect".
+  ///
+  /// In en, this message translates to:
+  /// **'Materials in this conversation'**
+  String get aiChatAttachSelect;
+
+  /// AI chat. Ported from the web app string "chatAttachSelectHint".
+  ///
+  /// In en, this message translates to:
+  /// **'Attach in full or mention one (you can also type @ in the message box)'**
+  String get aiChatAttachSelectHint;
+
+  /// AI chat. Ported from the web app string "chatAttachSelectNone".
+  ///
+  /// In en, this message translates to:
+  /// **'No materials in this conversation yet'**
+  String get aiChatAttachSelectNone;
+
+  /// AI chat. Ported from the web app string "chatAttachLongText".
+  ///
+  /// In en, this message translates to:
+  /// **'Long text'**
+  String get aiChatAttachLongText;
+
+  /// AI chat. Ported from the web app string "chatAttachFile".
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a file'**
+  String get aiChatAttachFile;
+
+  /// AI chat. Ported from the web app string "chatAttachFileHint".
+  ///
+  /// In en, this message translates to:
+  /// **'PDF, Word, PowerPoint, images, or text files'**
+  String get aiChatAttachFileHint;
+
+  /// AI chat. Ported from the web app string "chatAttachmentFullRead".
+  ///
+  /// In en, this message translates to:
+  /// **'Read in full'**
+  String get aiChatAttachmentFullRead;
+
+  /// AI chat. Ported from the web app string "chatAttachmentTocRead".
+  ///
+  /// In en, this message translates to:
+  /// **'Read via contents'**
+  String get aiChatAttachmentTocRead;
+
+  /// AI chat. Ported from the web app string "chatAttachmentSelectedTotal".
+  ///
+  /// In en, this message translates to:
+  /// **'Read in full: {used} / {max} tokens'**
+  String aiChatAttachmentSelectedTotal(String used, String max);
+
+  /// AI chat. Ported from the web app string "chatAttachmentTokens".
+  ///
+  /// In en, this message translates to:
+  /// **'about {count} tokens'**
+  String aiChatAttachmentTokens(String count);
+
+  /// AI chat. Ported from the web app string "chatAttachmentCostPerTurn".
+  ///
+  /// In en, this message translates to:
+  /// **'about +{credits} credits per message'**
+  String aiChatAttachmentCostPerTurn(String credits);
+
+  /// AI chat. Ported from the web app string "chatAttachmentTooLongToSelect".
+  ///
+  /// In en, this message translates to:
+  /// **'Too long to read in full. The AI reads it through its contents and search.'**
+  String get aiChatAttachmentTooLongToSelect;
+
+  /// AI chat. Ported from the web app string "chatAttachmentSelectionLimit".
+  ///
+  /// In en, this message translates to:
+  /// **'Together with the selected materials this exceeds the limit ({max} tokens). Turn off \"Read in full\" for another material first.'**
+  String aiChatAttachmentSelectionLimit(String max);
+
+  /// AI chat. Ported from the web app string "chatAttachmentSelectFailed".
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change it. Please try again.'**
+  String get aiChatAttachmentSelectFailed;
+
+  /// AI chat. Ported from the web app string "chatAttachmentListHint".
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a material to attach it in full or mention it. The AI reads materials attached in full completely every time (until you remove them). Mentioning tells the AI which material your message is about, and it looks up the parts it needs. Even without either, the AI knows each material\'s name and summary.'**
+  String get aiChatAttachmentListHint;
+
+  /// AI chat. Ported from the web app string "chatAttachmentUnselect".
+  ///
+  /// In en, this message translates to:
+  /// **'Stop reading in full'**
+  String get aiChatAttachmentUnselect;
+
+  /// AI chat. Ported from the web app string "chatErrorEmptyAttachment".
+  ///
+  /// In en, this message translates to:
+  /// **'An empty material cannot be attached.'**
+  String get aiChatErrorEmptyAttachment;
+
+  /// AI chat. Ported from the web app string "chatErrorAttachmentTooLong".
+  ///
+  /// In en, this message translates to:
+  /// **'A material can be up to {max} characters.'**
+  String aiChatErrorAttachmentTooLong(String max);
+
+  /// AI chat. Ported from the web app string "chatErrorTooManyAttachments".
+  ///
+  /// In en, this message translates to:
+  /// **'You can attach up to {max} materials at a time.'**
+  String aiChatErrorTooManyAttachments(String max);
+
+  /// AI chat. Ported from the web app string "chatErrorThreadAttachmentLimit".
+  ///
+  /// In en, this message translates to:
+  /// **'A conversation can hold up to {max} materials. Remove ones you no longer need, or attach it in a new conversation.'**
+  String aiChatErrorThreadAttachmentLimit(String max);
+
+  /// AI chat. Ported from the web app string "chatFileErrorUpload".
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed (code {status}). Check your connection, then remove it and attach it again'**
+  String aiChatFileErrorUpload(String status);
+
+  /// AI chat. Ported from the web app string "chatFileUploadingShort".
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading'**
+  String get aiChatFileUploadingShort;
+
+  /// AI chat. Ported from the web app string "chatDraftPreviewBadge".
+  ///
+  /// In en, this message translates to:
+  /// **'File to send'**
+  String get aiChatDraftPreviewBadge;
+
+  /// AI chat. Ported from the web app string "chatDraftPreviewOpen".
+  ///
+  /// In en, this message translates to:
+  /// **'View {name}'**
+  String aiChatDraftPreviewOpen(String name);
+
+  /// AI chat. Ported from the web app string "chatDraftPreviewOffice".
+  ///
+  /// In en, this message translates to:
+  /// **'Word and PowerPoint files cannot be shown here. After sending, you can open the text and the original file from the materials list.'**
+  String get aiChatDraftPreviewOffice;
+
+  /// AI chat. Ported from the web app string "chatDraftPreviewVisionPages".
+  ///
+  /// In en, this message translates to:
+  /// **'Read as images: {pages}'**
+  String aiChatDraftPreviewVisionPages(String pages);
+
+  /// AI chat. Ported from the web app string "chatMentionNewFull".
+  ///
+  /// In en, this message translates to:
+  /// **'New attachment (in full)'**
+  String get aiChatMentionNewFull;
+
+  /// AI chat. Ported from the web app string "chatMentionToFull".
+  ///
+  /// In en, this message translates to:
+  /// **'Attach in full'**
+  String get aiChatMentionToFull;
+
+  /// AI chat. Ported from the web app string "chatMentionToMention".
+  ///
+  /// In en, this message translates to:
+  /// **'Mention only'**
+  String get aiChatMentionToMention;
+
+  /// AI chat. Ported from the web app string "chatAttachPendingFull".
+  ///
+  /// In en, this message translates to:
+  /// **'Attached in full'**
+  String get aiChatAttachPendingFull;
+
+  /// AI chat. Ported from the web app string "chatAttachPendingMention".
+  ///
+  /// In en, this message translates to:
+  /// **'Mentioned'**
+  String get aiChatAttachPendingMention;
+
+  /// AI chat. Ported from the web app string "chatAttachUndo".
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from message'**
+  String get aiChatAttachUndo;
+
+  /// AI chat. Ported from the web app string "chatAttachmentSelectedPending".
+  ///
+  /// In en, this message translates to:
+  /// **'Read in full after sending: {used} / {max} tokens'**
+  String aiChatAttachmentSelectedPending(String used, String max);
+
+  /// AI chat. Ported from the web app string "chatAttachmentOverLimitNote".
+  ///
+  /// In en, this message translates to:
+  /// **'Above the limit, the materials read in full the longest will stop being read in full.'**
+  String get aiChatAttachmentOverLimitNote;
+
+  /// AI chat. Ported from the web app string "chatAttachPinned".
+  ///
+  /// In en, this message translates to:
+  /// **'Reading in full'**
+  String get aiChatAttachPinned;
+
+  /// AI chat. Ported from the web app string "chatAttachFull".
+  ///
+  /// In en, this message translates to:
+  /// **'Attach in full'**
+  String get aiChatAttachFull;
+
+  /// AI chat. Ported from the web app string "chatAttachFullHint".
+  ///
+  /// In en, this message translates to:
+  /// **'The AI reads it completely every turn (until you remove it)'**
+  String get aiChatAttachFullHint;
+
+  /// AI chat. Ported from the web app string "chatAttachMention".
+  ///
+  /// In en, this message translates to:
+  /// **'Mention'**
+  String get aiChatAttachMention;
+
+  /// AI chat. Ported from the web app string "chatAttachMentionHint".
+  ///
+  /// In en, this message translates to:
+  /// **'Tells the AI your message is about this material'**
+  String get aiChatAttachMentionHint;
+
+  /// AI chat. Ported from the web app string "chatAttachView".
+  ///
+  /// In en, this message translates to:
+  /// **'View contents'**
+  String get aiChatAttachView;
+
+  /// AI chat. Ported from the web app string "chatAttachUnpinHint".
+  ///
+  /// In en, this message translates to:
+  /// **'From now on, the AI reads only the parts it needs via contents and search'**
+  String get aiChatAttachUnpinHint;
+
+  /// AI chat. Ported from the web app string "chatPinnedSummary".
+  ///
+  /// In en, this message translates to:
+  /// **'{count} read in full · about +{credits} credits per message ({percent}% of the limit)'**
+  String aiChatPinnedSummary(String count, String credits, String percent);
+
+  /// AI chat. Ported from the web app string "chatMentionPickerTitle".
+  ///
+  /// In en, this message translates to:
+  /// **'Materials in this conversation'**
+  String get aiChatMentionPickerTitle;
+
+  /// AI chat. Ported from the web app string "chatMentionPickerHint".
+  ///
+  /// In en, this message translates to:
+  /// **'Enter to mention'**
+  String get aiChatMentionPickerHint;
+
+  /// AI chat. Ported from the web app string "chatMentionPickerEmpty".
+  ///
+  /// In en, this message translates to:
+  /// **'No matching materials'**
+  String get aiChatMentionPickerEmpty;
+
+  /// AI chat. Ported from the web app string "chatMentionRemoved".
+  ///
+  /// In en, this message translates to:
+  /// **'Removed material'**
+  String get aiChatMentionRemoved;
+
+  /// AI chat. Ported from the web app string "chatMentionFullTag".
+  ///
+  /// In en, this message translates to:
+  /// **'Full'**
+  String get aiChatMentionFullTag;
+
+  /// AI chat. Ported from the web app string "chatNoticeUnpinned".
+  ///
+  /// In en, this message translates to:
+  /// **'Over the limit for materials read in full ({max} tokens), so {titles} is no longer read in full. Mention it with @ and the AI will look up the parts it needs.'**
+  String aiChatNoticeUnpinned(String max, String titles);
+
+  /// AI chat. Ported from the web app string "chatNoticeTooLong".
+  ///
+  /// In en, this message translates to:
+  /// **'{titles} is too long to read in full. The AI will look up the parts it needs via contents and search.'**
+  String aiChatNoticeTooLong(String titles);
+
+  /// AI chat. Ported from the web app string "chatErrorTooManyMentions".
+  ///
+  /// In en, this message translates to:
+  /// **'You can point to up to {max} materials per message.'**
+  String aiChatErrorTooManyMentions(String max);
+
+  /// AI chat. Ported from the web app string "chatFileCompressing".
+  ///
+  /// In en, this message translates to:
+  /// **'Shrinking…'**
+  String get aiChatFileCompressing;
+
+  /// AI chat. Ported from the web app string "chatFileUploading".
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {percent}%'**
+  String aiChatFileUploading(String percent);
+
+  /// AI chat. Ported from the web app string "chatFileReading".
+  ///
+  /// In en, this message translates to:
+  /// **'Reading…'**
+  String get aiChatFileReading;
+
+  /// AI chat. Ported from the web app string "chatFileImage".
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get aiChatFileImage;
+
+  /// AI chat. Ported from the web app string "chatFilePages".
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pages'**
+  String aiChatFilePages(String count);
+
+  /// AI chat. Ported from the web app string "chatFileSlides".
+  ///
+  /// In en, this message translates to:
+  /// **'{count} slides'**
+  String aiChatFileSlides(String count);
+
+  /// AI chat. Ported from the web app string "chatFileVisionCount".
+  ///
+  /// In en, this message translates to:
+  /// **'{count} read as images'**
+  String aiChatFileVisionCount(String count);
+
+  /// AI chat. Ported from the web app string "chatFileNotReadyHint".
+  ///
+  /// In en, this message translates to:
+  /// **'You can send once your files are ready (remove any that could not be read)'**
+  String get aiChatFileNotReadyHint;
+
+  /// AI chat. Ported from the web app string "chatFileErrorUnsupported".
+  ///
+  /// In en, this message translates to:
+  /// **'This file type is not supported. Choose a PDF, Word (.docx), PowerPoint (.pptx), image, or text file.'**
+  String get aiChatFileErrorUnsupported;
+
+  /// AI chat. Ported from the web app string "chatFileErrorTooLarge".
+  ///
+  /// In en, this message translates to:
+  /// **'Too large (max {max} MB)'**
+  String aiChatFileErrorTooLarge(String max);
+
+  /// AI chat. Ported from the web app string "chatFileErrorTooLargeMedia".
+  ///
+  /// In en, this message translates to:
+  /// **'Too large because it contains video or audio (max {max} MB). Remove them and save it again'**
+  String aiChatFileErrorTooLargeMedia(String max);
+
+  /// AI chat. Ported from the web app string "chatFileErrorEncrypted".
+  ///
+  /// In en, this message translates to:
+  /// **'Password-protected PDFs cannot be read'**
+  String get aiChatFileErrorEncrypted;
+
+  /// AI chat. Ported from the web app string "chatFileErrorEmpty".
+  ///
+  /// In en, this message translates to:
+  /// **'No text or images were found'**
+  String get aiChatFileErrorEmpty;
+
+  /// AI chat. Ported from the web app string "chatFileErrorTooManyPages".
+  ///
+  /// In en, this message translates to:
+  /// **'Too many pages (max {max}). Save only the part you need'**
+  String aiChatFileErrorTooManyPages(String max);
+
+  /// AI chat. Ported from the web app string "chatFileErrorTooManyImages".
+  ///
+  /// In en, this message translates to:
+  /// **'Too many parts to read as images (max {max}). Save only the part you need'**
+  String aiChatFileErrorTooManyImages(String max);
+
+  /// AI chat. Ported from the web app string "chatFileErrorTooLong".
+  ///
+  /// In en, this message translates to:
+  /// **'Too much text (max {max} characters). Save only the part you need'**
+  String aiChatFileErrorTooLong(String max);
+
+  /// AI chat. Ported from the web app string "chatFileErrorTooComplex".
+  ///
+  /// In en, this message translates to:
+  /// **'Too complex to read'**
+  String get aiChatFileErrorTooComplex;
+
+  /// AI chat. Ported from the web app string "chatFileErrorTooManyDrafts".
+  ///
+  /// In en, this message translates to:
+  /// **'Too many files waiting to be sent. Remove some first'**
+  String get aiChatFileErrorTooManyDrafts;
+
+  /// AI chat. Ported from the web app string "chatFileErrorDecode".
+  ///
+  /// In en, this message translates to:
+  /// **'This image could not be read. Save it as JPEG or PNG and try again'**
+  String get aiChatFileErrorDecode;
+
+  /// AI chat. Ported from the web app string "chatFileErrorCorrupt".
+  ///
+  /// In en, this message translates to:
+  /// **'The file could not be opened'**
+  String get aiChatFileErrorCorrupt;
+
+  /// AI chat. Ported from the web app string "chatFileErrorGeneric".
+  ///
+  /// In en, this message translates to:
+  /// **'Could not prepare this file. Remove it and attach it again'**
+  String get aiChatFileErrorGeneric;
+
+  /// AI chat. Ported from the web app string "chatAttachmentOpenFile".
+  ///
+  /// In en, this message translates to:
+  /// **'Open original file'**
+  String get aiChatAttachmentOpenFile;
+
+  /// AI chat. Ported from the web app string "chatAttachmentOpenFileFailed".
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the file. Please try again.'**
+  String get aiChatAttachmentOpenFileFailed;
+
+  /// AI chat. Ported from the web app string "chatAttachmentImageLoading".
+  ///
+  /// In en, this message translates to:
+  /// **'Loading image…'**
+  String get aiChatAttachmentImageLoading;
+
+  /// AI chat. Ported from the web app string "chatErrorAttachmentNotReady".
+  ///
+  /// In en, this message translates to:
+  /// **'An attached file is no longer available. Remove it and attach it again.'**
+  String get aiChatErrorAttachmentNotReady;
 }
 
 class _AppLocalizationsDelegate
