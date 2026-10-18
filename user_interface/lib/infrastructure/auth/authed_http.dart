@@ -163,6 +163,45 @@ class AuthedHttpClient {
         timeout: timeout,
       );
 
+  Future<http.Response> patch(
+    Uri url, {
+    required Map<String, dynamic> payload,
+    Duration? timeout = networkTimeout,
+  }) =>
+      _send(
+        (h) => http.patch(url, headers: h, body: jsonEncode(payload)),
+        extraHeaders: const {'Content-Type': 'application/json'},
+        timeout: timeout,
+      );
+
+  Future<http.Response> delete(
+    Uri url, {
+    Duration? timeout = networkTimeout,
+  }) =>
+      _send((h) => http.delete(url, headers: h), timeout: timeout);
+
+  /// 返事を少しずつ読むPOST(AIチャットのSSE)。[client]は呼び出し側が持ち、
+  /// 受信をやめるときにcloseする(接続が切れ、サーバー側の生成はそのまま最後まで走る)。
+  /// [timeout]は返事のヘッダが届くまで(=サーバーの事前チェックが終わるまで)にだけ掛かり、
+  /// 本文を読み続ける時間には掛からない。
+  Future<http.StreamedResponse> postStream(
+    Uri url, {
+    required http.Client client,
+    required Map<String, dynamic> payload,
+    Duration? timeout = networkTimeout,
+  }) =>
+      _send(
+        (h) {
+          final request = http.Request('POST', url)
+            ..headers.addAll(h)
+            ..headers['Content-Type'] = 'application/json'
+            ..headers['Accept'] = 'text/event-stream'
+            ..body = jsonEncode(payload);
+          return client.send(request);
+        },
+        timeout: timeout,
+      );
+
   /// ファイル添付(multipart)用。[build] は呼ばれるたびに新しいリクエストを
   /// 組み立てること — MultipartRequestは一度sendすると再利用できないため、
   /// 401後の再試行で作り直しが必要になる。
