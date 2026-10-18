@@ -3768,6 +3768,22 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aiChatAttachFileHint => 'PDF・Word・PowerPoint・画像・テキスト';
 
   @override
+  String get aiChatAttachCamera => 'カメラ';
+
+  @override
+  String get aiChatAttachCameraHint => 'ノートやホワイトボードを撮影';
+
+  @override
+  String get aiChatAttachPhoto => '写真';
+
+  @override
+  String get aiChatAttachPhotoHint => '写真ライブラリから選ぶ';
+
+  @override
+  String get aiChatAttachPickFailed =>
+      '開けませんでした。設定でカメラと写真へのアクセスを許可してから、もう一度お試しください。';
+
+  @override
   String get aiChatAttachmentFullRead => '全文で読む';
 
   @override

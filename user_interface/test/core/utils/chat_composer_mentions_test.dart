@@ -136,4 +136,16 @@ void main() {
       expect(removeBrokenMention('abc', 'abcd', m), isNull);
     });
   });
+
+  group('insertedText', () {
+    test('returns the pasted segment', () {
+      expect(insertedText('ab', 'aXYZb'), 'XYZ');
+      expect(insertedText('', 'hello'), 'hello');
+    });
+
+    test('is empty when nothing was added', () {
+      expect(insertedText('abc', 'ac'), '');
+      expect(insertedText('abc', 'abc'), '');
+    });
+  });
 }

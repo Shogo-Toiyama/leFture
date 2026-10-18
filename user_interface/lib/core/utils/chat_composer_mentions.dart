@@ -163,18 +163,13 @@ List<ChatAttachmentRef> existingReferences(List<ComposerMention> used) {
   ];
 }
 
-/// 削除で「@名前」の途中が欠けたとき、その名前を丸ごと消した後の入力を返す(欠けていなければnull)。
-///
-/// 途中が欠けると、どの資料か分からなくなるため、webappのBackspaceと同じく1回で丸ごと消す。
-/// [oldValue]→[newValue]が1か所の削除(文字を足していない)で、その削除が名前に触れていれば、
-/// 名前の全体を消す。戻り値はカーソルの位置つき。
-({String text, int caret})? removeBrokenMention(
-  String oldValue,
-  String newValue,
-  List<ComposerMention> mentions,
-) {
-  if (newValue.length >= oldValue.length) return null;
-  // 共通の先頭・末尾から、消えた範囲を求める
+/// [oldValue]→[newValue]で足された文字列(1か所の挿入・置き換え)。足されていなければ空。
+String insertedText(String oldValue, String newValue) {
+  final range = _changedRange(oldValue, newValue);
+  return newValue.substring(range.prefix, newValue.length - range.suffix);
+}
+
+({int prefix, int suffix}) _changedRange(String oldValue, String newValue) {
   var prefix = 0;
   while (prefix < newValue.length &&
       prefix < oldValue.length &&
@@ -188,6 +183,24 @@ List<ChatAttachmentRef> existingReferences(List<ComposerMention> used) {
           oldValue.codeUnitAt(oldValue.length - 1 - suffix)) {
     suffix++;
   }
+  return (prefix: prefix, suffix: suffix);
+}
+
+/// 削除で「@名前」の途中が欠けたとき、その名前を丸ごと消した後の入力を返す(欠けていなければnull)。
+///
+/// 途中が欠けると、どの資料か分からなくなるため、webappのBackspaceと同じく1回で丸ごと消す。
+/// [oldValue]→[newValue]が1か所の削除(文字を足していない)で、その削除が名前に触れていれば、
+/// 名前の全体を消す。戻り値はカーソルの位置つき。
+({String text, int caret})? removeBrokenMention(
+  String oldValue,
+  String newValue,
+  List<ComposerMention> mentions,
+) {
+  if (newValue.length >= oldValue.length) return null;
+  // 共通の先頭・末尾から、消えた範囲を求める
+  final range = _changedRange(oldValue, newValue);
+  final prefix = range.prefix;
+  final suffix = range.suffix;
   final delStart = prefix;
   final delEnd = oldValue.length - suffix;
   if (delEnd <= delStart) return null;

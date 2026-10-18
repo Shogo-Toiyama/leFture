@@ -5184,6 +5184,26 @@
   "@aiChatAttachFileHint": {
     "description": "AI chat. Ported from the web app string \"chatAttachFileHint\"."
   },
+  "aiChatAttachCamera": "Camera",
+  "@aiChatAttachCamera": {
+    "description": "AI chat. New for the app (the web app picks files with one button)."
+  },
+  "aiChatAttachCameraHint": "Photograph notes or a whiteboard",
+  "@aiChatAttachCameraHint": {
+    "description": "AI chat. New for the app (the web app picks files with one button)."
+  },
+  "aiChatAttachPhoto": "Photos",
+  "@aiChatAttachPhoto": {
+    "description": "AI chat. New for the app (the web app picks files with one button)."
+  },
+  "aiChatAttachPhotoHint": "Choose from your photo library",
+  "@aiChatAttachPhotoHint": {
+    "description": "AI chat. New for the app (the web app picks files with one button)."
+  },
+  "aiChatAttachPickFailed": "Could not open it. Allow access to the camera and photos in Settings, then try again.",
+  "@aiChatAttachPickFailed": {
+    "description": "AI chat. New for the app (the web app picks files with one button)."
+  },
   "aiChatAttachmentFullRead": "Read in full",
   "@aiChatAttachmentFullRead": {
     "description": "AI chat. Ported from the web app string \"chatAttachmentFullRead\"."

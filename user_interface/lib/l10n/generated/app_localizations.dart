@@ -6884,6 +6884,36 @@ abstract class AppLocalizations {
   /// **'PDF, Word, PowerPoint, images, or text files'**
   String get aiChatAttachFileHint;
 
+  /// AI chat. New for the app (the web app picks files with one button).
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get aiChatAttachCamera;
+
+  /// AI chat. New for the app (the web app picks files with one button).
+  ///
+  /// In en, this message translates to:
+  /// **'Photograph notes or a whiteboard'**
+  String get aiChatAttachCameraHint;
+
+  /// AI chat. New for the app (the web app picks files with one button).
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get aiChatAttachPhoto;
+
+  /// AI chat. New for the app (the web app picks files with one button).
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from your photo library'**
+  String get aiChatAttachPhotoHint;
+
+  /// AI chat. New for the app (the web app picks files with one button).
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open it. Allow access to the camera and photos in Settings, then try again.'**
+  String get aiChatAttachPickFailed;
+
   /// AI chat. Ported from the web app string "chatAttachmentFullRead".
   ///
   /// In en, this message translates to:

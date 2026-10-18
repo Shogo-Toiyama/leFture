@@ -42,6 +42,11 @@ class ChatColors {
     required this.inputBackground,
     required this.inputBorder,
     required this.hintText,
+    required this.chipBackground,
+    required this.chipBorder,
+    required this.chipText,
+    required this.mentionFull,
+    required this.mentionRef,
   });
 
   final Color sheet;
@@ -95,6 +100,13 @@ class ChatColors {
   final Color inputBorder;
   final Color hintText;
 
+  // 入力欄の上の資料のチップ・「@名前」の色(全文で添付 / メンション)
+  final Color chipBackground;
+  final Color chipBorder;
+  final Color chipText;
+  final Color mentionFull;
+  final Color mentionRef;
+
   static const _gold = Color(0xFFFFB300);
 
   static const universe = ChatColors(
@@ -134,6 +146,11 @@ class ChatColors {
     inputBackground: Color(0x12FFFFFF),
     inputBorder: Color(0x1FFFFFFF),
     hintText: Color(0xFF5F6878),
+    chipBackground: Color(0x0DFFFFFF),
+    chipBorder: Color(0x1FFFFFFF),
+    chipText: Color(0xFFCFD4DC),
+    mentionFull: Color(0x3DFFB300),
+    mentionRef: Color(0x3D78AAFF),
   );
 
   static const paper = ChatColors(
@@ -173,6 +190,11 @@ class ChatColors {
     inputBackground: Colors.white,
     inputBorder: Color(0x243E3228),
     hintText: Color(0xFFA39A90),
+    chipBackground: Color(0xFFF5EEDF),
+    chipBorder: Color(0xFFDFD4C0),
+    chipText: Color(0xFF4A3B30),
+    mentionFull: Color(0x33D97706),
+    mentionRef: Color(0x242563EB),
   );
 
   static ChatColors of(ChatWorld world) =>

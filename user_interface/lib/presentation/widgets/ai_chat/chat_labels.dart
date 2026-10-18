@@ -179,3 +179,50 @@ ChatFailureCopy chatFailureCopy(
       return ChatFailureCopy(l.aiChatErrorGeneric);
   }
 }
+
+/// ファイルを準備できなかった理由の文言(webappの fileErrorCopy と同じ分け方)。
+String chatFileErrorCopy(
+  AppLocalizations l,
+  String? code,
+  Map<String, dynamic> detail,
+) {
+  String mb(Object? bytes) =>
+      '${bytes is num ? (bytes / (1024 * 1024)).round() : 30}';
+  String count(Object? n, int fallback) => '${n is num ? n.toInt() : fallback}';
+  switch (code) {
+    case 'UNSUPPORTED_FILE_TYPE':
+      return l.aiChatFileErrorUnsupported;
+    case 'FILE_TOO_LARGE':
+      return l.aiChatFileErrorTooLarge(mb(detail['max_bytes']));
+    case 'FILE_TOO_LARGE_MEDIA':
+      return l.aiChatFileErrorTooLargeMedia(mb(detail['max_bytes']));
+    case 'PDF_ENCRYPTED':
+      return l.aiChatFileErrorEncrypted;
+    case 'FILE_EMPTY':
+      return l.aiChatFileErrorEmpty;
+    case 'TOO_MANY_PAGES':
+      return l.aiChatFileErrorTooManyPages(count(detail['max_pages'], 500));
+    case 'TOO_MANY_IMAGES':
+      return l.aiChatFileErrorTooManyImages(count(detail['max_images'], 60));
+    case 'ATTACHMENT_TOO_LONG':
+      return l.aiChatFileErrorTooLong(
+        count(detail['max_chars'], chatMaxAttachmentChars),
+      );
+    case 'FILE_TOO_COMPLEX':
+      return l.aiChatFileErrorTooComplex;
+    case 'TOO_MANY_DRAFTS':
+      return l.aiChatFileErrorTooManyDrafts;
+    case 'IMAGE_DECODE_FAILED':
+      return l.aiChatFileErrorDecode;
+    case 'FILE_CORRUPT':
+      return l.aiChatFileErrorCorrupt;
+    case 'ACCOUNT_SUSPENDED':
+      return l.aiChatErrorSuspended;
+    case 'UPLOAD_FAILED':
+      // 状態コード(0は通信の切断。それ以外はR2の返事)を出して、原因を追えるようにする
+      final status = detail['status'];
+      return l.aiChatFileErrorUpload(status is num ? '${status.toInt()}' : '-');
+    default:
+      return l.aiChatFileErrorGeneric;
+  }
+}

@@ -90,15 +90,6 @@ class ChatFileDraft extends ChatDraft {
   );
 }
 
-/// 端末で選んだファイル(ファイル選択・写真・カメラ)。
-class PickedChatFile {
-  const PickedChatFile({required this.path, required this.name, this.mimeType});
-
-  final String path;
-  final String name;
-  final String? mimeType;
-}
-
 /// 入力欄の上に出す案内(チップにならなかったもの)。
 sealed class ChatComposerNotice {
   const ChatComposerNotice();

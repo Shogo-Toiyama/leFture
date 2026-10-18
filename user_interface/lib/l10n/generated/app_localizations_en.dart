@@ -3943,6 +3943,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'PDF, Word, PowerPoint, images, or text files';
 
   @override
+  String get aiChatAttachCamera => 'Camera';
+
+  @override
+  String get aiChatAttachCameraHint => 'Photograph notes or a whiteboard';
+
+  @override
+  String get aiChatAttachPhoto => 'Photos';
+
+  @override
+  String get aiChatAttachPhotoHint => 'Choose from your photo library';
+
+  @override
+  String get aiChatAttachPickFailed =>
+      'Could not open it. Allow access to the camera and photos in Settings, then try again.';
+
+  @override
   String get aiChatAttachmentFullRead => 'Read in full';
 
   @override

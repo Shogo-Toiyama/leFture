@@ -14,6 +14,15 @@ import 'package:lefture/domain/entities/chat.dart';
 /// PDFはそのまま送る(上限が大きい)。テキスト・コードのファイルは、アップロードせずに中身を読んで
 /// テキストの資料にする。作り直すとEXIF(撮影場所など)は消える。
 
+/// 端末で選んだファイル(ファイル選択・写真・カメラ)。
+class PickedChatFile {
+  const PickedChatFile({required this.path, required this.name, this.mimeType});
+
+  final String path;
+  final String name;
+  final String? mimeType;
+}
+
 /// 準備に失敗した理由。codeは文言の表(chatFileErrorCopy)の鍵で、バックエンドのerror_codeと同じ。
 class ChatFileError implements Exception {
   const ChatFileError(this.code, [this.detail = const {}]);

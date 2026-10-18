@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lefture/application/chat/chat_drafts.dart';
@@ -8,95 +7,26 @@ import 'package:lefture/core/utils/chat_composer_mentions.dart';
 import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/infrastructure/chat/chat_file_pipeline.dart';
 import 'package:lefture/infrastructure/chat/chat_file_prep.dart';
-import 'package:lefture/infrastructure/chat/chat_repository.dart';
 
-class _Repo extends Fake implements ChatRepository {
-  var nextId = 0;
-  Object? extractError;
-  final removed = <String>[];
-
-  @override
-  Future<ChatUploadTarget> requestUpload({
-    required String fileName,
-    required int fileSize,
-  }) async => ChatUploadTarget(
-    attachmentId: 'att-${++nextId}',
-    uploadUrl: 'https://r2.example/put',
-    contentType: 'application/pdf',
-    kind: ChatFileKind.pdf,
-    maxBytes: 1,
-  );
-
-  @override
-  Future<ChatFileInfo> extractAttachment(String attachmentId) async {
-    if (extractError != null) throw extractError!;
-    return ChatFileInfo(
-      id: attachmentId,
-      kind: ChatFileKind.pdf,
-      fileName: 'a.pdf',
-      fileSize: 3,
-      pageCount: 4,
-      textChars: 100,
-      estimatedChars: 100,
-      visionCount: 0,
-      estimatedTokens: 50,
-    );
-  }
-
-  @override
-  Future<void> removeAttachment(String attachmentId) async {
-    removed.add(attachmentId);
-  }
-}
-
-class _Shrinker implements ChatImageShrinker {
-  @override
-  Future<ShrunkImage> shrink(
-    Uint8List bytes, {
-    required bool keepTransparency,
-  }) async => ShrunkImage(bytes: Uint8List.fromList([1, 2]), isPng: false);
-}
-
-class _Uploader implements ChatFileUploader {
-  /// 非nullなら、これが終わるまでアップロードを止める。
-  Completer<void>? gate;
-
-  @override
-  Future<void> upload({
-    required String path,
-    required String url,
-    required String contentType,
-    required void Function(double ratio) onProgress,
-    required ChatCancelToken cancel,
-  }) async {
-    onProgress(.25);
-    final g = gate;
-    if (g != null) {
-      cancel.onCancel(() {
-        if (!g.isCompleted) g.completeError(const ChatFileCancelled());
-      });
-      await g.future;
-    }
-  }
-}
+import 'fake_chat_files.dart';
 
 void main() {
   late Directory work;
   late Directory temp;
-  late _Repo repo;
-  late _Uploader uploader;
+  late FakeFileRepo repo;
+  late FakeUploader uploader;
   late ChatDraftsController controller;
 
   setUp(() async {
     work = await Directory.systemTemp.createTemp('chat_drafts_work');
     temp = await Directory.systemTemp.createTemp('chat_drafts_temp');
-    repo = _Repo();
-    uploader = _Uploader();
+    repo = FakeFileRepo();
+    uploader = FakeUploader();
     controller = ChatDraftsController(
       repository: repo,
       pipeline: ChatFilePipeline(
         repository: repo,
-        shrinker: _Shrinker(),
+        shrinker: FakeShrinker(),
         uploader: uploader,
         tempDirectory: () async => temp,
       ),

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/chat/chat_conversation.dart';
-import 'package:lefture/core/utils/chat_mentions.dart';
 import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_colors.dart';
@@ -124,12 +123,26 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
 
   ChatConversation get _notifier => ref.read(chatConversationProvider.notifier);
 
-  void _setPrefill(String text) => setState(
+  /// 入力欄に中身を入れる。[attachments]を渡すと(空でも)入力欄の新しい添付をそれに置き換える。
+  void _setPrefill(
+    String text, {
+    List<ChatNewAttachment>? attachments,
+    List<ChatAttachmentRef> references = const [],
+  }) => setState(
     () => _prefill = ChatPrefill(
       text: text,
+      attachments: attachments,
+      references: references,
       nonce: DateTime.now().microsecondsSinceEpoch,
     ),
   );
+
+  /// 全文で読むのをやめる(失敗しても会話は続けられる。次に開いたときサーバーの状態に戻る)。
+  Future<void> _unselectAttachment(String id) async {
+    try {
+      await _notifier.selectAttachment(id, false);
+    } catch (_) {}
+  }
 
   void _clearSelection() {
     setState(() => _replySelection = null);
@@ -173,24 +186,20 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
     ];
   }
 
-  /// 自分のメッセージを編集する: 本文を入力欄に読み込む(資料の印は資料の名前の文字にする)。
+  /// 自分のメッセージを編集する: 本文と、指している資料を入力欄に読み込む
+  /// (本文の資料の印は、入力欄が「@名前」に戻す)。
   void _startEdit(LocalChatMessage message, ChatConversationState state) {
     if (state.sending) return;
-    final byId = {for (final a in state.attachments) a.id: a};
-    final text = [
-      for (final p in splitMessageText(message.message.content))
-        switch (p) {
-          ChatTextPart() => p.text,
-          ChatMentionPart() =>
-            '@${byId[p.attachmentId]?.title ?? byId[p.attachmentId]?.fileName ?? ''}',
-        },
-    ].join();
     setState(() {
       _editingId = message.id;
       _editError = null;
       _replySelection = _restoreQuote(message.message.context);
     });
-    _setPrefill(text);
+    _setPrefill(
+      message.message.content,
+      attachments: const [],
+      references: _referencesOf(message, state),
+    );
   }
 
   void _cancelEdit() {
@@ -199,7 +208,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
       _editError = null;
       _replySelection = null;
     });
-    _setPrefill('');
+    _setPrefill('', attachments: const []);
   }
 
   /// 送ったときの文脈から、入力欄の引用(選択・返信)を戻す。
@@ -272,7 +281,12 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
     );
   }
 
-  Future<void> _handleSend(String content, ChatConversationState state) async {
+  Future<void> _handleSend(
+    String content,
+    List<ChatNewAttachment> attachments,
+    List<ChatAttachmentRef> references,
+    ChatConversationState state,
+  ) async {
     _stickToBottom = true;
     final context = _contextForSend();
     // 選択した文章は1回の質問にだけ添える
@@ -280,14 +294,17 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
 
     final editingId = _editingId;
     if (editingId == null) {
-      unawaited(_notifier.send(content, context: context));
+      unawaited(
+        _notifier.send(
+          content,
+          context: context,
+          newAttachments: attachments,
+          references: references,
+        ),
+      );
       return;
     }
     final info = _editInfo(state);
-    final target = state.messages.where((m) => m.id == editingId).firstOrNull;
-    final references = target == null
-        ? const <ChatAttachmentRef>[]
-        : _referencesOf(target, state);
 
     // 後ろで添付した資料も消えるときだけ、送る前に確かめる(往復が消えることは入力欄の上の帯に出ている)
     if (info != null && info.doomedAttachments.isNotEmpty) {
@@ -295,7 +312,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
       if (!mounted) return;
       if (!ok) {
         // 入力欄は送ったときに空になっているので、書いたものを戻す
-        _setPrefill(content);
+        _setPrefill(content, attachments: attachments, references: references);
         setState(() => _replySelection = _restoreQuote(context));
         return;
       }
@@ -308,6 +325,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
       _notifier.send(
         content,
         context: context,
+        newAttachments: attachments,
         references: references,
         replaceFromMessageId: editingId,
         onRejected: (code, detail) {
@@ -318,7 +336,11 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
             _editError = (code: code, detail: detail);
             _replySelection = _restoreQuote(context);
           });
-          _setPrefill(content);
+          _setPrefill(
+            content,
+            attachments: attachments,
+            references: references,
+          );
         },
       ),
     );
@@ -488,7 +510,31 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
                     ? null
                     : widget.lectureTitle,
                 onDetachLecture: widget.onDetachLecture,
-                onSend: (content) => unawaited(_handleSend(content, state)),
+                onSend: (content, attachments, references) => unawaited(
+                  _handleSend(content, attachments, references, state),
+                ),
+                selectedAttachments: [
+                  for (final a in state.attachments)
+                    if (a.selected &&
+                        (a.status == ChatAttachmentStatus.ready ||
+                            a.status == ChatAttachmentStatus.processing))
+                      a,
+                ],
+                onUnselectAttachment: (id) =>
+                    unawaited(_unselectAttachment(id)),
+                // 編集中は、送ると消える資料を指せないようにする
+                mentionables: [
+                  for (final a in state.attachments)
+                    if (a.status == ChatAttachmentStatus.ready &&
+                        !(editInfo != null &&
+                            a.messageId != null &&
+                            editInfo.laterIds.contains(a.messageId)))
+                      a,
+                ],
+                onViewAttachment: (id) {
+                  final a = attachmentsById[id];
+                  if (a != null) widget.onOpenAttachment?.call(a);
+                },
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 6),
@@ -578,7 +624,11 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
                   colors: colors,
                   onTap: () {
                     _notifier.discard(message.id);
-                    _setPrefill(message.message.content);
+                    _setPrefill(
+                      message.message.content,
+                      attachments: message.localAttachments,
+                      references: message.localReferences,
+                    );
                   },
                 ),
               ],
