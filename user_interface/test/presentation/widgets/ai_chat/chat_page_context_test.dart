@@ -8,6 +8,7 @@ import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/infrastructure/chat/chat_repository.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
 import 'package:lefture/infrastructure/local_db/repositories/chat_cache_drift.dart';
+import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/widgets/ai_chat/ai_chat_sheet.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_colors.dart';
@@ -15,6 +16,21 @@ import 'package:lefture/presentation/widgets/ai_chat/chat_page_context.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 
 import '../../../application/chat/fake_chat_repository.dart';
+
+/// 同意の記録だけを持つ、プロフィールの偽物。
+class _FakeProfileRepo extends Fake implements UserProfileRepositorySupabase {
+  bool consented = true;
+  int marked = 0;
+
+  @override
+  Future<bool> hasConsentedToAiChatShare() async => consented;
+
+  @override
+  Future<void> markAiChatShareConsent() async {
+    marked++;
+    consented = true;
+  }
+}
 
 void main() {
   late ProviderContainer container;
@@ -130,11 +146,14 @@ void main() {
   group('openAiChat', () {
     late AppDatabase db;
     late ProviderContainer chatContainer;
+    late _FakeProfileRepo profile;
 
     setUp(() {
       db = AppDatabase.forTesting(NativeDatabase.memory());
+      profile = _FakeProfileRepo();
       chatContainer = ProviderContainer(
         overrides: [
+          userProfileRepositoryProvider.overrideWithValue(profile),
           chatRepositoryProvider.overrideWithValue(FakeChatRepository()),
           chatCacheDriftProvider.overrideWithValue(ChatCacheDrift(db)),
           creditSummaryProvider.overrideWith(
@@ -193,6 +212,75 @@ void main() {
         find.byType(AnimatedContainer).first,
       );
       expect((sheet.decoration as BoxDecoration).color, ChatColors.paper.sheet);
+      await unmount(tester);
+      await tester.pump(const Duration(seconds: 1));
+    });
+    Future<void> pumpAskButton(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(430, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: chatContainer,
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: const Locale('en'),
+            home: Consumer(
+              builder: (context, ref, _) => Scaffold(
+                body: TextButton(
+                  onPressed: () => openAiChat(context, ref),
+                  child: const Text('ask'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('まだ同意していなければ、同意を聞く。同意したら記録して開く', (tester) async {
+      profile.consented = false;
+      await pumpAskButton(tester);
+      await tester.tap(find.text('ask'));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('About AI Chat Data Processing'), findsOneWidget);
+      expect(find.byType(AiChatSheet), findsNothing);
+
+      await tester.tap(find.text('Agree & Continue'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(profile.marked, 1);
+      expect(find.byType(AiChatSheet), findsOneWidget);
+      await unmount(tester);
+      await tester.pump(const Duration(seconds: 1));
+    });
+
+    testWidgets('同意しなければ、チャットは開かず、記録もしない', (tester) async {
+      profile.consented = false;
+      await pumpAskButton(tester);
+      await tester.tap(find.text('ask'));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(profile.marked, 0);
+      expect(find.byType(AiChatSheet), findsNothing);
+      await unmount(tester);
+    });
+
+    testWidgets('同意済みなら、聞かずに開く', (tester) async {
+      await pumpAskButton(tester);
+      await tester.tap(find.text('ask'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('About AI Chat Data Processing'), findsNothing);
+      expect(find.byType(AiChatSheet), findsOneWidget);
       await unmount(tester);
       await tester.pump(const Duration(seconds: 1));
     });

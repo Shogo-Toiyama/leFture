@@ -314,7 +314,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSharingConsentDialogDetailsBody =>
-      'Data sent:\n• Your recorded lecture audio\n• The text transcribed from that audio\n• Course and profile information used to generate notes\n\nSent to (AI services we use):\n• Cloudflare Workers AI (Whisper) — audio transcription\n• Google AI Studio (Gemini), TogetherAI, and similar providers — summaries, notes, and quiz generation\n• Cloudflare Workers AI (FLUX) — image generation\n\nYour name and email address are not included in this data.';
+      'Data sent:\n• Your recorded lecture audio\n• The text transcribed from that audio\n• Course and profile information used to generate notes\n\nSent to (AI services we use):\n• Cloudflare Workers AI (Whisper) — audio transcription\n• Google AI Studio (Gemini), OpenAI (GPT-6 Luna), and TogetherAI — summaries, notes, quizzes, and other generated study materials\n• Cloudflare Workers AI (FLUX) — image generation\n\nYour name and email address are not included in this data.';
 
   @override
   String get aiSharingConsentDialogPrivacyPolicyLink => 'Privacy Policy';
@@ -327,6 +327,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSharingConsentDialogAgreeButton => 'Agree & Continue';
+
+  @override
+  String get aiSharingConsentDialogUpdatedNotice =>
+      'We\'ve updated which AI services your recordings are sent to (OpenAI added). Please review the details and agree again.';
+
+  @override
+  String get aiChatConsentDialogTitle => 'About AI Chat Data Processing';
+
+  @override
+  String get aiChatConsentDialogMessage =>
+      'What you type in the chat, files you attach, and the parts of your lecture notes that relate to your question are sent to third-party AI services to write the answer.';
+
+  @override
+  String get aiChatConsentDialogDetailsBody =>
+      'Data sent:\n• What you type in the chat and text you select\n• The contents of photos and files you attach\n• Parts of your lecture notes and transcripts related to your question\n• Parts of your earlier conversations\n• Parts of your profile and AI memory (self portrait)\n\nSent to (AI services we use):\n• Anthropic (Claude Haiku 5.5) — writing the answer\n• Google (Gemini) — sorting your question, and turning your notes into a searchable form\n• OpenAI (GPT-6 Luna) — finding, checking and summarizing materials, reading attachments, and building AI memory\n• Brave Search — web search (the search terms)\n• Tavily — fetching the text of links that come up in the chat (the link URL)\n\nYour name and email address are not sent. However, if what you type or the files you attach contain them, they are sent as written.';
 
   @override
   String get recordingDiscardButtonLabel => 'Discard Recording';

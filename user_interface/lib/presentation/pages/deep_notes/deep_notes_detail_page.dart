@@ -24,6 +24,7 @@ import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/ai_chat/ai_chat_entry_button.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_page_context.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 import 'package:lefture/presentation/widgets/blurred_summary_placeholder.dart';
@@ -633,6 +634,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
 
     final page = Scaffold(
       backgroundColor: AppColors.paper.background,
+      floatingActionButton: const AiChatEntryButton(
+        world: ChatWorld.paper,
+        translucent: true,
+      ),
       body: Container(
         decoration: BoxDecoration(
           color: AppColors.paper.background,

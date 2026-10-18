@@ -11,6 +11,7 @@ import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/infrastructure/supabase/repositories/course_repository_supabase.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
+import 'package:lefture/presentation/widgets/ai_chat/ai_chat_entry_button.dart';
 import 'package:lefture/presentation/widgets/custom_app_bar.dart';
 import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
@@ -75,12 +76,20 @@ class _CourseTreeView extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.universe.voidBackground,
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.starGold,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.coursePageNewCourseButton),
-        onPressed: () => _openCreateSheet(context, ref),
+      // 右下の「新しいコース」の右隣にAIチャットのボタンを並べる
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.extended(
+            backgroundColor: AppColors.starGold,
+            foregroundColor: Colors.white,
+            icon: const Icon(Icons.add),
+            label: Text(l10n.coursePageNewCourseButton),
+            onPressed: () => _openCreateSheet(context, ref),
+          ),
+          const SizedBox(width: 12),
+          const AiChatEntryButton(),
+        ],
       ),
       body: SafeArea(
         child: Column(
@@ -1160,14 +1169,22 @@ class _CourseLectureListView extends ConsumerWidget {
         ),
       ),
     ),
-    floatingActionButton: FloatingActionButton.extended(
-      backgroundColor: AppColors.starGold,
-      foregroundColor: Colors.white,
-      icon: const Icon(Icons.add),
-      label: Text(l10n.coursePageNewLectureButton),
-      onPressed: () {
-        context.push('${AppRoutes.recording}?courseId=$courseId');
-      },
+    // 右下の「新しい講義」の右隣にAIチャットのボタンを並べる
+    floatingActionButton: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FloatingActionButton.extended(
+          backgroundColor: AppColors.starGold,
+          foregroundColor: Colors.white,
+          icon: const Icon(Icons.add),
+          label: Text(l10n.coursePageNewLectureButton),
+          onPressed: () {
+            context.push('${AppRoutes.recording}?courseId=$courseId');
+          },
+        ),
+        const SizedBox(width: 12),
+        const AiChatEntryButton(),
+      ],
     ),
   );
 }

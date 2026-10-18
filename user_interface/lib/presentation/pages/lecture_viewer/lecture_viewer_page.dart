@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lefture/core/utils/chat_selection.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
 import 'package:lefture/domain/entities/chat.dart';
+import 'package:lefture/presentation/widgets/ai_chat/ai_chat_entry_button.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_page_context.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
@@ -191,6 +192,7 @@ class LectureViewerPage extends HookConsumerWidget {
               // Fallback if current lecture is not found in the list (e.g. database syncing)
               return Scaffold(
                 backgroundColor: AppColors.universe.voidBackground,
+                floatingActionButton: const AiChatEntryButton(translucent: true),
                 body: _LecturePageContent(lecture: lecture),
               );
             }
@@ -199,6 +201,8 @@ class LectureViewerPage extends HookConsumerWidget {
 
             return Scaffold(
               backgroundColor: AppColors.universe.voidBackground,
+              // 文字の上に重なるので、少し透かして下の文字がうっすら見えるようにする
+              floatingActionButton: const AiChatEntryButton(translucent: true),
               body: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
                   if (notification is ScrollEndNotification) {

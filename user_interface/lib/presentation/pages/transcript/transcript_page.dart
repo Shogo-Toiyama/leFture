@@ -20,6 +20,8 @@ import 'package:lefture/domain/entities/lecture_topic.dart';
 import 'package:lefture/infrastructure/repositories/lecture_artifact_repository.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/ai_chat/ai_chat_entry_button.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 import 'package:lefture/presentation/widgets/audio_player_bar.dart';
 import 'package:lefture/presentation/widgets/custom_scrollbar.dart';
 import 'package:lefture/presentation/widgets/snag_panel.dart';
@@ -872,6 +874,10 @@ class _TranscriptPageContent extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
+      floatingActionButton: const AiChatEntryButton(
+        world: ChatWorld.paper,
+        translucent: true,
+      ),
       appBar: AppBar(
         backgroundColor: AppColors.paper.background,
         elevation: 0,

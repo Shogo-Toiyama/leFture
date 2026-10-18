@@ -5,8 +5,11 @@ import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/domain/entities/chat.dart';
+import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
+import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/widgets/ai_chat/ai_chat_sheet.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
+import 'package:lefture/presentation/widgets/ai_share_consent_dialog.dart';
 
 /// 今いる画面がチャットに伝えること(webappの ChatPanelContext の pageScreen と、ルートの講義)。
 /// 送られるのはページの種類とIDだけで、本文はバックエンドがDBから読む。
@@ -139,6 +142,32 @@ class _ChatScreenScopeState extends ConsumerState<ChatScreenScope> {
   Widget build(BuildContext context) => widget.child;
 }
 
+/// チャットで入力した内容・資料をAIサービスへ送ることへの同意。今の版で同意済みならそのまま、
+/// まだならダイアログを出して聞く。同意されなければfalse(チャットは開かない)。
+Future<bool> ensureAiChatConsent(BuildContext context, WidgetRef ref) async {
+  final repo = ref.read(userProfileRepositoryProvider);
+  try {
+    if (await repo.hasConsentedToAiChatShare()) return true;
+  } catch (_) {
+    // 同意の記録が読めなくても、聞き直すだけ(読めないまま通すことはしない)
+  }
+  if (!context.mounted) return false;
+  final l10n = AppLocalizations.of(context);
+  final agreed = await showAiShareConsentDialog(
+    context,
+    title: l10n.aiChatConsentDialogTitle,
+    message: l10n.aiChatConsentDialogMessage,
+    detailsBody: l10n.aiChatConsentDialogDetailsBody,
+  );
+  if (!agreed) return false;
+  try {
+    await repo.markAiChatShareConsent();
+  } catch (_) {
+    // 記録できなかったときは、次に開くときにまた聞く。今回は同意されたので開く
+  }
+  return true;
+}
+
 /// 今の画面の情報つきでチャットのシートを開く。[selection]は「Ask」で添える選択。
 Future<void> openAiChat(
   BuildContext context,
@@ -146,6 +175,8 @@ Future<void> openAiChat(
   ChatSelection? selection,
   VoidCallback? onOpenAiSettings,
 }) async {
+  if (!await ensureAiChatConsent(context, ref)) return;
+  if (!context.mounted) return;
   final page = ref.read(chatPageContextProvider);
   String? lectureTitle;
   final lectureId = page.lectureId;
