@@ -1210,5 +1210,7 @@
   "aiChatAttachmentOpenFile": "元のファイルを開く",
   "aiChatAttachmentOpenFileFailed": "ファイルを開けませんでした。もう一度試してください。",
   "aiChatAttachmentImageLoading": "画像を読み込んでいます…",
-  "aiChatErrorAttachmentNotReady": "添付したファイルが使えなくなりました。外してから、もう一度添付してください。"
+  "aiChatErrorAttachmentNotReady": "添付したファイルが使えなくなりました。外してから、もう一度添付してください。",
+  "aiChatElapsedSeconds": "{seconds}秒",
+  "aiChatElapsedMinutesSeconds": "{minutes}分{seconds}秒"
 }

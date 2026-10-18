@@ -5594,5 +5594,26 @@
   "aiChatErrorAttachmentNotReady": "An attached file is no longer available. Remove it and attach it again.",
   "@aiChatErrorAttachmentNotReady": {
     "description": "AI chat. Ported from the web app string \"chatErrorAttachmentNotReady\"."
+  },
+  "aiChatElapsedSeconds": "{seconds} sec",
+  "@aiChatElapsedSeconds": {
+    "description": "AI chat. Elapsed time shown next to the thinking indicator after 5 seconds.",
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatElapsedMinutesSeconds": "{minutes} min {seconds} sec",
+  "@aiChatElapsedMinutesSeconds": {
+    "description": "AI chat. Elapsed time shown next to the thinking indicator after 5 seconds.",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "seconds": {
+        "type": "String"
+      }
+    }
   }
 }

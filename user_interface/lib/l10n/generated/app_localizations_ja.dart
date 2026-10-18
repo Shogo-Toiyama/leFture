@@ -4026,4 +4026,14 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get aiChatErrorAttachmentNotReady =>
       '添付したファイルが使えなくなりました。外してから、もう一度添付してください。';
+
+  @override
+  String aiChatElapsedSeconds(String seconds) {
+    return '$seconds秒';
+  }
+
+  @override
+  String aiChatElapsedMinutesSeconds(String minutes, String seconds) {
+    return '$minutes分$seconds秒';
+  }
 }

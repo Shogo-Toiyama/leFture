@@ -10,80 +10,7 @@ import 'package:lefture/infrastructure/chat/chat_repository.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
 import 'package:lefture/infrastructure/local_db/repositories/chat_cache_drift.dart';
 
-const _uid = 'user-1';
-
-Map<String, dynamic> _row(
-  String id,
-  String role,
-  String content, {
-  String status = 'complete',
-  String threadId = 'T1',
-  String createdAt = '2026-10-18T00:00:00Z',
-  Map<String, dynamic>? context,
-}) => {
-  'id': id,
-  'thread_id': threadId,
-  'role': role,
-  'content': content,
-  'status': status,
-  'citations': const [],
-  'context': context ?? const {},
-  'credits_charged_micro': null,
-  'created_at': createdAt,
-};
-
-/// 偽のバックエンド。テストごとに必要な部分だけ差し替える。
-class FakeChatRepository extends Fake implements ChatRepository {
-  @override
-  String? get currentUserId => _uid;
-
-  /// スレッドごとのサーバーの行。nullを入れると読み込みの失敗になる。
-  final Map<String, List<Map<String, dynamic>>?> serverRows = {};
-  final Map<String, ChatMessage> messagesById = {};
-  int pollCount = 0;
-
-  /// sendMessageが流すイベント(テストが自分で操作する)。
-  late StreamController<ChatStreamEvent> controller;
-  ChatSendRequest? lastRequest;
-  Object? sendError;
-
-  Future<ChatMessage> Function(String id)? onStop;
-
-  @override
-  Future<List<Map<String, dynamic>>> fetchMessageRows(String threadId) async {
-    final rows = serverRows[threadId];
-    if (rows == null) throw const ChatRequestException('NETWORK', 'offline');
-    return rows;
-  }
-
-  @override
-  Future<List<ChatAttachment>> listAttachments(String threadId) async =>
-      const [];
-
-  @override
-  Future<ChatMessage?> getMessage(String messageId) async {
-    pollCount++;
-    return messagesById[messageId];
-  }
-
-  @override
-  Future<ChatMessage> stopMessage(String assistantMessageId) =>
-      onStop!(assistantMessageId);
-
-  @override
-  Stream<ChatStreamEvent> sendMessage(ChatSendRequest request) {
-    lastRequest = request;
-    controller = StreamController<ChatStreamEvent>();
-    final error = sendError;
-    if (error != null) {
-      scheduleMicrotask(() {
-        controller.addError(error);
-        controller.close();
-      });
-    }
-    return controller.stream;
-  }
-}
+import 'fake_chat_repository.dart';
 
 const _meta = ChatMetaEvent(
   threadId: 'T1',
@@ -266,10 +193,10 @@ void main() {
   group('編集・作り直し', () {
     setUp(() async {
       repo.serverRows['T1'] = [
-        _row('U1', 'user', '最初', createdAt: '2026-10-18T00:00:01Z'),
-        _row('A1', 'assistant', '答え1', createdAt: '2026-10-18T00:00:02Z'),
-        _row('U2', 'user', '二つ目', createdAt: '2026-10-18T00:00:03Z'),
-        _row('A2', 'assistant', '答え2', createdAt: '2026-10-18T00:00:04Z'),
+        chatRow('U1', 'user', '最初', createdAt: '2026-10-18T00:00:01Z'),
+        chatRow('A1', 'assistant', '答え1', createdAt: '2026-10-18T00:00:02Z'),
+        chatRow('U2', 'user', '二つ目', createdAt: '2026-10-18T00:00:03Z'),
+        chatRow('A2', 'assistant', '答え2', createdAt: '2026-10-18T00:00:04Z'),
       ];
       await notifier().openThread('T1');
     });
@@ -304,8 +231,9 @@ void main() {
 
   group('停止', () {
     test('停止を押すと、サーバーが返した確定した行に差し替わり、受信も止まる', () async {
-      repo.onStop = (id) async =>
-          ChatMessage.fromMap(_row(id, 'assistant', '途中まで', status: 'stopped'));
+      repo.onStop = (id) async => ChatMessage.fromMap(
+        chatRow(id, 'assistant', '途中まで', status: 'stopped'),
+      );
       final sent = notifier().send('長い質問');
       await _pump();
       repo.controller.add(_meta);
@@ -328,7 +256,7 @@ void main() {
       repo.onStop = (id) async {
         stoppedId = id;
         return ChatMessage.fromMap(
-          _row(id, 'assistant', '', status: 'stopped'),
+          chatRow(id, 'assistant', '', status: 'stopped'),
         );
       };
       final sent = notifier().send('質問');
@@ -379,13 +307,13 @@ void main() {
 
       // 少しのあいだはまだ生成中、そのあと完了する
       repo.messagesById['A1'] = ChatMessage.fromMap(
-        _row('A1', 'assistant', '', status: 'streaming'),
+        chatRow('A1', 'assistant', '', status: 'streaming'),
       );
       await _pump();
       expect(read().messages.last.reconnecting, isTrue);
 
       repo.messagesById['A1'] = ChatMessage.fromMap(
-        _row('A1', 'assistant', '最後まで書けた'),
+        chatRow('A1', 'assistant', '最後まで書けた'),
       );
       await Future<void>.delayed(const Duration(milliseconds: 60));
       final reply = read().messages.last;
@@ -403,7 +331,7 @@ void main() {
       repo.controller.addError(const ChatRequestException('NETWORK', 'lost'));
       await sent;
       repo.messagesById['A1'] = ChatMessage.fromMap(
-        _row('A1', 'assistant', '', status: 'streaming'),
+        chatRow('A1', 'assistant', '', status: 'streaming'),
       );
       await Future<void>.delayed(const Duration(milliseconds: 120));
       expect(read().messages.last.message.status, ChatMessageStatus.error);
@@ -419,7 +347,12 @@ void main() {
 
       // 裏に回っている間にサーバーは最後まで書き終えた(接続は黙って切れている)
       repo.messagesById['A1'] = ChatMessage.fromMap(
-        _row('A1', 'assistant', '裏で最後まで書けた', createdAt: '2026-10-18T00:00:05Z'),
+        chatRow(
+          'A1',
+          'assistant',
+          '裏で最後まで書けた',
+          createdAt: '2026-10-18T00:00:05Z',
+        ),
       );
       await notifier().onAppResumed();
       await sent;
@@ -433,8 +366,8 @@ void main() {
 
     test('生成中でなければ、戻っても何もしない', () async {
       repo.serverRows['T1'] = [
-        _row('U1', 'user', 'hi'),
-        _row('A1', 'assistant', 'hello'),
+        chatRow('U1', 'user', 'hi'),
+        chatRow('A1', 'assistant', 'hello'),
       ];
       await notifier().openThread('T1');
       final before = repo.pollCount;
@@ -447,8 +380,8 @@ void main() {
   group('開く・キャッシュ', () {
     test('前回のキャッシュを先に出し、サーバーの内容で丸ごと置き換える', () async {
       repo.serverRows['T1'] = [
-        _row('U1', 'user', '古い質問'),
-        _row('A1', 'assistant', '古い答え'),
+        chatRow('U1', 'user', '古い質問'),
+        chatRow('A1', 'assistant', '古い答え'),
       ];
       await notifier().openThread('T1');
       expect(read().messages.last.message.content, '古い答え');
@@ -456,8 +389,8 @@ void main() {
 
       // webで編集・再生成された: サーバーの中身が変わった
       repo.serverRows['T1'] = [
-        _row('U1', 'user', '新しい質問'),
-        _row('A9', 'assistant', '新しい答え'),
+        chatRow('U1', 'user', '新しい質問'),
+        chatRow('A9', 'assistant', '新しい答え'),
       ];
       await notifier().settle();
       container.invalidate(chatConversationProvider);
@@ -474,8 +407,8 @@ void main() {
 
     test('読み込みに失敗しても、キャッシュがあればそのまま見せる', () async {
       repo.serverRows['T1'] = [
-        _row('U1', 'user', '質問'),
-        _row('A1', 'assistant', '答え'),
+        chatRow('U1', 'user', '質問'),
+        chatRow('A1', 'assistant', '答え'),
       ];
       await notifier().openThread('T1');
       await notifier().settle();
@@ -500,11 +433,11 @@ void main() {
 
     test('生成中のまま残っている返答は、完了を待つ', () async {
       repo.serverRows['T1'] = [
-        _row('U1', 'user', '質問'),
-        _row('A1', 'assistant', '', status: 'streaming'),
+        chatRow('U1', 'user', '質問'),
+        chatRow('A1', 'assistant', '', status: 'streaming'),
       ];
       repo.messagesById['A1'] = ChatMessage.fromMap(
-        _row('A1', 'assistant', '書き終わった'),
+        chatRow('A1', 'assistant', '書き終わった'),
       );
       await notifier().openThread('T1');
       await Future<void>.delayed(const Duration(milliseconds: 60));
@@ -512,7 +445,7 @@ void main() {
     });
 
     test('新しい会話(null)を開くと空になる', () async {
-      repo.serverRows['T1'] = [_row('U1', 'user', 'hi')];
+      repo.serverRows['T1'] = [chatRow('U1', 'user', 'hi')];
       await notifier().openThread('T1');
       await notifier().openThread(null);
       expect(read().threadId, isNull);
@@ -520,7 +453,7 @@ void main() {
     });
 
     test('別の会話に切り替えると、前の会話の受信は止める', () async {
-      repo.serverRows['T2'] = [_row('U9', 'user', 'other', threadId: 'T2')];
+      repo.serverRows['T2'] = [chatRow('U9', 'user', 'other', threadId: 'T2')];
       final sent = notifier().send('質問');
       await _pump();
       repo.controller.add(_meta);
@@ -538,7 +471,7 @@ void main() {
   test('サーバーの行はJSONのまま端末に保存され、同じ内容で読み戻せる', () async {
     final cache = ChatCacheDrift(db);
     final rows = [
-      _row(
+      chatRow(
         'U1',
         'user',
         '日本語もそのまま',
@@ -550,8 +483,8 @@ void main() {
         },
       ),
     ];
-    await cache.replaceMessages(_uid, 'T1', rows);
-    final back = await cache.getMessages(_uid, 'T1');
+    await cache.replaceMessages(chatTestUid, 'T1', rows);
+    final back = await cache.getMessages(chatTestUid, 'T1');
     expect(back.single.content, '日本語もそのまま');
     expect(back.single.context.selectedText, '選択した文');
     expect(back.single.context.attachments.single.attachmentId, 'att1');

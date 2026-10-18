@@ -4213,4 +4213,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aiChatErrorAttachmentNotReady =>
       'An attached file is no longer available. Remove it and attach it again.';
+
+  @override
+  String aiChatElapsedSeconds(String seconds) {
+    return '$seconds sec';
+  }
+
+  @override
+  String aiChatElapsedMinutesSeconds(String minutes, String seconds) {
+    return '$minutes min $seconds sec';
+  }
 }

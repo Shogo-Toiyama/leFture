@@ -1,10 +1,12 @@
 // lib/infrastructure/chat/chat_repository.dart
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:http/http.dart' as http;
 import 'package:lefture/core/config/app_config.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/infrastructure/auth/authed_http.dart';
 import 'package:lefture/infrastructure/chat/chat_sse.dart';
@@ -186,6 +188,35 @@ class ChatRepository {
       ),
     );
     return ChatFileInfo.fromMap(Map<String, dynamic>.from(body as Map));
+  }
+
+  /// AIの回答への報告を、お問い合わせ(/support/submit)と同じ形で送る(受付コード・確認メール・
+  /// 管理者への通知もお問い合わせと同じ)。どのメッセージについてかは[report]に入れる。
+  /// 戻り値は受付コード。
+  Future<String> submitSupportReport({
+    required String category,
+    required String message,
+    Map<String, dynamic>? report,
+  }) async {
+    final info = await PackageInfo.fromPlatform();
+    final response = await _http.post(
+      _uri('/support/submit'),
+      payload: {
+        'category': category,
+        'message': message,
+        'attachment_urls': const <String>[],
+        'device_info': {
+          'os': Platform.operatingSystem,
+          'os_version': Platform.operatingSystemVersion,
+          'app_version': '${info.version} (${info.buildNumber})',
+          'locale': Platform.localeName,
+          if (report != null) 'report': report,
+        },
+      },
+      timeout: const Duration(seconds: 30),
+    );
+    final body = _ensureOk(response) as Map<String, dynamic>;
+    return body['ticket_code'] as String;
   }
 
   // -------------------------------------------------------------------------

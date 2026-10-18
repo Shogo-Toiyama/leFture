@@ -7297,6 +7297,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'An attached file is no longer available. Remove it and attach it again.'**
   String get aiChatErrorAttachmentNotReady;
+
+  /// AI chat. Elapsed time shown next to the thinking indicator after 5 seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} sec'**
+  String aiChatElapsedSeconds(String seconds);
+
+  /// AI chat. Elapsed time shown next to the thinking indicator after 5 seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min {seconds} sec'**
+  String aiChatElapsedMinutesSeconds(String minutes, String seconds);
 }
 
 class _AppLocalizationsDelegate
