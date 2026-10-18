@@ -65,7 +65,10 @@ void main() {
     });
 
     test('a nameless screenshot is an image by mime type', () {
-      expect(chatFileKindFor('image', mimeType: 'image/png'), ChatFileKind.image);
+      expect(
+        chatFileKindFor('image', mimeType: 'image/png'),
+        ChatFileKind.image,
+      );
       expect(chatFileKindFor('image', mimeType: 'text/plain'), isNull);
     });
 
@@ -87,9 +90,7 @@ void main() {
 
   group('readChatTextBytes', () {
     test('decodes utf8, normalizes CRLF and drops the BOM', () {
-      final bytes = Uint8List.fromList(
-        utf8.encode('﻿こんにちは\r\nworld'),
-      );
+      final bytes = Uint8List.fromList(utf8.encode('﻿こんにちは\r\nworld'));
       expect(readChatTextBytes(bytes), 'こんにちは\nworld');
     });
 
@@ -138,7 +139,10 @@ void main() {
 
     test('a corrupt zip is FILE_CORRUPT', () {
       expect(
-        () => listOfficeMedia(Uint8List.fromList([1, 2, 3, 4]), ChatFileKind.pptx),
+        () => listOfficeMedia(
+          Uint8List.fromList([1, 2, 3, 4]),
+          ChatFileKind.pptx,
+        ),
         throwsA(
           isA<ChatFileError>().having((e) => e.code, 'code', 'FILE_CORRUPT'),
         ),
@@ -165,9 +169,14 @@ void main() {
       final ct = _text(a, '[Content_Types].xml');
       expect(
         ct,
-        contains('<Override PartName="/ppt/media/image1.jpg" ContentType="image/jpeg"'),
+        contains(
+          '<Override PartName="/ppt/media/image1.jpg" ContentType="image/jpeg"',
+        ),
       );
-      expect(ct, contains('<Default Extension="jpg" ContentType="image/jpeg"/>'));
+      expect(
+        ct,
+        contains('<Default Extension="jpg" ContentType="image/jpeg"/>'),
+      );
       // slideの本文は触らない
       expect(_text(a, 'ppt/slides/slide1.xml'), '<p:sld/>');
     });
@@ -183,22 +192,25 @@ void main() {
       expect(names, isNot(contains('ppt/media/image1.jpg')));
     });
 
-    test('no change when nothing gets smaller or nothing can be read', () async {
-      final original = _pptx();
-      expect(
-        await shrinkOfficeFile(
-          original,
-          ChatFileKind.pptx,
-          _FakeShrinker(fail: true),
-        ),
-        same(original),
-      );
-      final noMedia = _pptx(withMedia: false);
-      expect(
-        await shrinkOfficeFile(noMedia, ChatFileKind.pptx, _FakeShrinker()),
-        same(noMedia),
-      );
-    });
+    test(
+      'no change when nothing gets smaller or nothing can be read',
+      () async {
+        final original = _pptx();
+        expect(
+          await shrinkOfficeFile(
+            original,
+            ChatFileKind.pptx,
+            _FakeShrinker(fail: true),
+          ),
+          same(original),
+        );
+        final noMedia = _pptx(withMedia: false);
+        expect(
+          await shrinkOfficeFile(noMedia, ChatFileKind.pptx, _FakeShrinker()),
+          same(noMedia),
+        );
+      },
+    );
 
     test('reports progress up to 1', () async {
       final seen = <double>[];
@@ -215,16 +227,13 @@ void main() {
       final a = Archive()
         ..add(ArchiveFile.bytes('ppt/media/a.png', Uint8List(5000)))
         ..add(ArchiveFile.bytes('ppt/media/a.jpg', Uint8List(5000)));
-      final out = rebuildOffice(
-        ZipEncoder().encodeBytes(a),
-        [
-          OfficeMediaReplacement(
-            name: 'ppt/media/a.png',
-            newName: 'ppt/media/a.jpg',
-            bytes: Uint8List.fromList([1]),
-          ),
-        ],
-      );
+      final out = rebuildOffice(ZipEncoder().encodeBytes(a), [
+        OfficeMediaReplacement(
+          name: 'ppt/media/a.png',
+          newName: 'ppt/media/a.jpg',
+          bytes: Uint8List.fromList([1]),
+        ),
+      ]);
       final names = ZipDecoder().decodeBytes(out).files.map((f) => f.name);
       expect(names, containsAll(['ppt/media/a.jpg', 'ppt/media/a_c.jpg']));
     });

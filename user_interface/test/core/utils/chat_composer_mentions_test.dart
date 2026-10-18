@@ -60,10 +60,10 @@ void main() {
 
   group('mentionRanges', () {
     test('prefers the longer label where two overlap', () {
-      final ranges = mentionRanges(
-        '@A (2) and @A',
-        [draft('@A', 'a'), draft('@A (2)', 'b')],
-      );
+      final ranges = mentionRanges('@A (2) and @A', [
+        draft('@A', 'a'),
+        draft('@A (2)', 'b'),
+      ]);
       expect(ranges.map((r) => (r.start, r.end)).toList(), [(0, 6), (11, 13)]);
       expect(ranges.first.mention.label, '@A (2)');
     });
@@ -77,11 +77,10 @@ void main() {
     test('replaces labels with tokens and keeps unresolved ones as typed', () {
       final a = draft('@a.pdf', 'att1');
       final b = draft('@b.pdf', 'att2');
-      final out = toMessageContent(
-        'compare @a.pdf with @b.pdf',
-        [a, b],
-        (m) => m == a ? 'real-a' : null,
-      );
+      final out = toMessageContent('compare @a.pdf with @b.pdf', [
+        a,
+        b,
+      ], (m) => m == a ? 'real-a' : null);
       expect(out, 'compare ⟦att:real-a⟧ with @b.pdf');
     });
   });
@@ -111,7 +110,11 @@ void main() {
     final m = [draft('@notes.pdf', 'n')];
 
     test('removes the whole label when one character of it is deleted', () {
-      final r = removeBrokenMention('see @notes.pdf now', 'see @notes.pd now', m);
+      final r = removeBrokenMention(
+        'see @notes.pdf now',
+        'see @notes.pd now',
+        m,
+      );
       expect(r, isNotNull);
       expect(r!.text, 'see  now');
       expect(r.caret, 4);
@@ -129,7 +132,10 @@ void main() {
     });
 
     test('leaves a delete away from any label', () {
-      expect(removeBrokenMention('see @notes.pdf now', 'see @notes.pdf no', m), isNull);
+      expect(
+        removeBrokenMention('see @notes.pdf now', 'see @notes.pdf no', m),
+        isNull,
+      );
     });
 
     test('ignores insertions', () {

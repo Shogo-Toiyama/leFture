@@ -265,16 +265,17 @@ class _TextDraftSheetState extends State<_TextDraftSheet> {
                           height: 1.5,
                         ),
                         cursorColor: c.accent,
-                        decoration: decoration(
-                          l.aiChatAttachmentContentPlaceholder,
-                        ).copyWith(
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(
-                              color: over ? c.danger : c.inputBorder,
+                        decoration:
+                            decoration(
+                              l.aiChatAttachmentContentPlaceholder,
+                            ).copyWith(
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: over ? c.danger : c.inputBorder,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
                       ),
                     ),
                     Padding(

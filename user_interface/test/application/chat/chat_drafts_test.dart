@@ -72,7 +72,10 @@ void main() {
       await file('movie.mp4', [1, 2, 3]),
     ]);
     expect(result.added, isEmpty);
-    expect((result.notice as ChatNoticeFileError).code, 'UNSUPPORTED_FILE_TYPE');
+    expect(
+      (result.notice as ChatNoticeFileError).code,
+      'UNSUPPORTED_FILE_TYPE',
+    );
   });
 
   test('an empty text file is refused', () async {
@@ -134,21 +137,28 @@ void main() {
     expect(repo.removed, ['att-1']);
   });
 
-  test('removing while uploading cancels and deletes the server draft', () async {
-    uploader.gate = Completer<void>();
-    await controller.addFiles([
-      await file('a.pdf', [1, 2, 3]),
-    ]);
-    // アップロードが始まるまで待つ
-    for (var i = 0; i < 100 && fileDraft(0).stage != ChatFileStage.uploading; i++) {
-      await Future<void>.delayed(const Duration(milliseconds: 5));
-    }
-    expect(fileDraft(0).progress, .25);
-    controller.remove(controller.drafts.single.localId);
-    await Future<void>.delayed(const Duration(milliseconds: 50));
-    expect(controller.drafts, isEmpty);
-    expect(repo.removed, ['att-1']);
-  });
+  test(
+    'removing while uploading cancels and deletes the server draft',
+    () async {
+      uploader.gate = Completer<void>();
+      await controller.addFiles([
+        await file('a.pdf', [1, 2, 3]),
+      ]);
+      // アップロードが始まるまで待つ
+      for (
+        var i = 0;
+        i < 100 && fileDraft(0).stage != ChatFileStage.uploading;
+        i++
+      ) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      expect(fileDraft(0).progress, .25);
+      controller.remove(controller.drafts.single.localId);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(controller.drafts, isEmpty);
+      expect(repo.removed, ['att-1']);
+    },
+  );
 
   test('stops at the per-message limit with a notice', () async {
     final files = [
@@ -157,7 +167,10 @@ void main() {
     ];
     final result = await controller.addFiles(files);
     expect(result.added, hasLength(chatMaxAttachmentsPerMessage));
-    expect((result.notice as ChatNoticeLimit).max, chatMaxAttachmentsPerMessage);
+    expect(
+      (result.notice as ChatNoticeLimit).max,
+      chatMaxAttachmentsPerMessage,
+    );
     expect(controller.isFull, isTrue);
     expect(controller.addText(title: 'x', content: 'y'), isNull);
   });
@@ -170,16 +183,19 @@ void main() {
     expect(now.localId, d.localId);
   });
 
-  test('clearAfterSend keeps the server rows (they became sent materials)', () async {
-    await controller.addFiles([
-      await file('a.pdf', [1]),
-    ]);
-    await settle();
-    controller.clearAfterSend();
-    expect(controller.drafts, isEmpty);
-    controller.dispose();
-    expect(repo.removed, isEmpty);
-  });
+  test(
+    'clearAfterSend keeps the server rows (they became sent materials)',
+    () async {
+      await controller.addFiles([
+        await file('a.pdf', [1]),
+      ]);
+      await settle();
+      controller.clearAfterSend();
+      expect(controller.drafts, isEmpty);
+      controller.dispose();
+      expect(repo.removed, isEmpty);
+    },
+  );
 
   test('closing the composer deletes unsent file drafts', () async {
     await controller.addFiles([

@@ -90,7 +90,9 @@ class _AttachmentListState extends ConsumerState<_AttachmentList> {
     final compact = NumberFormat.compact(locale: locale)
       ..maximumFractionDigits = 1;
     String tokens(int n) => compact.format(n);
-    final all = ref.watch(chatConversationProvider.select((s) => s.attachments));
+    final all = ref.watch(
+      chatConversationProvider.select((s) => s.attachments),
+    );
     // 使えるものと確認中のもの。断った・失敗した資料は、メッセージの上のチップにだけ出す
     final attachments = [
       for (final a in all)
@@ -409,7 +411,10 @@ class _Row extends ConsumerWidget {
                           padding: const EdgeInsets.only(top: 2),
                           child: Text(
                             meta.join('・'),
-                            style: TextStyle(color: c.stageText, fontSize: 11.5),
+                            style: TextStyle(
+                              color: c.stageText,
+                              fontSize: 11.5,
+                            ),
                           ),
                         ),
                       ],
@@ -450,7 +455,9 @@ class _Row extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
               child: Column(
                 children: [
-                  if (ready && !a.selected && pending != ChatAttachmentMode.full)
+                  if (ready &&
+                      !a.selected &&
+                      pending != ChatAttachmentMode.full)
                     action(
                       icon: Icons.layers_outlined,
                       label: l.aiChatAttachFull,

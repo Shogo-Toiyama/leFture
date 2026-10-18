@@ -477,10 +477,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(input(tester).controller!.text, isEmpty);
-      expect(
-        find.text(l.aiChatAttachmentPasteNotice('4,000')),
-        findsOneWidget,
-      );
+      expect(find.text(l.aiChatAttachmentPasteNotice('4,000')), findsOneWidget);
     });
 
     testWidgets('上限を超えて打つと、送れずに「資料にする」が出る', (tester) async {
@@ -500,10 +497,7 @@ void main() {
       expect(sent, isEmpty);
       await tester.tap(find.text(l.aiChatAttachmentConvert));
       await tester.pumpAndSettle();
-      expect(
-        find.text(l.aiChatAttachmentPasteNotice('4,000')),
-        findsOneWidget,
-      );
+      expect(find.text(l.aiChatAttachmentPasteNotice('4,000')), findsOneWidget);
     });
   });
 

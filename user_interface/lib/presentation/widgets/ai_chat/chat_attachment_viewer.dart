@@ -46,7 +46,11 @@ class ChatAttachmentStatusBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(color: tint, fontSize: 11, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: tint,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }
@@ -180,8 +184,7 @@ class _AttachmentViewerState extends ConsumerState<_AttachmentViewer> {
         l.aiChatFilePages('${a.pageCount}')
       else if (a.fileKind == ChatFileKind.pptx && a.pageCount != null)
         l.aiChatFileSlides('${a.pageCount}'),
-      if (a.content.isNotEmpty)
-        l.aiChatAttachmentChars(fmt(a.content.length)),
+      if (a.content.isNotEmpty) l.aiChatAttachmentChars(fmt(a.content.length)),
     ];
     final textStyle = TextStyle(color: c.text, fontSize: 13.5, height: 1.7);
 
@@ -221,9 +224,9 @@ class _AttachmentViewerState extends ConsumerState<_AttachmentViewer> {
                   ),
                 if (sections.length > 1)
                   Theme(
-                    data: Theme.of(context).copyWith(
-                      dividerColor: Colors.transparent,
-                    ),
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
                       tilePadding: EdgeInsets.zero,
                       childrenPadding: EdgeInsets.zero,
@@ -330,7 +333,10 @@ class _AttachmentViewerState extends ConsumerState<_AttachmentViewer> {
           Icon(Icons.error_outline_rounded, size: 14, color: c.danger),
           const SizedBox(width: 6),
           Expanded(
-            child: Text(text, style: TextStyle(color: c.danger, fontSize: 12.5)),
+            child: Text(
+              text,
+              style: TextStyle(color: c.danger, fontSize: 12.5),
+            ),
           ),
         ],
       ),

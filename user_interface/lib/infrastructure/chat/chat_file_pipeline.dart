@@ -203,7 +203,9 @@ class ChatFilePipeline {
       _throwIfCancelled(cancel);
 
       onStage(ChatFileStage.reading);
-      return await _guard(() => repository.extractAttachment(target.attachmentId));
+      return await _guard(
+        () => repository.extractAttachment(target.attachmentId),
+      );
     } on ChatFileError {
       rethrow;
     } on ChatFileCancelled {

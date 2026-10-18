@@ -139,9 +139,8 @@ class ChatDraftsController extends ChangeNotifier {
   bool get isFull => _drafts.length >= maxPerMessage;
 
   /// 準備中・失敗したファイルがある間は送れない(失敗したものは外してもらう)。
-  bool get filesPending => _drafts.any(
-    (d) => d is ChatFileDraft && d.stage != ChatFileStage.ready,
-  );
+  bool get filesPending =>
+      _drafts.any((d) => d is ChatFileDraft && d.stage != ChatFileStage.ready);
 
   ChatDraft? draftById(String localId) =>
       _drafts.where((d) => d.localId == localId).firstOrNull;
@@ -165,10 +164,18 @@ class ChatDraftsController extends ChangeNotifier {
     return draft;
   }
 
-  void updateText(String localId, {required String title, required String content}) {
+  void updateText(
+    String localId, {
+    required String title,
+    required String content,
+  }) {
     final i = _drafts.indexWhere((d) => d.localId == localId);
     if (i < 0 || _drafts[i] is! ChatTextDraft) return;
-    _drafts[i] = ChatTextDraft(localId: localId, title: title, content: content);
+    _drafts[i] = ChatTextDraft(
+      localId: localId,
+      title: title,
+      content: content,
+    );
     notifyListeners();
   }
 
@@ -278,7 +285,8 @@ class ChatDraftsController extends ChangeNotifier {
           }
           _patch(id, (d) => d.copyWith(attachmentId: attachmentId));
         },
-        onPreview: (bytes) => _patch(id, (d) => d.copyWith(previewBytes: bytes)),
+        onPreview: (bytes) =>
+            _patch(id, (d) => d.copyWith(previewBytes: bytes)),
       );
       if (_removed.contains(id)) {
         _deleteOnServer(info.id);
@@ -353,7 +361,8 @@ class ChatDraftsController extends ChangeNotifier {
           title: d.title,
           content: d.content,
         ),
-        ChatFileDraft() when d.stage == ChatFileStage.ready && d.attachmentId != null =>
+        ChatFileDraft()
+            when d.stage == ChatFileStage.ready && d.attachmentId != null =>
           ChatFileAttachment(
             attachmentId: d.attachmentId!,
             title: d.title,

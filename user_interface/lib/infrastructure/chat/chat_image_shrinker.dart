@@ -139,7 +139,9 @@ class NativeChatImageShrinker implements ChatImageShrinker {
       autoCorrectionAngle: true,
     );
     // 端末が読めない形式のとき、例外ではなく空のバイト列が返ることがある
-    if (out.isEmpty) throw StateError('flutter_image_compress returned no bytes');
+    if (out.isEmpty) {
+      throw StateError('flutter_image_compress returned no bytes');
+    }
     return out;
   }
 

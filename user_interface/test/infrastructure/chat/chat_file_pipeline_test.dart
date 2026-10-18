@@ -157,26 +157,29 @@ void main() {
     expect(File(path).existsSync(), isTrue);
   });
 
-  test('an image over the limit is refused before asking for a target', () async {
-    await expectLater(
-      pipeline(Uint8List(31 * 1024 * 1024)).prepare(
-        path: await source('big.png', [1]),
-        name: 'big.png',
-        kind: ChatFileKind.image,
-        cancel: ChatCancelToken(),
-        onStage: (_) {},
-        onProgress: (_) {},
-        onTarget: (_) {},
-      ),
-      throwsA(
-        isA<ChatFileError>()
-            .having((e) => e.code, 'code', 'FILE_TOO_LARGE')
-            .having((e) => e.detail['max_bytes'], 'max', 30 * 1024 * 1024),
-      ),
-    );
-    expect(repo.requests, isEmpty);
-    expect(temp.listSync(), isEmpty);
-  });
+  test(
+    'an image over the limit is refused before asking for a target',
+    () async {
+      await expectLater(
+        pipeline(Uint8List(31 * 1024 * 1024)).prepare(
+          path: await source('big.png', [1]),
+          name: 'big.png',
+          kind: ChatFileKind.image,
+          cancel: ChatCancelToken(),
+          onStage: (_) {},
+          onProgress: (_) {},
+          onTarget: (_) {},
+        ),
+        throwsA(
+          isA<ChatFileError>()
+              .having((e) => e.code, 'code', 'FILE_TOO_LARGE')
+              .having((e) => e.detail['max_bytes'], 'max', 30 * 1024 * 1024),
+        ),
+      );
+      expect(repo.requests, isEmpty);
+      expect(temp.listSync(), isEmpty);
+    },
+  );
 
   test('backend errors keep their code and detail', () async {
     repo.uploadError = const ChatRequestException(

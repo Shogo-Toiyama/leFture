@@ -67,7 +67,9 @@ String chatFileDraftMeta(BuildContext context, ChatFileDraft draft) {
       } else if (info.kind == ChatFileKind.pptx && info.pageCount != null) {
         parts.add(l.aiChatFileSlides('${info.pageCount}'));
       } else {
-        parts.add(l.aiChatAttachmentChars(_formatNumber(context, info.textChars)));
+        parts.add(
+          l.aiChatAttachmentChars(_formatNumber(context, info.textChars)),
+        );
       }
       if (info.kind != ChatFileKind.image && info.visionCount > 0) {
         parts.add(l.aiChatFileVisionCount('${info.visionCount}'));
@@ -279,11 +281,7 @@ class ChatDraftChip extends StatelessWidget {
             lead,
             const SizedBox(width: 6),
             Flexible(
-              child: _ChipText(
-                colors: c,
-                label: chatDraftLabel(d),
-                meta: meta,
-              ),
+              child: _ChipText(colors: c, label: chatDraftLabel(d), meta: meta),
             ),
           ],
         ),
@@ -504,7 +502,11 @@ class ChatMentionPicker extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
             child: Row(
               children: [
-                Icon(Icons.alternate_email_rounded, size: 14, color: c.stageText),
+                Icon(
+                  Icons.alternate_email_rounded,
+                  size: 14,
+                  color: c.stageText,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(

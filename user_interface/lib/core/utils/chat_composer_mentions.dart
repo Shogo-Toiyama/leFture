@@ -126,7 +126,9 @@ String toMessageContent(
     final id = tokenIdFor(r.mention);
     out
       ..write(value.substring(pos, r.start))
-      ..write(id == null ? value.substring(r.start, r.end) : chatMentionToken(id));
+      ..write(
+        id == null ? value.substring(r.start, r.end) : chatMentionToken(id),
+      );
     pos = r.end;
   }
   out.write(value.substring(pos));

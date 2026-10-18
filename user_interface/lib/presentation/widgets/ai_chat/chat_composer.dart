@@ -158,7 +158,9 @@ class _MentionTextController extends TextEditingController {
     final children = <InlineSpan>[];
     var pos = 0;
     for (final r in mentionRanges(text, mentions)) {
-      if (r.start > pos) children.add(TextSpan(text: text.substring(pos, r.start)));
+      if (r.start > pos) {
+        children.add(TextSpan(text: text.substring(pos, r.start)));
+      }
       final target = r.mention.target;
       final full =
           target is DraftMention ||
@@ -203,11 +205,7 @@ class _ComposerFormatter extends TextInputFormatter {
       scheduleMicrotask(() => onLongPaste(pasted));
       return oldValue;
     }
-    final fixed = removeBrokenMention(
-      oldValue.text,
-      newValue.text,
-      mentions(),
-    );
+    final fixed = removeBrokenMention(oldValue.text, newValue.text, mentions());
     if (fixed != null) {
       return TextEditingValue(
         text: fixed.text,
@@ -328,7 +326,9 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
   }
 
   void _reportPending() {
-    final refs = existingReferences(presentMentions(_controller.text, _mentions));
+    final refs = existingReferences(
+      presentMentions(_controller.text, _mentions),
+    );
     bool same(List<ChatAttachmentRef> a, List<ChatAttachmentRef> b) =>
         a.length == b.length &&
         [
@@ -353,7 +353,8 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
     final lead = start > 0 && !RegExp(r'\s').hasMatch(current[start - 1])
         ? ' '
         : '';
-    final next = current.substring(0, start) + lead + text + current.substring(end);
+    final next =
+        current.substring(0, start) + lead + text + current.substring(end);
     _setText(next, caret: start + lead.length + text.length);
   }
 
@@ -391,11 +392,7 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
   }
 
   void _removeLabelFromText(String label) {
-    final next = _controller.text
-        .split('$label ')
-        .join()
-        .split(label)
-        .join();
+    final next = _controller.text.split('$label ').join().split(label).join();
     _setText(next, caret: _caret);
   }
 
@@ -416,7 +413,8 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
   void _removeDraft(String localId) {
     final mention = _mentions
         .where(
-          (m) => m.target is DraftMention &&
+          (m) =>
+              m.target is DraftMention &&
               (m.target as DraftMention).localId == localId,
         )
         .firstOrNull;
@@ -477,7 +475,9 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
               attachmentId: id,
               mode: ref?.mode ?? ChatAttachmentMode.mention,
             );
-      final label = makeMentionLabel(title, [for (final r in restored) r.label]);
+      final label = makeMentionLabel(title, [
+        for (final r in restored) r.label,
+      ]);
       restored.add(ComposerMention(label: label, target: target));
       return label;
     });
@@ -513,7 +513,9 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
 
   // ---- 資料を足す ----
 
-  Future<void> _pick(Future<List<PickedChatFile>> Function(ChatFilePicker) pick) async {
+  Future<void> _pick(
+    Future<List<PickedChatFile>> Function(ChatFilePicker) pick,
+  ) async {
     final List<PickedChatFile> files;
     try {
       files = await pick(ref.read(chatFilePickerProvider));
@@ -650,7 +652,9 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
             '${a.title ?? ''} ${a.fileName ?? ''}'.toLowerCase().contains(q))
           a,
     ];
-    final recent = matches.length > 8 ? matches.sublist(matches.length - 8) : matches;
+    final recent = matches.length > 8
+        ? matches.sublist(matches.length - 8)
+        : matches;
     return recent.reversed.toList();
   }
 
@@ -670,8 +674,9 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
 
   String _noticeText(AppLocalizations l, ComposerNoticeView n) => switch (n) {
     ComposerNoticeView(pickFailed: true) => l.aiChatAttachPickFailed,
-    ComposerNoticeView(limit: final max?) =>
-      l.aiChatAttachmentLimitPerMessage('$max'),
+    ComposerNoticeView(limit: final max?) => l.aiChatAttachmentLimitPerMessage(
+      '$max',
+    ),
     ComposerNoticeView(:final code, :final detail) => chatFileErrorCopy(
       l,
       code,
@@ -700,8 +705,7 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
       locale: locale,
       decimalDigits: 1,
     ).format(pinnedTokens / 10000 * chatCreditsPer10kTokens);
-    final hasChips =
-        drafts.isNotEmpty || widget.selectedAttachments.isNotEmpty;
+    final hasChips = drafts.isNotEmpty || widget.selectedAttachments.isNotEmpty;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -793,9 +797,7 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
           decoration: BoxDecoration(
             color: c.inputBackground,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: _overLimit ? c.danger : c.inputBorder,
-            ),
+            border: Border.all(color: _overLimit ? c.danger : c.inputBorder),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -889,7 +891,10 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
                               visualDensity: VisualDensity.compact,
                               foregroundColor: c.accent,
                             ),
-                            icon: const Icon(Icons.attach_file_rounded, size: 14),
+                            icon: const Icon(
+                              Icons.attach_file_rounded,
+                              size: 14,
+                            ),
                             label: Text(
                               l10n.aiChatAttachmentConvert,
                               style: const TextStyle(fontSize: 12),
@@ -924,7 +929,8 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
         : draft != null
         ? chatDraftLabel(draft)
         : mention.label.substring(1);
-    final kind = attachment?.kind ??
+    final kind =
+        attachment?.kind ??
         (draft is ChatFileDraft ? draft.fileKind.name : 'text');
     final preview = draft is ChatFileDraft ? draft.previewBytes : null;
     return ChatMentionActionBar(
@@ -964,11 +970,7 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
       enabled: enabled,
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 18,
-            color: enabled ? c.accent : c.actionForeground,
-          ),
+          Icon(icon, size: 18, color: enabled ? c.accent : c.actionForeground),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

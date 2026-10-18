@@ -54,7 +54,16 @@ const _kindByExtension = <String, ChatFileKind>{
 
 /// 中身をそのまま読んでテキストの資料にするファイル(授業の課題・自分のコードなど)。
 const chatTextExtensions = <String>{
-  'txt', 'md', 'markdown', 'csv', 'tsv', 'json', 'xml', 'yaml', 'yml', 'toml', //
+  'txt',
+  'md',
+  'markdown',
+  'csv',
+  'tsv',
+  'json',
+  'xml',
+  'yaml',
+  'yml',
+  'toml', //
   'ini', 'log', 'tex', 'bib', 'rst',
   'html', 'htm', 'css', 'scss', 'js', 'jsx', 'ts', 'tsx', 'mjs', 'cjs', 'vue',
   'svelte',
@@ -110,7 +119,9 @@ String readChatTextBytes(Uint8List bytes) {
     'max_chars': chatMaxAttachmentChars,
   });
   if (bytes.length > chatMaxTextFileBytes) throw tooLong;
-  final text = utf8.decode(bytes, allowMalformed: true).replaceAll('\r\n', '\n');
+  final text = utf8
+      .decode(bytes, allowMalformed: true)
+      .replaceAll('\r\n', '\n');
   // 先頭のBOMは文字としては要らない
   final clean = text.startsWith('﻿') ? text.substring(1) : text;
   if (clean.trim().isEmpty) throw const ChatFileError('FILE_EMPTY');
@@ -161,7 +172,9 @@ List<({String name, Uint8List bytes})> listOfficeMedia(
   final dir = _mediaDir(kind);
   return [
     for (final f in archive.files)
-      if (f.isFile && f.name.startsWith(dir) && _shrinkableMedia.hasMatch(f.name))
+      if (f.isFile &&
+          f.name.startsWith(dir) &&
+          _shrinkableMedia.hasMatch(f.name))
         (name: f.name, bytes: f.readBytes() ?? Uint8List(0)),
   ];
 }
@@ -212,7 +225,10 @@ Uint8List rebuildOffice(
     final files = [...archive.files];
     for (final f in files) {
       if (!f.isFile || !f.name.endsWith('.rels')) continue;
-      var xml = utf8.decode(f.readBytes() ?? Uint8List(0), allowMalformed: true);
+      var xml = utf8.decode(
+        f.readBytes() ?? Uint8List(0),
+        allowMalformed: true,
+      );
       var touched = false;
       for (final (from, to) in renames) {
         final needle = '/${base(from)}"';
@@ -229,7 +245,10 @@ Uint8List rebuildOffice(
     const ctPath = '[Content_Types].xml';
     final ct = archive.files.where((f) => f.name == ctPath).firstOrNull;
     if (ct != null) {
-      var xml = utf8.decode(ct.readBytes() ?? Uint8List(0), allowMalformed: true);
+      var xml = utf8.decode(
+        ct.readBytes() ?? Uint8List(0),
+        allowMalformed: true,
+      );
       for (final (from, to) in renames) {
         final part = RegExp.escape(from);
         xml = xml.replaceAllMapped(
@@ -285,16 +304,26 @@ Future<Uint8List> shrinkOfficeFile(
       replacements.add(
         OfficeMediaReplacement(
           name: m.name,
-          newName: m.name.replaceFirst(RegExp(r'\.png$', caseSensitive: false), '.jpg'),
+          newName: m.name.replaceFirst(
+            RegExp(r'\.png$', caseSensitive: false),
+            '.jpg',
+          ),
           bytes: shrunk.bytes,
         ),
       );
     } else {
       // 拡張子と中身の形式が食い違わないものだけ、同じ名前で差し替える
-      final isJpegName = RegExp(r'\.jpe?g$', caseSensitive: false).hasMatch(m.name);
+      final isJpegName = RegExp(
+        r'\.jpe?g$',
+        caseSensitive: false,
+      ).hasMatch(m.name);
       if ((shrunk.isPng && isPng) || (!shrunk.isPng && isJpegName)) {
         replacements.add(
-          OfficeMediaReplacement(name: m.name, newName: m.name, bytes: shrunk.bytes),
+          OfficeMediaReplacement(
+            name: m.name,
+            newName: m.name,
+            bytes: shrunk.bytes,
+          ),
         );
       }
     }

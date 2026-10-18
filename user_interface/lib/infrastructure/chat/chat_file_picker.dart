@@ -20,23 +20,34 @@ abstract class ChatFilePicker {
 class DeviceChatFilePicker implements ChatFilePicker {
   const DeviceChatFilePicker();
 
-  PickedChatFile _fromXFile(XFile file) => PickedChatFile(
-    path: file.path,
-    // カメラの写真には拡張子がない名前が付くことがある。種類は中身(mimeType)でも判定する
-    name: file.name.isEmpty ? 'photo.jpg' : file.name,
-    mimeType: file.mimeType ?? 'image/jpeg',
-  );
+  /// 写真・カメラの画像。端末が付ける名前(image_picker_UUID.jpg)は「@名前」やチップに出ると読みにくいので、
+  /// 撮った/選んだ時刻の名前にする(拡張子はそのまま。種類は中身(mimeType)でも判定する)。
+  PickedChatFile _photo(XFile file, int index) {
+    final now = DateTime.now();
+    String two(int n) => n.toString().padLeft(2, '0');
+    final stamp =
+        '${now.year}${two(now.month)}${two(now.day)}_${two(now.hour)}${two(now.minute)}${two(now.second)}';
+    final dot = file.name.lastIndexOf('.');
+    final extension = dot >= 0 && dot < file.name.length - 1
+        ? file.name.substring(dot).toLowerCase()
+        : '.jpg';
+    return PickedChatFile(
+      path: file.path,
+      name: 'photo_$stamp${index == 0 ? '' : '_$index'}$extension',
+      mimeType: file.mimeType ?? 'image/jpeg',
+    );
+  }
 
   @override
   Future<List<PickedChatFile>> takePhoto() async {
     final file = await ImagePicker().pickImage(source: ImageSource.camera);
-    return file == null ? const [] : [_fromXFile(file)];
+    return file == null ? const [] : [_photo(file, 0)];
   }
 
   @override
   Future<List<PickedChatFile>> pickPhotos() async {
     final files = await ImagePicker().pickMultiImage();
-    return [for (final f in files) _fromXFile(f)];
+    return [for (var i = 0; i < files.length; i++) _photo(files[i], i)];
   }
 
   @override
