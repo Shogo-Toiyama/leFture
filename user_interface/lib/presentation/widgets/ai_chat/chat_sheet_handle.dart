@@ -141,13 +141,23 @@ class ChatSheetKeeper extends NavigatorObserver {
     final overlay = navigator?.overlay;
     if (entry == null || overlay == null || !entry.mounted) return;
     // チャットは最上位に挿してあり、ページが増えても、ナビゲーター自身の並べ替えでもその上に残る
-    // (Overlay.rearrangeは、列挙しなかったエントリを上に残す)。直すのはポップアップだけ:
-    // それぞれを、押された順に最上位へ動かす(チャットはその下になる)。
-    for (final route in List<Route<dynamic>>.of(_popups)) {
+    // (Overlay.rearrangeは、列挙しなかったエントリを上に残す)。直すのはポップアップがあるときだけ:
+    // チャット自身を、一番下のポップアップのすぐ下へ移す。
+    //
+    // ポップアップの側を最上位へ動かしてはいけない。ポップアップの中で文字を選んでいると、選択の
+    // つまみ・メニュー(ポップアップの文字に付いていくエントリ)がその上にあり、ポップアップだけを
+    // 上へ動かすと、付いていく先より下に潜って描けなくなる(LeaderLayer/FollowerLayerのエラー)。
+    OverlayEntry? lowestPopup;
+    for (final route in _popups) {
       final entries = route.overlayEntries;
       if (entries.isEmpty || !entries.every((e) => e.mounted)) continue;
-      overlay.rearrange(entries, below: entries.first);
+      lowestPopup = entries.first;
+      break;
     }
+    if (lowestPopup == null) return;
+    // 同じフレームの中で外して挿し直すので、チャットの中身(会話・入力中の文字)は作り直されない
+    entry.remove();
+    overlay.insert(entry, below: lowestPopup);
   }
 }
 

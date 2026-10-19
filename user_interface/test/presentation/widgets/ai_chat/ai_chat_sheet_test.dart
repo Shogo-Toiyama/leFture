@@ -428,6 +428,9 @@ void main() {
 
   testWidgets('チャットから開いたシート(出典など)は、チャットより上に出る', (tester) async {
     await openSheet(tester);
+    // 書きかけの文字(重なり順を直すときに、チャットが作り直されないこと)
+    await tester.enterText(find.byType(TextField), 'my draft');
+    await tester.pump();
     unawaited(
       showModalBottomSheet<void>(
         context: homeContext,
@@ -436,6 +439,39 @@ void main() {
     );
     await settle(tester, 500);
     expect(find.text('popup').hitTestable(), findsOneWidget);
+    expect(find.text('my draft'), findsOneWidget);
+  });
+
+  testWidgets('シートの中で文字を選んだまま次のポップアップを開いても、選択のつまみがシートの下に潜らない', (tester) async {
+    await openSheet(tester);
+    unawaited(
+      showModalBottomSheet<void>(
+        context: homeContext,
+        builder: (_) => const SizedBox(
+          height: 200,
+          child: SelectionArea(child: Text('selectable popup text')),
+        ),
+      ),
+    );
+    await settle(tester, 500);
+    // 長押しで選ぶ(選択のつまみが、オーバーレイの一番上に出る)
+    await tester.longPressAt(
+      tester.getTopLeft(find.text('selectable popup text')) + const Offset(10, 8),
+    );
+    await settle(tester);
+    expect(find.byType(CompositedTransformFollower), findsWidgets);
+    // もう1つポップアップを開く(ここで重なり順を直し直す)
+    unawaited(
+      showDialog<void>(
+        context: homeContext,
+        // 選択を残したまま(フォーカスを奪わずに)開く
+        requestFocus: false,
+        builder: (_) => const AlertDialog(content: Text('second popup')),
+      ),
+    );
+    await settle(tester, 500);
+    expect(tester.takeException(), isNull);
+    expect(find.text('second popup').hitTestable(), findsOneWidget);
   });
 
   testWidgets('履歴を開いて会話を選ぶと、その会話に切り替わる', (tester) async {
