@@ -3,6 +3,7 @@ import json
 from typing import Any, Dict, List
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
 from app.services.helpers.helpers import TaskLogger, _load_prompt
+from app.services.prompts.art_styles_catalog import pick_art_style
 
 class ImageGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
@@ -18,6 +19,14 @@ class ImageGenerationService:
             return {}
             
         prompt_template = _load_prompt("image_generation_prompt.txt")
+
+        # 画風はLLMに選ばせずシステムが1つ決めて渡す(LLMに選ばせると毎回同じ画風に収束するため)
+        assigned_style = pick_art_style()
+        if "{assigned_style}" not in prompt_template:
+            raise ValueError("image_generation_prompt.txt must contain the {assigned_style} placeholder.")
+        prompt_text = prompt_template.replace("{assigned_style}", assigned_style)
+        self.logger.log(f"   [Logic] Assigned art style: {assigned_style}")
+
         options_json = LLMOptions(output_type="json", reasoning_effort="low")
 
         # Core Extractionのトピック情報から学術名(title)をマッピングする辞書を作成
@@ -55,7 +64,6 @@ class ImageGenerationService:
                 "summary": summary.strip()
             })
 
-        prompt_text = prompt_template
         messages = [
             Message(role="system", content=prompt_text),
             Message(role="user", content=f"Generate visual prompts for these topics:\n{json.dumps(minimized_topics, ensure_ascii=False)}")
@@ -90,4 +98,5 @@ class ImageGenerationService:
                 raise ValueError(f"image_prompts[{idx}] is missing a valid flux_scene_description.")
 
         self.logger.log(f"   [Logic] Generated {len(image_prompts)} image prompt(s).")
-        return res.output_json
+        # どの画風が割り当てられたかを残す(後から重複回避などに使えるように)
+        return {**res.output_json, "assigned_style": assigned_style}

@@ -2316,7 +2316,8 @@ async def run_image_rendering_task(job_id: str, task_id: str):
         image_rendering_inputs = []
         for p in raw_prompts:
             scene_desc = p.get("flux_scene_description", "")
-            combined_prompt = f"{scene_desc}, {style_suffix}".strip().strip(",")
+            # 画風を先頭に置く(末尾だと場面描写に負けて、画風が効かず写真になることがあった)
+            combined_prompt = f"{style_suffix}. {scene_desc}".strip().strip(",")
             
             image_rendering_inputs.append({
                 "topic_idx": p.get("topic_idx"),
