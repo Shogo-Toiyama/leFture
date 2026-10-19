@@ -12,6 +12,8 @@ import 'package:lefture/infrastructure/local_db/repositories/chat_cache_drift.da
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/widgets/ai_chat/ai_chat_sheet.dart';
 import 'package:lefture/domain/entities/chat.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_colors.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_page_context.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_sheet_handle.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 
@@ -197,6 +199,57 @@ void main() {
     await gesture.up();
     await settle(tester, 400);
     expect(sheetHeight(tester), closeTo(start - 50, 1));
+  });
+
+  testWidgets('80%から上へ引き上げても、指から外れずに付いていく(80%で引っかからない)', (tester) async {
+    await openSheet(tester);
+    final start = sheetHeight(tester);
+    final g = await tester.startGesture(holder(tester));
+    // 1フレームずつ進めて、80%をまたぐ(後ろの幕が出る)ところを通す
+    for (var i = 0; i < 4; i++) {
+      await g.moveBy(const Offset(0, -20));
+      await tester.pump();
+    }
+    expect(sheetHeight(tester), closeTo(start + 80, 1));
+    await g.up();
+    await settle(tester, 400);
+    expect(sheetHeight(tester), closeTo(start + 80, 1));
+  });
+
+  testWidgets('100%から下へ素早く払うと、80%をまたいでも閉じる', (tester) async {
+    await openSheet(tester);
+    await fling(tester, 'up');
+    await settle(tester, 400);
+    expect(fraction(tester), closeTo(1, .005));
+    final g = await tester.startGesture(holder(tester));
+    for (var i = 1; i <= 8; i++) {
+      await g.moveBy(
+        const Offset(0, 30),
+        timeStamp: Duration(milliseconds: 10 * i),
+      );
+      await tester.pump();
+    }
+    await g.up(timeStamp: const Duration(milliseconds: 90));
+    await settle(tester, 400);
+    expect(find.byType(AiChatSheet), findsNothing);
+  });
+
+  testWidgets('裏のページが変わると、その画面の世界の色に切り替わる', (tester) async {
+    await openSheet(tester);
+    Color sheetColor() =>
+        (tester.widget<DecoratedBox>(find.byKey(aiChatSheetFrameKey)).decoration
+                as BoxDecoration)
+            .color!;
+    expect(sheetColor(), ChatColors.universe.sheet);
+    final token = Object();
+    container
+        .read(chatPageContextStackProvider.notifier)
+        .register(token, const ChatPageContext(world: ChatWorld.paper));
+    await tester.pump();
+    expect(sheetColor(), ChatColors.paper.sheet);
+    container.read(chatPageContextStackProvider.notifier).unregister(token);
+    await tester.pump();
+    expect(sheetColor(), ChatColors.universe.sheet);
   });
 
   testWidgets('50%でも30%でも、離した位置で止まる', (tester) async {
@@ -416,6 +469,60 @@ void main() {
     await settle(tester);
     expect(find.text('A heap is a tree.'), findsOneWidget);
     expect(container.read(chatConversationProvider).threadId, 'T1');
+    // ヘッダーには会話の名前が出る(「新しい会話」ではない)
+    expect(find.text('Heaps'), findsOneWidget);
+    expect(find.text(l10n.aiChatNewConversation), findsNothing);
+  });
+
+  testWidgets('続きの会話で開くと、ヘッダーに会話の名前が出る', (tester) async {
+    repo.threadRows = [threadRow('T1', 'Heaps', '2026-10-18T00:00:02Z')];
+    repo.serverRows['T1'] = conversation;
+    await openSheet(tester, threadId: 'T1');
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
+    await settle(tester);
+    expect(find.text('A heap is a tree.'), findsOneWidget);
+    expect(find.text('Heaps'), findsOneWidget);
+  });
+
+  testWidgets('長い会話を開くと、最初から最新の発言(下端)が見えている', (tester) async {
+    repo.serverRows['T1'] = [
+      for (var i = 0; i < 30; i++)
+        chatRow(
+          '${i.isEven ? 'U' : 'A'}$i',
+          i.isEven ? 'user' : 'assistant',
+          'message number $i',
+          createdAt: '2026-10-18T00:00:${(i + 10).toString().padLeft(2, '0')}Z',
+        ),
+    ];
+    await openSheet(tester, threadId: 'T1');
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
+    await settle(tester);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('message number 29'), findsOneWidget);
+    expect(find.text('message number 0'), findsNothing);
+    final list = tester.state<ScrollableState>(
+      find.descendant(
+        of: find.byType(ListView),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(list.position.pixels, closeTo(list.position.maxScrollExtent, 1));
+
+    // シートを引き上げても、下端(最新の発言)のまま
+    final g = await tester.startGesture(holder(tester));
+    for (var i = 0; i < 4; i++) {
+      await g.moveBy(const Offset(0, -25));
+      await tester.pump();
+    }
+    await g.up();
+    await settle(tester, 400);
+    expect(find.text('message number 29'), findsOneWidget);
+    expect(list.position.pixels, closeTo(list.position.maxScrollExtent, 1));
   });
 
   testWidgets('履歴で名前を変えて、削除できる', (tester) async {

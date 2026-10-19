@@ -83,10 +83,13 @@ void main() {
     );
   }
 
-  /// 出発ゲートの動きが止まらないので、pumpAndSettleの代わりに少し進める。
+  /// 出発ゲートの動きが止まらないので、pumpAndSettleの代わりに少し進める
+  /// (会話を開いたときの、下端へ合わせてから見せる数フレームも含む)。
   Future<void> settle(WidgetTester tester, [int ms = 200]) async {
     await tester.pump(Duration(milliseconds: ms));
     await tester.pump(Duration(milliseconds: ms));
+    await tester.pump();
+    await tester.pump();
   }
 
   Future<void> openThread(

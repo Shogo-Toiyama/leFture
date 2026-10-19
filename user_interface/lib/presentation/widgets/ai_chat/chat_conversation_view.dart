@@ -82,6 +82,17 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   final _scroll = ScrollController();
   bool _stickToBottom = true;
 
+  /// 前のフレームで一覧を出していたか。
+  bool _listShown = false;
+
+  /// 一覧を出したばかりで、下端へ合わせている間(合わせ終わるまで見せない。会話を開いたときに、
+  /// 一番上が一瞬見えてから下へ飛ぶのを避ける)。
+  bool _revealing = false;
+
+  /// 下端へ合わせている回数(フレーム数)。合わせていなければ-1。
+  int _settleFrames = -1;
+  double? _settleLastMax;
+
   /// 入力欄の中身を変える依頼。
   ChatPrefill? _prefill;
 
@@ -136,11 +147,34 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
     _stickToBottom = p.maxScrollExtent - p.pixels < _stickToBottomPx;
   }
 
+  /// 下端へ合わせる。一覧は見えている分しか組まないので、下端の位置は組み直すたびに正しくなって
+  /// いく。下端の位置が落ち着くまで、毎フレーム合わせ直す(長くても数フレーム)。
   void _scrollToBottomSoon() {
+    final running = _settleFrames >= 0;
+    _settleFrames = 0;
+    _settleLastMax = null;
+    if (!running) _settleStep();
+  }
+
+  void _settleStep() {
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scroll.hasClients) return;
-      _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      if (!mounted) return;
+      var done = false;
+      if (_scroll.hasClients) {
+        final p = _scroll.position;
+        final max = p.maxScrollExtent;
+        if ((max - p.pixels).abs() > .5) p.jumpTo(max);
+        done = _settleLastMax != null && (max - _settleLastMax!).abs() < .5;
+        _settleLastMax = max;
+      }
+      if (done || ++_settleFrames > 12) {
+        _settleFrames = -1;
+        if (_revealing) setState(() => _revealing = false);
+        return;
+      }
+      _settleStep();
     });
+    SchedulerBinding.instance.scheduleFrame();
   }
 
   ChatConversation get _notifier => ref.read(chatConversationProvider.notifier);
@@ -472,6 +506,16 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
 
     final showGate =
         !state.loading && !state.loadFailed && state.messages.isEmpty;
+    // 前回の内容(端末のキャッシュ)があれば、読み込み中もそれを見せる
+    final showSkeleton = state.loading && state.messages.isEmpty;
+    final showList = !showSkeleton && !state.loadFailed && !showGate;
+    // 会話を開いて一覧が出たら、見せる前に下端(最新の発言)へ合わせる。送った直後(ゲートから
+    // 最初の発言が出たとき)は、もともと下端なので隠さない
+    if (showList && !_listShown && !state.sending) {
+      _revealing = true;
+      _scrollToBottomSoon();
+    }
+    _listShown = showList;
 
     return Column(
       children: [
@@ -481,7 +525,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
               if (showGate)
                 Positioned.fill(child: LaunchGateBackdrop(world: widget.world)),
               Positioned.fill(
-                child: state.loading
+                child: showSkeleton
                     ? _LoadingSkeleton(colors: colors)
                     : state.loadFailed
                     ? _LoadFailed(
@@ -494,14 +538,17 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
                         suggestions: _suggestions(l10n, selectedText != null),
                         onPick: _setPrefill,
                       )
-                    : _MessageList(
-                        controller: _scroll,
-                        children: _buildMessages(
-                          state,
-                          colors,
-                          attachmentsById,
-                          attachmentsByMessage,
-                          editInfo,
+                    : Opacity(
+                        opacity: _revealing ? 0 : 1,
+                        child: _MessageList(
+                          controller: _scroll,
+                          children: _buildMessages(
+                            state,
+                            colors,
+                            attachmentsById,
+                            attachmentsByMessage,
+                            editInfo,
+                          ),
                         ),
                       ),
               ),
@@ -737,6 +784,7 @@ class _MessageList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.separated(
       controller: controller,
+      physics: const _StickToBottomPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
       itemCount: children.length,
       separatorBuilder: (_, _) => const SizedBox(height: 18),
@@ -748,6 +796,37 @@ class _MessageList extends StatelessWidget {
           child: children[i],
         ),
       ),
+    );
+  }
+}
+
+/// 下端にいるときは、中身や見えている高さが変わっても下端に留まる(返答の文字が増えても、シートの
+/// 高さを変えても、最新の発言が見えたまま)。上へ戻って読んでいるときは、その位置を動かさない。
+/// 組み直しの中で位置を決めるので、1フレーム遅れて飛ぶことがない。
+class _StickToBottomPhysics extends ScrollPhysics {
+  const _StickToBottomPhysics({super.parent});
+
+  @override
+  _StickToBottomPhysics applyTo(ScrollPhysics? ancestor) =>
+      _StickToBottomPhysics(parent: buildParent(ancestor));
+
+  @override
+  double adjustPositionForNewDimensions({
+    required ScrollMetrics oldPosition,
+    required ScrollMetrics newPosition,
+    required bool isScrolling,
+    required double velocity,
+  }) {
+    // 全部が収まっていた(スクロールできなかった)ときも下端扱い: はみ出したら最新に付いていく
+    final wasAtBottom = oldPosition.pixels >= oldPosition.maxScrollExtent - 1;
+    if (!isScrolling && velocity == 0 && wasAtBottom) {
+      return newPosition.maxScrollExtent;
+    }
+    return super.adjustPositionForNewDimensions(
+      oldPosition: oldPosition,
+      newPosition: newPosition,
+      isScrolling: isScrolling,
+      velocity: velocity,
     );
   }
 }

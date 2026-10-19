@@ -23,7 +23,7 @@ class ChatSheetPhysics {
   static const closeBelow = .15;
 
   /// 指を離す直前の速さ(px/秒)がこれ以上なら「素早いスワイプ」。
-  static const flingVelocity = 1000.0;
+  static const flingVelocity = 800.0;
 
   /// 指で動かしている間の高さの範囲。
   static double clampWhileDragging(double fraction) =>

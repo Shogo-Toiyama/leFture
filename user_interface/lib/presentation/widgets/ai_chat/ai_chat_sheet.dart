@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/chat/chat_conversation.dart';
+import 'package:lefture/application/chat/chat_threads.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/core/utils/chat_citation_target.dart';
@@ -44,7 +45,7 @@ ChatSheetHandle? _current;
 /// 閉じても会話の受信は続くので、開き直せば生成途中の返答がそのまま見える。
 ///
 /// すでに開いていれば、新しいシートは重ねず、開いているシートに[selection]や[threadId]を足す。
-/// 開いた画面の世界([world])の色で出る(開いた後にページを移っても、色は変わらない)。
+/// 開いた画面の世界([world])の色で出て、ページを移ると、移った先の画面の世界の色に切り替わる。
 /// 返り値は、シートが閉じたときに完了する。
 ///
 /// [threadId]を渡すとその会話を開く。渡さなければ、今開いている会話を続ける(新しい会話にするのは
@@ -183,7 +184,8 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
   _SheetView _view = _SheetView.conversation;
   ChatSelection? _selection;
 
-  // 見ているページ(ページを移ると、講義のチップなども今のページに追従する)
+  // 見ているページ(ページを移ると、色・講義のチップなども今のページに追従する)
+  late ChatWorld _world = widget.world;
   String? _lectureId;
   String? _lectureTitle;
   ChatScreenRef? _screen;
@@ -229,6 +231,25 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
       Future(() => _notifier.openThread(id));
     }
     ref.listenManual(chatPageContextProvider, (_, next) => _onPageChanged(next));
+    // 会話の名前は最初の返答の途中でサーバーが付ける。返答が終わったら一覧を読み直して、
+    // ヘッダーの名前に出す(webappの onTurnComplete と同じ)
+    ref.listenManual(chatConversationProvider, (previous, next) {
+      if (previous?.sending == true && !next.sending) _refreshThreadTitles();
+    });
+    // 一覧を一度も開いていない端末では、続きの会話の名前がまだ手元に無い
+    if ((widget.threadId ?? ref.read(chatConversationProvider).threadId) !=
+        null) {
+      _refreshThreadTitles();
+    }
+  }
+
+  void _refreshThreadTitles() {
+    unawaited(
+      ref
+          .read(chatThreadActionsProvider.notifier)
+          .refresh()
+          .catchError((Object _) {}),
+    );
   }
 
   @override
@@ -347,6 +368,8 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
 
   void _onPageChanged(ChatPageContext page) {
     _screen = page.screen;
+    // 宇宙の画面ならダーク、紙の画面(Deep Notesなど)ならライトに切り替わる
+    _world = page.world;
     if (page.lectureId == _lectureId) {
       if (mounted) setState(() {});
       return;
@@ -376,7 +399,7 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
     unawaited(
       showAiSettingsSheet(
         context,
-        world: widget.world,
+        world: _world,
         onOpenPage: _goTo,
       ),
     );
@@ -416,7 +439,7 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
     unawaited(
       showChatCitationSheet(
         context,
-        colors: ChatColors.of(widget.world),
+        colors: ChatColors.of(_world),
         citation: citation,
         specs: specs,
         onOpenTarget: _openTarget,
@@ -465,7 +488,7 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final colors = ChatColors.of(widget.world);
+    final colors = ChatColors.of(_world);
     final conversationState = ref.watch(chatConversationProvider);
     final attachmentCount = [
       for (final a in conversationState.attachments)
@@ -474,9 +497,21 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
           a,
     ].length;
     final isHistory = _view == _SheetView.history;
+    final threadId = conversationState.threadId;
+    // 会話の名前は、スレッド一覧(端末のキャッシュ)から引く。名前が付く前は「新しい会話」
+    final threadTitle = threadId == null
+        ? null
+        : ref
+              .watch(chatThreadListProvider)
+              .value
+              ?.where((t) => t.id == threadId)
+              .firstOrNull
+              ?.title;
     final title = isHistory
         ? l10n.aiChatHistory
-        : conversationState.threadId == null
+        : (threadTitle?.trim().isNotEmpty ?? false)
+        ? threadTitle!.trim()
+        : threadId == null
         ? l10n.aiChatNewConversation
         : l10n.aiChatThreadUntitled;
     final lectureId = _lectureDetached ? null : _lectureId;
@@ -520,50 +555,42 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
           ),
           if (!isHistory) _PlanNotice(colors: colors),
           Expanded(
-            // 低いシートでも本体は最低の高さで組み、下の部分(最新の発言と入力欄)を見せる
-            child: LayoutBuilder(
-              builder: (context, box) {
-                final h = box.maxHeight < _bodyMinHeight
-                    ? _bodyMinHeight
-                    : box.maxHeight;
-                return ClipRect(
-                  child: OverflowBox(
-                    alignment: Alignment.bottomCenter,
-                    minHeight: h,
-                    maxHeight: h,
-                    child: isHistory
-                        ? ChatThreadListView(
-                            colors: colors,
-                            activeThreadId: conversationState.threadId,
-                            onSelect: _showConversation,
-                            onDeleted: (id) {
-                              if (id == conversationState.threadId) {
-                                _newConversation();
-                              }
-                            },
-                          )
-                        : Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                            child: ChatConversationView(
-                              world: widget.world,
-                              controller: _controller,
-                              lectureId: lectureId,
-                              lectureTitle: _lectureTitle,
-                              onDetachLecture: () =>
-                                  setState(() => _lectureDetached = true),
-                              selection: _selection,
-                              onClearSelection: () =>
-                                  setState(() => _selection = null),
-                              // 講義のチップを外したら、その講義のページも添えない
-                              screen: _lectureDetached ? null : _screen,
-                              onOpenCitation: _openCitation,
-                              onOpenLink: (url) => unawaited(_openLink(url)),
-                              onBuyCredits: _buyCredits,
-                            ),
-                          ),
-                  ),
-                );
-              },
+            // 低いシートでも本体は最低の高さで組み、下の部分(最新の発言と入力欄)を見せる。
+            // 指で動かす間に中身を作り直さないよう、組み方(大きさと位置)だけで合わせる
+            child: ClipRect(
+              child: CustomSingleChildLayout(
+                delegate: const _BottomAlignedMinHeight(),
+                child: isHistory
+                    ? ChatThreadListView(
+                        colors: colors,
+                        activeThreadId: conversationState.threadId,
+                        onSelect: _showConversation,
+                        onDeleted: (id) {
+                          if (id == conversationState.threadId) {
+                            _newConversation();
+                          }
+                        },
+                      )
+                    : Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                        child: ChatConversationView(
+                          world: _world,
+                          controller: _controller,
+                          lectureId: lectureId,
+                          lectureTitle: _lectureTitle,
+                          onDetachLecture: () =>
+                              setState(() => _lectureDetached = true),
+                          selection: _selection,
+                          onClearSelection: () =>
+                              setState(() => _selection = null),
+                          // 講義のチップを外したら、その講義のページも添えない
+                          screen: _lectureDetached ? null : _screen,
+                          onOpenCitation: _openCitation,
+                          onOpenLink: (url) => unawaited(_openLink(url)),
+                          onBuyCredits: _buyCredits,
+                        ),
+                      ),
+              ),
             ),
           ),
         ],
@@ -589,10 +616,12 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
 
           return Stack(
             children: [
-              // 80%より上のときだけ、後ろを暗くして触れなくする。以下では何も置かない
-              // (ここを通ってメイン画面へタッチが届く)
-              if (blocks)
-                Positioned.fill(
+              // 80%より上のときだけ、後ろを暗くして触れなくする。以下では幕は透明で、
+              // タッチを素通しする(メイン画面へ届く)。幕を出し入れせず常に置いておくのは、
+              // 並びが変わるとシートの中身が作り直されて、動かしている指が外れるため
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: !blocks,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: _onScrimTap,
@@ -603,6 +632,7 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
                     ),
                   ),
                 ),
+              ),
               Positioned(
                 left: 0,
                 right: 0,
@@ -647,6 +677,27 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
         ? body
         : BackButtonListener(onBackButtonPressed: _onBack, child: body);
   }
+}
+
+/// 本体を最低[_bodyMinHeight]の高さで組み、下端に揃える(低いシートでは上が切れる)。
+class _BottomAlignedMinHeight extends SingleChildLayoutDelegate {
+  const _BottomAlignedMinHeight();
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      BoxConstraints.tightFor(
+        width: constraints.maxWidth,
+        height: constraints.maxHeight < _bodyMinHeight
+            ? _bodyMinHeight
+            : constraints.maxHeight,
+      );
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) =>
+      Offset(0, size.height - childSize.height);
+
+  @override
+  bool shouldRelayout(_BottomAlignedMinHeight oldDelegate) => false;
 }
 
 /// ヘッダーのボタン1つの大きさ(押せる範囲)。
