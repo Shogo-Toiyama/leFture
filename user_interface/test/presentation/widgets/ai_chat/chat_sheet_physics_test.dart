@@ -16,22 +16,6 @@ void main() {
     });
   });
 
-  group('メイン画面を触れるか', () {
-    test('80%以下なら触れる(幕なし)', () {
-      expect(ChatSheetPhysics.blocksMain(.8), isFalse);
-      expect(ChatSheetPhysics.blocksMain(.3), isFalse);
-      expect(ChatSheetPhysics.scrimStrength(.8), 0);
-      expect(ChatSheetPhysics.scrimStrength(.5), 0);
-    });
-
-    test('80%を超えると触れなくなり、高いほど暗くなる', () {
-      expect(ChatSheetPhysics.blocksMain(.81), isTrue);
-      expect(ChatSheetPhysics.blocksMain(1.0), isTrue);
-      expect(ChatSheetPhysics.scrimStrength(.9), closeTo(.5, 1e-9));
-      expect(ChatSheetPhysics.scrimStrength(1.0), 1);
-    });
-  });
-
   group('指を離したとき', () {
     test('ゆっくり離したら、その位置で止まる(どの高さでも)', () {
       for (final f in [.2, .3, .47, .8, .93]) {

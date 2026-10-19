@@ -205,7 +205,7 @@ void main() {
     await openSheet(tester);
     final start = sheetHeight(tester);
     final g = await tester.startGesture(holder(tester));
-    // 1フレームずつ進めて、80%をまたぐ(後ろの幕が出る)ところを通す
+    // 1フレームずつ進めて、80%をまたぐところを通す
     for (var i = 0; i < 4; i++) {
       await g.moveBy(const Offset(0, -20));
       await tester.pump();
@@ -267,7 +267,7 @@ void main() {
     }
   });
 
-  testWidgets('80%を超えると、メイン画面は暗くなって触れない。暗いところを押すと30%に下がる', (tester) async {
+  testWidgets('80%を超えても後ろは暗くならず、見えているメイン画面を触れる', (tester) async {
     await openSheet(tester);
     final g = await tester.startGesture(holder(tester));
     await g.moveBy(const Offset(0, -80));
@@ -275,19 +275,11 @@ void main() {
     await settle(tester, 400);
     expect(fraction(tester), greaterThan(.85));
 
-    // メイン画面は触れない
-    await tester.tap(find.text('main'), warnIfMissed: false);
-    await tester.pump();
-    expect(mainTaps, 0);
-
-    // 暗いところ(シートの外)を押すと30%まで下がる
-    await tester.tapAt(const Offset(215, 20));
-    await settle(tester, 400);
-    expect(fraction(tester), closeTo(.3, .005));
-    // 30%になれば、メイン画面をまた触れる
     await tester.tap(find.text('main'));
     await tester.pump();
     expect(mainTaps, 1);
+    // チャットはその高さのまま
+    expect(fraction(tester), greaterThan(.85));
   });
 
   testWidgets('つまみをタップ: 80%なら30%、30%なら80%', (tester) async {

@@ -35,8 +35,8 @@ ChatSheetHandle? _current;
 
 /// AIチャットのシートを下から開く。
 ///
-/// モーダルではなく、画面の上に重ねるシート。**80%までなら、後ろのメイン画面をそのまま触れる**
-/// (チャットを開いたまま画面を操作できる)。80%より上は後ろが暗くなって触れない。
+/// モーダルではなく、画面の上に重ねるシート。どの高さでも後ろは暗くならず、シートの外に見えている
+/// メイン画面をそのまま触れる(チャットを開いたまま画面を操作できる)。
 /// ページを移っても、チャットはずっと最上位に残る(裏の画面だけが変わる)。
 ///
 /// 開いた直後は80%。つまみ(ヘッダー)を指で上下させると、指に合わせて動き、離した位置で止まる。
@@ -347,9 +347,6 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
   void _onHolderTap() =>
       _animateTo(ChatSheetPhysics.afterTap(_fraction.value));
 
-  /// 後ろが暗いところ(80%より上)を押したら、30%まで下げる。
-  void _onScrimTap() => _animateTo(ChatSheetPhysics.collapsed);
-
   Future<bool> _onBack() async {
     // ダイアログや下から出るシートが開いているときは、先にそれを閉じる
     if (chatSheetKeeper.popupCount > 0) return false;
@@ -611,28 +608,10 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
           final wanted = fraction * _available +
               (_available - fraction * _available) * blend;
           final height = wanted.clamp(0.0, _available - keyboard).toDouble();
-          final shown = height / _available;
-          final blocks = ChatSheetPhysics.blocksMain(shown);
 
+          // シートの外には何も置かない(タッチはそのままメイン画面へ届く)
           return Stack(
             children: [
-              // 80%より上のときだけ、後ろを暗くして触れなくする。以下では幕は透明で、
-              // タッチを素通しする(メイン画面へ届く)。幕を出し入れせず常に置いておくのは、
-              // 並びが変わるとシートの中身が作り直されて、動かしている指が外れるため
-              Positioned.fill(
-                child: IgnorePointer(
-                  ignoring: !blocks,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: _onScrimTap,
-                    child: ColoredBox(
-                      color: Colors.black.withValues(
-                        alpha: .5 * ChatSheetPhysics.scrimStrength(shown),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
               Positioned(
                 left: 0,
                 right: 0,
