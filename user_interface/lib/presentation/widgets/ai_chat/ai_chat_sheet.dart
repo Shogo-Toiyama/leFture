@@ -140,6 +140,10 @@ enum _SheetView { conversation, history }
 /// 小さいシートで入力欄などがはみ出してエラーにならないようにするため。
 const _bodyMinHeight = 300.0;
 
+/// シート全体を最低この高さで組む。閉じる手前まで下げたとき(ヘッダーより低いとき)は、
+/// 上のつまみとヘッダーだけを見せて、残りは枠で切る。
+const _sheetMinHeight = 200.0;
+
 /// キーボードがこの高さ以上出たら、シートは完全に全画面(キーボードの上いっぱい)になる。
 const _keyboardFullAt = 120.0;
 
@@ -620,7 +624,17 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(kSheetRadius),
                     ),
-                    child: child,
+                    // 高さによって木の形を変えない(変えると会話の画面が作り直される)
+                    child: OverflowBox(
+                      alignment: Alignment.topCenter,
+                      minHeight: height < _sheetMinHeight
+                          ? _sheetMinHeight
+                          : height,
+                      maxHeight: height < _sheetMinHeight
+                          ? _sheetMinHeight
+                          : height,
+                      child: child,
+                    ),
                   ),
                 ),
               ),

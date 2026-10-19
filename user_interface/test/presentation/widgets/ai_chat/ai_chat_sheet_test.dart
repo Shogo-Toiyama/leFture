@@ -268,6 +268,17 @@ void main() {
     expect(find.byType(AiChatSheet), findsNothing);
   });
 
+  testWidgets('ヘッダーより低くまで下げても、はみ出さない(つまみとヘッダーだけが見える)', (tester) async {
+    await openSheet(tester);
+    final g = await tester.startGesture(holder(tester));
+    await g.moveBy(Offset(0, (fraction(tester) - .03) * available));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(fraction(tester), closeTo(.03, .01));
+    await g.up();
+    await settle(tester, 400);
+  });
+
   testWidgets('15%より上で離したら閉じない', (tester) async {
     await openSheet(tester);
     final g = await tester.startGesture(holder(tester));
