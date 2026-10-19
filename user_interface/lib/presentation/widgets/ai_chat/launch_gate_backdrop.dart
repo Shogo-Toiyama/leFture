@@ -128,21 +128,45 @@ void _strokeHorizon(Canvas canvas, Offset center, double radius, Paint paint) {
   );
 }
 
+/// 流れ星の周期(秒)。このうち最初の1秒で流れる。
+const _meteorCycle = 4.6;
+
+/// 流れ星の落ちる角度(水平から下向き)。夜空の高さによらず一定。
+const _meteorAngle = 24 * math.pi / 180;
+
+/// ある瞬間の流れ星の頭と尾の位置。
+typedef MeteorPose = ({Offset head, Offset tail});
+
+/// 流れ星の位置。[k]は流れ始めてからの秒数(0〜1で流れ、1以上は見えない)。
+///
+/// 進む向きと尾の向きは同じ(いつも[_meteorAngle])。夜空が低いときは、角度を変えずに
+/// 飛ぶ距離と尾を縮めて、星空の帯(上から約38%)に収める。つまり低いシートでは、
+/// 同じ角度で落ちる小さな流れ星になる。
+@visibleForTesting
+MeteorPose? meteorPose(Size size, double k) {
+  if (k < 0 || k >= 1) return null;
+  final w = size.width, h = size.height;
+  final dir = Offset(math.cos(_meteorAngle), math.sin(_meteorAngle));
+  // 幅の半分だけ横へ進む道のり。ただし縦は、星空の帯(高さの34%)に収まる範囲まで
+  final wide = w * .5 / dir.dx;
+  final distance = math.min(wide, h * .34 / dir.dy);
+  // 帯の中で左右の真ん中に寄せる
+  final start = Offset(w * .25 + (w * .5 - distance * dir.dx) / 2, h * .04);
+  final head = start + dir * (distance * _ease(k));
+  final tail = head - dir * (distance * .36 * math.sin(math.pi * k));
+  return (head: head, tail: tail);
+}
+
 /// 流れ星(4.6秒に1回、1秒かけて流れる)。
 void _paintShootingStar(Canvas canvas, Size size, double t, Color color) {
-  final k = t % 4.6;
-  if (k >= 1) return;
-  final w = size.width, h = size.height;
-  final p = _ease(k);
-  final head = Offset(w * (.25 + .5 * p), h * (.04 + .14 * p));
-  final len = w * .2 * math.sin(math.pi * k);
-  final tail = head.translate(-len * .9, -len * .4);
+  final pose = meteorPose(size, t % _meteorCycle);
+  if (pose == null) return;
   canvas.drawLine(
-    head,
-    tail,
+    pose.head,
+    pose.tail,
     Paint()
       ..strokeWidth = 1.6
-      ..shader = ui.Gradient.linear(head, tail, [
+      ..shader = ui.Gradient.linear(pose.head, pose.tail, [
         color.withValues(alpha: .95),
         color.withValues(alpha: 0),
       ]),
@@ -277,6 +301,19 @@ const _dawnStars = [
   (.9, .24, 1.05, 2.6),
 ];
 
+/// 太陽の光の筋の数(全周)。
+const _sunRayCount = 36;
+
+/// 光の筋が回る速さ(ラジアン/秒)。
+const _sunRaySpeed = .04;
+
+/// 太陽のまわりの全周に引く光の筋の角度。[rotation]だけ回った状態。
+/// 筋は等間隔なので、どれだけ回っても、地平線の上に見える筋の数はほぼ一定(半分の18本ほど)。
+@visibleForTesting
+List<double> sunRayAngles(double rotation) => [
+  for (var k = 0; k < _sunRayCount; k++) rotation + k * _tau / _sunRayCount,
+];
+
 class _DawnGatePainter extends CustomPainter {
   _DawnGatePainter(this.time) : super(repaint: time);
 
@@ -332,23 +369,18 @@ class _DawnGatePainter extends CustomPainter {
         ),
     );
 
-    // ゆっくり回る光の筋
+    // ゆっくり回る光の筋。太陽のまわり全周に引いておき、地平線の下は、あとで描く地球が隠す
+    // (半円だけだと、回るにつれて筋が地球の下へ入って、見える筋が減っていく)
     final rayPaint = Paint()
       ..color = _deepGold.withValues(alpha: .16)
       ..strokeWidth = 1;
-    canvas
-      ..save()
-      ..translate(sun.dx, sun.dy)
-      ..rotate(t * .04);
-    for (var k = 0; k < 18; k++) {
-      final a = -math.pi + k * math.pi / 17;
+    for (final a in sunRayAngles(t * _sunRaySpeed)) {
       canvas.drawLine(
-        Offset(math.cos(a) * w * .1, math.sin(a) * w * .1),
-        Offset(math.cos(a) * w * .42, math.sin(a) * w * .42),
+        sun + Offset(math.cos(a), math.sin(a)) * (w * .1),
+        sun + Offset(math.cos(a), math.sin(a)) * (w * .42),
         rayPaint,
       );
     }
-    canvas.restore();
 
     // 昇りかけの太陽(下半分は地球に隠れる)
     final sunRadius = w * .085;
