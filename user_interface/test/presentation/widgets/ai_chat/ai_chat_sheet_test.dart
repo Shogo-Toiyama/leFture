@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +11,8 @@ import 'package:lefture/infrastructure/local_db/app_database.dart';
 import 'package:lefture/infrastructure/local_db/repositories/chat_cache_drift.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/widgets/ai_chat/ai_chat_sheet.dart';
+import 'package:lefture/domain/entities/chat.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_sheet_handle.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 
 import '../../../application/chat/fake_chat_repository.dart';
@@ -57,6 +61,9 @@ void main() {
     await tester.pump(Duration(milliseconds: ms));
   }
 
+  late BuildContext homeContext;
+  var mainTaps = 0;
+
   Future<void> openSheet(
     WidgetTester tester, {
     ChatWorld world = ChatWorld.universe,
@@ -66,41 +73,85 @@ void main() {
     tester.view.physicalSize = const Size(430, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
+    mainTaps = 0;
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
+          navigatorObservers: [chatSheetKeeper],
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           locale: const Locale('en'),
           home: Builder(
-            builder: (context) => Scaffold(
-              body: Center(
-                child: TextButton(
-                  onPressed: () => showAiChatSheet(
-                    context,
-                    world: world,
-                    threadId: threadId,
-                    onOpenAiSettings: withSettings
-                        ? () => settingsOpened++
-                        : null,
-                  ),
-                  child: const Text('open'),
+            builder: (context) {
+              homeContext = context;
+              return Scaffold(
+                body: Stack(
+                  children: [
+                    // メイン画面の上のほう(シートが80%までなら見えている)
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 40),
+                        child: TextButton(
+                          onPressed: () => mainTaps++,
+                          child: const Text('main'),
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => showAiChatSheet(
+                          context,
+                          world: world,
+                          threadId: threadId,
+                          onOpenAiSettings: withSettings
+                              ? () => settingsOpened++
+                              : null,
+                        ),
+                        child: const Text('open'),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
     );
-    l10n = AppLocalizations.of(tester.element(find.byType(TextButton)));
+    l10n = AppLocalizations.of(tester.element(find.text('open')));
     await tester.tap(find.text('open'));
     // 下から出てくる動きが終わるまで
     await settle(tester, 400);
   }
 
+  /// 画面の使える高さ(上の安全領域なし → 高さ - 8)。
+  const available = 900.0 - 8;
+
   double sheetHeight(WidgetTester tester) =>
-      tester.getSize(find.byType(AnimatedContainer).first).height;
+      tester.getSize(find.byKey(aiChatSheetFrameKey)).height;
+
+  double fraction(WidgetTester tester) => sheetHeight(tester) / available;
+
+  /// つまみ(シートの一番上)のあたり。
+  Offset holder(WidgetTester tester) {
+    final top = tester.getTopLeft(find.byKey(aiChatSheetFrameKey)).dy;
+    return Offset(215, top + 20);
+  }
+
+  /// つまみを持って、素早く(約2500px/秒)上へ / 下へ動かして離す。
+  Future<void> fling(WidgetTester tester, String direction) async {
+    final sign = direction == 'up' ? -1.0 : 1.0;
+    final g = await tester.startGesture(holder(tester));
+    for (var i = 1; i <= 6; i++) {
+      await g.moveBy(
+        Offset(0, sign * 25),
+        timeStamp: Duration(milliseconds: 10 * i),
+      );
+    }
+    await g.up(timeStamp: const Duration(milliseconds: 70));
+  }
 
   final conversation = [
     chatRow('U1', 'user', 'What is a heap?', createdAt: '2026-10-18T00:00:01Z'),
@@ -112,31 +163,223 @@ void main() {
     ),
   ];
 
-  testWidgets('開くと新しい会話の画面で、半分の高さ。つまみを押すと全画面になる', (tester) async {
+  testWidgets('開くと新しい会話の画面で、80%の高さ', (tester) async {
     await openSheet(tester);
     expect(find.text(l10n.aiChatNewConversation), findsWidgets);
-    final half = sheetHeight(tester);
-    await tester.tapAt(Offset(215, 900 - half + 14));
-    await settle(tester, 300);
-    expect(sheetHeight(tester), greaterThan(half));
+    expect(fraction(tester), closeTo(.8, .005));
   });
 
-  testWidgets('上へ引き上げると全画面、下へ引くと半分に戻り、もう一度引くと閉じる', (tester) async {
+  testWidgets('80%までは、後ろのメイン画面を触れる', (tester) async {
     await openSheet(tester);
-    final half = sheetHeight(tester);
-    final grab = Offset(215, 900 - half + 14);
-    await tester.dragFrom(grab, const Offset(0, -120));
-    await settle(tester, 300);
-    final full = sheetHeight(tester);
-    expect(full, greaterThan(half));
+    expect(find.byType(AiChatSheet), findsOneWidget);
+    await tester.tap(find.text('main'));
+    await tester.pump();
+    expect(mainTaps, 1);
+    // チャットは開いたまま
+    expect(find.byType(AiChatSheet), findsOneWidget);
+  });
 
-    await tester.dragFrom(Offset(215, 900 - full + 14), const Offset(0, 120));
-    await settle(tester, 300);
-    expect(sheetHeight(tester), closeTo(half, 1));
+  testWidgets('つまみを持っている間は、指に合わせて動き、離した高さで止まる', (tester) async {
+    await openSheet(tester);
+    final start = sheetHeight(tester);
+    final gesture = await tester.startGesture(holder(tester));
+    await gesture.moveBy(const Offset(0, -10));
+    await gesture.moveBy(const Offset(0, 100));
+    await tester.pump();
+    // 動きを待たずに、指の分(下へ100-10=90)だけ小さくなっている
+    expect(sheetHeight(tester), closeTo(start - 90, 1));
 
-    await tester.dragFrom(Offset(215, 900 - half + 14), const Offset(0, 120));
+    await gesture.moveBy(const Offset(0, -40));
+    await tester.pump();
+    expect(sheetHeight(tester), closeTo(start - 50, 1));
+
+    // ゆっくり離したら、そこで止まる
+    await gesture.up();
+    await settle(tester, 400);
+    expect(sheetHeight(tester), closeTo(start - 50, 1));
+  });
+
+  testWidgets('50%でも30%でも、離した位置で止まる', (tester) async {
+    await openSheet(tester);
+    final startFraction = fraction(tester);
+    for (final target in [.5, .3, .65]) {
+      final delta = (startFraction - target) * available;
+      final now = fraction(tester);
+      final move = (now - target) * available;
+      final g = await tester.startGesture(holder(tester));
+      await g.moveBy(Offset(0, move));
+      await g.up();
+      await settle(tester, 400);
+      expect(fraction(tester), closeTo(target, .01), reason: 'delta $delta');
+    }
+  });
+
+  testWidgets('80%を超えると、メイン画面は暗くなって触れない。暗いところを押すと30%に下がる', (tester) async {
+    await openSheet(tester);
+    final g = await tester.startGesture(holder(tester));
+    await g.moveBy(const Offset(0, -80));
+    await g.up();
+    await settle(tester, 400);
+    expect(fraction(tester), greaterThan(.85));
+
+    // メイン画面は触れない
+    await tester.tap(find.text('main'), warnIfMissed: false);
+    await tester.pump();
+    expect(mainTaps, 0);
+
+    // 暗いところ(シートの外)を押すと30%まで下がる
+    await tester.tapAt(const Offset(215, 20));
+    await settle(tester, 400);
+    expect(fraction(tester), closeTo(.3, .005));
+    // 30%になれば、メイン画面をまた触れる
+    await tester.tap(find.text('main'));
+    await tester.pump();
+    expect(mainTaps, 1);
+  });
+
+  testWidgets('つまみをタップ: 80%なら30%、30%なら80%', (tester) async {
+    await openSheet(tester);
+    await tester.tapAt(holder(tester));
+    await settle(tester, 400);
+    expect(fraction(tester), closeTo(.3, .005));
+    await tester.tapAt(holder(tester));
+    await settle(tester, 400);
+    expect(fraction(tester), closeTo(.8, .005));
+  });
+
+  testWidgets('50%より少し高い(55%)ところからのタップは30%に下がる', (tester) async {
+    await openSheet(tester);
+    final g = await tester.startGesture(holder(tester));
+    await g.moveBy(Offset(0, (fraction(tester) - .55) * available));
+    await g.up();
+    await settle(tester, 400);
+    expect(fraction(tester), closeTo(.55, .01));
+    await tester.tapAt(holder(tester));
+    await settle(tester, 400);
+    expect(fraction(tester), closeTo(.3, .005));
+  });
+
+  testWidgets('15%より下まで下げて離すと閉じる', (tester) async {
+    await openSheet(tester);
+    final g = await tester.startGesture(holder(tester));
+    await g.moveBy(Offset(0, (fraction(tester) - .1) * available));
+    await g.up();
     await settle(tester, 400);
     expect(find.byType(AiChatSheet), findsNothing);
+  });
+
+  testWidgets('15%より上で離したら閉じない', (tester) async {
+    await openSheet(tester);
+    final g = await tester.startGesture(holder(tester));
+    await g.moveBy(Offset(0, (fraction(tester) - .2) * available));
+    await g.up();
+    await settle(tester, 400);
+    expect(find.byType(AiChatSheet), findsOneWidget);
+    expect(fraction(tester), closeTo(.2, .01));
+  });
+
+  testWidgets('素早く上へスワイプしたら100%', (tester) async {
+    await openSheet(tester);
+    await fling(tester, 'up');
+    await settle(tester, 500);
+    expect(fraction(tester), closeTo(1.0, .005));
+  });
+
+  testWidgets('素早く下へスワイプしたら閉じる。100%からでも閉じる', (tester) async {
+    await openSheet(tester);
+    await fling(tester, 'down');
+    await settle(tester, 500);
+    expect(find.byType(AiChatSheet), findsNothing);
+
+    // 100%まで上げてから、素早く下へ
+    await tester.tap(find.text('open'));
+    await settle(tester, 400);
+    await fling(tester, 'up');
+    await settle(tester, 500);
+    expect(fraction(tester), closeTo(1.0, .005));
+    await fling(tester, 'down');
+    await settle(tester, 500);
+    expect(find.byType(AiChatSheet), findsNothing);
+  });
+
+  testWidgets('×で閉じる。閉じたあとはメイン画面を触れる', (tester) async {
+    await openSheet(tester);
+    await tester.tap(find.byTooltip(l10n.aiChatClose));
+    await settle(tester, 400);
+    expect(find.byType(AiChatSheet), findsNothing);
+    await tester.tap(find.text('main'));
+    expect(mainTaps, 1);
+  });
+
+  testWidgets('キーボードが出たら、その上いっぱいまで広がる', (tester) async {
+    await openSheet(tester);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    addTearDown(tester.view.resetViewInsets);
+    await settle(tester, 300);
+    final rect = tester.getRect(find.byKey(aiChatSheetFrameKey));
+    expect(rect.bottom, closeTo(900 - 300, .5));
+    expect(rect.top, closeTo(8, .5));
+  });
+
+  testWidgets('開いているときにもう一度開くと、重ねずに選択だけが足される', (tester) async {
+    await openSheet(tester);
+    unawaited(
+      showAiChatSheet(
+        homeContext,
+        world: ChatWorld.universe,
+        selection: const ChatSelection(text: 'a binary heap'),
+      ),
+    );
+    await settle(tester, 300);
+    expect(find.byType(AiChatSheet), findsOneWidget);
+    expect(find.text('a binary heap'), findsOneWidget);
+  });
+
+  testWidgets('低く下げていた(30%)ところに足されたら、入力欄が見える高さ(80%)まで上がる', (tester) async {
+    await openSheet(tester);
+    await tester.tapAt(holder(tester));
+    await settle(tester, 400);
+    expect(fraction(tester), closeTo(.3, .005));
+    unawaited(
+      showAiChatSheet(
+        homeContext,
+        world: ChatWorld.universe,
+        selection: const ChatSelection(text: 'x'),
+      ),
+    );
+    await settle(tester, 400);
+    expect(fraction(tester), closeTo(.8, .005));
+  });
+
+  testWidgets('別のページを開いても、チャットは最上位に残る', (tester) async {
+    await openSheet(tester);
+    unawaited(
+      Navigator.of(homeContext).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Center(child: Text('next page'))),
+        ),
+      ),
+    );
+    await settle(tester, 500);
+    expect(find.text('next page'), findsOneWidget);
+    expect(find.byType(AiChatSheet), findsOneWidget);
+    // チャットの上にページが重なっていない(チャットのボタンを押せる)
+    expect(
+      find.byTooltip(l10n.aiChatClose).hitTestable(),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('チャットから開いたシート(出典など)は、チャットより上に出る', (tester) async {
+    await openSheet(tester);
+    unawaited(
+      showModalBottomSheet<void>(
+        context: homeContext,
+        builder: (_) => const SizedBox(height: 200, child: Text('popup')),
+      ),
+    );
+    await settle(tester, 500);
+    expect(find.text('popup').hitTestable(), findsOneWidget);
   });
 
   testWidgets('履歴を開いて会話を選ぶと、その会話に切り替わる', (tester) async {
@@ -236,7 +479,11 @@ void main() {
     await tester.tap(find.text('Heaps'));
     await settle(tester);
     expect(find.text('A heap keeps the smallest item on top.'), findsOneWidget);
-    expect(find.text(l10n.aiChatOpenInLecture), findsOneWidget);
+    // 出典のシートはチャットより上に出ていて、押せる
+    expect(
+      find.text(l10n.aiChatOpenInLecture).hitTestable(),
+      findsOneWidget,
+    );
   });
 
   testWidgets('AIの設定のボタンは、いつも出る(入口が渡されなければ設定のシートを開く)', (tester) async {

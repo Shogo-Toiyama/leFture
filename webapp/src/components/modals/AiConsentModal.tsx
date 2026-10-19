@@ -14,8 +14,8 @@ export interface AiConsentModalProps {
 
 /**
  * AIサービスへのデータ送信への同意(アプリと同じ形・同じ文言)。
- * 短い説明と「詳しく見る」(送るデータと送り先の一覧)、プライバシーポリシーとお問い合わせへのリンク、
- * 「キャンセル」と「同意して続ける」。録音の同意とチャットの同意は文言を変えて別々に出す。
+ * 何を何のために・どのサービス(会社名)へ送るかを短く伝えて、プライバシーポリシーとお問い合わせへのリンク、
+ * 「キャンセル」と「同意して続ける」。モデル名や処理の中身までは書かない。録音の同意とチャットの同意は文言を変えて別々に出す。
  */
 export const AiConsentModal: React.FC<AiConsentModalProps> = ({ kind, updated, onAgree, onCancel }) => {
   const { t } = useLanguage();
@@ -32,7 +32,6 @@ export const AiConsentModal: React.FC<AiConsentModalProps> = ({ kind, updated, o
 
   const title = kind === 'chat' ? t('aiConsentChatTitle') : t('aiConsentRecordingTitle');
   const message = kind === 'chat' ? t('aiConsentChatMessage') : t('aiConsentRecordingMessage');
-  const details = kind === 'chat' ? t('aiConsentChatDetails') : t('aiConsentRecordingDetails');
 
   const agree = async () => {
     setBusy(true);
@@ -104,12 +103,6 @@ export const AiConsentModal: React.FC<AiConsentModalProps> = ({ kind, updated, o
             </p>
           )}
           <p style={{ margin: 0 }}>{message}</p>
-          <details style={{ marginTop: '0.5rem' }}>
-            <summary style={{ cursor: 'pointer', color: 'var(--gold)', fontWeight: 700, fontSize: '0.85rem' }}>
-              {t('aiConsentDetailsToggle')}
-            </summary>
-            <p style={{ margin: '0.5rem 0 0', whiteSpace: 'pre-line', fontSize: '0.82rem', lineHeight: 1.7 }}>{details}</p>
-          </details>
           <p style={{ margin: '0.75rem 0 0', display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
             <a href="https://lefture.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)' }}>
               {t('privacyPolicyLink')}

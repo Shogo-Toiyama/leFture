@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lefture/domain/entities/self_portrait.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/sheet_style.dart';
 
 // 自分像・AIのメモの画面で共通の、宇宙の画面(ダーク)向けの部品。
 
@@ -144,13 +145,14 @@ Future<T?> showSpSheet<T>(BuildContext context, WidgetBuilder builder) {
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: spSheetBackground,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
+    shape: kSheetShape,
     builder: (context) => Padding(
       // キーボードが出たら、その分だけ持ち上げる
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: builder(context),
+      child: withSheetHandle(
+        builder(context),
+        handleColor: spMuted.withValues(alpha: .5),
+      ),
     ),
   );
 }

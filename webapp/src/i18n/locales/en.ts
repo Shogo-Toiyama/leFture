@@ -748,20 +748,15 @@ export const en = {
   // Chat (横断チャットボット)
   chatTitle: 'Chat',
   // Consent to send data to AI services (same wording as the app)
-  aiConsentDetailsToggle: 'See details',
   aiConsentAgree: 'Agree & Continue',
   aiConsentRecordingTitle: 'About AI Data Processing',
   aiConsentRecordingMessage:
-    'Your recorded audio and some of your profile information are sent to third-party AI services to generate transcripts, notes, and summaries.',
-  aiConsentRecordingDetails:
-    'Data sent:\n• Your recorded lecture audio\n• The text transcribed from that audio\n• Course and profile information used to generate notes\n\nSent to (AI services we use):\n• Cloudflare Workers AI (Whisper) — audio transcription\n• Google AI Studio (Gemini), OpenAI (GPT-6 Luna), and TogetherAI — summaries, notes, quizzes, and other generated study materials\n• Cloudflare Workers AI (FLUX) — image generation\n\nYour name and email address are not included in this data.',
+    'Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI, TogetherAI) to make transcripts, notes, and summaries. Your name and email address are not sent.',
   aiConsentRecordingUpdated:
     "We've updated which AI services your recordings are sent to (OpenAI added). Please review the details and agree again.",
   aiConsentChatTitle: 'About AI Chat Data Processing',
   aiConsentChatMessage:
-    'What you type in the chat, files you attach, and the parts of your lecture notes that relate to your question are sent to third-party AI services to write the answer.',
-  aiConsentChatDetails:
-    'Data sent:\n• What you type in the chat and text you select\n• The contents of photos and files you attach\n• Parts of your lecture notes and transcripts related to your question\n• Parts of your earlier conversations\n• Parts of your profile and AI memory (self portrait)\n\nSent to (AI services we use):\n• Anthropic (Claude Haiku 5.5) — writing the answer\n• Google (Gemini) — sorting your question, and turning your notes into a searchable form\n• OpenAI (GPT-6 Luna) — finding, checking and summarizing materials, reading attachments, and building AI memory\n• Brave Search — web search (the search terms)\n• Tavily — fetching the text of links that come up in the chat (the link URL)\n\nYour name and email address are not sent. However, if what you type or the files you attach contain them, they are sent as written.',
+    'What you type in the chat, files you attach, and the parts of your lecture notes that relate to your question are sent to outside AI services (Anthropic, Google, OpenAI) and search services (Brave, Tavily) to write the answer. Your name and email address are not sent (unless they are in what you type or attach).',
   chatOpen: 'Open chat',
   chatPanelResize: 'Drag to resize the chat (double-click to reset)',
   chatNewConversation: 'New chat',

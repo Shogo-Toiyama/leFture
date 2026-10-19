@@ -297,14 +297,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aiSharingConsentDialogMessage =>
-      '録音した音声と、あなたのプロフィール情報の一部は、文字起こしとノート・要約の生成のためにサードパーティのAIサービスへ送信されます。';
-
-  @override
-  String get aiSharingConsentDialogDetailsToggle => '詳しく見る';
-
-  @override
-  String get aiSharingConsentDialogDetailsBody =>
-      '送信されるデータ:\n・録音した講義音声\n・音声から書き起こされたテキスト\n・ノート生成に使うコース名やプロフィール情報\n\n送信先(利用しているAIサービス):\n・Cloudflare Workers AI(Whisper) — 音声の文字起こし\n・Google AI Studio(Gemini)、OpenAI(GPT-6 Luna)、TogetherAI — 要約・ノート・クイズなどの生成\n・Cloudflare Workers AI(FLUX) — 画像生成\n\n氏名やメールアドレスなど、個人を特定できる情報は送信されません。';
+      '録音した音声と、あなたのプロフィールの一部は、文字起こしとノート・要約の生成のために、外部のAIサービス(Cloudflare、Google、OpenAI、TogetherAI)へ送信されます。氏名やメールアドレスは送信されません。';
 
   @override
   String get aiSharingConsentDialogPrivacyPolicyLink => 'プライバシーポリシー';
@@ -327,11 +320,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aiChatConsentDialogMessage =>
-      'チャットで入力した内容や添付した資料、質問に関係する講義ノートの一部は、回答を作るためにサードパーティのAIサービスへ送信されます。';
-
-  @override
-  String get aiChatConsentDialogDetailsBody =>
-      '送信されるデータ:\n・チャットに入力した内容、選んだ文章\n・添付した写真・ファイルの内容\n・質問に関係する講義ノート・発言録の一部\n・過去の会話の一部\n・プロフィールとAIメモ(自分像)の一部\n\n送信先(利用しているAIサービス):\n・Anthropic(Claude Haiku 5.5) — 回答の作成\n・Google(Gemini) — 質問の振り分け、講義ノートを検索できる形への変換\n・OpenAI(GPT-6 Luna) — 資料の探索・確認・要約、添付ファイルの読み取り、AIメモの作成\n・Brave Search — Webの検索(検索語)\n・Tavily — 会話に出てきたリンク先の本文の取得(リンクのURL)\n\n氏名やメールアドレスなど、個人を特定できる情報は送信されません。ただし、チャットに入力した内容や添付した資料にそれらが含まれていれば、そのまま送信されます。';
+      'チャットで入力した内容や添付した資料、質問に関係する講義ノートの一部は、回答を作るために、外部のAIサービス(Anthropic、Google、OpenAI)と検索サービス(Brave、Tavily)へ送信されます。氏名やメールアドレスは送信されません(入力した内容や資料に含まれる場合を除く)。';
 
   @override
   String get recordingDiscardButtonLabel => '録音を破棄';

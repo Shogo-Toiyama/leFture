@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/infrastructure/chat/chat_repository.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/sheet_style.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_colors.dart';
 
 /// 報告に添える本文の上限(管理者宛のメールが長くなりすぎないように。webappのReportSheetと同じ)。
@@ -26,14 +27,15 @@ Future<void> showChatReportSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: colors.menuBackground,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (_) => _ChatReportSheet(
-      colors: colors,
-      message: message,
-      question: question,
-      replyText: replyText,
+    shape: kSheetShape,
+    builder: (_) => withSheetHandle(
+      _ChatReportSheet(
+        colors: colors,
+        message: message,
+        question: question,
+        replyText: replyText,
+      ),
+      handleColor: colors.actionForeground.withValues(alpha: .4),
     ),
   );
 }

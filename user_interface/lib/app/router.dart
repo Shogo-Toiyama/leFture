@@ -49,6 +49,7 @@ import 'package:lefture/application/profile/activity_records_provider.dart';
 import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lefture/presentation/pages/profile/activity_records_page.dart';
 import 'package:lefture/presentation/widgets/account_suspended_gate.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_sheet_handle.dart';
 
 final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
@@ -73,6 +74,8 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: _rootKey,
+    // チャットのシートを、ページが増えても最上位に、ポップアップはその上に保つ
+    observers: [chatSheetKeeper],
     // ★ 常にWelcome(タイトル演出)からスタート！復元ロジックなし！
     // WelcomePageはアニメーション再生後に自分でAppRoutes.homeへgo()し、
     // そこで改めてredirectがログイン状態を見て本当の行き先を決める。

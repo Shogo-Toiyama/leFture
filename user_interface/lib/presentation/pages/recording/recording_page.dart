@@ -271,7 +271,6 @@ class RecordingPage extends HookConsumerWidget {
       context,
       title: l10n.aiSharingConsentDialogTitle,
       message: l10n.aiSharingConsentDialogMessage,
-      detailsBody: l10n.aiSharingConsentDialogDetailsBody,
       notice: previousVersion > 0
           ? l10n.aiSharingConsentDialogUpdatedNotice
           : null,

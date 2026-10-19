@@ -8,6 +8,7 @@ import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_colors.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_composer_parts.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_labels.dart';
+import 'package:lefture/presentation/widgets/sheet_style.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 /// 送る前の資料のシート(テキストを書く・直す / ファイルの中身を確かめる)。
@@ -24,10 +25,11 @@ Future<T?> showChatSheet<T>(
     isScrollControlled: true,
     useSafeArea: true,
     backgroundColor: colors.menuBackground,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    shape: kSheetShape,
+    builder: (context) => withSheetHandle(
+      builder(context),
+      handleColor: colors.actionForeground.withValues(alpha: .4),
     ),
-    builder: builder,
   );
 }
 

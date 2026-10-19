@@ -29,9 +29,6 @@ class AiChatEntryButton extends ConsumerWidget {
     final c = ChatColors.of(world);
     final label = AppLocalizations.of(context).cardSelectionToolbarAskLabel;
     final fill = c.accent;
-    final onFill = world == ChatWorld.paper
-        ? Colors.white
-        : const Color(0xFF1A1300);
     return Semantics(
       button: true,
       label: label,
@@ -48,10 +45,11 @@ class AiChatEntryButton extends ConsumerWidget {
             child: SizedBox(
               width: size,
               height: size,
-              child: Icon(
-                Icons.chat_bubble_rounded,
-                size: 22,
-                color: onFill,
+              // 塗りつぶしではなく、白い縁だけの吹き出し
+              child: const Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 24,
+                color: Colors.white,
               ),
             ),
           ),

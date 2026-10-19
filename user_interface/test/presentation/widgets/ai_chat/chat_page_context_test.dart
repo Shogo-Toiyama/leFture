@@ -208,10 +208,8 @@ void main() {
       // 選んだ文章が入力欄の上に添わる
       expect(find.text('a binary heap'), findsOneWidget);
       // 紙の世界の色で開く
-      final sheet = tester.widget<AnimatedContainer>(
-        find.byType(AnimatedContainer).first,
-      );
-      expect((sheet.decoration as BoxDecoration).color, ChatColors.paper.sheet);
+      final frame = tester.widget<DecoratedBox>(find.byKey(aiChatSheetFrameKey));
+      expect((frame.decoration as BoxDecoration).color, ChatColors.paper.sheet);
       await unmount(tester);
       await tester.pump(const Duration(seconds: 1));
     });

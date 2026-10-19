@@ -157,7 +157,6 @@ Future<bool> ensureAiChatConsent(BuildContext context, WidgetRef ref) async {
     context,
     title: l10n.aiChatConsentDialogTitle,
     message: l10n.aiChatConsentDialogMessage,
-    detailsBody: l10n.aiChatConsentDialogDetailsBody,
   );
   if (!agreed) return false;
   try {
@@ -166,6 +165,20 @@ Future<bool> ensureAiChatConsent(BuildContext context, WidgetRef ref) async {
     // 記録できなかったときは、次に開くときにまた聞く。今回は同意されたので開く
   }
   return true;
+}
+
+/// 講義の名前(チャットの講義のチップに出す)。引けなければnull(チップが出ないだけで、チャットは開ける)。
+Future<String?> chatLectureTitle(WidgetRef ref, String? lectureId) async {
+  if (lectureId == null) return null;
+  try {
+    final lecture = await ref
+        .read(lectureRepositoryProvider)
+        .watchLectureById(lectureId)
+        .first;
+    return lecture?.displayTitle;
+  } catch (_) {
+    return null;
+  }
 }
 
 /// 今の画面の情報つきでチャットのシートを開く。[selection]は「Ask」で添える選択。
@@ -178,19 +191,8 @@ Future<void> openAiChat(
   if (!await ensureAiChatConsent(context, ref)) return;
   if (!context.mounted) return;
   final page = ref.read(chatPageContextProvider);
-  String? lectureTitle;
   final lectureId = page.lectureId;
-  if (lectureId != null) {
-    try {
-      final lecture = await ref
-          .read(lectureRepositoryProvider)
-          .watchLectureById(lectureId)
-          .first;
-      lectureTitle = lecture?.displayTitle;
-    } catch (_) {
-      // 講義の名前が引けなくても、チャットは開ける(講義のチップが出ないだけ)
-    }
-  }
+  final lectureTitle = await chatLectureTitle(ref, lectureId);
   if (!context.mounted) return;
   await showAiChatSheet(
     context,

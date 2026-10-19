@@ -659,20 +659,8 @@ abstract class AppLocalizations {
   /// Short body text of the AI-sharing consent dialog, summarizing what is shared before the user expands the details section.
   ///
   /// In en, this message translates to:
-  /// **'Your recorded audio and some of your profile information are sent to third-party AI services to generate transcripts, notes, and summaries.'**
+  /// **'Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI, TogetherAI) to make transcripts, notes, and summaries. Your name and email address are not sent.'**
   String get aiSharingConsentDialogMessage;
-
-  /// Label for the expandable section (e.g. ExpansionTile) inside the AI-sharing consent dialog that reveals the full list of data sent and which AI services receive it.
-  ///
-  /// In en, this message translates to:
-  /// **'See details'**
-  String get aiSharingConsentDialogDetailsToggle;
-
-  /// Expanded detail text inside the AI-sharing consent dialog, listing the exact categories of data sent and the specific third-party AI services/models that receive them, plus a note that PII (name/email) is excluded.
-  ///
-  /// In en, this message translates to:
-  /// **'Data sent:\n• Your recorded lecture audio\n• The text transcribed from that audio\n• Course and profile information used to generate notes\n\nSent to (AI services we use):\n• Cloudflare Workers AI (Whisper) — audio transcription\n• Google AI Studio (Gemini), OpenAI (GPT-6 Luna), and TogetherAI — summaries, notes, quizzes, and other generated study materials\n• Cloudflare Workers AI (FLUX) — image generation\n\nYour name and email address are not included in this data.'**
-  String get aiSharingConsentDialogDetailsBody;
 
   /// Tappable link text inside the AI-sharing consent dialog that navigates to the in-app Privacy Policy page (AppRoutes.privacyPolicy).
   ///
@@ -713,14 +701,8 @@ abstract class AppLocalizations {
   /// Short body of the AI chat consent dialog.
   ///
   /// In en, this message translates to:
-  /// **'What you type in the chat, files you attach, and the parts of your lecture notes that relate to your question are sent to third-party AI services to write the answer.'**
+  /// **'What you type in the chat, files you attach, and the parts of your lecture notes that relate to your question are sent to outside AI services (Anthropic, Google, OpenAI) and search services (Brave, Tavily) to write the answer. Your name and email address are not sent (unless they are in what you type or attach).'**
   String get aiChatConsentDialogMessage;
-
-  /// Expanded details of the AI chat consent dialog: data sent and each AI service that receives it.
-  ///
-  /// In en, this message translates to:
-  /// **'Data sent:\n• What you type in the chat and text you select\n• The contents of photos and files you attach\n• Parts of your lecture notes and transcripts related to your question\n• Parts of your earlier conversations\n• Parts of your profile and AI memory (self portrait)\n\nSent to (AI services we use):\n• Anthropic (Claude Haiku 5.5) — writing the answer\n• Google (Gemini) — sorting your question, and turning your notes into a searchable form\n• OpenAI (GPT-6 Luna) — finding, checking and summarizing materials, reading attachments, and building AI memory\n• Brave Search — web search (the search terms)\n• Tavily — fetching the text of links that come up in the chat (the link URL)\n\nYour name and email address are not sent. However, if what you type or the files you attach contain them, they are sent as written.'**
-  String get aiChatConsentDialogDetailsBody;
 
   /// Text button (with a trash icon) below the recording controls that opens the discard-recording confirmation dialog. Different from recordingDiscardConfirmButton, which is the dialog's own confirm action.
   ///

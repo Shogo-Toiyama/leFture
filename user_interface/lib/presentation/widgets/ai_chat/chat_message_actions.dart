@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:lefture/application/chat/chat_conversation.dart';
 import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/sheet_style.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_colors.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_report_sheet.dart';
 
@@ -270,12 +271,12 @@ Future<void> showChatMessageDetailsSheet(
   return showModalBottomSheet<void>(
     context: context,
     backgroundColor: colors.menuBackground,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (_) => SafeArea(
+    shape: kSheetShape,
+    builder: (_) => withSheetHandle(
+      handleColor: colors.actionForeground.withValues(alpha: .4),
+      SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(22, 18, 22, 22),
+        padding: const EdgeInsets.fromLTRB(22, 10, 22, 22),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,6 +301,7 @@ Future<void> showChatMessageDetailsSheet(
           ],
         ),
       ),
+    ),
     ),
   );
 }
