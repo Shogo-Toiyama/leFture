@@ -412,7 +412,7 @@
   "myAccountSavedSubtitle": "復習カード・詳細ノート・キーワード",
   "myAccountLikesDislikesSubtitle": "復習カード・詳細ノート・ファンファクト",
   "myAccountAnnouncementsSubtitle": "完了済みのものを含む",
-  "myAccountTrashSubtitle": "削除されたコース・講義",
+  "myAccountTrashSubtitle": "削除されたコース・講義・AIチャット",
   "myAccountRecordingLanguageTitle": "録音言語",
   "myAccountDisplayLanguageTitle": "表示言語",
   "myAccountPermissionsTitle": "許可設定",

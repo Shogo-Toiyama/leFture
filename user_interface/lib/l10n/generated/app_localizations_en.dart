@@ -1446,7 +1446,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get myAccountAnnouncementsSubtitle => 'Including completed ones';
 
   @override
-  String get myAccountTrashSubtitle => 'Deleted courses & lectures';
+  String get myAccountTrashSubtitle => 'Deleted courses, lectures & AI chats';
 
   @override
   String get myAccountRecordingLanguageTitle => 'Recording Language';

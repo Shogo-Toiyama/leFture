@@ -615,7 +615,7 @@ export const en = {
   announcementsSectionTitle: 'Announcements',
   announcementsSectionSub: 'Including completed items',
   trashSectionTitle: 'Trash',
-  trashSectionSub: 'Deleted courses & lectures',
+  trashSectionSub: 'Deleted courses, lectures & AI chats',
   applicationSection: 'Application',
   transmissionsTitle: 'Transmissions',
   transmissionsSub: "What's new & updates",

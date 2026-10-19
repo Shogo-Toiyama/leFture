@@ -615,7 +615,7 @@ export const ja: Record<keyof typeof en, string> = {
   announcementsSectionTitle: 'お知らせ',
   announcementsSectionSub: '完了済みのものを含む',
   trashSectionTitle: 'ゴミ箱',
-  trashSectionSub: '削除されたコース・講義',
+  trashSectionSub: '削除されたコース・講義・AIチャット',
   applicationSection: 'アプリケーション',
   transmissionsTitle: 'トランスミッション',
   transmissionsSub: '最新情報とアップデート',

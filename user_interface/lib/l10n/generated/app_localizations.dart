@@ -2579,7 +2579,7 @@ abstract class AppLocalizations {
   /// Subtitle under the 'Trash' tile in the Activity section of the My Account page.
   ///
   /// In en, this message translates to:
-  /// **'Deleted courses & lectures'**
+  /// **'Deleted courses, lectures & AI chats'**
   String get myAccountTrashSubtitle;
 
   /// Settings tile title on the My Account page that opens the language-selection sheet for the on-device recording/transcription language.

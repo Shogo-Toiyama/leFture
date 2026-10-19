@@ -1900,7 +1900,7 @@
   "@myAccountAnnouncementsSubtitle": {
     "description": "Subtitle under the 'Announcements' tile in the Activity section of the My Account page, clarifying the list includes already-completed announcements too."
   },
-  "myAccountTrashSubtitle": "Deleted courses & lectures",
+  "myAccountTrashSubtitle": "Deleted courses, lectures & AI chats",
   "@myAccountTrashSubtitle": {
     "description": "Subtitle under the 'Trash' tile in the Activity section of the My Account page."
   },

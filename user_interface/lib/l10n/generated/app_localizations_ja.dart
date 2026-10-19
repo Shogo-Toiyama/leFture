@@ -1385,7 +1385,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get myAccountAnnouncementsSubtitle => '完了済みのものを含む';
 
   @override
-  String get myAccountTrashSubtitle => '削除されたコース・講義';
+  String get myAccountTrashSubtitle => '削除されたコース・講義・AIチャット';
 
   @override
   String get myAccountRecordingLanguageTitle => '録音言語';
