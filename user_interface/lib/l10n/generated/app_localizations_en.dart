@@ -3569,9 +3569,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiChatDetailStatusStopped => 'Stopped partway';
 
   @override
-  String get aiChatReplyToSelection => 'Reply';
-
-  @override
   String get aiChatActionReport => 'Report a problem';
 
   @override

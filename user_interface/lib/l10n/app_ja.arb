@@ -1034,7 +1034,6 @@
   "aiChatStoppedAttachments": "停止したため、添付した資料{titles}を読み込めませんでした。もう一度添付してください。",
   "aiChatDetailStatus": "状態",
   "aiChatDetailStatusStopped": "途中で停止",
-  "aiChatReplyToSelection": "返信",
   "aiChatActionReport": "問題を報告",
   "aiChatReportAttach": "この回答と直前の質問を添付する",
   "aiChatReportQuestion": "質問",

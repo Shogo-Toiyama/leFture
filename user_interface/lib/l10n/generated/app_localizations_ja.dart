@@ -3415,9 +3415,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aiChatDetailStatusStopped => '途中で停止';
 
   @override
-  String get aiChatReplyToSelection => '返信';
-
-  @override
   String get aiChatActionReport => '問題を報告';
 
   @override

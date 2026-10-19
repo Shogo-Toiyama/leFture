@@ -264,7 +264,7 @@ bool canOpenChatCitation(ChatCitation citation) =>
     citation.courseId != null ||
     citation.threadId != null;
 
-/// 本文中の [n]。webappの `.chat-cite-marker` と同じ形(小さな角丸の印)。
+/// 本文中の [n]。webappの `.chat-cite-marker` と同じ形(小さな角丸の印)で、色は控えめ。
 class ChatCiteMarker extends StatelessWidget {
   const ChatCiteMarker({
     super.key,
@@ -281,13 +281,15 @@ class ChatCiteMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 本文の邪魔をしないよう、出典チップより控えめな色にする(地は薄く、数字も少し透かす)
+    final dim = onTap == null ? .6 : 1.0;
     // 幅は中身に合わせる(Containerにalignmentを付けると、WidgetSpanの中で横幅いっぱいに広がる)
     final marker = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 1),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: colors.citeBackground.withValues(
-            alpha: onTap == null ? .6 : 1,
+            alpha: colors.citeBackground.a * .5 * dim,
           ),
           borderRadius: BorderRadius.circular(5),
         ),
@@ -301,11 +303,9 @@ class ChatCiteMarker extends StatelessWidget {
               child: Text(
                 label,
                 style: TextStyle(
-                  color: colors.citeText.withValues(
-                    alpha: onTap == null ? .6 : 1,
-                  ),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                  color: colors.citeText.withValues(alpha: .7 * dim),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
                   height: 1.2,
                 ),
               ),

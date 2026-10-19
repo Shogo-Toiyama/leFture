@@ -1,5 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/chat/chat_conversation.dart';
@@ -11,6 +12,7 @@ import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_composer_parts.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_conversation_view.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
+import 'package:lefture/presentation/widgets/selection_floating_menu.dart';
 
 import '../../../application/chat/fake_chat_repository.dart';
 
@@ -522,7 +524,7 @@ void main() {
   });
 
   group('回答への返信', () {
-    testWidgets('回答の一部を長押しで選ぶと、標準のメニューに「返信」が出て、入力欄に引用が入る', (tester) async {
+    testWidgets('回答の一部を長押しで選ぶと、浮かぶメニューに「AIに聞く」が出て、入力欄に引用が入る', (tester) async {
       await pumpView(tester);
       await openThread(tester, [
         chatRow('U1', 'user', 'q', createdAt: '2026-10-18T00:00:01Z'),
@@ -538,8 +540,12 @@ void main() {
       await tester.longPressAt(tester.getTopLeft(target) + const Offset(10, 8));
       await settle(tester);
 
-      expect(find.text(l10n.aiChatReplyToSelection), findsOneWidget);
-      await tester.tap(find.text(l10n.aiChatReplyToSelection));
+      // 標準のメニューではなく、Deep Notesなどと同じ浮かぶメニュー(AIに聞く・コピーだけ)
+      expect(find.byType(SelectionFloatingMenu), findsOneWidget);
+      expect(find.text(l10n.cardSelectionToolbarAskLabel), findsOneWidget);
+      expect(find.text(l10n.cardSelectionToolbarCopyLabel), findsOneWidget);
+      expect(find.byType(AdaptiveTextSelectionToolbar), findsNothing);
+      await tester.tap(find.text(l10n.cardSelectionToolbarAskLabel));
       await settle(tester);
 
       // 入力欄の上に、選んだ文章の帯が出る
@@ -577,7 +583,51 @@ void main() {
         find.textContaining('still writing', findRichText: true),
       );
       await settle(tester);
-      expect(find.text(l10n.aiChatReplyToSelection), findsNothing);
+      expect(find.byType(SelectionFloatingMenu), findsNothing);
+    });
+
+    testWidgets('「コピー」で、選んだ文章がコピーされ、メニューが閉じる', (tester) async {
+      final copied = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied.add((call.arguments as Map)['text'] as String);
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await pumpView(tester);
+      await openThread(tester, [
+        chatRow('U1', 'user', 'q', createdAt: '2026-10-18T00:00:01Z'),
+        chatRow(
+          'A1',
+          'assistant',
+          'Heaps keep the smallest element at the root.',
+          createdAt: '2026-10-18T00:00:02Z',
+        ),
+      ]);
+      final target = find.textContaining('Heaps keep', findRichText: true);
+      await tester.longPressAt(tester.getTopLeft(target) + const Offset(10, 8));
+      await settle(tester);
+      await tester.tap(find.text(l10n.cardSelectionToolbarCopyLabel));
+      await settle(tester);
+
+      expect(copied, hasLength(1));
+      expect(copied.single, isNotEmpty);
+      expect(
+        'Heaps keep the smallest element at the root.',
+        contains(copied.single),
+      );
+      expect(find.byType(SelectionFloatingMenu), findsNothing);
+      // 入力欄には何も入らない
+      expect(find.byIcon(Icons.format_quote_rounded), findsNothing);
     });
   });
 

@@ -1,5 +1,8 @@
 // lib/presentation/widgets/ai_chat/chat_message_views.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lefture/application/chat/chat_conversation.dart';
 import 'package:lefture/core/utils/chat_markdown_text.dart';
 import 'package:lefture/core/utils/chat_mentions.dart';
@@ -11,6 +14,7 @@ import 'package:lefture/presentation/widgets/ai_chat/chat_markdown.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_message_actions.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_thinking_indicator.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
+import 'package:lefture/presentation/widgets/selection_floating_menu.dart';
 
 /// 編集中の表示: target=直しているメッセージ(枠をつける) / doomed=送ると消えるメッセージ(薄くする)。
 enum ChatEditState { target, doomed }
@@ -637,7 +641,7 @@ class ChatAssistantMessage extends StatelessWidget {
     );
     if (hasFinalText && onReplyToSelection != null) {
       markdown = _ReplySelectionArea(
-        label: l10n.aiChatReplyToSelection,
+        world: world,
         onReply: (text) => onReplyToSelection!(
           ChatSelection(text: text, replyToMessageId: m.id),
         ),
@@ -754,16 +758,17 @@ class ChatAssistantMessage extends StatelessWidget {
   }
 }
 
-/// 回答の一部を選べるようにし、標準の選択メニューに「返信」を足す。
+/// 回答の一部を選べるようにする。選ぶと、Deep Notes・復習カードと同じ浮かぶメニューに
+/// 「AIに聞く」(選んだ文章を引用して入力欄へ)と「コピー」が出る(webappの SelectionAskArea)。
 /// 選んだ文字から、出典の印・数式の場所を表す文字(U+FFFC)を取り除いて渡す。
 class _ReplySelectionArea extends StatefulWidget {
   const _ReplySelectionArea({
-    required this.label,
+    required this.world,
     required this.onReply,
     required this.child,
   });
 
-  final String label;
+  final ChatWorld world;
   final void Function(String text) onReply;
   final Widget child;
 
@@ -776,30 +781,35 @@ class _ReplySelectionAreaState extends State<_ReplySelectionArea> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return SelectionArea(
       onSelectionChanged: (content) {
-        _selected = (content?.plainText ?? '').replaceAll('￼', '').trim();
+        _selected = (content?.plainText ?? '').replaceAll('\uFFFC', '').trim();
       },
       contextMenuBuilder: (context, state) {
-        final items = [...state.contextMenuButtonItems];
-        if (_selected.isNotEmpty) {
-          // 標準のメニューは幅が足りないと項目を「⋮」に隠すので、「返信」は先頭に置く
-          items.insert(
-            0,
-            ContextMenuButtonItem(
-              label: widget.label,
-              onPressed: () {
+        if (_selected.isEmpty) return const SizedBox.shrink();
+        return buildSelectionFloatingMenu(
+          state: state,
+          world: widget.world,
+          actions: [
+            SelectionMenuAction(
+              label: l10n.cardSelectionToolbarAskLabel,
+              emphasized: true,
+              onTap: () {
                 final text = _selected;
-                state.hideToolbar();
                 state.clearSelection();
                 widget.onReply(text);
               },
             ),
-          );
-        }
-        return AdaptiveTextSelectionToolbar.buttonItems(
-          anchors: state.contextMenuAnchors,
-          buttonItems: items,
+            SelectionMenuAction(
+              label: l10n.cardSelectionToolbarCopyLabel,
+              onTap: () {
+                final text = _selected;
+                state.clearSelection();
+                unawaited(Clipboard.setData(ClipboardData(text: text)));
+              },
+            ),
+          ],
         );
       },
       child: widget.child,

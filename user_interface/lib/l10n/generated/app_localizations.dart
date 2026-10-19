@@ -6236,12 +6236,6 @@ abstract class AppLocalizations {
   /// **'Stopped partway'**
   String get aiChatDetailStatusStopped;
 
-  /// AI chat. Ported from the web app string "chatReplyToSelection".
-  ///
-  /// In en, this message translates to:
-  /// **'Reply'**
-  String get aiChatReplyToSelection;
-
   /// AI chat. Ported from the web app string "chatActionReport".
   ///
   /// In en, this message translates to:

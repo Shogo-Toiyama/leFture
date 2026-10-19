@@ -4682,10 +4682,6 @@
   "@aiChatDetailStatusStopped": {
     "description": "AI chat. Ported from the web app string \"chatDetailStatusStopped\"."
   },
-  "aiChatReplyToSelection": "Reply",
-  "@aiChatReplyToSelection": {
-    "description": "AI chat. Ported from the web app string \"chatReplyToSelection\"."
-  },
   "aiChatActionReport": "Report a problem",
   "@aiChatActionReport": {
     "description": "AI chat. Ported from the web app string \"chatActionReport\"."
