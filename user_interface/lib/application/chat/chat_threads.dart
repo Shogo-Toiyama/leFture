@@ -50,4 +50,13 @@ class ChatThreadActions extends _$ChatThreadActions {
       ref.read(chatConversationProvider.notifier).clearConversation();
     }
   }
+
+  /// ゴミ箱のスレッドを復元し、一覧を読み直す(復元したスレッドを一覧に戻すため)。
+  Future<void> restore(String threadId) async {
+    await _repo.restoreThread(threadId);
+    await refresh();
+  }
+
+  /// ゴミ箱のスレッドを完全に削除する。ゴミ箱のスレッドは端末のキャッシュに無いので、消すのはサーバーだけ。
+  Future<void> hardDelete(String threadId) => _repo.hardDeleteThread(threadId);
 }

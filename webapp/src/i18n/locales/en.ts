@@ -650,6 +650,7 @@ export const en = {
   filterCourse: 'Courses',
   filterLecture: 'Lectures',
   filterAnnouncement: 'Announcements',
+  filterChat: 'Chats',
   toastItemSavedAgain: 'Item saved again',
   toastItemRemovedFromSaved: 'Item removed from saved',
   toastItemReactionRestored: 'Item {reaction} restored',
@@ -705,6 +706,7 @@ export const en = {
   badgeFunFact: 'Fun Fact',
   badgeCourse: 'Course',
   badgeLecture: 'Lecture',
+  badgeChat: 'Chat',
 
   // Onboarding wizard (user_interface/lib/presentation/pages/onboarding/ 準拠。
   // Webはネイティブ権限が無いためPermissionsステップを省き、Intro → Language →
@@ -751,7 +753,7 @@ export const en = {
   aiConsentAgree: 'Agree & Continue',
   aiConsentRecordingTitle: 'About AI Data Processing',
   aiConsentRecordingMessage:
-    'Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI, TogetherAI) to make transcripts, notes, and summaries. Your name and email address are not sent.',
+    'Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI) to make transcripts, notes, and summaries. Your name and email address are not sent.',
   aiConsentRecordingUpdated:
     "We've updated which AI services your recordings are sent to (OpenAI added). Please review the details and agree again.",
   aiConsentChatTitle: 'About AI Chat Data Processing',

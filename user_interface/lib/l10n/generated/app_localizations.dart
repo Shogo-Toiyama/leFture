@@ -659,7 +659,7 @@ abstract class AppLocalizations {
   /// Short body text of the AI-sharing consent dialog, summarizing what is shared before the user expands the details section.
   ///
   /// In en, this message translates to:
-  /// **'Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI, TogetherAI) to make transcripts, notes, and summaries. Your name and email address are not sent.'**
+  /// **'Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI) to make transcripts, notes, and summaries. Your name and email address are not sent.'**
   String get aiSharingConsentDialogMessage;
 
   /// Tappable link text inside the AI-sharing consent dialog that navigates to the in-app Privacy Policy page (AppRoutes.privacyPolicy).
@@ -2300,7 +2300,7 @@ abstract class AppLocalizations {
   /// Body text of the empty-trash confirmation dialog, warning that clearing the whole trash is irreversible.
   ///
   /// In en, this message translates to:
-  /// **'All soft-deleted lectures, courses, and announcements will be permanently deleted from both the local database and the cloud. This action cannot be undone.'**
+  /// **'All soft-deleted lectures, courses, announcements, and AI chats will be permanently deleted from both the local database and the cloud. This action cannot be undone.'**
   String get activityRecordsEmptyTrashDialogMessage;
 
   /// Snackbar shown after successfully emptying the entire trash with no failures.
@@ -2335,6 +2335,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Announcement'**
   String get activityRecordsTypeLabelAnnouncement;
+
+  /// Short type label shown next to a deleted AI chat conversation's date on the Trash view, and used as the Trash filter chip label restricting to AI chats.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat'**
+  String get activityRecordsTypeLabelChat;
 
   /// Generic fallback type label shown next to a trashed row's date when the item's specific type isn't one of Course/Lecture/Announcement.
   ///

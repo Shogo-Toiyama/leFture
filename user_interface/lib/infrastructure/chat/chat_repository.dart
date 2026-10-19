@@ -122,9 +122,31 @@ class ChatRepository {
     );
   }
 
-  /// スレッドの削除(論理削除。中のメッセージも一緒に消える)。
+  /// スレッドの削除(論理削除=ゴミ箱行き。中のメッセージも一緒に消える)。
   Future<void> deleteThread(String threadId) async {
     _ensureOk(await _http.delete(_uri('/chat/threads/$threadId')));
+  }
+
+  /// ゴミ箱のスレッド(削除が新しい順)の生の行。ゴミ箱の画面用で、端末のキャッシュには入れない。
+  Future<List<Map<String, dynamic>>> fetchTrashedThreadRows() async {
+    final rows = await _supabase
+        .from('chat_threads')
+        .select('id, title, last_message_at, deleted_at')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', ascending: false);
+    return [for (final r in rows) Map<String, dynamic>.from(r)];
+  }
+
+  /// ゴミ箱のスレッドを復元する(スレッドと一緒に消えたメッセージ・資料が戻る)。
+  Future<void> restoreThread(String threadId) async {
+    _ensureOk(await _http.post(_uri('/chat/threads/$threadId/restore')));
+  }
+
+  /// ゴミ箱のスレッドを完全に削除する。404(既に消えている)は削除済みとして扱う。
+  Future<void> hardDeleteThread(String threadId) async {
+    final response = await _http.post(_uri('/chat/threads/$threadId/hard-delete'));
+    if (response.statusCode == 404) return;
+    _ensureOk(response);
   }
 
   /// 生成中の返答を止める。サーバーが止めたところまでで確定した行を返す

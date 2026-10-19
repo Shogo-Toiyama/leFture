@@ -12,7 +12,8 @@ export type ActivityRecordType =
   | 'funFact'
   | 'announcement'
   | 'lecture'
-  | 'course';
+  | 'course'
+  | 'chatThread';
 
 export interface ActivityRecord {
   id: string;
@@ -364,6 +365,26 @@ export async function fetchActivityRecords(type: ActivityType, t: Translate): Pr
           });
         }
       }
+
+      // 4. Deleted AI chat threads
+      const { data: threads } = await supabase
+        .from('chat_threads')
+        .select('id, title, last_message_at, deleted_at')
+        .eq('user_id', uid)
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+
+      if (threads) {
+        for (const th of threads) {
+          list.push({
+            id: th.id,
+            type: 'chatThread',
+            title: th.title?.trim() || t('chatThreadUntitled'),
+            content: t('badgeChat'),
+            dateTime: th.deleted_at || th.last_message_at || new Date().toISOString(),
+          });
+        }
+      }
       break;
     }
   }
@@ -486,6 +507,9 @@ export async function restoreTrashRecord(record: ActivityRecord): Promise<void> 
       .update({ deleted_at: null, updated_at: now })
       .eq('id', record.id);
     if (error) throw error;
+  } else if (record.type === 'chatThread') {
+    // チャットはクライアントから書き込めない(書き込みポリシーが無い)ので、バックエンド経由で戻す
+    await apiFetch(`/chat/threads/${record.id}/restore`, { method: 'POST' });
   }
 }
 
@@ -509,6 +533,12 @@ export async function deleteTrashRecordPermanently(record: ActivityRecord): Prom
   } else if (record.type === 'announcement') {
     const { error } = await supabase.from('announcements').delete().eq('id', record.id);
     if (error) throw error;
+  } else if (record.type === 'chatThread') {
+    try {
+      await apiFetch(`/chat/threads/${record.id}/hard-delete`, { method: 'POST' });
+    } catch (e: unknown) {
+      if ((e as { status?: number }).status !== 404) throw e;
+    }
   }
 }
 

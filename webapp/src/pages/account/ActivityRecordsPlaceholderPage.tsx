@@ -15,6 +15,7 @@ import {
   Sparkles,
   GraduationCap,
   Mic,
+  MessageSquare,
   CheckCircle2,
   Circle,
   AlertCircle,
@@ -110,6 +111,7 @@ const getActivityMeta = (type: string, t: (k: TranslationKey) => string): Activi
         { label: t('filterCourse'), value: 'course' },
         { label: t('filterLecture'), value: 'lecture' },
         { label: t('filterAnnouncement'), value: 'announcement' },
+        { label: t('filterChat'), value: 'chatThread' },
       ],
     },
   };
@@ -437,6 +439,13 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
             {t('badgeLecture')}
           </span>
         );
+      case 'chatThread':
+        return (
+          <span className="activity-type-badge">
+            <MessageSquare size={11} />
+            {t('badgeChat')}
+          </span>
+        );
       default:
         return null;
     }
@@ -445,6 +454,7 @@ export const ActivityRecordsPlaceholderPage: React.FC = () => {
   const getTrashIcon = (record: ActivityRecord) => {
     if (record.type === 'course') return <GraduationCap size={20} />;
     if (record.type === 'lecture') return <Mic size={20} />;
+    if (record.type === 'chatThread') return <MessageSquare size={20} />;
     return <Megaphone size={20} />;
   };
 

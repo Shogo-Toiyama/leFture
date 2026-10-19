@@ -650,6 +650,7 @@ export const ja: Record<keyof typeof en, string> = {
   filterCourse: 'コース',
   filterLecture: '講義',
   filterAnnouncement: 'お知らせ',
+  filterChat: 'チャット',
   toastItemSavedAgain: '保存済みに戻しました',
   toastItemRemovedFromSaved: '保存済みから削除しました',
   toastItemReactionRestored: '{reaction}に戻しました',
@@ -705,6 +706,7 @@ export const ja: Record<keyof typeof en, string> = {
   badgeFunFact: '豆知識',
   badgeCourse: 'コース',
   badgeLecture: '講義',
+  badgeChat: 'チャット',
 
   // Onboarding wizard
   onboardingGetStartedButton: 'はじめる',
@@ -749,7 +751,7 @@ export const ja: Record<keyof typeof en, string> = {
   aiConsentAgree: '同意して続ける',
   aiConsentRecordingTitle: 'AIによるデータ処理について',
   aiConsentRecordingMessage:
-    '録音した音声と、あなたのプロフィールの一部は、文字起こしとノート・要約の生成のために、外部のAIサービス(Cloudflare、Google、OpenAI、TogetherAI)へ送信されます。氏名やメールアドレスは送信されません。',
+    '録音した音声と、あなたのプロフィールの一部は、文字起こしとノート・要約の生成のために、外部のAIサービス(Cloudflare、Google、OpenAI)へ送信されます。氏名やメールアドレスは送信されません。',
   aiConsentRecordingUpdated:
     'AIサービスの送信先を更新しました(OpenAIを追加)。内容をご確認のうえ、あらためて同意をお願いします。',
   aiConsentChatTitle: 'AIチャットのデータ処理について',

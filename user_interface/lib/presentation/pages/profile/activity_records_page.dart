@@ -151,6 +151,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
           {'label': l10n.activityRecordsFilterCourses, 'value': 'course'},
           {'label': l10n.activityRecordsFilterLectures, 'value': 'lecture'},
           {'label': l10n.activityRecordsTitleAnnouncements, 'value': 'announcement'},
+          {'label': l10n.activityRecordsTypeLabelChat, 'value': 'chatThread'},
         ];
         break;
     }
@@ -246,6 +247,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
                           if (selectedFilter.value == 'course') return r.type == ActivityRecordType.course;
                           if (selectedFilter.value == 'lecture') return r.type == ActivityRecordType.lecture;
                           if (selectedFilter.value == 'announcement') return r.type == ActivityRecordType.announcement;
+                          if (selectedFilter.value == 'chatThread') return r.type == ActivityRecordType.chatThread;
                         }
                         return true;
                       }).length;
@@ -369,6 +371,7 @@ class ActivityRecordsPage extends HookConsumerWidget {
                   if (selectedFilter.value == 'course') return r.type == ActivityRecordType.course;
                   if (selectedFilter.value == 'lecture') return r.type == ActivityRecordType.lecture;
                   if (selectedFilter.value == 'announcement') return r.type == ActivityRecordType.announcement;
+                  if (selectedFilter.value == 'chatThread') return r.type == ActivityRecordType.chatThread;
                 }
                 return true;
               }).toList();
@@ -557,6 +560,10 @@ class ActivityRecordsPage extends HookConsumerWidget {
       case ActivityRecordType.announcement:
         icon = Icons.campaign_rounded;
         typeLabel = l10n.activityRecordsTypeLabelAnnouncement;
+        break;
+      case ActivityRecordType.chatThread:
+        icon = Icons.chat_bubble_outline_rounded;
+        typeLabel = l10n.activityRecordsTypeLabelChat;
         break;
       default:
         icon = Icons.delete_rounded;
@@ -803,13 +810,12 @@ class ActivityRecordsPage extends HookConsumerWidget {
                 final scaffold = ScaffoldMessenger.of(context);
                 try {
                   final result = await TrashController.emptyTrash(ref);
-                  final failedCount = result.coursesFailed.length + result.lecturesFailed.length;
                   scaffold.showSnackBar(
                     SnackBar(
                       content: Text(
                         result.hasFailures
                             ? l10n.activityRecordsEmptyTrashPartialFailureSnackbar(
-                                result.coursesDeleted + result.lecturesDeleted, failedCount)
+                                result.deletedCount, result.failedCount)
                             : l10n.activityRecordsEmptyTrashSuccessSnackbar,
                       ),
                       backgroundColor: result.hasFailures ? AppColors.correctionRed : AppColors.growthGreen,

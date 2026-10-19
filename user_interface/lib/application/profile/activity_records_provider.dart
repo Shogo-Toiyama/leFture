@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lefture/application/chat/chat_threads.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/core/config/app_config.dart';
 import 'package:lefture/infrastructure/auth/authed_http.dart';
 import 'package:lefture/core/utils/text_preview.dart';
 import 'package:lefture/domain/entities/course.dart';
+import 'package:lefture/infrastructure/chat/chat_repository.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/infrastructure/supabase/repositories/course_repository_supabase.dart';
@@ -21,6 +23,7 @@ enum ActivityRecordType {
   announcement,
   lecture,
   course,
+  chatThread,
 }
 
 class ActivityRecord {
@@ -103,6 +106,17 @@ final deletedCoursesFutureProvider = FutureProvider<List<Course>>((ref) async {
     return const [];
   }
 });
+
+/// ゴミ箱のAIチャットのスレッド。チャットの端末キャッシュは表示用で削除済みの行を持たないので、
+/// コースと同じくSupabaseから直接読む。
+final trashChatThreadsFutureProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+      try {
+        return await ref.watch(chatRepositoryProvider).fetchTrashedThreadRows();
+      } catch (_) {
+        return const [];
+      }
+    });
 
 final activityRecordsProvider =
     FutureProvider.family<List<ActivityRecord>, ActivityType>((
@@ -338,6 +352,9 @@ final activityRecordsProvider =
             trashAnnouncementsProvider.future,
           );
           final courses = await ref.watch(deletedCoursesFutureProvider.future);
+          final chatThreads = await ref.watch(
+            trashChatThreadsFutureProvider.future,
+          );
           final list = <ActivityRecord>[];
 
           for (final row in lectures) {
@@ -384,6 +401,22 @@ final activityRecordsProvider =
                 dateTime: course.deletedAt ?? course.updatedAt,
                 courseId: course.id,
                 rawData: course,
+              ),
+            );
+          }
+
+          for (final row in chatThreads) {
+            final title = (row['title'] as String?)?.trim();
+            list.add(
+              ActivityRecord(
+                id: row['id'] as String,
+                type: ActivityRecordType.chatThread,
+                title: (title?.isNotEmpty == true) ? title! : 'Untitled conversation',
+                content: 'Chat',
+                dateTime: DateTime.parse(
+                  (row['deleted_at'] ?? row['last_message_at']) as String,
+                ).toLocal(),
+                rawData: row,
               ),
             );
           }
@@ -444,9 +477,12 @@ class TrashController {
           op: 'update',
         );
       }
+    } else if (record.type == ActivityRecordType.chatThread) {
+      await ref.read(chatThreadActionsProvider.notifier).restore(record.id);
     }
 
     ref.invalidate(deletedCoursesFutureProvider);
+    ref.invalidate(trashChatThreadsFutureProvider);
     ref.invalidate(activityRecordsProvider(ActivityType.trash));
   }
 
@@ -505,9 +541,13 @@ class TrashController {
       await (db.delete(
         db.localAnnouncements,
       )..where((t) => t.id.equals(record.id))).go();
+    } else if (record.type == ActivityRecordType.chatThread) {
+      // 資料のR2ファイル・要約・検索インデックスまでバックエンドの _hard_delete_chat_thread が消す。
+      await ref.read(chatThreadActionsProvider.notifier).hardDelete(record.id);
     }
 
     ref.invalidate(deletedCoursesFutureProvider);
+    ref.invalidate(trashChatThreadsFutureProvider);
     ref.invalidate(activityRecordsProvider(ActivityType.trash));
   }
 
@@ -522,6 +562,8 @@ class TrashController {
         coursesFailed: [],
         lecturesDeleted: 0,
         lecturesFailed: [],
+        chatThreadsDeleted: 0,
+        chatThreadsFailed: [],
       );
     }
 
@@ -538,6 +580,9 @@ class TrashController {
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     final coursesFailed = (body['courses_failed'] as List).cast<String>();
     final lecturesFailed = (body['lectures_failed'] as List).cast<String>();
+    // チャットのスレッドは端末のキャッシュに無いので、ローカルの後片付けは要らない
+    final chatThreadsFailed =
+        ((body['chat_threads_failed'] as List?) ?? const []).cast<String>();
 
     final db = ref.read(appDatabaseProvider);
     final courseRepo = ref.read(courseRepositoryProvider);
@@ -567,6 +612,7 @@ class TrashController {
     await db.hardDeleteTrashAnnouncements(uid);
 
     ref.invalidate(deletedCoursesFutureProvider);
+    ref.invalidate(trashChatThreadsFutureProvider);
     ref.invalidate(activityRecordsProvider(ActivityType.trash));
 
     return EmptyTrashResult(
@@ -574,6 +620,8 @@ class TrashController {
       coursesFailed: coursesFailed,
       lecturesDeleted: (body['lectures_deleted'] as num).toInt(),
       lecturesFailed: lecturesFailed,
+      chatThreadsDeleted: ((body['chat_threads_deleted'] as num?) ?? 0).toInt(),
+      chatThreadsFailed: chatThreadsFailed,
     );
   }
 }
@@ -584,12 +632,18 @@ class EmptyTrashResult {
     required this.coursesFailed,
     required this.lecturesDeleted,
     required this.lecturesFailed,
+    required this.chatThreadsDeleted,
+    required this.chatThreadsFailed,
   });
 
   final int coursesDeleted;
   final List<String> coursesFailed;
   final int lecturesDeleted;
   final List<String> lecturesFailed;
+  final int chatThreadsDeleted;
+  final List<String> chatThreadsFailed;
 
-  bool get hasFailures => coursesFailed.isNotEmpty || lecturesFailed.isNotEmpty;
+  int get deletedCount => coursesDeleted + lecturesDeleted + chatThreadsDeleted;
+  int get failedCount => coursesFailed.length + lecturesFailed.length + chatThreadsFailed.length;
+  bool get hasFailures => failedCount > 0;
 }

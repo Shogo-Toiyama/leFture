@@ -384,7 +384,7 @@
   "@aiSharingConsentDialogTitle": {
     "description": "Title of the dialog shown once, right before the user's first upload, disclosing that their recording and profile data are sent to third-party AI services (Apple Guideline 5.1.1(i)/5.1.2(i) compliance)."
   },
-  "aiSharingConsentDialogMessage": "Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI, TogetherAI) to make transcripts, notes, and summaries. Your name and email address are not sent.",
+  "aiSharingConsentDialogMessage": "Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI) to make transcripts, notes, and summaries. Your name and email address are not sent.",
   "@aiSharingConsentDialogMessage": {
     "description": "Short body text of the AI-sharing consent dialog, summarizing what is shared before the user expands the details section."
   },
@@ -1706,7 +1706,7 @@
   "@activityRecordsEmptyTrashDialogTitle": {
     "description": "Title of the confirmation dialog shown when the user taps the AppBar's empty-trash icon."
   },
-  "activityRecordsEmptyTrashDialogMessage": "All soft-deleted lectures, courses, and announcements will be permanently deleted from both the local database and the cloud. This action cannot be undone.",
+  "activityRecordsEmptyTrashDialogMessage": "All soft-deleted lectures, courses, announcements, and AI chats will be permanently deleted from both the local database and the cloud. This action cannot be undone.",
   "@activityRecordsEmptyTrashDialogMessage": {
     "description": "Body text of the empty-trash confirmation dialog, warning that clearing the whole trash is irreversible."
   },
@@ -1739,6 +1739,10 @@
   "activityRecordsTypeLabelAnnouncement": "Announcement",
   "@activityRecordsTypeLabelAnnouncement": {
     "description": "Short type label shown next to a deleted-announcement row's date on the Trash view, and used as the Trash filter chip label restricting to announcements (singular, distinct from the plural activityRecordsTitleAnnouncements used elsewhere)."
+  },
+  "activityRecordsTypeLabelChat": "Chat",
+  "@activityRecordsTypeLabelChat": {
+    "description": "Short type label shown next to a deleted AI chat conversation's date on the Trash view, and used as the Trash filter chip label restricting to AI chats."
   },
   "activityRecordsTypeLabelItem": "Item",
   "@activityRecordsTypeLabelItem": {

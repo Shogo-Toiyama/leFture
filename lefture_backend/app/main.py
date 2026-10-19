@@ -4349,11 +4349,32 @@ async def empty_trash_endpoint(request: Request):
             .execute()
     )
 
+    # 4. チャットのスレッド
+    threads_res = await asyncio.to_thread(
+        lambda: admin_client.table("chat_threads")
+            .select("id")
+            .eq("user_id", uid)
+            .not_.is_("deleted_at", "null")
+            .execute()
+    )
+    chat_threads_deleted = 0
+    chat_threads_failed: list[str] = []
+    for row in (threads_res.data or []):
+        thread_id = row["id"]
+        try:
+            await _hard_delete_chat_thread(admin_client, uid, thread_id)
+            chat_threads_deleted += 1
+        except Exception as e:
+            chat_threads_failed.append(thread_id)
+            print(f"⚠️ Failed to hard-delete chat thread {thread_id} while emptying trash: {e}")
+
     return {
         "courses_deleted": courses_deleted,
         "courses_failed": courses_failed,
         "lectures_deleted": lectures_deleted,
         "lectures_failed": lectures_failed,
+        "chat_threads_deleted": chat_threads_deleted,
+        "chat_threads_failed": chat_threads_failed,
     }
 
 
@@ -4389,6 +4410,40 @@ async def _patrol_hard_delete_expired_lectures() -> dict:
         except Exception as e:
             failed += 1
             print(f"⚠️ Patrol failed to hard-delete lecture {lecture_id}: {e}")
+
+    return {"hard_deleted": deleted, "failed": failed, "retention_days": LECTURE_HARD_DELETE_RETENTION_DAYS}
+
+
+async def _patrol_hard_delete_expired_chat_threads() -> dict:
+    """
+    ゴミ箱に入ってからLECTURE_HARD_DELETE_RETENTION_DAYS(既定30日)を過ぎたチャットのスレッドを
+    完全に削除する。ゴミ箱の保持期間は講義と揃える(ゴミ箱の画面は1つで、期間も1つとして見せるため)。
+    取りこぼしは講義と同じく次回のPatrolで自然に再試行される。
+    """
+    admin_client = get_supabase_client()
+    threshold = (
+        datetime.now(timezone.utc) - timedelta(days=LECTURE_HARD_DELETE_RETENTION_DAYS)
+    ).isoformat()
+
+    expired_res = await asyncio.to_thread(
+        lambda: admin_client.table("chat_threads")
+            .select("id, user_id")
+            .not_.is_("deleted_at", "null")
+            .lt("deleted_at", threshold)
+            .limit(PATROL_HARD_DELETE_BATCH_SIZE)
+            .execute()
+    )
+
+    deleted = 0
+    failed = 0
+    for row in (expired_res.data or []):
+        thread_id, uid = row["id"], row["user_id"]
+        try:
+            await _hard_delete_chat_thread(admin_client, uid, thread_id)
+            deleted += 1
+        except Exception as e:
+            failed += 1
+            print(f"⚠️ Patrol failed to hard-delete chat thread {thread_id}: {e}")
 
     return {"hard_deleted": deleted, "failed": failed, "retention_days": LECTURE_HARD_DELETE_RETENTION_DAYS}
 
@@ -4786,6 +4841,7 @@ PATROL_CHECKS = [
     ("fail_stuck_jobs", _patrol_fail_stuck_jobs),
     ("reconstruct_stale_topic_maps", _patrol_reconstruct_stale_topic_maps),
     ("hard_delete_expired_lectures", _patrol_hard_delete_expired_lectures),
+    ("hard_delete_expired_chat_threads", _patrol_hard_delete_expired_chat_threads),
     ("materialize_dormant_expired_grants", _patrol_materialize_dormant_expired_grants),
     ("renew_subscriptions", _patrol_renew_subscriptions),
     ("reconcile_cross_platform_subscriptions", _patrol_reconcile_cross_platform_subscriptions),
@@ -6064,7 +6120,12 @@ async def update_chat_thread(thread_id: str, payload: ChatThreadUpdateRequest, r
 
 @app.delete("/chat/threads/{thread_id}")
 async def delete_chat_thread(thread_id: str, request: Request):
-    """スレッドの削除(論理削除。中のメッセージも同時に論理削除する)。"""
+    """
+    スレッドの削除(論理削除=ゴミ箱行き。中のメッセージ・資料も同時に論理削除する)。
+    メッセージ・資料・スレッドには必ず同じ時刻を付けること。復元(restore_chat_thread)は
+    「スレッドと同じdeleted_atの行」だけを戻すことで、編集の後方削除や個別に外した資料と区別している。
+    添付したファイル(R2)は復元に備えて残し、物理削除(_hard_delete_chat_thread)のときに消す。
+    """
     uid = await _get_authenticated_user_id(request)
     thread_id = _parse_uuid_or_422(thread_id, "thread_id")
 
@@ -6075,22 +6136,100 @@ async def delete_chat_thread(thread_id: str, request: Request):
         lambda: admin_client.table("chat_messages").update({"deleted_at": now_iso})
             .eq("thread_id", thread_id).is_("deleted_at", "null").execute()
     )
-    removed = await asyncio.to_thread(
+    await asyncio.to_thread(
         lambda: admin_client.table("chat_attachments").update({"deleted_at": now_iso})
             .eq("thread_id", thread_id).is_("deleted_at", "null").execute()
     )
     await asyncio.to_thread(
         lambda: admin_client.table("chat_threads").update({"deleted_at": now_iso}).eq("id", thread_id).execute()
     )
-    # 添付したファイル(R2)はその場で消す(行は論理削除のまま残る)
-    for row in removed.data or []:
-        _delete_attachment_files_later(row.get("storage_prefix"))
     # 自分像プロフィール: このスレッドの観察も消し、根拠が無くなったAI由来の項目は使わないようにする
     try:
         await profile_store.on_thread_deleted(uid, thread_id)
     except Exception as e:
         print(f"⚠️ [profile] failed to follow the deletion of thread {thread_id}: {e}")
     return {"success": True}
+
+
+async def _require_own_trashed_chat_thread(admin_client, thread_id: str, uid: str) -> dict:
+    res = await asyncio.to_thread(
+        lambda: admin_client.table("chat_threads").select("id, user_id, deleted_at")
+            .eq("id", thread_id).maybe_single().execute()
+    )
+    row = res.data if res else None
+    if not row or row.get("user_id") != uid:
+        raise HTTPException(status_code=404, detail={"error_code": "THREAD_NOT_FOUND", "message": "Thread not found."})
+    if not row.get("deleted_at"):
+        raise HTTPException(status_code=409, detail={"error_code": "THREAD_NOT_IN_TRASH", "message": "Thread is not in trash."})
+    return row
+
+
+@app.post("/chat/threads/{thread_id}/restore")
+async def restore_chat_thread_endpoint(thread_id: str, request: Request):
+    """
+    ゴミ箱のスレッドを復元する。スレッドと一緒に消えたメッセージ・資料だけを戻す
+    (restore_chat_thread参照。検索インデックスもトリガで戻る)。
+    観察は戻さず、どこまで観察したかを最初に戻して観察のタスクを積む。巡回は
+    「最後の発言が14日以内」のスレッドしか拾わないので、ここで直接積まないと
+    古いスレッドは次に発言するまで観察されない。
+    """
+    uid = await _get_authenticated_user_id(request)
+    thread_id = _parse_uuid_or_422(thread_id, "thread_id")
+
+    admin_client = get_supabase_client()
+    await _require_own_trashed_chat_thread(admin_client, thread_id, uid)
+    res = await asyncio.to_thread(
+        lambda: admin_client.rpc("restore_chat_thread", {"p_thread_id": thread_id, "p_user_id": uid}).execute()
+    )
+    if not res.data:
+        raise HTTPException(status_code=404, detail={"error_code": "THREAD_NOT_FOUND", "message": "Thread not found."})
+    try:
+        await enqueue_profile_observe_task(thread_id)
+    except Exception as e:
+        print(f"⚠️ [profile] failed to enqueue observation for restored thread {thread_id}: {e}")
+    return {"success": True}
+
+
+@app.post("/chat/threads/{thread_id}/hard-delete")
+async def hard_delete_chat_thread_endpoint(thread_id: str, request: Request):
+    """ゴミ箱のスレッド1件を完全削除する。"""
+    uid = await _get_authenticated_user_id(request)
+    thread_id = _parse_uuid_or_422(thread_id, "thread_id")
+
+    admin_client = get_supabase_client()
+    await _require_own_trashed_chat_thread(admin_client, thread_id, uid)
+    try:
+        await _hard_delete_chat_thread(admin_client, uid, thread_id)
+    except Exception as e:
+        print(f"❌ Failed to hard-delete chat thread {thread_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete thread")
+    return {"success": True}
+
+
+async def _hard_delete_chat_thread(admin_client, uid: str, thread_id: str) -> None:
+    """
+    スレッド1件を完全に削除する。chat_threadsをDELETEすれば、メッセージ・資料・要約・観察は
+    thread_idのON DELETE CASCADEで、検索インデックスはメッセージ・資料のDELETEトリガで消える。
+    R2の添付ファイルはDBの行を消した後に消す(先にファイルだけ消えて行が残ると、開けない
+    資料が残る)。失敗しても、アカウント削除の {uid}/ 一括削除で最後は消える。
+    """
+    att_res = await asyncio.to_thread(
+        lambda: admin_client.table("chat_attachments").select("storage_prefix")
+            .eq("thread_id", thread_id).eq("user_id", uid).execute()
+    )
+    prefixes = {r["storage_prefix"] for r in (att_res.data or []) if r.get("storage_prefix")}
+
+    await asyncio.to_thread(
+        lambda: admin_client.table("chat_threads").delete().eq("id", thread_id).eq("user_id", uid).execute()
+    )
+
+    for prefix in prefixes:
+        if "/chat_attachments/" not in prefix:
+            continue
+        try:
+            await asyncio.to_thread(storage_service.delete_prefix, prefix)
+        except Exception as e:
+            print(f"⚠️ [chat] failed to delete attachment files {prefix}: {e}")
 
 
 @app.patch("/chat/attachments/{attachment_id}")

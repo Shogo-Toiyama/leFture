@@ -72,7 +72,8 @@ class DbLectureSource:
 
         def _q():
             return self._client.table("lectures").select("id, summary") \
-                .eq("user_id", self._user_id).in_("id", lecture_ids).execute()
+                .eq("user_id", self._user_id).in_("id", lecture_ids) \
+                .is_("deleted_at", "null").execute()
         res = await asyncio.to_thread(_q)
         return {r["id"]: (r.get("summary") or "").strip() for r in (res.data or [])}
 
@@ -127,6 +128,15 @@ class DbLectureSource:
         if "transcript_topic" in self._blocked:
             return []
         if lecture_id not in self._transcripts:
+            # 文字起こしの行自体にはdeleted_atが無いので、講義がゴミ箱にいないかをここで見る
+            # (トピック・キーワード等は講義のゴミ箱行きにDB側で連動して論理削除される)。
+            def _live():
+                return self._client.table("lectures").select("id") \
+                    .eq("user_id", self._user_id).eq("id", lecture_id) \
+                    .is_("deleted_at", "null").execute()
+            if not (await asyncio.to_thread(_live)).data:
+                self._transcripts[lecture_id] = []
+                return []
             sentences = await asyncio.to_thread(assemble_lecture_transcript, self._client, lecture_id, self._user_id)
             self._transcripts[lecture_id] = [
                 {"sid": _sid_to_int(s.get("sid")), "text": (s.get("text") or "").strip()}

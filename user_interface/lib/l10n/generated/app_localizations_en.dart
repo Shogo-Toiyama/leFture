@@ -307,7 +307,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSharingConsentDialogMessage =>
-      'Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI, TogetherAI) to make transcripts, notes, and summaries. Your name and email address are not sent.';
+      'Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI) to make transcripts, notes, and summaries. Your name and email address are not sent.';
 
   @override
   String get aiSharingConsentDialogPrivacyPolicyLink => 'Privacy Policy';
@@ -1299,7 +1299,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activityRecordsEmptyTrashDialogMessage =>
-      'All soft-deleted lectures, courses, and announcements will be permanently deleted from both the local database and the cloud. This action cannot be undone.';
+      'All soft-deleted lectures, courses, announcements, and AI chats will be permanently deleted from both the local database and the cloud. This action cannot be undone.';
 
   @override
   String get activityRecordsEmptyTrashSuccessSnackbar =>
@@ -1321,6 +1321,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activityRecordsTypeLabelAnnouncement => 'Announcement';
+
+  @override
+  String get activityRecordsTypeLabelChat => 'Chat';
 
   @override
   String get activityRecordsTypeLabelItem => 'Item';

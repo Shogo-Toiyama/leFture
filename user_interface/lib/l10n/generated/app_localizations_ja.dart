@@ -297,7 +297,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aiSharingConsentDialogMessage =>
-      '録音した音声と、あなたのプロフィールの一部は、文字起こしとノート・要約の生成のために、外部のAIサービス(Cloudflare、Google、OpenAI、TogetherAI)へ送信されます。氏名やメールアドレスは送信されません。';
+      '録音した音声と、あなたのプロフィールの一部は、文字起こしとノート・要約の生成のために、外部のAIサービス(Cloudflare、Google、OpenAI)へ送信されます。氏名やメールアドレスは送信されません。';
 
   @override
   String get aiSharingConsentDialogPrivacyPolicyLink => 'プライバシーポリシー';
@@ -1242,7 +1242,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get activityRecordsEmptyTrashDialogMessage =>
-      'ソフト削除されたすべての講義・コース・お知らせが、ローカルデータベースとクラウドの両方から完全に削除されます。この操作は取り消せません。';
+      'ソフト削除されたすべての講義・コース・お知らせ・AIチャットが、ローカルデータベースとクラウドの両方から完全に削除されます。この操作は取り消せません。';
 
   @override
   String get activityRecordsEmptyTrashSuccessSnackbar => 'ゴミ箱を空にしました。';
@@ -1263,6 +1263,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get activityRecordsTypeLabelAnnouncement => 'お知らせ';
+
+  @override
+  String get activityRecordsTypeLabelChat => 'チャット';
 
   @override
   String get activityRecordsTypeLabelItem => 'アイテム';
