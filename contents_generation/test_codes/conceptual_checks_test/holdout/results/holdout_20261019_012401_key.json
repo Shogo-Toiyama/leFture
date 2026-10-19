@@ -1,0 +1,26 @@
+{
+  "H1": {
+    "A": "work",
+    "B": "base"
+  },
+  "H4": {
+    "A": "work",
+    "B": "base"
+  },
+  "H5": {
+    "A": "base",
+    "B": "work"
+  },
+  "H6": {
+    "A": "work",
+    "B": "base"
+  },
+  "H8": {
+    "A": "base",
+    "B": "work"
+  },
+  "H9": {
+    "A": "work",
+    "B": "base"
+  }
+}

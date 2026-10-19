@@ -1,0 +1,82 @@
+[
+  {
+    "case_id": "H1",
+    "kind": "A",
+    "name": "Cons(:)の理解",
+    "note": "リストの中に入れる、が少し粗い。ほぼ合っている",
+    "user_message_id": "62a6824e-1912-42c9-a173-99692feb36b7",
+    "assistant_message_id": "7b394d35-7de1-48e8-9a05-77327de57aa6"
+  },
+  {
+    "case_id": "H2",
+    "kind": "A",
+    "name": "if-else/ガード/パターンは同じ?",
+    "note": "ほぼ合っている",
+    "user_message_id": "48c8f4e1-6faf-4f99-be0d-9f9ee8522a21",
+    "assistant_message_id": "d673645d-285a-42c1-ba66-ce3943a37092"
+  },
+  {
+    "case_id": "H3",
+    "kind": "A",
+    "name": "純粋関数の核と境界の設計",
+    "note": "ほぼ合っている",
+    "user_message_id": "aeaa83c6-5a4d-4040-ab50-c80056d0e1cd",
+    "assistant_message_id": "19928488-a5a6-429b-bdf6-d34554c7a3dd"
+  },
+  {
+    "case_id": "H4",
+    "kind": "A",
+    "name": "タプルはImmutable",
+    "note": "合っている",
+    "user_message_id": "cfd4ba54-a959-453c-8174-3239c9c7de5d",
+    "assistant_message_id": "d2c6e6de-07fd-4185-a2c8-e93b682fd046"
+  },
+  {
+    "case_id": "H5",
+    "kind": "A",
+    "name": "bytecodeは速い?(最適化)",
+    "note": "ほぼ合っている",
+    "user_message_id": "7bf5a690-10fb-46aa-918b-805ca8ae8031",
+    "assistant_message_id": "6a2dc5b6-aac0-4360-857d-f4c1ff324c2a"
+  },
+  {
+    "case_id": "H6",
+    "kind": "A",
+    "name": "ガードの=(otherwise含む)",
+    "note": "ユーザーの言ったことは合っているのに、前の回答は直しを足していた",
+    "user_message_id": "2eb6a1a3-d724-4040-b5d6-7f6a8726a5d2",
+    "assistant_message_id": "bfd937d0-b1a5-4333-9d99-82ed86a67377"
+  },
+  {
+    "case_id": "H7",
+    "kind": "B",
+    "name": "参照先を変えたら中身も?",
+    "note": "本当にずれている(参照の誤解)。訂正は残したい",
+    "user_message_id": "7cec2464-91c1-4a87-9965-1f4edea21577",
+    "assistant_message_id": "0f7541c8-9998-4f1b-a04b-6e81ca36f192"
+  },
+  {
+    "case_id": "H8",
+    "kind": "B",
+    "name": "パルスを送るだけでsinc?",
+    "note": "本当にずれている。訂正は残したい",
+    "user_message_id": "62c4bf71-8ce7-47ec-aac1-9893f2a3fd4f",
+    "assistant_message_id": "d5b329cc-493e-4074-8ac7-c067c0af434d"
+  },
+  {
+    "case_id": "H9",
+    "kind": "B",
+    "name": "c = c + [...] の後のjoke6",
+    "note": "前半は合い、後半はずれている",
+    "user_message_id": "56aedeb1-dd42-4428-aacb-54783880fb06",
+    "assistant_message_id": "9d99bf83-0624-4c18-bd12-4cbd4f20cc4a"
+  },
+  {
+    "case_id": "H10",
+    "kind": "C",
+    "name": "クロック回復の手計算",
+    "note": "具体的な手順の確認。どの手順が違うかを正確に言ってほしい",
+    "user_message_id": "a9968253-a8a5-483e-b2c6-a345b135eb89",
+    "assistant_message_id": "3c31128f-b54b-4777-a926-f201c44d5b81"
+  }
+]
