@@ -88,7 +88,7 @@ export const AiSettingsSheet: React.FC<{ open: boolean; onClose: () => void; fix
         <p className="ai-memo-note">{t('aiMemoOneTimeNote')}</p>
 
         <div className="ai-settings-section">{t('aiMoreSection')}</div>
-        <Link to="/account/ai-memory" className="ai-settings-link" onClick={onNavigate}>
+        <Link to="/account/ai-notes" className="ai-settings-link" onClick={onNavigate}>
           <span>
             {t('aiNotesLink')}
             <span className="ai-memo-sub">{t('aiNotesLinkSub', { count: memory?.observation_count ?? 0 })}</span>

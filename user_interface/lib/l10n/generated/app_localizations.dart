@@ -7766,6 +7766,18 @@ abstract class AppLocalizations {
   /// **'{count} things noticed in conversations · material for your self-portrait'**
   String aiNotesLinkSub(String count);
 
+  /// Link to the full AI notes page.
+  ///
+  /// In en, this message translates to:
+  /// **'View and manage all notes'**
+  String get aiNotesViewAll;
+
+  /// Count of AI notes stored.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} notes stored'**
+  String aiNotesCount(String count);
+
   /// AI self-portrait / AI memory. Ported from the web app string "aiMemoryIntro".
   ///
   /// In en, this message translates to:

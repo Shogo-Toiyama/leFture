@@ -5,6 +5,7 @@ import 'package:lefture/domain/entities/self_portrait.dart';
 import 'package:lefture/infrastructure/self_portrait/self_portrait_repository.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/pages/profile/ai_memory_page.dart';
+import 'package:lefture/presentation/pages/profile/ai_notes_page.dart';
 import 'package:lefture/presentation/pages/profile/user_profile_detail_page.dart';
 import 'package:lefture/presentation/widgets/ai_chat/ai_settings_sheet.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
@@ -258,13 +259,15 @@ void main() {
 
     setUp(() => repo = FakeSelfPortraitRepository(portrait: portrait(), memory: memory()));
 
-    testWidgets('話し方・今の状況・AIのメモが出る', (tester) async {
+    testWidgets('話し方とAIメモのサマリーが出る(今の状況は出ない)', (tester) async {
       await pumpPage(tester, repo, const AiMemoryPage());
       expect(find.text('結論から短く'), findsOneWidget);
-      expect(find.text('来週が試験'), findsOneWidget);
-      expect(find.textContaining('まで'), findsOneWidget);
-      expect(find.text('図で説明すると理解が早い'), findsOneWidget);
-      expect(find.textContaining('ヒープの質問'), findsOneWidget);
+      // 今の状況はアカウントのAI設定ページには出ない
+      expect(find.text('来週が試験'), findsNothing);
+      expect(find.textContaining('まで'), findsNothing);
+      // AIメモのサマリーが出る
+      expect(find.text('1件のメモを記憶中'), findsOneWidget);
+      expect(find.text('すべてのメモを確認・削除'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -274,7 +277,6 @@ void main() {
       await settle(tester);
       expect(repo.calls, contains('deleteMemo:m1'));
       expect(find.text('結論から短く'), findsNothing);
-      expect(find.text('来週が試験'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -285,16 +287,6 @@ void main() {
       await settle(tester);
       expect(find.text('結論から短く'), findsOneWidget);
       expect(find.text('読み込めませんでした。時間をおいてもう一度お試しください。'), findsOneWidget);
-      await unmount(tester);
-    });
-
-    testWidgets('メモを1件消すと、会話ごと空になれば会話も消える', (tester) async {
-      await pumpPage(tester, repo, const AiMemoryPage());
-      await tester.tap(find.byTooltip('このメモを消す'));
-      await settle(tester);
-      expect(repo.calls, contains('deleteObservation:o1'));
-      expect(find.textContaining('ヒープの質問'), findsNothing);
-      expect(find.text('まだメモはありません。'), findsOneWidget);
       await unmount(tester);
     });
 
@@ -313,6 +305,41 @@ void main() {
       await unmount(tester);
     });
   });
+
+  group('AIメモ一覧のページ (AiNotesPage)', () {
+    late FakeSelfPortraitRepository repo;
+
+    setUp(() => repo = FakeSelfPortraitRepository(portrait: portrait(), memory: memory()));
+
+    testWidgets('会話ごとのメモ一覧が出る', (tester) async {
+      await pumpPage(tester, repo, const AiNotesPage());
+      expect(find.text('図で説明すると理解が早い'), findsOneWidget);
+      expect(find.textContaining('ヒープの質問'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('メモを1件消すと、会話ごと空になれば会話も消える', (tester) async {
+      await pumpPage(tester, repo, const AiNotesPage());
+      await tester.tap(find.byTooltip('このメモを消す'));
+      await settle(tester);
+      expect(repo.calls, contains('deleteObservation:o1'));
+      expect(find.textContaining('ヒープの質問'), findsNothing);
+      expect(find.text('まだメモはありません。'), findsOneWidget);
+      await unmount(tester);
+    });
+
+    testWidgets('「全部消す」でメモを全消去できる', (tester) async {
+      await pumpPage(tester, repo, const AiNotesPage());
+      await tester.tap(find.text('AIのメモを全部消す'));
+      await settle(tester);
+      expect(find.text('1件のメモを消します。元に戻せません。'), findsOneWidget);
+      await tester.tap(find.text('削除'));
+      await settle(tester);
+      expect(repo.calls, contains('forget'));
+      await unmount(tester);
+    });
+  });
+
   group('チャットのAI設定シート', () {
     late FakeSelfPortraitRepository repo;
 
@@ -357,7 +384,7 @@ void main() {
       final opened = await openSheet(tester);
       await tester.tap(find.text('AIのメモ'));
       await settle(tester);
-      expect(opened, [AppRoutes.aiMemory]);
+      expect(opened, [AppRoutes.aiNotes]);
       // シートは閉じている
       expect(find.text('結論から短く'), findsNothing);
       await unmount(tester);

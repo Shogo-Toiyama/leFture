@@ -34,6 +34,7 @@ class AppRoutes {
   static const contact = '/contact';
   static const permissionsSettings = '/account/permissions';
   static const aiMemory = '/account/ai-memory';
+  static const aiNotes = '/account/ai-notes';
   static const activityDetails = '/account/activity/:type';
   static const creditDetail = '/account/credits';
   static const purchaseCredits = '/account/purchase_credits';

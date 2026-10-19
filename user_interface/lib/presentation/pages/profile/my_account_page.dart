@@ -89,18 +89,6 @@ class MyAccountPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 _ProfileTilesSection(profile: profile),
-                const SizedBox(height: 12),
-                // 自分像のAI: 話し方の覚え書き・AIのメモ
-                _GlassCard(
-                  child: _SettingsTile(
-                    icon: Icons.tune_rounded,
-                    iconColor: AppColors.starGold,
-                    title: l10n.aiSettingsButton,
-                    subtitle: l10n.accountAiSettingsSub,
-                    onTap: () => context.push(AppRoutes.aiMemory),
-                    isLast: true,
-                  ),
-                ),
 
                 const SizedBox(height: 32),
 
@@ -1138,6 +1126,14 @@ class _SettingsSection extends ConsumerWidget {
               final displayLang = displayLanguageFromCode(displayCode);
               return Column(
                 children: [
+                  _SettingsTile(
+                    icon: Icons.auto_awesome_rounded,
+                    iconColor: AppColors.universe.textComet,
+                    title: l10n.aiSettingsButton,
+                    subtitle: l10n.accountAiSettingsSub,
+                    onTap: () => context.push(AppRoutes.aiMemory),
+                  ),
+                  _Divider(),
                   _SettingsTile(
                     icon: Icons.record_voice_over_outlined,
                     iconColor: AppColors.universe.textComet,

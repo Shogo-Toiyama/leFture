@@ -1289,6 +1289,8 @@
   "aiMoreSection": "もっと見る",
   "aiNotesLink": "AIのメモ",
   "aiNotesLinkSub": "会話から気づいたこと {count}件 · 自分像の材料",
+  "aiNotesViewAll": "すべてのメモを確認・削除",
+  "aiNotesCount": "{count}件のメモを記憶中",
   "aiMemoryIntro": "会話の中でAIが気づいたことです。いくつか同じ方向のメモがたまると、自分像に書き足されます。1回きりの話は、ここに残るだけで自分像にはなりません。",
   "aiMemoryEmpty": "まだメモはありません。",
   "aiMemoryDeleteNote": "このメモを消す",

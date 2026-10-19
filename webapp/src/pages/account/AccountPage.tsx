@@ -26,7 +26,6 @@ import {
   LogOut,
   UserX,
   ExternalLink,
-  SlidersHorizontal,
 } from 'lucide-react';
 import { CreditStarIcon } from '../../components/icons/CreditStarIcon';
 import { useProfile } from '../../hooks/useProfile';
@@ -370,20 +369,6 @@ export const AccountPage: React.FC = () => {
         </Link>
       </div>
 
-      {/* 自分像のAI: 話し方の覚え書き・AIのメモ(ロードマップ9章) */}
-      <div className="glass-card" style={{ marginTop: '0.75rem' }}>
-        <Link to="/account/ai-memory" className="glass-row">
-          <span className="glass-row-icon">
-            <SlidersHorizontal size={17} />
-          </span>
-          <span className="glass-row-text">
-            <span className="glass-row-title">{t('aiSettingsButton')}</span>
-            <span className="glass-row-sub">{t('accountAiSettingsSub')}</span>
-          </span>
-          <ChevronRight size={18} className="glass-row-chevron" />
-        </Link>
-      </div>
-
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
           SECTION 2 — ACTIVITY
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
@@ -530,6 +515,19 @@ export const AccountPage: React.FC = () => {
 
       {/* 1. Preferences */}
       <div className="glass-card">
+        <Link to="/account/ai-memory" className="glass-row">
+          <span className="glass-row-icon" style={{ background: 'rgba(255, 255, 255, 0.08)', color: 'var(--comet, #8E99A6)' }}>
+            <Sparkles size={17} />
+          </span>
+          <span className="glass-row-text">
+            <span className="glass-row-title">{t('aiSettingsButton')}</span>
+            <span className="glass-row-sub">{t('accountAiSettingsSub')}</span>
+          </span>
+          <ChevronRight size={18} className="glass-row-chevron" />
+        </Link>
+
+        <div className="glass-divider" />
+
         <button
           type="button"
           className="glass-row is-interactive-button"

@@ -1073,6 +1073,8 @@ export const en = {
   aiMoreSection: "More",
   aiNotesLink: "AI notes",
   aiNotesLinkSub: "{count} things noticed in conversations · material for your self-portrait",
+  aiNotesViewAll: "View and manage all notes",
+  aiNotesCount: "{count} notes stored",
   aiMemoryIntro: "Things the AI noticed while you talked. When several notes point the same way, they're added to your self-portrait. A one-off stays here and doesn't become part of it.",
   aiMemoryEmpty: "No notes yet.",
   aiMemoryDeleteNote: "Remove this note",

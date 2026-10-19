@@ -4490,6 +4490,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get aiNotesViewAll => 'View and manage all notes';
+
+  @override
+  String aiNotesCount(String count) {
+    return '$count notes stored';
+  }
+
+  @override
   String get aiMemoryIntro =>
       'Things the AI noticed while you talked. When several notes point the same way, they\'re added to your self-portrait. A one-off stays here and doesn\'t become part of it.';
 

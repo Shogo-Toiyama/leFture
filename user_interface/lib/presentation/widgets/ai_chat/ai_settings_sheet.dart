@@ -214,7 +214,7 @@ class _AiSettingsSheet extends HookConsumerWidget {
                 link(
                   l.aiNotesLink,
                   l.aiNotesLinkSub('${memory?.observationCount ?? 0}'),
-                  AppRoutes.aiMemory,
+                  AppRoutes.aiNotes,
                 ),
                 link(
                   l.selfPortraitPageTitle,

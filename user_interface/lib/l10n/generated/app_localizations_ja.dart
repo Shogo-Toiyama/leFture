@@ -4290,6 +4290,14 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get aiNotesViewAll => 'すべてのメモを確認・削除';
+
+  @override
+  String aiNotesCount(String count) {
+    return '$count件のメモを記憶中';
+  }
+
+  @override
   String get aiMemoryIntro =>
       '会話の中でAIが気づいたことです。いくつか同じ方向のメモがたまると、自分像に書き足されます。1回きりの話は、ここに残るだけで自分像にはなりません。';
 

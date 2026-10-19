@@ -5970,6 +5970,19 @@
       }
     }
   },
+  "aiNotesViewAll": "View and manage all notes",
+  "@aiNotesViewAll": {
+    "description": "Link to the full AI notes page."
+  },
+  "aiNotesCount": "{count} notes stored",
+  "@aiNotesCount": {
+    "description": "Count of AI notes stored.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "aiMemoryIntro": "Things the AI noticed while you talked. When several notes point the same way, they're added to your self-portrait. A one-off stays here and doesn't become part of it.",
   "@aiMemoryIntro": {
     "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryIntro\"."
