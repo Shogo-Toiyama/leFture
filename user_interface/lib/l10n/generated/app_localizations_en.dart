@@ -307,14 +307,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSharingConsentDialogMessage =>
-      'Your recorded audio and some of your profile information are sent to third-party AI services to generate transcripts, notes, and summaries.';
-
-  @override
-  String get aiSharingConsentDialogDetailsToggle => 'See details';
-
-  @override
-  String get aiSharingConsentDialogDetailsBody =>
-      'Data sent:\n• Your recorded lecture audio\n• The text transcribed from that audio\n• Course and profile information used to generate notes\n\nSent to (AI services we use):\n• Cloudflare Workers AI (Whisper) — audio transcription\n• Google AI Studio (Gemini), TogetherAI, and similar providers — summaries, notes, and quiz generation\n• Cloudflare Workers AI (FLUX) — image generation\n\nYour name and email address are not included in this data.';
+      'Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI, TogetherAI) to make transcripts, notes, and summaries. Your name and email address are not sent.';
 
   @override
   String get aiSharingConsentDialogPrivacyPolicyLink => 'Privacy Policy';
@@ -327,6 +320,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiSharingConsentDialogAgreeButton => 'Agree & Continue';
+
+  @override
+  String get aiSharingConsentDialogUpdatedNotice =>
+      'We\'ve updated which AI services your recordings are sent to (OpenAI added). Please review the details and agree again.';
+
+  @override
+  String get aiChatConsentDialogTitle => 'About AI Chat Data Processing';
+
+  @override
+  String get aiChatConsentDialogMessage =>
+      'What you type in the chat, files you attach, and the parts of your lecture notes that relate to your question are sent to outside AI services (Anthropic, Google, OpenAI) and search services (Brave, Tavily) to write the answer. Your name and email address are not sent (unless they are in what you type or attach).';
 
   @override
   String get recordingDiscardButtonLabel => 'Discard Recording';
@@ -2256,6 +2260,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cardSelectionToolbarSourceLabel => 'Source';
 
   @override
+  String get cardSelectionToolbarAskLabel => 'Ask AI';
+
+  @override
   String get cardSelectionToolbarLikeLabel => 'Like';
 
   @override
@@ -2709,16 +2716,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recordingMiniPlayerPaused => 'Recording Paused';
-
-  @override
-  String get aiChatSheetTitle => 'Ask AI';
-
-  @override
-  String get aiChatSheetInputHint => 'Ask about this lecture...';
-
-  @override
-  String get aiChatSheetPreviewFallback =>
-      'This is a UI preview — real AI answers aren\'t wired up yet.';
 
   @override
   String get courseDeleteDialogTitle => 'Delete Course?';
@@ -3411,4 +3408,1136 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errAccountSuspended => 'This account has been suspended.';
+
+  @override
+  String get aiChatNewConversation => 'New chat';
+
+  @override
+  String get aiChatHistory => 'Conversations';
+
+  @override
+  String get aiChatInputPlaceholder => 'Ask anything…';
+
+  @override
+  String get aiChatInputPlaceholderFollowUp => 'Ask a follow-up…';
+
+  @override
+  String get aiChatSend => 'Send';
+
+  @override
+  String get aiChatStageThinking => 'Thinking…';
+
+  @override
+  String get aiChatStageSearching => 'Searching your lecture notes…';
+
+  @override
+  String get aiChatStageSearchingWeb => 'Searching the web…';
+
+  @override
+  String get aiChatStageSearchingChats => 'Looking through past chats…';
+
+  @override
+  String aiChatStageSearchingWebWithQuery(String query) {
+    return 'Searching the web for \"$query\"…';
+  }
+
+  @override
+  String aiChatStageSearchingNotesWithQuery(String query) {
+    return 'Searching lecture notes for \"$query\"…';
+  }
+
+  @override
+  String aiChatStageSearchingTranscriptWithQuery(String query) {
+    return 'Searching lecture transcript for \"$query\"…';
+  }
+
+  @override
+  String aiChatStageSearchingChatsWithQuery(String query) {
+    return 'Looking through past chats for \"$query\"…';
+  }
+
+  @override
+  String get aiChatStageReadingTranscript => 'Checking lecture transcript…';
+
+  @override
+  String get aiChatStageReadingNotes => 'Checking lecture materials…';
+
+  @override
+  String get aiChatStageReasoning => 'Thinking it through…';
+
+  @override
+  String get aiChatStageWriting => 'Writing…';
+
+  @override
+  String get aiChatReconnecting =>
+      'Connection lost. Waiting for the reply to finish…';
+
+  @override
+  String aiChatCreditsUsed(String credits) {
+    return '$credits credits';
+  }
+
+  @override
+  String get aiChatActionCopy => 'Copy';
+
+  @override
+  String get aiChatActionCopied => 'Copied';
+
+  @override
+  String get aiChatActionMore => 'More';
+
+  @override
+  String get aiChatActionDetails => 'Reply details';
+
+  @override
+  String get aiChatDetailSentAt => 'Sent';
+
+  @override
+  String get aiChatDetailCredits => 'Credits used';
+
+  @override
+  String get aiChatDetailNoCharge => 'None';
+
+  @override
+  String get aiChatDetailSources => 'Sources used';
+
+  @override
+  String aiChatDetailSourcesCount(String count) {
+    return '$count';
+  }
+
+  @override
+  String get aiChatShowMore => 'Show more';
+
+  @override
+  String get aiChatShowLess => 'Show less';
+
+  @override
+  String get aiChatActionEdit => 'Edit';
+
+  @override
+  String get aiChatActionRegenerate => 'Regenerate';
+
+  @override
+  String aiChatEditing(String turns) {
+    return 'Editing this message — the $turns exchange(s) after it will be deleted';
+  }
+
+  @override
+  String aiChatEditingWithAttachments(String turns, String count) {
+    return 'Editing this message — the $turns exchange(s) after it and $count attached material(s) will be deleted';
+  }
+
+  @override
+  String get aiChatEditingLast => 'Editing this message';
+
+  @override
+  String get aiChatEditCancel => 'Stop editing';
+
+  @override
+  String get aiChatEditConfirmTitle => 'Send this edit?';
+
+  @override
+  String aiChatEditConfirmBody(String turns, String titles) {
+    return 'The $turns exchange(s) after this message will be deleted, along with the materials attached in them: $titles. Credits already used are not refunded.';
+  }
+
+  @override
+  String get aiChatEditConfirmSend => 'Delete and send';
+
+  @override
+  String get aiChatStop => 'Stop';
+
+  @override
+  String get aiChatStopping => 'Stopping…';
+
+  @override
+  String get aiChatStopped => 'Stopped';
+
+  @override
+  String get aiChatStopFailed => 'Couldn\'t stop the reply. Please try again.';
+
+  @override
+  String aiChatStoppedAttachments(String titles) {
+    return 'Because the reply was stopped, $titles could not be read. Please attach it again.';
+  }
+
+  @override
+  String get aiChatDetailStatus => 'Status';
+
+  @override
+  String get aiChatDetailStatusStopped => 'Stopped partway';
+
+  @override
+  String get aiChatActionReport => 'Report a problem';
+
+  @override
+  String get aiChatReportAttach =>
+      'Attach this reply and the question before it';
+
+  @override
+  String get aiChatReportQuestion => 'Question';
+
+  @override
+  String get aiChatReportReply => 'Reply';
+
+  @override
+  String get aiReportCategoryLabel => 'Type';
+
+  @override
+  String get aiReportCategoryInappropriate => 'Inappropriate answer';
+
+  @override
+  String get aiReportCategoryIncorrect => 'Incorrect content';
+
+  @override
+  String get aiReportCategoryBug => 'Bug';
+
+  @override
+  String get aiReportCategoryFeedback => 'Feedback or request';
+
+  @override
+  String get aiReportCategoryAccount => 'Account';
+
+  @override
+  String get aiReportCategoryOther => 'Other';
+
+  @override
+  String get aiReportMessageLabel => 'Details';
+
+  @override
+  String get aiReportMessagePlaceholder =>
+      'Tell us what happened and what you expected.';
+
+  @override
+  String get aiReportAttachPreview => 'Preview what will be sent';
+
+  @override
+  String get aiReportAutoNote =>
+      'Which reply this is, and when it was sent, are always included.';
+
+  @override
+  String get aiReportSubmit => 'Send report';
+
+  @override
+  String get aiReportSending => 'Sending…';
+
+  @override
+  String get aiReportFailed => 'Couldn\'t send the report. Please try again.';
+
+  @override
+  String get aiReportSentTitle => 'Report sent';
+
+  @override
+  String aiReportSentBody(String code) {
+    return 'Thank you. Your reference code is $code. We will email you a confirmation.';
+  }
+
+  @override
+  String get aiChatReplyFailed =>
+      'Couldn\'t generate a reply. No credits were used.';
+
+  @override
+  String get aiChatResend => 'Send again';
+
+  @override
+  String get aiChatSourcePreviewEmpty =>
+      'No text preview available for this source.';
+
+  @override
+  String get aiChatClose => 'Close';
+
+  @override
+  String get aiChatOpenExternalWeb => 'Open web page';
+
+  @override
+  String get aiChatOpenInLecture => 'View full context in lecture';
+
+  @override
+  String get aiChatNotSent => 'Not sent';
+
+  @override
+  String aiChatErrorInsufficientCredits(String min) {
+    return 'Chat needs at least $min credits.';
+  }
+
+  @override
+  String get aiChatErrorRateLimited =>
+      'You\'re sending messages quickly. Wait a moment and try again.';
+
+  @override
+  String get aiChatErrorBlockedCooldown =>
+      'Chat is temporarily unavailable for this account.';
+
+  @override
+  String aiChatErrorTooLong(String max) {
+    return 'Your message is too long. Keep it under $max characters.';
+  }
+
+  @override
+  String aiChatErrorSelectedTooLong(String max) {
+    return 'The selected text is too long. Select a passage under $max characters.';
+  }
+
+  @override
+  String get aiChatErrorThreadBusy =>
+      'A reply is still being written in this chat. Try again when it finishes.';
+
+  @override
+  String get aiChatErrorThreadNotFound => 'This conversation no longer exists.';
+
+  @override
+  String get aiChatErrorSuspended =>
+      'This account is suspended, so chat is unavailable.';
+
+  @override
+  String get aiChatErrorNetwork =>
+      'Couldn\'t reach the server. Check your connection and try again.';
+
+  @override
+  String get aiChatErrorGeneric => 'Something went wrong. Try again.';
+
+  @override
+  String get aiChatLoadFailed => 'Couldn\'t load this conversation.';
+
+  @override
+  String get aiChatBuyCredits => 'Add credits';
+
+  @override
+  String get aiChatDismiss => 'Dismiss';
+
+  @override
+  String get aiChatEmptyTitle => 'What would you like to explore?';
+
+  @override
+  String get aiChatEmptySubtitle =>
+      'Ask about your lectures, connect ideas across classes, or think through anything on your mind.';
+
+  @override
+  String get aiChatSuggestionLatest =>
+      'Summarize the key ideas from my latest lecture';
+
+  @override
+  String get aiChatSuggestionQuiz => 'Quiz me on what I learned this week';
+
+  @override
+  String get aiChatSuggestionGoals =>
+      'How does what I\'m learning connect to my goals?';
+
+  @override
+  String get aiChatSuggestionThisLecture =>
+      'What are the most important points of this lecture?';
+
+  @override
+  String get aiChatSuggestionSelection => 'Explain this in simpler words';
+
+  @override
+  String get aiChatSourcesLabel => 'Sources';
+
+  @override
+  String aiChatAttachedLecture(String title) {
+    return 'About $title';
+  }
+
+  @override
+  String get aiChatRemoveAttachment => 'Remove';
+
+  @override
+  String get aiChatThreadsEmpty => 'No conversations yet.';
+
+  @override
+  String get aiChatThreadUntitled => 'New conversation';
+
+  @override
+  String get aiChatRename => 'Rename';
+
+  @override
+  String get aiChatDelete => 'Delete';
+
+  @override
+  String get aiChatDeleteConfirmTitle => 'Delete this conversation?';
+
+  @override
+  String get aiChatDeleteConfirmMessage =>
+      'It will be removed from your conversations. This can\'t be undone.';
+
+  @override
+  String get aiChatAiDisclaimer =>
+      'AI can make mistakes. Check important details against your lecture.';
+
+  @override
+  String get aiChatSourceDeepNote => 'Deep Note';
+
+  @override
+  String get aiChatSourceReviewCard => 'Review Card';
+
+  @override
+  String get aiChatSourceKeyword => 'Keyword';
+
+  @override
+  String get aiChatSourceAnnouncement => 'Announcement';
+
+  @override
+  String get aiChatSourceTranscript => 'Transcript';
+
+  @override
+  String get aiChatSourceTopic => 'Topic';
+
+  @override
+  String get aiChatSourceFunFact => 'Fun Fact';
+
+  @override
+  String get aiChatSourceLectureSummary => 'Lecture summary';
+
+  @override
+  String get aiChatSourceCourse => 'Course';
+
+  @override
+  String get aiChatSourceChat => 'Past chat';
+
+  @override
+  String get aiChatSourceWeb => 'Web';
+
+  @override
+  String get aiChatSourceMoment => 'My note';
+
+  @override
+  String aiChatPlanExcludedSources(String items) {
+    return 'Not searched by chat on your current plan: $items';
+  }
+
+  @override
+  String get aiChatPlanExcludedSourcesSeparator => ', ';
+
+  @override
+  String get aiChatStageReadingAttachments => 'Reading your materials…';
+
+  @override
+  String get aiChatStageReadingAttachment => 'Checking your materials…';
+
+  @override
+  String get aiChatSourceAttachment => 'Attachment';
+
+  @override
+  String get aiChatAttach => 'Attach';
+
+  @override
+  String get aiChatAttachTextHint => 'Paste long text as a material';
+
+  @override
+  String get aiChatAttachmentEditorTitle => 'Attach text';
+
+  @override
+  String get aiChatAttachmentEditorEditTitle => 'Edit attachment';
+
+  @override
+  String get aiChatAttachmentTitlePlaceholder =>
+      'Name (leave blank and the AI will name it)';
+
+  @override
+  String get aiChatAttachmentContentPlaceholder => 'Paste the text here';
+
+  @override
+  String aiChatAttachmentPasteNotice(String max) {
+    return 'Text longer than $max characters is added as a material.';
+  }
+
+  @override
+  String get aiChatAttachmentEditorNote =>
+      'You can edit it until you send it, but not afterwards. The AI makes a table of contents and reads the parts it needs.';
+
+  @override
+  String get aiChatAttachmentAdd => 'Attach';
+
+  @override
+  String get aiChatAttachmentConvert => 'Attach as a material';
+
+  @override
+  String get aiChatAttachmentSave => 'Save';
+
+  @override
+  String aiChatAttachmentTooLong(String max) {
+    return 'A material can be up to $max characters.';
+  }
+
+  @override
+  String aiChatAttachmentChars(String count) {
+    return '$count chars';
+  }
+
+  @override
+  String get aiChatAttachmentUntitled => 'Material';
+
+  @override
+  String aiChatAttachmentLimitPerMessage(String max) {
+    return 'You can attach up to $max materials at a time.';
+  }
+
+  @override
+  String get aiChatAttachmentProcessing => 'Checking';
+
+  @override
+  String get aiChatAttachmentBlocked => 'This material could not be used';
+
+  @override
+  String get aiChatAttachmentFailed => 'Could not be read';
+
+  @override
+  String get aiChatAttachmentRemove => 'Remove from this conversation';
+
+  @override
+  String get aiChatAttachmentRemoveConfirm =>
+      'Once removed, the AI will no longer read this material. It stays visible in the conversation.';
+
+  @override
+  String get aiChatAttachmentRemoveFailed =>
+      'Could not remove it. Please try again.';
+
+  @override
+  String get aiChatAttachmentContents => 'Contents';
+
+  @override
+  String aiChatAttachmentContentsCount(String count) {
+    return 'Contents ($count sections)';
+  }
+
+  @override
+  String get aiChatAttachmentFullText => 'Full text';
+
+  @override
+  String get aiChatAttachmentsTitle => 'Materials in this conversation';
+
+  @override
+  String get aiChatAttachmentsEmpty =>
+      'No materials yet. Attach one with the + in the message box.';
+
+  @override
+  String aiChatAttachmentsCount(String count) {
+    return 'Materials $count';
+  }
+
+  @override
+  String aiChatAttachmentSections(String count) {
+    return '$count sections';
+  }
+
+  @override
+  String aiChatAttachmentsOpen(String count) {
+    return 'Materials in this conversation ($count)';
+  }
+
+  @override
+  String get aiChatAttachSelect => 'Materials in this conversation';
+
+  @override
+  String get aiChatAttachSelectHint =>
+      'Attach in full or mention one (you can also type @ in the message box)';
+
+  @override
+  String get aiChatAttachSelectNone => 'No materials in this conversation yet';
+
+  @override
+  String get aiChatAttachLongText => 'Long text';
+
+  @override
+  String get aiChatAttachFile => 'Attach a file';
+
+  @override
+  String get aiChatAttachFileHint =>
+      'PDF, Word, PowerPoint, images, or text files';
+
+  @override
+  String get aiChatAttachCamera => 'Camera';
+
+  @override
+  String get aiChatAttachCameraHint => 'Photograph notes or a whiteboard';
+
+  @override
+  String get aiChatAttachPhoto => 'Photos';
+
+  @override
+  String get aiChatAttachPhotoHint => 'Choose from your photo library';
+
+  @override
+  String get aiChatAttachPickFailed =>
+      'Could not open it. Allow access to the camera and photos in Settings, then try again.';
+
+  @override
+  String get aiSettingsButton => 'AI chat settings';
+
+  @override
+  String get aiChatAttachmentFullRead => 'Read in full';
+
+  @override
+  String get aiChatAttachmentTocRead => 'Read via contents';
+
+  @override
+  String aiChatAttachmentSelectedTotal(String used, String max) {
+    return 'Read in full: $used / $max tokens';
+  }
+
+  @override
+  String aiChatAttachmentTokens(String count) {
+    return 'about $count tokens';
+  }
+
+  @override
+  String aiChatAttachmentCostPerTurn(String credits) {
+    return 'about +$credits credits per message';
+  }
+
+  @override
+  String get aiChatAttachmentTooLongToSelect =>
+      'Too long to read in full. The AI reads it through its contents and search.';
+
+  @override
+  String aiChatAttachmentSelectionLimit(String max) {
+    return 'Together with the selected materials this exceeds the limit ($max tokens). Turn off \"Read in full\" for another material first.';
+  }
+
+  @override
+  String get aiChatAttachmentSelectFailed =>
+      'Could not change it. Please try again.';
+
+  @override
+  String get aiChatAttachmentListHint =>
+      'Tap a material to attach it in full or mention it. The AI reads materials attached in full completely every time (until you remove them). Mentioning tells the AI which material your message is about, and it looks up the parts it needs. Even without either, the AI knows each material\'s name and summary.';
+
+  @override
+  String get aiChatAttachmentUnselect => 'Stop reading in full';
+
+  @override
+  String get aiChatErrorEmptyAttachment =>
+      'An empty material cannot be attached.';
+
+  @override
+  String aiChatErrorAttachmentTooLong(String max) {
+    return 'A material can be up to $max characters.';
+  }
+
+  @override
+  String aiChatErrorTooManyAttachments(String max) {
+    return 'You can attach up to $max materials at a time.';
+  }
+
+  @override
+  String aiChatErrorThreadAttachmentLimit(String max) {
+    return 'A conversation can hold up to $max materials. Remove ones you no longer need, or attach it in a new conversation.';
+  }
+
+  @override
+  String aiChatFileErrorUpload(String status) {
+    return 'Upload failed (code $status). Check your connection, then remove it and attach it again';
+  }
+
+  @override
+  String get aiChatFileUploadingShort => 'Uploading';
+
+  @override
+  String get aiChatDraftPreviewBadge => 'File to send';
+
+  @override
+  String aiChatDraftPreviewOpen(String name) {
+    return 'View $name';
+  }
+
+  @override
+  String get aiChatDraftPreviewOffice =>
+      'Word and PowerPoint files cannot be shown here. After sending, you can open the text and the original file from the materials list.';
+
+  @override
+  String aiChatDraftPreviewVisionPages(String pages) {
+    return 'Read as images: $pages';
+  }
+
+  @override
+  String get aiChatMentionNewFull => 'New attachment (in full)';
+
+  @override
+  String get aiChatMentionToFull => 'Attach in full';
+
+  @override
+  String get aiChatMentionToMention => 'Mention only';
+
+  @override
+  String get aiChatAttachPendingFull => 'Attached in full';
+
+  @override
+  String get aiChatAttachPendingMention => 'Mentioned';
+
+  @override
+  String get aiChatAttachUndo => 'Remove from message';
+
+  @override
+  String aiChatAttachmentSelectedPending(String used, String max) {
+    return 'Read in full after sending: $used / $max tokens';
+  }
+
+  @override
+  String get aiChatAttachmentOverLimitNote =>
+      'Above the limit, the materials read in full the longest will stop being read in full.';
+
+  @override
+  String get aiChatAttachPinned => 'Reading in full';
+
+  @override
+  String get aiChatAttachFull => 'Attach in full';
+
+  @override
+  String get aiChatAttachFullHint =>
+      'The AI reads it completely every turn (until you remove it)';
+
+  @override
+  String get aiChatAttachMention => 'Mention';
+
+  @override
+  String get aiChatAttachMentionHint =>
+      'Tells the AI your message is about this material';
+
+  @override
+  String get aiChatAttachView => 'View contents';
+
+  @override
+  String get aiChatAttachUnpinHint =>
+      'From now on, the AI reads only the parts it needs via contents and search';
+
+  @override
+  String aiChatPinnedSummary(String count, String credits, String percent) {
+    return '$count read in full · about +$credits credits per message ($percent% of the limit)';
+  }
+
+  @override
+  String get aiChatMentionPickerTitle => 'Materials in this conversation';
+
+  @override
+  String get aiChatMentionPickerHint => 'Enter to mention';
+
+  @override
+  String get aiChatMentionPickerEmpty => 'No matching materials';
+
+  @override
+  String get aiChatMentionRemoved => 'Removed material';
+
+  @override
+  String get aiChatMentionFullTag => 'Full';
+
+  @override
+  String aiChatNoticeUnpinned(String max, String titles) {
+    return 'Over the limit for materials read in full ($max tokens), so $titles is no longer read in full. Mention it with @ and the AI will look up the parts it needs.';
+  }
+
+  @override
+  String aiChatNoticeTooLong(String titles) {
+    return '$titles is too long to read in full. The AI will look up the parts it needs via contents and search.';
+  }
+
+  @override
+  String aiChatErrorTooManyMentions(String max) {
+    return 'You can point to up to $max materials per message.';
+  }
+
+  @override
+  String get aiChatFileCompressing => 'Shrinking…';
+
+  @override
+  String aiChatFileUploading(String percent) {
+    return 'Uploading $percent%';
+  }
+
+  @override
+  String get aiChatFileReading => 'Reading…';
+
+  @override
+  String get aiChatFileImage => 'Image';
+
+  @override
+  String aiChatFilePages(String count) {
+    return '$count pages';
+  }
+
+  @override
+  String aiChatFileSlides(String count) {
+    return '$count slides';
+  }
+
+  @override
+  String aiChatFileVisionCount(String count) {
+    return '$count read as images';
+  }
+
+  @override
+  String get aiChatFileNotReadyHint =>
+      'You can send once your files are ready (remove any that could not be read)';
+
+  @override
+  String get aiChatFileErrorUnsupported =>
+      'This file type is not supported. Choose a PDF, Word (.docx), PowerPoint (.pptx), image, or text file.';
+
+  @override
+  String aiChatFileErrorTooLarge(String max) {
+    return 'Too large (max $max MB)';
+  }
+
+  @override
+  String aiChatFileErrorTooLargeMedia(String max) {
+    return 'Too large because it contains video or audio (max $max MB). Remove them and save it again';
+  }
+
+  @override
+  String get aiChatFileErrorEncrypted =>
+      'Password-protected PDFs cannot be read';
+
+  @override
+  String get aiChatFileErrorEmpty => 'No text or images were found';
+
+  @override
+  String aiChatFileErrorTooManyPages(String max) {
+    return 'Too many pages (max $max). Save only the part you need';
+  }
+
+  @override
+  String aiChatFileErrorTooManyImages(String max) {
+    return 'Too many parts to read as images (max $max). Save only the part you need';
+  }
+
+  @override
+  String aiChatFileErrorTooLong(String max) {
+    return 'Too much text (max $max characters). Save only the part you need';
+  }
+
+  @override
+  String get aiChatFileErrorTooComplex => 'Too complex to read';
+
+  @override
+  String get aiChatFileErrorTooManyDrafts =>
+      'Too many files waiting to be sent. Remove some first';
+
+  @override
+  String get aiChatFileErrorDecode =>
+      'This image could not be read. Save it as JPEG or PNG and try again';
+
+  @override
+  String get aiChatFileErrorCorrupt => 'The file could not be opened';
+
+  @override
+  String get aiChatFileErrorGeneric =>
+      'Could not prepare this file. Remove it and attach it again';
+
+  @override
+  String get aiChatAttachmentOpenFile => 'Open original file';
+
+  @override
+  String get aiChatAttachmentOpenFileFailed =>
+      'Could not open the file. Please try again.';
+
+  @override
+  String get aiChatAttachmentImageLoading => 'Loading image…';
+
+  @override
+  String get aiChatErrorAttachmentNotReady =>
+      'An attached file is no longer available. Remove it and attach it again.';
+
+  @override
+  String aiChatElapsedSeconds(String seconds) {
+    return '$seconds sec';
+  }
+
+  @override
+  String aiChatElapsedMinutesSeconds(String minutes, String seconds) {
+    return '$minutes min $seconds sec';
+  }
+
+  @override
+  String get selfPortraitPageTitle => 'Self-portrait';
+
+  @override
+  String get selfPortraitPageSubtitle =>
+      'What we\'ve come to know about you, a little more each time you talk';
+
+  @override
+  String get selfPortraitLoadError =>
+      'Couldn\'t load this. Please try again in a moment.';
+
+  @override
+  String get selfPortraitActionFailed => 'That didn\'t work. Please try again.';
+
+  @override
+  String get selfPortraitNowSection => 'Me, right now';
+
+  @override
+  String get selfPortraitWrittenFromChats => 'Written from your conversations';
+
+  @override
+  String get selfPortraitDividerCaption => 'What your conversations have shown';
+
+  @override
+  String get selfPortraitRecentSection => 'Recently discovered';
+
+  @override
+  String get selfPortraitNew => 'NEW';
+
+  @override
+  String get selfPortraitConnectedTopics => 'Connected from';
+
+  @override
+  String selfPortraitQuote(String text) {
+    return '“$text”';
+  }
+
+  @override
+  String get selfPortraitConfirmBanner => 'There\'s something to check';
+
+  @override
+  String selfPortraitConfirmPendingCount(String count) {
+    return '$count to keep or remove';
+  }
+
+  @override
+  String selfPortraitProposalTitle(String field) {
+    return 'Suggested rewrite of $field';
+  }
+
+  @override
+  String get selfPortraitTabsLabel =>
+      'Switch between self-portrait and records';
+
+  @override
+  String get selfPortraitTabTraits => 'Self-portrait';
+
+  @override
+  String get selfPortraitTabRecords => 'Records';
+
+  @override
+  String get selfPortraitFootnote =>
+      'The AI adds to this little by little from what you talk about in chat. If something looks off, open it to edit or remove it.';
+
+  @override
+  String get selfPortraitOther => 'Other';
+
+  @override
+  String get selfPortraitEmptyTraits =>
+      'Nothing here yet. As you chat, this fills in little by little.';
+
+  @override
+  String get selfPortraitEmptyRecords =>
+      'When you talk about things you made or progress you made, they\'re kept here with a date.';
+
+  @override
+  String selfPortraitLatest(String date) {
+    return 'Latest $date';
+  }
+
+  @override
+  String selfPortraitMoreCount(String count) {
+    return '$count more';
+  }
+
+  @override
+  String selfPortraitFromConversations(String count) {
+    return 'From $count conversations';
+  }
+
+  @override
+  String get selfPortraitItemActions => 'Open this item';
+
+  @override
+  String get selfPortraitEditedByYou => 'Edited by you';
+
+  @override
+  String get selfPortraitActionEdit => 'Edit';
+
+  @override
+  String get selfPortraitActionEditHint =>
+      'Rewrite it in your own words. The AI won\'t change it after that';
+
+  @override
+  String get selfPortraitActionReject => 'Not me';
+
+  @override
+  String get selfPortraitActionRejectHint =>
+      'The AI misread you. It won\'t write anything with the same meaning again';
+
+  @override
+  String get selfPortraitRejectReasonLabel => 'What\'s off? (optional)';
+
+  @override
+  String get selfPortraitRejectReasonPlaceholder =>
+      'e.g. I only present because it\'s my role';
+
+  @override
+  String get selfPortraitActionDiscard => 'Don\'t keep this';
+
+  @override
+  String get selfPortraitActionDiscardHint =>
+      'Even if it\'s true, don\'t keep it. Removes this item and the notes it came from';
+
+  @override
+  String get selfPortraitDiscardConfirmTitle => 'Remove this item?';
+
+  @override
+  String get selfPortraitDiscardConfirmMessage =>
+      'The AI notes it came from are removed too. This can\'t be undone.';
+
+  @override
+  String get selfPortraitDiscardConfirmButton => 'Remove';
+
+  @override
+  String get selfPortraitPendingNotice =>
+      'Until you decide, this isn\'t used anywhere, not in chat or fun facts.';
+
+  @override
+  String get selfPortraitKeep => 'Keep';
+
+  @override
+  String get selfPortraitDontKeep => 'Don\'t keep';
+
+  @override
+  String get selfPortraitEvidenceSection => 'Where this came from';
+
+  @override
+  String get selfPortraitOpenChat => 'Open conversation';
+
+  @override
+  String get selfPortraitHistorySection => 'How it changed';
+
+  @override
+  String selfPortraitUntil(String date) {
+    return 'Until $date: ';
+  }
+
+  @override
+  String get selfPortraitConfirmSheetTitle => 'Things to check';
+
+  @override
+  String selfPortraitSensitiveAsk(String area) {
+    return 'This touches on $area, so please decide whether to keep it';
+  }
+
+  @override
+  String get selfPortraitAreaReligion => 'religion';
+
+  @override
+  String get selfPortraitAreaHealth => 'health';
+
+  @override
+  String get selfPortraitAreaSexuality => 'sexuality';
+
+  @override
+  String get selfPortraitAreaPolitics => 'politics';
+
+  @override
+  String get selfPortraitAreaEthnicity => 'background';
+
+  @override
+  String get selfPortraitAreaSensitive => 'something personal';
+
+  @override
+  String get selfPortraitProposalNow => 'Now: ';
+
+  @override
+  String get selfPortraitProposalAccept => 'Use this';
+
+  @override
+  String get selfPortraitProposalReject => 'Keep mine';
+
+  @override
+  String get selfPortraitConfirmEmpty => 'Nothing to check right now.';
+
+  @override
+  String get selfPortraitLinkSub =>
+      'A profile the AI adds to from what you talk about';
+
+  @override
+  String get aiSettingsTitle => 'What the AI remembers';
+
+  @override
+  String get aiSettingsPageTitle => 'AI chat settings';
+
+  @override
+  String get aiSettingsPageIntro =>
+      'What the AI keeps in mind when it talks with you. Stored separately from your self-portrait.';
+
+  @override
+  String get aiMemoStyleSection => 'How to explain';
+
+  @override
+  String get aiMemoSituationSection => 'Right now';
+
+  @override
+  String aiMemoUntil(String date) {
+    return 'until $date';
+  }
+
+  @override
+  String get aiMemoEmpty => 'Nothing yet';
+
+  @override
+  String get aiMemoDelete => 'Remove this note';
+
+  @override
+  String get aiMemoOneTimeNote =>
+      'Requests just for one conversation, like “fewer formulas this time,” aren\'t kept here.';
+
+  @override
+  String get aiMoreSection => 'More';
+
+  @override
+  String get aiNotesLink => 'AI notes';
+
+  @override
+  String aiNotesLinkSub(String count) {
+    return '$count things noticed in conversations · material for your self-portrait';
+  }
+
+  @override
+  String get aiMemoryIntro =>
+      'Things the AI noticed while you talked. When several notes point the same way, they\'re added to your self-portrait. A one-off stays here and doesn\'t become part of it.';
+
+  @override
+  String get aiMemoryEmpty => 'No notes yet.';
+
+  @override
+  String get aiMemoryDeleteNote => 'Remove this note';
+
+  @override
+  String get aiMemoryForgetAll => 'Remove all AI notes';
+
+  @override
+  String get aiMemoryForgetAllNote =>
+      'Your self-portrait and explanation notes stay. You can remove those individually on their own screens.';
+
+  @override
+  String aiMemoryForgetConfirmMessage(String count) {
+    return 'This removes $count notes. It can\'t be undone.';
+  }
+
+  @override
+  String get accountAiSettingsSub => 'Explanation notes · AI notes';
+
+  @override
+  String get selfPortraitCoverBio => 'ABOUT YOU';
+
+  @override
+  String get selfPortraitCoverBioEmpty => 'No description set yet.';
+
+  @override
+  String get selfPortraitCoverInterests => 'INTERESTS';
+
+  @override
+  String get selfPortraitCoverInterestsEmpty => 'No interests set yet.';
+
+  @override
+  String get selfPortraitCoverFutureGoals => 'FUTURE DREAMS';
+
+  @override
+  String get selfPortraitCoverFutureGoalsEmpty => 'No future dream set yet.';
+
+  @override
+  String get selfPortraitSave => 'Save';
+
+  @override
+  String get selfPortraitSaving => 'Saving…';
+
+  @override
+  String get selfPortraitEdit => 'Edit';
 }

@@ -384,17 +384,9 @@
   "@aiSharingConsentDialogTitle": {
     "description": "Title of the dialog shown once, right before the user's first upload, disclosing that their recording and profile data are sent to third-party AI services (Apple Guideline 5.1.1(i)/5.1.2(i) compliance)."
   },
-  "aiSharingConsentDialogMessage": "Your recorded audio and some of your profile information are sent to third-party AI services to generate transcripts, notes, and summaries.",
+  "aiSharingConsentDialogMessage": "Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI, TogetherAI) to make transcripts, notes, and summaries. Your name and email address are not sent.",
   "@aiSharingConsentDialogMessage": {
     "description": "Short body text of the AI-sharing consent dialog, summarizing what is shared before the user expands the details section."
-  },
-  "aiSharingConsentDialogDetailsToggle": "See details",
-  "@aiSharingConsentDialogDetailsToggle": {
-    "description": "Label for the expandable section (e.g. ExpansionTile) inside the AI-sharing consent dialog that reveals the full list of data sent and which AI services receive it."
-  },
-  "aiSharingConsentDialogDetailsBody": "Data sent:\n• Your recorded lecture audio\n• The text transcribed from that audio\n• Course and profile information used to generate notes\n\nSent to (AI services we use):\n• Cloudflare Workers AI (Whisper) — audio transcription\n• Google AI Studio (Gemini), TogetherAI, and similar providers — summaries, notes, and quiz generation\n• Cloudflare Workers AI (FLUX) — image generation\n\nYour name and email address are not included in this data.",
-  "@aiSharingConsentDialogDetailsBody": {
-    "description": "Expanded detail text inside the AI-sharing consent dialog, listing the exact categories of data sent and the specific third-party AI services/models that receive them, plus a note that PII (name/email) is excluded."
   },
   "aiSharingConsentDialogPrivacyPolicyLink": "Privacy Policy",
   "@aiSharingConsentDialogPrivacyPolicyLink": {
@@ -411,6 +403,18 @@
   "aiSharingConsentDialogAgreeButton": "Agree & Continue",
   "@aiSharingConsentDialogAgreeButton": {
     "description": "Primary confirm button on the AI-sharing consent dialog. Records the user's consent and proceeds with the upload that triggered the dialog."
+  },
+  "aiSharingConsentDialogUpdatedNotice": "We've updated which AI services your recordings are sent to (OpenAI added). Please review the details and agree again.",
+  "@aiSharingConsentDialogUpdatedNotice": {
+    "description": "Shown at the top of the recording AI-sharing consent dialog to users who agreed to an earlier version, explaining why they are asked again."
+  },
+  "aiChatConsentDialogTitle": "About AI Chat Data Processing",
+  "@aiChatConsentDialogTitle": {
+    "description": "Title of the consent dialog shown once before the AI chat is first opened."
+  },
+  "aiChatConsentDialogMessage": "What you type in the chat, files you attach, and the parts of your lecture notes that relate to your question are sent to outside AI services (Anthropic, Google, OpenAI) and search services (Brave, Tavily) to write the answer. Your name and email address are not sent (unless they are in what you type or attach).",
+  "@aiChatConsentDialogMessage": {
+    "description": "Short body of the AI chat consent dialog."
   },
   "recordingDiscardButtonLabel": "Discard Recording",
   "@recordingDiscardButtonLabel": {
@@ -2976,6 +2980,10 @@
   "@cardSelectionToolbarSourceLabel": {
     "description": "Icon+label button in the text-selection state of the CardSelectionToolbar, currently a UI-only placeholder action for viewing the transcript source of the selected text. Must stay short."
   },
+  "cardSelectionToolbarAskLabel": "Ask AI",
+  "@cardSelectionToolbarAskLabel": {
+    "description": "Icon+label button in the text-selection state of the CardSelectionToolbar. Opens the AI chat with the selected text attached so the user can ask about it. Must stay short."
+  },
   "cardSelectionToolbarLikeLabel": "Like",
   "@cardSelectionToolbarLikeLabel": {
     "description": "Icon+label button in the default (no selection) state of the CardSelectionToolbar shown above Review Cards / Deep Notes content, used to mark the card as liked. Must stay short."
@@ -3562,18 +3570,6 @@
   "recordingMiniPlayerPaused": "Recording Paused",
   "@recordingMiniPlayerPaused": {
     "description": "Status text in recording mini player when recording is paused."
-  },
-  "aiChatSheetTitle": "Ask AI",
-  "@aiChatSheetTitle": {
-    "description": "Title in AI chat sheet header."
-  },
-  "aiChatSheetInputHint": "Ask about this lecture...",
-  "@aiChatSheetInputHint": {
-    "description": "TextField hint text in AI chat sheet."
-  },
-  "aiChatSheetPreviewFallback": "This is a UI preview — real AI answers aren't wired up yet.",
-  "@aiChatSheetPreviewFallback": {
-    "description": "Fallback bot response text in dummy AI chat preview."
   },
   "courseDeleteDialogTitle": "Delete Course?",
   "@courseDeleteDialogTitle": {
@@ -4445,5 +4441,1602 @@
   "errAccountSuspended": "This account has been suspended.",
   "@errAccountSuspended": {
     "description": "Friendly message for AppErrorCode.ACCOUNT_SUSPENDED. The full explanation lives on the account-suspended notice; this is the one-line inline form."
+  },
+  "aiChatNewConversation": "New chat",
+  "@aiChatNewConversation": {
+    "description": "AI chat. Ported from the web app string \"chatNewConversation\"."
+  },
+  "aiChatHistory": "Conversations",
+  "@aiChatHistory": {
+    "description": "AI chat. Ported from the web app string \"chatHistory\"."
+  },
+  "aiChatInputPlaceholder": "Ask anything…",
+  "@aiChatInputPlaceholder": {
+    "description": "AI chat. Ported from the web app string \"chatInputPlaceholder\"."
+  },
+  "aiChatInputPlaceholderFollowUp": "Ask a follow-up…",
+  "@aiChatInputPlaceholderFollowUp": {
+    "description": "AI chat. Ported from the web app string \"chatInputPlaceholderFollowUp\"."
+  },
+  "aiChatSend": "Send",
+  "@aiChatSend": {
+    "description": "AI chat. Ported from the web app string \"chatSend\"."
+  },
+  "aiChatStageThinking": "Thinking…",
+  "@aiChatStageThinking": {
+    "description": "AI chat. Ported from the web app string \"chatStageThinking\"."
+  },
+  "aiChatStageSearching": "Searching your lecture notes…",
+  "@aiChatStageSearching": {
+    "description": "AI chat. Ported from the web app string \"chatStageSearching\"."
+  },
+  "aiChatStageSearchingWeb": "Searching the web…",
+  "@aiChatStageSearchingWeb": {
+    "description": "AI chat. Ported from the web app string \"chatStageSearchingWeb\"."
+  },
+  "aiChatStageSearchingChats": "Looking through past chats…",
+  "@aiChatStageSearchingChats": {
+    "description": "AI chat. Ported from the web app string \"chatStageSearchingChats\"."
+  },
+  "aiChatStageSearchingWebWithQuery": "Searching the web for \"{query}\"…",
+  "@aiChatStageSearchingWebWithQuery": {
+    "description": "AI chat. Ported from the web app string \"chatStageSearchingWebWithQuery\".",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatStageSearchingNotesWithQuery": "Searching lecture notes for \"{query}\"…",
+  "@aiChatStageSearchingNotesWithQuery": {
+    "description": "AI chat. Ported from the web app string \"chatStageSearchingNotesWithQuery\".",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatStageSearchingTranscriptWithQuery": "Searching lecture transcript for \"{query}\"…",
+  "@aiChatStageSearchingTranscriptWithQuery": {
+    "description": "AI chat. Ported from the web app string \"chatStageSearchingTranscriptWithQuery\".",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatStageSearchingChatsWithQuery": "Looking through past chats for \"{query}\"…",
+  "@aiChatStageSearchingChatsWithQuery": {
+    "description": "AI chat. Ported from the web app string \"chatStageSearchingChatsWithQuery\".",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatStageReadingTranscript": "Checking lecture transcript…",
+  "@aiChatStageReadingTranscript": {
+    "description": "AI chat. Ported from the web app string \"chatStageReadingTranscript\"."
+  },
+  "aiChatStageReadingNotes": "Checking lecture materials…",
+  "@aiChatStageReadingNotes": {
+    "description": "AI chat. Ported from the web app string \"chatStageReadingNotes\"."
+  },
+  "aiChatStageReasoning": "Thinking it through…",
+  "@aiChatStageReasoning": {
+    "description": "AI chat. Ported from the web app string \"chatStageReasoning\"."
+  },
+  "aiChatStageWriting": "Writing…",
+  "@aiChatStageWriting": {
+    "description": "AI chat. Ported from the web app string \"chatStageWriting\"."
+  },
+  "aiChatReconnecting": "Connection lost. Waiting for the reply to finish…",
+  "@aiChatReconnecting": {
+    "description": "AI chat. Ported from the web app string \"chatReconnecting\"."
+  },
+  "aiChatCreditsUsed": "{credits} credits",
+  "@aiChatCreditsUsed": {
+    "description": "AI chat. Ported from the web app string \"chatCreditsUsed\".",
+    "placeholders": {
+      "credits": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatActionCopy": "Copy",
+  "@aiChatActionCopy": {
+    "description": "AI chat. Ported from the web app string \"chatActionCopy\"."
+  },
+  "aiChatActionCopied": "Copied",
+  "@aiChatActionCopied": {
+    "description": "AI chat. Ported from the web app string \"chatActionCopied\"."
+  },
+  "aiChatActionMore": "More",
+  "@aiChatActionMore": {
+    "description": "AI chat. Ported from the web app string \"chatActionMore\"."
+  },
+  "aiChatActionDetails": "Reply details",
+  "@aiChatActionDetails": {
+    "description": "AI chat. Ported from the web app string \"chatActionDetails\"."
+  },
+  "aiChatDetailSentAt": "Sent",
+  "@aiChatDetailSentAt": {
+    "description": "AI chat. Ported from the web app string \"chatDetailSentAt\"."
+  },
+  "aiChatDetailCredits": "Credits used",
+  "@aiChatDetailCredits": {
+    "description": "AI chat. Ported from the web app string \"chatDetailCredits\"."
+  },
+  "aiChatDetailNoCharge": "None",
+  "@aiChatDetailNoCharge": {
+    "description": "AI chat. Ported from the web app string \"chatDetailNoCharge\"."
+  },
+  "aiChatDetailSources": "Sources used",
+  "@aiChatDetailSources": {
+    "description": "AI chat. Ported from the web app string \"chatDetailSources\"."
+  },
+  "aiChatDetailSourcesCount": "{count}",
+  "@aiChatDetailSourcesCount": {
+    "description": "AI chat. Ported from the web app string \"chatDetailSourcesCount\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatShowMore": "Show more",
+  "@aiChatShowMore": {
+    "description": "AI chat. Ported from the web app string \"chatShowMore\"."
+  },
+  "aiChatShowLess": "Show less",
+  "@aiChatShowLess": {
+    "description": "AI chat. Ported from the web app string \"chatShowLess\"."
+  },
+  "aiChatActionEdit": "Edit",
+  "@aiChatActionEdit": {
+    "description": "AI chat. Ported from the web app string \"chatActionEdit\"."
+  },
+  "aiChatActionRegenerate": "Regenerate",
+  "@aiChatActionRegenerate": {
+    "description": "AI chat. Ported from the web app string \"chatActionRegenerate\"."
+  },
+  "aiChatEditing": "Editing this message — the {turns} exchange(s) after it will be deleted",
+  "@aiChatEditing": {
+    "description": "AI chat. Ported from the web app string \"chatEditing\".",
+    "placeholders": {
+      "turns": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatEditingWithAttachments": "Editing this message — the {turns} exchange(s) after it and {count} attached material(s) will be deleted",
+  "@aiChatEditingWithAttachments": {
+    "description": "AI chat. Ported from the web app string \"chatEditingWithAttachments\".",
+    "placeholders": {
+      "turns": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatEditingLast": "Editing this message",
+  "@aiChatEditingLast": {
+    "description": "AI chat. Ported from the web app string \"chatEditingLast\"."
+  },
+  "aiChatEditCancel": "Stop editing",
+  "@aiChatEditCancel": {
+    "description": "AI chat. Ported from the web app string \"chatEditCancel\"."
+  },
+  "aiChatEditConfirmTitle": "Send this edit?",
+  "@aiChatEditConfirmTitle": {
+    "description": "AI chat. Ported from the web app string \"chatEditConfirmTitle\"."
+  },
+  "aiChatEditConfirmBody": "The {turns} exchange(s) after this message will be deleted, along with the materials attached in them: {titles}. Credits already used are not refunded.",
+  "@aiChatEditConfirmBody": {
+    "description": "AI chat. Ported from the web app string \"chatEditConfirmBody\".",
+    "placeholders": {
+      "turns": {
+        "type": "String"
+      },
+      "titles": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatEditConfirmSend": "Delete and send",
+  "@aiChatEditConfirmSend": {
+    "description": "AI chat. Ported from the web app string \"chatEditConfirmSend\"."
+  },
+  "aiChatStop": "Stop",
+  "@aiChatStop": {
+    "description": "AI chat. Ported from the web app string \"chatStop\"."
+  },
+  "aiChatStopping": "Stopping…",
+  "@aiChatStopping": {
+    "description": "AI chat. Ported from the web app string \"chatStopping\"."
+  },
+  "aiChatStopped": "Stopped",
+  "@aiChatStopped": {
+    "description": "AI chat. Ported from the web app string \"chatStopped\"."
+  },
+  "aiChatStopFailed": "Couldn't stop the reply. Please try again.",
+  "@aiChatStopFailed": {
+    "description": "AI chat. Ported from the web app string \"chatStopFailed\"."
+  },
+  "aiChatStoppedAttachments": "Because the reply was stopped, {titles} could not be read. Please attach it again.",
+  "@aiChatStoppedAttachments": {
+    "description": "AI chat. Ported from the web app string \"chatStoppedAttachments\".",
+    "placeholders": {
+      "titles": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatDetailStatus": "Status",
+  "@aiChatDetailStatus": {
+    "description": "AI chat. Ported from the web app string \"chatDetailStatus\"."
+  },
+  "aiChatDetailStatusStopped": "Stopped partway",
+  "@aiChatDetailStatusStopped": {
+    "description": "AI chat. Ported from the web app string \"chatDetailStatusStopped\"."
+  },
+  "aiChatActionReport": "Report a problem",
+  "@aiChatActionReport": {
+    "description": "AI chat. Ported from the web app string \"chatActionReport\"."
+  },
+  "aiChatReportAttach": "Attach this reply and the question before it",
+  "@aiChatReportAttach": {
+    "description": "AI chat. Ported from the web app string \"chatReportAttach\"."
+  },
+  "aiChatReportQuestion": "Question",
+  "@aiChatReportQuestion": {
+    "description": "AI chat. Ported from the web app string \"chatReportQuestion\"."
+  },
+  "aiChatReportReply": "Reply",
+  "@aiChatReportReply": {
+    "description": "AI chat. Ported from the web app string \"chatReportReply\"."
+  },
+  "aiReportCategoryLabel": "Type",
+  "@aiReportCategoryLabel": {
+    "description": "AI chat. Ported from the web app string \"reportCategoryLabel\"."
+  },
+  "aiReportCategoryInappropriate": "Inappropriate answer",
+  "@aiReportCategoryInappropriate": {
+    "description": "AI chat. Ported from the web app string \"reportCategoryInappropriate\"."
+  },
+  "aiReportCategoryIncorrect": "Incorrect content",
+  "@aiReportCategoryIncorrect": {
+    "description": "AI chat. Ported from the web app string \"reportCategoryIncorrect\"."
+  },
+  "aiReportCategoryBug": "Bug",
+  "@aiReportCategoryBug": {
+    "description": "AI chat. Ported from the web app string \"reportCategoryBug\"."
+  },
+  "aiReportCategoryFeedback": "Feedback or request",
+  "@aiReportCategoryFeedback": {
+    "description": "AI chat. Ported from the web app string \"reportCategoryFeedback\"."
+  },
+  "aiReportCategoryAccount": "Account",
+  "@aiReportCategoryAccount": {
+    "description": "AI chat. Ported from the web app string \"reportCategoryAccount\"."
+  },
+  "aiReportCategoryOther": "Other",
+  "@aiReportCategoryOther": {
+    "description": "AI chat. Ported from the web app string \"reportCategoryOther\"."
+  },
+  "aiReportMessageLabel": "Details",
+  "@aiReportMessageLabel": {
+    "description": "AI chat. Ported from the web app string \"reportMessageLabel\"."
+  },
+  "aiReportMessagePlaceholder": "Tell us what happened and what you expected.",
+  "@aiReportMessagePlaceholder": {
+    "description": "AI chat. Ported from the web app string \"reportMessagePlaceholder\"."
+  },
+  "aiReportAttachPreview": "Preview what will be sent",
+  "@aiReportAttachPreview": {
+    "description": "AI chat. Ported from the web app string \"reportAttachPreview\"."
+  },
+  "aiReportAutoNote": "Which reply this is, and when it was sent, are always included.",
+  "@aiReportAutoNote": {
+    "description": "AI chat. Ported from the web app string \"reportAutoNote\"."
+  },
+  "aiReportSubmit": "Send report",
+  "@aiReportSubmit": {
+    "description": "AI chat. Ported from the web app string \"reportSubmit\"."
+  },
+  "aiReportSending": "Sending…",
+  "@aiReportSending": {
+    "description": "AI chat. Ported from the web app string \"reportSending\"."
+  },
+  "aiReportFailed": "Couldn't send the report. Please try again.",
+  "@aiReportFailed": {
+    "description": "AI chat. Ported from the web app string \"reportFailed\"."
+  },
+  "aiReportSentTitle": "Report sent",
+  "@aiReportSentTitle": {
+    "description": "AI chat. Ported from the web app string \"reportSentTitle\"."
+  },
+  "aiReportSentBody": "Thank you. Your reference code is {code}. We will email you a confirmation.",
+  "@aiReportSentBody": {
+    "description": "AI chat. Ported from the web app string \"reportSentBody\".",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatReplyFailed": "Couldn't generate a reply. No credits were used.",
+  "@aiChatReplyFailed": {
+    "description": "AI chat. Ported from the web app string \"chatReplyFailed\"."
+  },
+  "aiChatResend": "Send again",
+  "@aiChatResend": {
+    "description": "AI chat. Ported from the web app string \"chatResend\"."
+  },
+  "aiChatSourcePreviewEmpty": "No text preview available for this source.",
+  "@aiChatSourcePreviewEmpty": {
+    "description": "AI chat. Ported from the web app string \"chatSourcePreviewEmpty\"."
+  },
+  "aiChatClose": "Close",
+  "@aiChatClose": {
+    "description": "AI chat. Ported from the web app string \"chatClose\"."
+  },
+  "aiChatOpenExternalWeb": "Open web page",
+  "@aiChatOpenExternalWeb": {
+    "description": "AI chat. Ported from the web app string \"chatOpenExternalWeb\"."
+  },
+  "aiChatOpenInLecture": "View full context in lecture",
+  "@aiChatOpenInLecture": {
+    "description": "AI chat. Ported from the web app string \"chatOpenInLecture\"."
+  },
+  "aiChatNotSent": "Not sent",
+  "@aiChatNotSent": {
+    "description": "AI chat. Ported from the web app string \"chatNotSent\"."
+  },
+  "aiChatErrorInsufficientCredits": "Chat needs at least {min} credits.",
+  "@aiChatErrorInsufficientCredits": {
+    "description": "AI chat. Ported from the web app string \"chatErrorInsufficientCredits\".",
+    "placeholders": {
+      "min": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatErrorRateLimited": "You're sending messages quickly. Wait a moment and try again.",
+  "@aiChatErrorRateLimited": {
+    "description": "AI chat. Ported from the web app string \"chatErrorRateLimited\"."
+  },
+  "aiChatErrorBlockedCooldown": "Chat is temporarily unavailable for this account.",
+  "@aiChatErrorBlockedCooldown": {
+    "description": "AI chat. Ported from the web app string \"chatErrorBlockedCooldown\"."
+  },
+  "aiChatErrorTooLong": "Your message is too long. Keep it under {max} characters.",
+  "@aiChatErrorTooLong": {
+    "description": "AI chat. Ported from the web app string \"chatErrorTooLong\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatErrorSelectedTooLong": "The selected text is too long. Select a passage under {max} characters.",
+  "@aiChatErrorSelectedTooLong": {
+    "description": "AI chat. Ported from the web app string \"chatErrorSelectedTooLong\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatErrorThreadBusy": "A reply is still being written in this chat. Try again when it finishes.",
+  "@aiChatErrorThreadBusy": {
+    "description": "AI chat. Ported from the web app string \"chatErrorThreadBusy\"."
+  },
+  "aiChatErrorThreadNotFound": "This conversation no longer exists.",
+  "@aiChatErrorThreadNotFound": {
+    "description": "AI chat. Ported from the web app string \"chatErrorThreadNotFound\"."
+  },
+  "aiChatErrorSuspended": "This account is suspended, so chat is unavailable.",
+  "@aiChatErrorSuspended": {
+    "description": "AI chat. Ported from the web app string \"chatErrorSuspended\"."
+  },
+  "aiChatErrorNetwork": "Couldn't reach the server. Check your connection and try again.",
+  "@aiChatErrorNetwork": {
+    "description": "AI chat. Ported from the web app string \"chatErrorNetwork\"."
+  },
+  "aiChatErrorGeneric": "Something went wrong. Try again.",
+  "@aiChatErrorGeneric": {
+    "description": "AI chat. Ported from the web app string \"chatErrorGeneric\"."
+  },
+  "aiChatLoadFailed": "Couldn't load this conversation.",
+  "@aiChatLoadFailed": {
+    "description": "AI chat. Ported from the web app string \"chatLoadFailed\"."
+  },
+  "aiChatBuyCredits": "Add credits",
+  "@aiChatBuyCredits": {
+    "description": "AI chat. Ported from the web app string \"chatBuyCredits\"."
+  },
+  "aiChatDismiss": "Dismiss",
+  "@aiChatDismiss": {
+    "description": "AI chat. Ported from the web app string \"chatDismiss\"."
+  },
+  "aiChatEmptyTitle": "What would you like to explore?",
+  "@aiChatEmptyTitle": {
+    "description": "AI chat. Ported from the web app string \"chatEmptyTitle\"."
+  },
+  "aiChatEmptySubtitle": "Ask about your lectures, connect ideas across classes, or think through anything on your mind.",
+  "@aiChatEmptySubtitle": {
+    "description": "AI chat. Ported from the web app string \"chatEmptySubtitle\"."
+  },
+  "aiChatSuggestionLatest": "Summarize the key ideas from my latest lecture",
+  "@aiChatSuggestionLatest": {
+    "description": "AI chat. Ported from the web app string \"chatSuggestionLatest\"."
+  },
+  "aiChatSuggestionQuiz": "Quiz me on what I learned this week",
+  "@aiChatSuggestionQuiz": {
+    "description": "AI chat. Ported from the web app string \"chatSuggestionQuiz\"."
+  },
+  "aiChatSuggestionGoals": "How does what I'm learning connect to my goals?",
+  "@aiChatSuggestionGoals": {
+    "description": "AI chat. Ported from the web app string \"chatSuggestionGoals\"."
+  },
+  "aiChatSuggestionThisLecture": "What are the most important points of this lecture?",
+  "@aiChatSuggestionThisLecture": {
+    "description": "AI chat. Ported from the web app string \"chatSuggestionThisLecture\"."
+  },
+  "aiChatSuggestionSelection": "Explain this in simpler words",
+  "@aiChatSuggestionSelection": {
+    "description": "AI chat. Ported from the web app string \"chatSuggestionSelection\"."
+  },
+  "aiChatSourcesLabel": "Sources",
+  "@aiChatSourcesLabel": {
+    "description": "AI chat. Ported from the web app string \"chatSourcesLabel\"."
+  },
+  "aiChatAttachedLecture": "About {title}",
+  "@aiChatAttachedLecture": {
+    "description": "AI chat. Ported from the web app string \"chatAttachedLecture\".",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatRemoveAttachment": "Remove",
+  "@aiChatRemoveAttachment": {
+    "description": "AI chat. Ported from the web app string \"chatRemoveAttachment\"."
+  },
+  "aiChatThreadsEmpty": "No conversations yet.",
+  "@aiChatThreadsEmpty": {
+    "description": "AI chat. Ported from the web app string \"chatThreadsEmpty\"."
+  },
+  "aiChatThreadUntitled": "New conversation",
+  "@aiChatThreadUntitled": {
+    "description": "AI chat. Ported from the web app string \"chatThreadUntitled\"."
+  },
+  "aiChatRename": "Rename",
+  "@aiChatRename": {
+    "description": "AI chat. Ported from the web app string \"chatRename\"."
+  },
+  "aiChatDelete": "Delete",
+  "@aiChatDelete": {
+    "description": "AI chat. Ported from the web app string \"chatDelete\"."
+  },
+  "aiChatDeleteConfirmTitle": "Delete this conversation?",
+  "@aiChatDeleteConfirmTitle": {
+    "description": "AI chat. Ported from the web app string \"chatDeleteConfirmTitle\"."
+  },
+  "aiChatDeleteConfirmMessage": "It will be removed from your conversations. This can't be undone.",
+  "@aiChatDeleteConfirmMessage": {
+    "description": "AI chat. Ported from the web app string \"chatDeleteConfirmMessage\"."
+  },
+  "aiChatAiDisclaimer": "AI can make mistakes. Check important details against your lecture.",
+  "@aiChatAiDisclaimer": {
+    "description": "AI chat. Ported from the web app string \"chatAiDisclaimer\"."
+  },
+  "aiChatSourceDeepNote": "Deep Note",
+  "@aiChatSourceDeepNote": {
+    "description": "AI chat. Ported from the web app string \"chatSourceDeepNote\"."
+  },
+  "aiChatSourceReviewCard": "Review Card",
+  "@aiChatSourceReviewCard": {
+    "description": "AI chat. Ported from the web app string \"chatSourceReviewCard\"."
+  },
+  "aiChatSourceKeyword": "Keyword",
+  "@aiChatSourceKeyword": {
+    "description": "AI chat. Ported from the web app string \"chatSourceKeyword\"."
+  },
+  "aiChatSourceAnnouncement": "Announcement",
+  "@aiChatSourceAnnouncement": {
+    "description": "AI chat. Ported from the web app string \"chatSourceAnnouncement\"."
+  },
+  "aiChatSourceTranscript": "Transcript",
+  "@aiChatSourceTranscript": {
+    "description": "AI chat. Ported from the web app string \"chatSourceTranscript\"."
+  },
+  "aiChatSourceTopic": "Topic",
+  "@aiChatSourceTopic": {
+    "description": "AI chat. Ported from the web app string \"chatSourceTopic\"."
+  },
+  "aiChatSourceFunFact": "Fun Fact",
+  "@aiChatSourceFunFact": {
+    "description": "AI chat. Ported from the web app string \"chatSourceFunFact\"."
+  },
+  "aiChatSourceLectureSummary": "Lecture summary",
+  "@aiChatSourceLectureSummary": {
+    "description": "AI chat. Ported from the web app string \"chatSourceLectureSummary\"."
+  },
+  "aiChatSourceCourse": "Course",
+  "@aiChatSourceCourse": {
+    "description": "AI chat. Ported from the web app string \"chatSourceCourse\"."
+  },
+  "aiChatSourceChat": "Past chat",
+  "@aiChatSourceChat": {
+    "description": "AI chat. Ported from the web app string \"chatSourceChat\"."
+  },
+  "aiChatSourceWeb": "Web",
+  "@aiChatSourceWeb": {
+    "description": "AI chat. Ported from the web app string \"chatSourceWeb\"."
+  },
+  "aiChatSourceMoment": "My note",
+  "@aiChatSourceMoment": {
+    "description": "AI chat. Ported from the web app string \"chatSourceMoment\"."
+  },
+  "aiChatPlanExcludedSources": "Not searched by chat on your current plan: {items}",
+  "@aiChatPlanExcludedSources": {
+    "description": "AI chat. Ported from the web app string \"chatPlanExcludedSources\".",
+    "placeholders": {
+      "items": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatPlanExcludedSourcesSeparator": ", ",
+  "@aiChatPlanExcludedSourcesSeparator": {
+    "description": "AI chat. Ported from the web app string \"chatPlanExcludedSourcesSeparator\"."
+  },
+  "aiChatStageReadingAttachments": "Reading your materials…",
+  "@aiChatStageReadingAttachments": {
+    "description": "AI chat. Ported from the web app string \"chatStageReadingAttachments\"."
+  },
+  "aiChatStageReadingAttachment": "Checking your materials…",
+  "@aiChatStageReadingAttachment": {
+    "description": "AI chat. Ported from the web app string \"chatStageReadingAttachment\"."
+  },
+  "aiChatSourceAttachment": "Attachment",
+  "@aiChatSourceAttachment": {
+    "description": "AI chat. Ported from the web app string \"chatSourceAttachment\"."
+  },
+  "aiChatAttach": "Attach",
+  "@aiChatAttach": {
+    "description": "AI chat. Ported from the web app string \"chatAttach\"."
+  },
+  "aiChatAttachTextHint": "Paste long text as a material",
+  "@aiChatAttachTextHint": {
+    "description": "AI chat. Ported from the web app string \"chatAttachTextHint\"."
+  },
+  "aiChatAttachmentEditorTitle": "Attach text",
+  "@aiChatAttachmentEditorTitle": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentEditorTitle\"."
+  },
+  "aiChatAttachmentEditorEditTitle": "Edit attachment",
+  "@aiChatAttachmentEditorEditTitle": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentEditorEditTitle\"."
+  },
+  "aiChatAttachmentTitlePlaceholder": "Name (leave blank and the AI will name it)",
+  "@aiChatAttachmentTitlePlaceholder": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentTitlePlaceholder\"."
+  },
+  "aiChatAttachmentContentPlaceholder": "Paste the text here",
+  "@aiChatAttachmentContentPlaceholder": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentContentPlaceholder\"."
+  },
+  "aiChatAttachmentPasteNotice": "Text longer than {max} characters is added as a material.",
+  "@aiChatAttachmentPasteNotice": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentPasteNotice\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachmentEditorNote": "You can edit it until you send it, but not afterwards. The AI makes a table of contents and reads the parts it needs.",
+  "@aiChatAttachmentEditorNote": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentEditorNote\"."
+  },
+  "aiChatAttachmentAdd": "Attach",
+  "@aiChatAttachmentAdd": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentAdd\"."
+  },
+  "aiChatAttachmentConvert": "Attach as a material",
+  "@aiChatAttachmentConvert": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentConvert\"."
+  },
+  "aiChatAttachmentSave": "Save",
+  "@aiChatAttachmentSave": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentSave\"."
+  },
+  "aiChatAttachmentTooLong": "A material can be up to {max} characters.",
+  "@aiChatAttachmentTooLong": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentTooLong\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachmentChars": "{count} chars",
+  "@aiChatAttachmentChars": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentChars\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachmentUntitled": "Material",
+  "@aiChatAttachmentUntitled": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentUntitled\"."
+  },
+  "aiChatAttachmentLimitPerMessage": "You can attach up to {max} materials at a time.",
+  "@aiChatAttachmentLimitPerMessage": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentLimitPerMessage\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachmentProcessing": "Checking",
+  "@aiChatAttachmentProcessing": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentProcessing\"."
+  },
+  "aiChatAttachmentBlocked": "This material could not be used",
+  "@aiChatAttachmentBlocked": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentBlocked\"."
+  },
+  "aiChatAttachmentFailed": "Could not be read",
+  "@aiChatAttachmentFailed": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentFailed\"."
+  },
+  "aiChatAttachmentRemove": "Remove from this conversation",
+  "@aiChatAttachmentRemove": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentRemove\"."
+  },
+  "aiChatAttachmentRemoveConfirm": "Once removed, the AI will no longer read this material. It stays visible in the conversation.",
+  "@aiChatAttachmentRemoveConfirm": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentRemoveConfirm\"."
+  },
+  "aiChatAttachmentRemoveFailed": "Could not remove it. Please try again.",
+  "@aiChatAttachmentRemoveFailed": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentRemoveFailed\"."
+  },
+  "aiChatAttachmentContents": "Contents",
+  "@aiChatAttachmentContents": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentContents\"."
+  },
+  "aiChatAttachmentContentsCount": "Contents ({count} sections)",
+  "@aiChatAttachmentContentsCount": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentContentsCount\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachmentFullText": "Full text",
+  "@aiChatAttachmentFullText": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentFullText\"."
+  },
+  "aiChatAttachmentsTitle": "Materials in this conversation",
+  "@aiChatAttachmentsTitle": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentsTitle\"."
+  },
+  "aiChatAttachmentsEmpty": "No materials yet. Attach one with the + in the message box.",
+  "@aiChatAttachmentsEmpty": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentsEmpty\"."
+  },
+  "aiChatAttachmentsCount": "Materials {count}",
+  "@aiChatAttachmentsCount": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentsCount\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachmentSections": "{count} sections",
+  "@aiChatAttachmentSections": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentSections\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachmentsOpen": "Materials in this conversation ({count})",
+  "@aiChatAttachmentsOpen": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentsOpen\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachSelect": "Materials in this conversation",
+  "@aiChatAttachSelect": {
+    "description": "AI chat. Ported from the web app string \"chatAttachSelect\"."
+  },
+  "aiChatAttachSelectHint": "Attach in full or mention one (you can also type @ in the message box)",
+  "@aiChatAttachSelectHint": {
+    "description": "AI chat. Ported from the web app string \"chatAttachSelectHint\"."
+  },
+  "aiChatAttachSelectNone": "No materials in this conversation yet",
+  "@aiChatAttachSelectNone": {
+    "description": "AI chat. Ported from the web app string \"chatAttachSelectNone\"."
+  },
+  "aiChatAttachLongText": "Long text",
+  "@aiChatAttachLongText": {
+    "description": "AI chat. Ported from the web app string \"chatAttachLongText\"."
+  },
+  "aiChatAttachFile": "Attach a file",
+  "@aiChatAttachFile": {
+    "description": "AI chat. Ported from the web app string \"chatAttachFile\"."
+  },
+  "aiChatAttachFileHint": "PDF, Word, PowerPoint, images, or text files",
+  "@aiChatAttachFileHint": {
+    "description": "AI chat. Ported from the web app string \"chatAttachFileHint\"."
+  },
+  "aiChatAttachCamera": "Camera",
+  "@aiChatAttachCamera": {
+    "description": "AI chat. New for the app (the web app picks files with one button)."
+  },
+  "aiChatAttachCameraHint": "Photograph notes or a whiteboard",
+  "@aiChatAttachCameraHint": {
+    "description": "AI chat. New for the app (the web app picks files with one button)."
+  },
+  "aiChatAttachPhoto": "Photos",
+  "@aiChatAttachPhoto": {
+    "description": "AI chat. New for the app (the web app picks files with one button)."
+  },
+  "aiChatAttachPhotoHint": "Choose from your photo library",
+  "@aiChatAttachPhotoHint": {
+    "description": "AI chat. New for the app (the web app picks files with one button)."
+  },
+  "aiChatAttachPickFailed": "Could not open it. Allow access to the camera and photos in Settings, then try again.",
+  "@aiChatAttachPickFailed": {
+    "description": "AI chat. New for the app (the web app picks files with one button)."
+  },
+  "aiSettingsButton": "AI chat settings",
+  "@aiSettingsButton": {
+    "description": "AI chat. Ported from the web app string \"aiSettingsButton\"."
+  },
+  "aiChatAttachmentFullRead": "Read in full",
+  "@aiChatAttachmentFullRead": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentFullRead\"."
+  },
+  "aiChatAttachmentTocRead": "Read via contents",
+  "@aiChatAttachmentTocRead": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentTocRead\"."
+  },
+  "aiChatAttachmentSelectedTotal": "Read in full: {used} / {max} tokens",
+  "@aiChatAttachmentSelectedTotal": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentSelectedTotal\".",
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachmentTokens": "about {count} tokens",
+  "@aiChatAttachmentTokens": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentTokens\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachmentCostPerTurn": "about +{credits} credits per message",
+  "@aiChatAttachmentCostPerTurn": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentCostPerTurn\".",
+    "placeholders": {
+      "credits": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachmentTooLongToSelect": "Too long to read in full. The AI reads it through its contents and search.",
+  "@aiChatAttachmentTooLongToSelect": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentTooLongToSelect\"."
+  },
+  "aiChatAttachmentSelectionLimit": "Together with the selected materials this exceeds the limit ({max} tokens). Turn off \"Read in full\" for another material first.",
+  "@aiChatAttachmentSelectionLimit": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentSelectionLimit\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachmentSelectFailed": "Could not change it. Please try again.",
+  "@aiChatAttachmentSelectFailed": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentSelectFailed\"."
+  },
+  "aiChatAttachmentListHint": "Tap a material to attach it in full or mention it. The AI reads materials attached in full completely every time (until you remove them). Mentioning tells the AI which material your message is about, and it looks up the parts it needs. Even without either, the AI knows each material's name and summary.",
+  "@aiChatAttachmentListHint": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentListHint\"."
+  },
+  "aiChatAttachmentUnselect": "Stop reading in full",
+  "@aiChatAttachmentUnselect": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentUnselect\"."
+  },
+  "aiChatErrorEmptyAttachment": "An empty material cannot be attached.",
+  "@aiChatErrorEmptyAttachment": {
+    "description": "AI chat. Ported from the web app string \"chatErrorEmptyAttachment\"."
+  },
+  "aiChatErrorAttachmentTooLong": "A material can be up to {max} characters.",
+  "@aiChatErrorAttachmentTooLong": {
+    "description": "AI chat. Ported from the web app string \"chatErrorAttachmentTooLong\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatErrorTooManyAttachments": "You can attach up to {max} materials at a time.",
+  "@aiChatErrorTooManyAttachments": {
+    "description": "AI chat. Ported from the web app string \"chatErrorTooManyAttachments\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatErrorThreadAttachmentLimit": "A conversation can hold up to {max} materials. Remove ones you no longer need, or attach it in a new conversation.",
+  "@aiChatErrorThreadAttachmentLimit": {
+    "description": "AI chat. Ported from the web app string \"chatErrorThreadAttachmentLimit\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatFileErrorUpload": "Upload failed (code {status}). Check your connection, then remove it and attach it again",
+  "@aiChatFileErrorUpload": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorUpload\".",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatFileUploadingShort": "Uploading",
+  "@aiChatFileUploadingShort": {
+    "description": "AI chat. Ported from the web app string \"chatFileUploadingShort\"."
+  },
+  "aiChatDraftPreviewBadge": "File to send",
+  "@aiChatDraftPreviewBadge": {
+    "description": "AI chat. Ported from the web app string \"chatDraftPreviewBadge\"."
+  },
+  "aiChatDraftPreviewOpen": "View {name}",
+  "@aiChatDraftPreviewOpen": {
+    "description": "AI chat. Ported from the web app string \"chatDraftPreviewOpen\".",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatDraftPreviewOffice": "Word and PowerPoint files cannot be shown here. After sending, you can open the text and the original file from the materials list.",
+  "@aiChatDraftPreviewOffice": {
+    "description": "AI chat. Ported from the web app string \"chatDraftPreviewOffice\"."
+  },
+  "aiChatDraftPreviewVisionPages": "Read as images: {pages}",
+  "@aiChatDraftPreviewVisionPages": {
+    "description": "AI chat. Ported from the web app string \"chatDraftPreviewVisionPages\".",
+    "placeholders": {
+      "pages": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatMentionNewFull": "New attachment (in full)",
+  "@aiChatMentionNewFull": {
+    "description": "AI chat. Ported from the web app string \"chatMentionNewFull\"."
+  },
+  "aiChatMentionToFull": "Attach in full",
+  "@aiChatMentionToFull": {
+    "description": "AI chat. Ported from the web app string \"chatMentionToFull\"."
+  },
+  "aiChatMentionToMention": "Mention only",
+  "@aiChatMentionToMention": {
+    "description": "AI chat. Ported from the web app string \"chatMentionToMention\"."
+  },
+  "aiChatAttachPendingFull": "Attached in full",
+  "@aiChatAttachPendingFull": {
+    "description": "AI chat. Ported from the web app string \"chatAttachPendingFull\"."
+  },
+  "aiChatAttachPendingMention": "Mentioned",
+  "@aiChatAttachPendingMention": {
+    "description": "AI chat. Ported from the web app string \"chatAttachPendingMention\"."
+  },
+  "aiChatAttachUndo": "Remove from message",
+  "@aiChatAttachUndo": {
+    "description": "AI chat. Ported from the web app string \"chatAttachUndo\"."
+  },
+  "aiChatAttachmentSelectedPending": "Read in full after sending: {used} / {max} tokens",
+  "@aiChatAttachmentSelectedPending": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentSelectedPending\".",
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatAttachmentOverLimitNote": "Above the limit, the materials read in full the longest will stop being read in full.",
+  "@aiChatAttachmentOverLimitNote": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentOverLimitNote\"."
+  },
+  "aiChatAttachPinned": "Reading in full",
+  "@aiChatAttachPinned": {
+    "description": "AI chat. Ported from the web app string \"chatAttachPinned\"."
+  },
+  "aiChatAttachFull": "Attach in full",
+  "@aiChatAttachFull": {
+    "description": "AI chat. Ported from the web app string \"chatAttachFull\"."
+  },
+  "aiChatAttachFullHint": "The AI reads it completely every turn (until you remove it)",
+  "@aiChatAttachFullHint": {
+    "description": "AI chat. Ported from the web app string \"chatAttachFullHint\"."
+  },
+  "aiChatAttachMention": "Mention",
+  "@aiChatAttachMention": {
+    "description": "AI chat. Ported from the web app string \"chatAttachMention\"."
+  },
+  "aiChatAttachMentionHint": "Tells the AI your message is about this material",
+  "@aiChatAttachMentionHint": {
+    "description": "AI chat. Ported from the web app string \"chatAttachMentionHint\"."
+  },
+  "aiChatAttachView": "View contents",
+  "@aiChatAttachView": {
+    "description": "AI chat. Ported from the web app string \"chatAttachView\"."
+  },
+  "aiChatAttachUnpinHint": "From now on, the AI reads only the parts it needs via contents and search",
+  "@aiChatAttachUnpinHint": {
+    "description": "AI chat. Ported from the web app string \"chatAttachUnpinHint\"."
+  },
+  "aiChatPinnedSummary": "{count} read in full · about +{credits} credits per message ({percent}% of the limit)",
+  "@aiChatPinnedSummary": {
+    "description": "AI chat. Ported from the web app string \"chatPinnedSummary\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "credits": {
+        "type": "String"
+      },
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatMentionPickerTitle": "Materials in this conversation",
+  "@aiChatMentionPickerTitle": {
+    "description": "AI chat. Ported from the web app string \"chatMentionPickerTitle\"."
+  },
+  "aiChatMentionPickerHint": "Enter to mention",
+  "@aiChatMentionPickerHint": {
+    "description": "AI chat. Ported from the web app string \"chatMentionPickerHint\"."
+  },
+  "aiChatMentionPickerEmpty": "No matching materials",
+  "@aiChatMentionPickerEmpty": {
+    "description": "AI chat. Ported from the web app string \"chatMentionPickerEmpty\"."
+  },
+  "aiChatMentionRemoved": "Removed material",
+  "@aiChatMentionRemoved": {
+    "description": "AI chat. Ported from the web app string \"chatMentionRemoved\"."
+  },
+  "aiChatMentionFullTag": "Full",
+  "@aiChatMentionFullTag": {
+    "description": "AI chat. Ported from the web app string \"chatMentionFullTag\"."
+  },
+  "aiChatNoticeUnpinned": "Over the limit for materials read in full ({max} tokens), so {titles} is no longer read in full. Mention it with @ and the AI will look up the parts it needs.",
+  "@aiChatNoticeUnpinned": {
+    "description": "AI chat. Ported from the web app string \"chatNoticeUnpinned\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      },
+      "titles": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatNoticeTooLong": "{titles} is too long to read in full. The AI will look up the parts it needs via contents and search.",
+  "@aiChatNoticeTooLong": {
+    "description": "AI chat. Ported from the web app string \"chatNoticeTooLong\".",
+    "placeholders": {
+      "titles": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatErrorTooManyMentions": "You can point to up to {max} materials per message.",
+  "@aiChatErrorTooManyMentions": {
+    "description": "AI chat. Ported from the web app string \"chatErrorTooManyMentions\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatFileCompressing": "Shrinking…",
+  "@aiChatFileCompressing": {
+    "description": "AI chat. Ported from the web app string \"chatFileCompressing\"."
+  },
+  "aiChatFileUploading": "Uploading {percent}%",
+  "@aiChatFileUploading": {
+    "description": "AI chat. Ported from the web app string \"chatFileUploading\".",
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatFileReading": "Reading…",
+  "@aiChatFileReading": {
+    "description": "AI chat. Ported from the web app string \"chatFileReading\"."
+  },
+  "aiChatFileImage": "Image",
+  "@aiChatFileImage": {
+    "description": "AI chat. Ported from the web app string \"chatFileImage\"."
+  },
+  "aiChatFilePages": "{count} pages",
+  "@aiChatFilePages": {
+    "description": "AI chat. Ported from the web app string \"chatFilePages\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatFileSlides": "{count} slides",
+  "@aiChatFileSlides": {
+    "description": "AI chat. Ported from the web app string \"chatFileSlides\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatFileVisionCount": "{count} read as images",
+  "@aiChatFileVisionCount": {
+    "description": "AI chat. Ported from the web app string \"chatFileVisionCount\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatFileNotReadyHint": "You can send once your files are ready (remove any that could not be read)",
+  "@aiChatFileNotReadyHint": {
+    "description": "AI chat. Ported from the web app string \"chatFileNotReadyHint\"."
+  },
+  "aiChatFileErrorUnsupported": "This file type is not supported. Choose a PDF, Word (.docx), PowerPoint (.pptx), image, or text file.",
+  "@aiChatFileErrorUnsupported": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorUnsupported\"."
+  },
+  "aiChatFileErrorTooLarge": "Too large (max {max} MB)",
+  "@aiChatFileErrorTooLarge": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorTooLarge\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatFileErrorTooLargeMedia": "Too large because it contains video or audio (max {max} MB). Remove them and save it again",
+  "@aiChatFileErrorTooLargeMedia": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorTooLargeMedia\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatFileErrorEncrypted": "Password-protected PDFs cannot be read",
+  "@aiChatFileErrorEncrypted": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorEncrypted\"."
+  },
+  "aiChatFileErrorEmpty": "No text or images were found",
+  "@aiChatFileErrorEmpty": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorEmpty\"."
+  },
+  "aiChatFileErrorTooManyPages": "Too many pages (max {max}). Save only the part you need",
+  "@aiChatFileErrorTooManyPages": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorTooManyPages\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatFileErrorTooManyImages": "Too many parts to read as images (max {max}). Save only the part you need",
+  "@aiChatFileErrorTooManyImages": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorTooManyImages\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatFileErrorTooLong": "Too much text (max {max} characters). Save only the part you need",
+  "@aiChatFileErrorTooLong": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorTooLong\".",
+    "placeholders": {
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatFileErrorTooComplex": "Too complex to read",
+  "@aiChatFileErrorTooComplex": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorTooComplex\"."
+  },
+  "aiChatFileErrorTooManyDrafts": "Too many files waiting to be sent. Remove some first",
+  "@aiChatFileErrorTooManyDrafts": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorTooManyDrafts\"."
+  },
+  "aiChatFileErrorDecode": "This image could not be read. Save it as JPEG or PNG and try again",
+  "@aiChatFileErrorDecode": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorDecode\"."
+  },
+  "aiChatFileErrorCorrupt": "The file could not be opened",
+  "@aiChatFileErrorCorrupt": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorCorrupt\"."
+  },
+  "aiChatFileErrorGeneric": "Could not prepare this file. Remove it and attach it again",
+  "@aiChatFileErrorGeneric": {
+    "description": "AI chat. Ported from the web app string \"chatFileErrorGeneric\"."
+  },
+  "aiChatAttachmentOpenFile": "Open original file",
+  "@aiChatAttachmentOpenFile": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentOpenFile\"."
+  },
+  "aiChatAttachmentOpenFileFailed": "Could not open the file. Please try again.",
+  "@aiChatAttachmentOpenFileFailed": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentOpenFileFailed\"."
+  },
+  "aiChatAttachmentImageLoading": "Loading image…",
+  "@aiChatAttachmentImageLoading": {
+    "description": "AI chat. Ported from the web app string \"chatAttachmentImageLoading\"."
+  },
+  "aiChatErrorAttachmentNotReady": "An attached file is no longer available. Remove it and attach it again.",
+  "@aiChatErrorAttachmentNotReady": {
+    "description": "AI chat. Ported from the web app string \"chatErrorAttachmentNotReady\"."
+  },
+  "aiChatElapsedSeconds": "{seconds} sec",
+  "@aiChatElapsedSeconds": {
+    "description": "AI chat. Elapsed time shown next to the thinking indicator after 5 seconds.",
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "aiChatElapsedMinutesSeconds": "{minutes} min {seconds} sec",
+  "@aiChatElapsedMinutesSeconds": {
+    "description": "AI chat. Elapsed time shown next to the thinking indicator after 5 seconds.",
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      },
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitPageTitle": "Self-portrait",
+  "@selfPortraitPageTitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spPageTitle\"."
+  },
+  "selfPortraitPageSubtitle": "What we've come to know about you, a little more each time you talk",
+  "@selfPortraitPageSubtitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spPageSubtitle\"."
+  },
+  "selfPortraitLoadError": "Couldn't load this. Please try again in a moment.",
+  "@selfPortraitLoadError": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spLoadError\"."
+  },
+  "selfPortraitActionFailed": "That didn't work. Please try again.",
+  "@selfPortraitActionFailed": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionFailed\"."
+  },
+  "selfPortraitNowSection": "Me, right now",
+  "@selfPortraitNowSection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spNowSection\"."
+  },
+  "selfPortraitWrittenFromChats": "Written from your conversations",
+  "@selfPortraitWrittenFromChats": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spWrittenFromChats\"."
+  },
+  "selfPortraitDividerCaption": "What your conversations have shown",
+  "@selfPortraitDividerCaption": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spDividerCaption\"."
+  },
+  "selfPortraitRecentSection": "Recently discovered",
+  "@selfPortraitRecentSection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spRecentSection\"."
+  },
+  "selfPortraitNew": "NEW",
+  "@selfPortraitNew": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spNew\"."
+  },
+  "selfPortraitConnectedTopics": "Connected from",
+  "@selfPortraitConnectedTopics": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spConnectedTopics\"."
+  },
+  "selfPortraitQuote": "“{text}”",
+  "@selfPortraitQuote": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spQuote\".",
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitConfirmBanner": "There's something to check",
+  "@selfPortraitConfirmBanner": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spConfirmBanner\"."
+  },
+  "selfPortraitConfirmPendingCount": "{count} to keep or remove",
+  "@selfPortraitConfirmPendingCount": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spConfirmPendingCount\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitProposalTitle": "Suggested rewrite of {field}",
+  "@selfPortraitProposalTitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spProposalTitle\".",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitTabsLabel": "Switch between self-portrait and records",
+  "@selfPortraitTabsLabel": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spTabsLabel\"."
+  },
+  "selfPortraitTabTraits": "Self-portrait",
+  "@selfPortraitTabTraits": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spTabTraits\"."
+  },
+  "selfPortraitTabRecords": "Records",
+  "@selfPortraitTabRecords": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spTabRecords\"."
+  },
+  "selfPortraitFootnote": "The AI adds to this little by little from what you talk about in chat. If something looks off, open it to edit or remove it.",
+  "@selfPortraitFootnote": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spFootnote\"."
+  },
+  "selfPortraitOther": "Other",
+  "@selfPortraitOther": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spOther\"."
+  },
+  "selfPortraitEmptyTraits": "Nothing here yet. As you chat, this fills in little by little.",
+  "@selfPortraitEmptyTraits": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spEmptyTraits\"."
+  },
+  "selfPortraitEmptyRecords": "When you talk about things you made or progress you made, they're kept here with a date.",
+  "@selfPortraitEmptyRecords": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spEmptyRecords\"."
+  },
+  "selfPortraitLatest": "Latest {date}",
+  "@selfPortraitLatest": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spLatest\".",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitMoreCount": "{count} more",
+  "@selfPortraitMoreCount": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spMoreCount\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitFromConversations": "From {count} conversations",
+  "@selfPortraitFromConversations": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spFromConversations\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitItemActions": "Open this item",
+  "@selfPortraitItemActions": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spItemActions\"."
+  },
+  "selfPortraitEditedByYou": "Edited by you",
+  "@selfPortraitEditedByYou": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spEditedByYou\"."
+  },
+  "selfPortraitActionEdit": "Edit",
+  "@selfPortraitActionEdit": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionEdit\"."
+  },
+  "selfPortraitActionEditHint": "Rewrite it in your own words. The AI won't change it after that",
+  "@selfPortraitActionEditHint": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionEditHint\"."
+  },
+  "selfPortraitActionReject": "Not me",
+  "@selfPortraitActionReject": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionReject\"."
+  },
+  "selfPortraitActionRejectHint": "The AI misread you. It won't write anything with the same meaning again",
+  "@selfPortraitActionRejectHint": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionRejectHint\"."
+  },
+  "selfPortraitRejectReasonLabel": "What's off? (optional)",
+  "@selfPortraitRejectReasonLabel": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spRejectReasonLabel\"."
+  },
+  "selfPortraitRejectReasonPlaceholder": "e.g. I only present because it's my role",
+  "@selfPortraitRejectReasonPlaceholder": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spRejectReasonPlaceholder\"."
+  },
+  "selfPortraitActionDiscard": "Don't keep this",
+  "@selfPortraitActionDiscard": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionDiscard\"."
+  },
+  "selfPortraitActionDiscardHint": "Even if it's true, don't keep it. Removes this item and the notes it came from",
+  "@selfPortraitActionDiscardHint": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spActionDiscardHint\"."
+  },
+  "selfPortraitDiscardConfirmTitle": "Remove this item?",
+  "@selfPortraitDiscardConfirmTitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spDiscardConfirmTitle\"."
+  },
+  "selfPortraitDiscardConfirmMessage": "The AI notes it came from are removed too. This can't be undone.",
+  "@selfPortraitDiscardConfirmMessage": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spDiscardConfirmMessage\"."
+  },
+  "selfPortraitDiscardConfirmButton": "Remove",
+  "@selfPortraitDiscardConfirmButton": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spDiscardConfirmButton\"."
+  },
+  "selfPortraitPendingNotice": "Until you decide, this isn't used anywhere, not in chat or fun facts.",
+  "@selfPortraitPendingNotice": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spPendingNotice\"."
+  },
+  "selfPortraitKeep": "Keep",
+  "@selfPortraitKeep": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spKeep\"."
+  },
+  "selfPortraitDontKeep": "Don't keep",
+  "@selfPortraitDontKeep": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spDontKeep\"."
+  },
+  "selfPortraitEvidenceSection": "Where this came from",
+  "@selfPortraitEvidenceSection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spEvidenceSection\"."
+  },
+  "selfPortraitOpenChat": "Open conversation",
+  "@selfPortraitOpenChat": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spOpenChat\"."
+  },
+  "selfPortraitHistorySection": "How it changed",
+  "@selfPortraitHistorySection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spHistorySection\"."
+  },
+  "selfPortraitUntil": "Until {date}: ",
+  "@selfPortraitUntil": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spUntil\".",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitConfirmSheetTitle": "Things to check",
+  "@selfPortraitConfirmSheetTitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spConfirmSheetTitle\"."
+  },
+  "selfPortraitSensitiveAsk": "This touches on {area}, so please decide whether to keep it",
+  "@selfPortraitSensitiveAsk": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spSensitiveAsk\".",
+    "placeholders": {
+      "area": {
+        "type": "String"
+      }
+    }
+  },
+  "selfPortraitAreaReligion": "religion",
+  "@selfPortraitAreaReligion": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spAreaReligion\"."
+  },
+  "selfPortraitAreaHealth": "health",
+  "@selfPortraitAreaHealth": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spAreaHealth\"."
+  },
+  "selfPortraitAreaSexuality": "sexuality",
+  "@selfPortraitAreaSexuality": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spAreaSexuality\"."
+  },
+  "selfPortraitAreaPolitics": "politics",
+  "@selfPortraitAreaPolitics": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spAreaPolitics\"."
+  },
+  "selfPortraitAreaEthnicity": "background",
+  "@selfPortraitAreaEthnicity": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spAreaEthnicity\"."
+  },
+  "selfPortraitAreaSensitive": "something personal",
+  "@selfPortraitAreaSensitive": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spAreaSensitive\"."
+  },
+  "selfPortraitProposalNow": "Now: ",
+  "@selfPortraitProposalNow": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spProposalNow\"."
+  },
+  "selfPortraitProposalAccept": "Use this",
+  "@selfPortraitProposalAccept": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spProposalAccept\"."
+  },
+  "selfPortraitProposalReject": "Keep mine",
+  "@selfPortraitProposalReject": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spProposalReject\"."
+  },
+  "selfPortraitConfirmEmpty": "Nothing to check right now.",
+  "@selfPortraitConfirmEmpty": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spConfirmEmpty\"."
+  },
+  "selfPortraitLinkSub": "A profile the AI adds to from what you talk about",
+  "@selfPortraitLinkSub": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"spLinkSub\"."
+  },
+  "aiSettingsTitle": "What the AI remembers",
+  "@aiSettingsTitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiSettingsTitle\"."
+  },
+  "aiSettingsPageTitle": "AI chat settings",
+  "@aiSettingsPageTitle": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiSettingsPageTitle\"."
+  },
+  "aiSettingsPageIntro": "What the AI keeps in mind when it talks with you. Stored separately from your self-portrait.",
+  "@aiSettingsPageIntro": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiSettingsPageIntro\"."
+  },
+  "aiMemoStyleSection": "How to explain",
+  "@aiMemoStyleSection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoStyleSection\"."
+  },
+  "aiMemoSituationSection": "Right now",
+  "@aiMemoSituationSection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoSituationSection\"."
+  },
+  "aiMemoUntil": "until {date}",
+  "@aiMemoUntil": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoUntil\".",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "aiMemoEmpty": "Nothing yet",
+  "@aiMemoEmpty": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoEmpty\"."
+  },
+  "aiMemoDelete": "Remove this note",
+  "@aiMemoDelete": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoDelete\"."
+  },
+  "aiMemoOneTimeNote": "Requests just for one conversation, like “fewer formulas this time,” aren't kept here.",
+  "@aiMemoOneTimeNote": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoOneTimeNote\"."
+  },
+  "aiMoreSection": "More",
+  "@aiMoreSection": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMoreSection\"."
+  },
+  "aiNotesLink": "AI notes",
+  "@aiNotesLink": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiNotesLink\"."
+  },
+  "aiNotesLinkSub": "{count} things noticed in conversations · material for your self-portrait",
+  "@aiNotesLinkSub": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiNotesLinkSub\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "aiMemoryIntro": "Things the AI noticed while you talked. When several notes point the same way, they're added to your self-portrait. A one-off stays here and doesn't become part of it.",
+  "@aiMemoryIntro": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryIntro\"."
+  },
+  "aiMemoryEmpty": "No notes yet.",
+  "@aiMemoryEmpty": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryEmpty\"."
+  },
+  "aiMemoryDeleteNote": "Remove this note",
+  "@aiMemoryDeleteNote": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryDeleteNote\"."
+  },
+  "aiMemoryForgetAll": "Remove all AI notes",
+  "@aiMemoryForgetAll": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryForgetAll\"."
+  },
+  "aiMemoryForgetAllNote": "Your self-portrait and explanation notes stay. You can remove those individually on their own screens.",
+  "@aiMemoryForgetAllNote": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryForgetAllNote\"."
+  },
+  "aiMemoryForgetConfirmMessage": "This removes {count} notes. It can't be undone.",
+  "@aiMemoryForgetConfirmMessage": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aiMemoryForgetConfirmMessage\".",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "accountAiSettingsSub": "Explanation notes · AI notes",
+  "@accountAiSettingsSub": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"accountAiSettingsSub\"."
+  },
+  "selfPortraitCoverBio": "ABOUT YOU",
+  "@selfPortraitCoverBio": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"aboutYouSection\"."
+  },
+  "selfPortraitCoverBioEmpty": "No description set yet.",
+  "@selfPortraitCoverBioEmpty": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"noBioYet\"."
+  },
+  "selfPortraitCoverInterests": "INTERESTS",
+  "@selfPortraitCoverInterests": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"interestsSection\"."
+  },
+  "selfPortraitCoverInterestsEmpty": "No interests set yet.",
+  "@selfPortraitCoverInterestsEmpty": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"noInterestsYet\"."
+  },
+  "selfPortraitCoverFutureGoals": "FUTURE DREAMS",
+  "@selfPortraitCoverFutureGoals": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"futureDreamsSection\"."
+  },
+  "selfPortraitCoverFutureGoalsEmpty": "No future dream set yet.",
+  "@selfPortraitCoverFutureGoalsEmpty": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"noFutureDreamsYet\"."
+  },
+  "selfPortraitSave": "Save",
+  "@selfPortraitSave": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"save\"."
+  },
+  "selfPortraitSaving": "Saving…",
+  "@selfPortraitSaving": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"saving\"."
+  },
+  "selfPortraitEdit": "Edit",
+  "@selfPortraitEdit": {
+    "description": "AI self-portrait / AI memory. Ported from the web app string \"edit\"."
   }
 }

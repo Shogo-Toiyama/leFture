@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:http/http.dart' as http;
 import 'package:drift/drift.dart';
 import 'package:lefture/domain/entities/user_profile.dart';
@@ -25,6 +26,20 @@ UserProfileRepositorySupabase userProfileRepository(Ref ref) {
   return UserProfileRepositorySupabase(ref);
 }
 
+/// metadataの同意の版を読む。`versionKey`が無く`atKey`だけあれば[legacyVersion]
+/// (版番号をつける前に同意した人。既定は第1版)。どちらも無ければ0。
+@visibleForTesting
+int aiConsentVersionOf(
+  Map<String, dynamic> metadata, {
+  required String atKey,
+  required String versionKey,
+  int? legacyVersion,
+}) {
+  final v = metadata[versionKey];
+  if (v is num) return v.toInt();
+  return metadata[atKey] != null ? (legacyVersion ?? 1) : 0;
+}
+
 class UserProfileRepositorySupabase {
   UserProfileRepositorySupabase(this._ref) {
     // _cachedOnboardingCompletedはこのリポジトリ(keepAlive)のインスタンス
@@ -37,7 +52,7 @@ class UserProfileRepositorySupabase {
       final newUid = data.session?.user.id;
       if (newUid != _lastUid) {
         _cachedOnboardingCompleted = null;
-        _cachedAiRecordingProfileShareConsent = null;
+        _cachedAiConsentVersions.clear();
         _lastUid = newUid;
       }
     });
@@ -263,15 +278,27 @@ class UserProfileRepositorySupabase {
   static const _tutorialCreatedMetadataKey = 'tutorial_created_at';
   static const _displayLanguageMetadataKey = 'display_language';
   static const _recordingLanguageMetadataKey = 'recording_language';
-  // Apple審査(Guideline 5.1.1(i)/5.1.2(i))対応: 録音音声とプロフィール情報を
-  // 文字起こし・ノート生成のためサードパーティAIサービスへ送信することへの
-  // 明示同意。キー名は他のAI関連同意(将来追加されうるチャット機能など)と
-  // 混同しないよう、対象データと目的を含めて具体的にしてある。
-  static const _aiRecordingProfileShareConsentMetadataKey =
-      'ai_recording_profile_share_consent_at';
+  // AIサービスへのデータ送信への同意(Apple Guideline 5.1.1(i)/5.1.2(i)対応)。
+  // 録音とチャットは送り先も目的も違うので、別々に同意をもらう。
+  // 同意はアカウント単位でprofiles.metadataに残り、webappとも共有される。
+  //
+  // 同意には版番号を持たせる。送り先を増やしたとき(版を上げたとき)は、前の版に
+  // 同意した人にもう一度同意をもらう。版が無く`_at`だけある録音の同意は第1版。
+  static const _aiRecordingConsentAtKey = 'ai_recording_profile_share_consent_at';
+  static const _aiRecordingConsentVersionKey = 'ai_recording_share_consent_version';
+  static const _aiChatConsentAtKey = 'ai_chat_share_consent_at';
+  static const _aiChatConsentVersionKey = 'ai_chat_share_consent_version';
+
+  /// 録音の同意の今の版。第2版: 送り先にOpenAI互換のAPI(GPT-6 Luna)を明記した。
+  static const aiRecordingConsentVersion = 2;
+
+  /// チャットの同意の今の版。第1版: 初回。
+  static const aiChatConsentVersion = 1;
+
+  /// 同意済みの版(キーごと)。同意済みと分かった版だけ持つ。
+  final Map<String, int> _cachedAiConsentVersions = {};
   bool? _cachedOnboardingCompleted;
   bool? _cachedTutorialCompleted;
-  bool? _cachedAiRecordingProfileShareConsent;
 
   /// 初回オンボーディング(プロフィール設定・Recording Language・Realtime
   /// Recording ON/OFF)を完了済みかどうか。ローカルにプロフィール行が
@@ -338,12 +365,66 @@ class UserProfileRepositorySupabase {
   }
 
   /// 録音音声・プロフィール情報をサードパーティAIサービスへ送信すること
-  /// (文字起こし・要約・ノート生成のため)に、ユーザーが既に同意済みかどうか。
-  /// Apple Guideline 5.1.1(i)/5.1.2(i)対応で、最初のアップロード操作の直前に
-  /// 一度だけ同意ダイアログを出すために使う。
-  Future<bool> hasConsentedToAiRecordingProfileShare() async {
-    if (_cachedAiRecordingProfileShareConsent == true) {
-      return true;
+  /// (文字起こし・要約・ノート生成のため)に、今の版で同意済みかどうか。
+  /// 最初のアップロード操作の直前に同意ダイアログを出すために使う。
+  Future<bool> hasConsentedToAiRecordingShare() => _hasAiConsent(
+    atKey: _aiRecordingConsentAtKey,
+    versionKey: _aiRecordingConsentVersionKey,
+    currentVersion: aiRecordingConsentVersion,
+    legacyVersion: 1,
+  );
+
+  /// 録音のAI送信への同意を今の版で記録し、サーバーにも同期する。
+  Future<void> markAiRecordingShareConsent() => _markAiConsent(
+    atKey: _aiRecordingConsentAtKey,
+    versionKey: _aiRecordingConsentVersionKey,
+    version: aiRecordingConsentVersion,
+  );
+
+  /// チャットで入力した内容・添付した資料を、AIサービスへ送信することに、今の版で同意済みか。
+  Future<bool> hasConsentedToAiChatShare() => _hasAiConsent(
+    atKey: _aiChatConsentAtKey,
+    versionKey: _aiChatConsentVersionKey,
+    currentVersion: aiChatConsentVersion,
+  );
+
+  /// チャットのAI送信への同意を今の版で記録し、サーバーにも同期する。
+  Future<void> markAiChatShareConsent() => _markAiConsent(
+    atKey: _aiChatConsentAtKey,
+    versionKey: _aiChatConsentVersionKey,
+    version: aiChatConsentVersion,
+  );
+
+  Future<bool> _hasAiConsent({
+    required String atKey,
+    required String versionKey,
+    required int currentVersion,
+    int? legacyVersion,
+  }) async =>
+      await _aiConsentVersionOnFile(
+        atKey: atKey,
+        versionKey: versionKey,
+        legacyVersion: legacyVersion,
+      ) >=
+      currentVersion;
+
+  /// 録音の同意で、記録されている版(まだ同意していなければ0)。今の版より小さくて0でなければ、
+  /// 前の版に同意した人なので、「送り先が変わったので、もう一度」と伝える。
+  Future<int> aiRecordingConsentVersionOnFile() => _aiConsentVersionOnFile(
+    atKey: _aiRecordingConsentAtKey,
+    versionKey: _aiRecordingConsentVersionKey,
+    legacyVersion: 1,
+  );
+
+  Future<int> _aiConsentVersionOnFile({
+    required String atKey,
+    required String versionKey,
+    int? legacyVersion,
+  }) async {
+    final cached = _cachedAiConsentVersions[versionKey];
+    if (cached != null) {
+      // 同意済みと分かっている版。新しい版は下で読み直して確かめる(別の端末で同意したかもしれない)
+      if (cached >= _currentConsentVersion(versionKey)) return cached;
     }
 
     final uid = _requireUid();
@@ -357,23 +438,34 @@ class UserProfileRepositorySupabase {
       existing = await _db.getUserProfile(uid);
     }
     if (existing?.metadataJson == null) {
-      return false;
+      return 0;
     }
     final metadata = Map<String, dynamic>.from(
       jsonDecode(existing!.metadataJson!) as Map,
     );
-    final consented =
-        metadata[_aiRecordingProfileShareConsentMetadataKey] != null;
-    if (consented) {
-      _cachedAiRecordingProfileShareConsent = true;
+    final version = aiConsentVersionOf(
+      metadata,
+      atKey: atKey,
+      versionKey: versionKey,
+      legacyVersion: legacyVersion,
+    );
+    if (version > 0) {
+      _cachedAiConsentVersions[versionKey] = version;
     }
-    return consented;
+    return version;
   }
 
-  /// 録音音声・プロフィール情報のサードパーティAI送信への同意をmetadataに
-  /// 記録し、サーバーにも同期する。
-  Future<void> markAiRecordingProfileShareConsent() async {
-    _cachedAiRecordingProfileShareConsent = true;
+  int _currentConsentVersion(String versionKey) =>
+      versionKey == _aiRecordingConsentVersionKey
+      ? aiRecordingConsentVersion
+      : aiChatConsentVersion;
+
+  Future<void> _markAiConsent({
+    required String atKey,
+    required String versionKey,
+    required int version,
+  }) async {
+    _cachedAiConsentVersions[versionKey] = version;
     final uid = _requireUid();
 
     try {
@@ -385,11 +477,13 @@ class UserProfileRepositorySupabase {
         ? Map<String, dynamic>.from(jsonDecode(existing!.metadataJson!) as Map)
         : <String, dynamic>{};
 
-    if (metadata[_aiRecordingProfileShareConsentMetadataKey] != null) return;
+    if (aiConsentVersionOf(metadata, atKey: atKey, versionKey: versionKey) >=
+        version) {
+      return;
+    }
 
-    metadata[_aiRecordingProfileShareConsentMetadataKey] = DateTime.now()
-        .toUtc()
-        .toIso8601String();
+    metadata[atKey] = DateTime.now().toUtc().toIso8601String();
+    metadata[versionKey] = version;
 
     await _db.upsertUserProfile(
       LocalUserProfilesCompanion(

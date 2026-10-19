@@ -6,6 +6,7 @@ import { getCreditSummary } from '../../lib/billing';
 import { toDisplayCredits } from '../../types/billing';
 import { InsufficientCreditsError, uploadRecordingAndAnalyze, type UploadProgress } from '../../lib/upload';
 import { useProfile } from '../../hooks/useProfile';
+import { useAiConsent } from '../../context/AiConsentContext';
 import { useCourses } from '../../hooks/useCourses';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { CoursePickerModal } from './CoursePickerModal';
@@ -50,6 +51,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const navigate = useNavigate();
   const { language, t } = useLanguage();
   const { profile, refetch: refetchProfile } = useProfile();
+  const { requestConsent } = useAiConsent();
   const { courses } = useCourses();
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -161,6 +163,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     setError(null);
 
     try {
+      // 録音の音声・プロフィール情報をAIサービスへ送ることへの同意(アカウント単位)。
+      // 版が上がったときは、前の版に同意した人にもう一度聞く。断られたら何もアップロードしない
+      if (!(await requestConsent('recording'))) {
+        setSubmitting(false);
+        return;
+      }
       const displayLang = profile?.metadata?.display_language || language;
       const lecture = await createDraftLecture({
         courseId: selectedCourseId,

@@ -74,6 +74,26 @@ Future<void> _insertAsrModel(AppDatabase db) {
       );
 }
 
+Future<void> _insertChat(AppDatabase db, {required String userId, required String threadId}) async {
+  await db.into(db.localChatThreads).insert(
+        LocalChatThreadsCompanion.insert(
+          id: threadId,
+          userId: userId,
+          lastMessageAt: DateTime.utc(2026, 10, 18),
+          rowJson: '{}',
+        ),
+      );
+  await db.into(db.localChatMessages).insert(
+        LocalChatMessagesCompanion.insert(
+          id: 'm-$threadId',
+          userId: userId,
+          threadId: threadId,
+          createdAt: DateTime.utc(2026, 10, 18),
+          rowJson: '{}',
+        ),
+      );
+}
+
 void main() {
   late AppDatabase db;
   late LocalDataWipeService service;
@@ -147,6 +167,15 @@ void main() {
       expect(await db.select(db.localAsrModels).get(), hasLength(1));
     });
 
+    test('AIチャットの表示用キャッシュも消える', () async {
+      await _insertChat(db, userId: _me, threadId: 'T1');
+
+      await service.wipeAll();
+
+      expect(await db.select(db.localChatThreads).get(), isEmpty);
+      expect(await db.select(db.localChatMessages).get(), isEmpty);
+    });
+
     test('プロフィールは行を残してPIIだけ消す(オンボーディング判定のフラグを守る)', () async {
       await db.upsertUserProfile(
         LocalUserProfilesCompanion.insert(
@@ -218,6 +247,16 @@ void main() {
 
       expect(await db.select(db.localLectureAssets).get(), isEmpty);
       expect(await db.select(db.localAsrModels).get(), hasLength(1));
+    });
+
+    test('他ユーザーのAIチャットのキャッシュだけ消す', () async {
+      await _insertChat(db, userId: _me, threadId: 'T-me');
+      await _insertChat(db, userId: _other, threadId: 'T-other');
+
+      await service.wipeOtherUsers(currentUserId: _me);
+
+      expect((await db.select(db.localChatThreads).get()).map((t) => t.id), ['T-me']);
+      expect((await db.select(db.localChatMessages).get()).map((m) => m.id), ['m-T-me']);
     });
 
     test('自分のユーザープロフィールは残す(PKがユーザーID自身のテーブル)', () async {

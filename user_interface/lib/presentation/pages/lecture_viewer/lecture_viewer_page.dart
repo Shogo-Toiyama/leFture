@@ -6,7 +6,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lefture/core/utils/chat_selection.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
+import 'package:lefture/domain/entities/chat.dart';
+import 'package:lefture/presentation/widgets/ai_chat/ai_chat_entry_button.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_page_context.dart';
 import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
@@ -188,6 +192,7 @@ class LectureViewerPage extends HookConsumerWidget {
               // Fallback if current lecture is not found in the list (e.g. database syncing)
               return Scaffold(
                 backgroundColor: AppColors.universe.voidBackground,
+                floatingActionButton: const AiChatEntryButton(translucent: true),
                 body: _LecturePageContent(lecture: lecture),
               );
             }
@@ -196,6 +201,8 @@ class LectureViewerPage extends HookConsumerWidget {
 
             return Scaffold(
               backgroundColor: AppColors.universe.voidBackground,
+              // 文字の上に重なるので、少し透かして下の文字がうっすら見えるようにする
+              floatingActionButton: const AiChatEntryButton(translucent: true),
               body: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
                   if (notification is ScrollEndNotification) {
@@ -1111,6 +1118,30 @@ class _ViewerFunFactCard extends HookConsumerWidget {
             // 認識器がテキスト上のスワイプを奪ってしまう。ここではドラッグを
             // PageViewへ転送する専用のSelectionAreaを使う。
             SwipePrioritySelectionArea(
+              askLabel: l10n.cardSelectionToolbarAskLabel,
+              copyLabel: l10n.cardSelectionToolbarCopyLabel,
+              // 選んだ文章をAIに質問する。選んだ位置は、本文の前後の文字で伝える
+              onAsk: (selected) {
+                final flattened = [
+                  if (fact.title?.trim().isNotEmpty == true) fact.title!.trim(),
+                  if (cleanHook.isNotEmpty) cleanHook,
+                  if (cleanBody.isNotEmpty) cleanBody,
+                ].join('\n');
+                final start = flattened.indexOf(selected);
+                unawaited(
+                  openAiChat(
+                    context,
+                    ref,
+                    selection: buildChatSelection(
+                      flattened,
+                      start < 0 ? 0 : start,
+                      start < 0 ? 0 : start + selected.length,
+                      selected,
+                      screen: ChatScreenRef(kind: 'fun_fact', id: fact.id),
+                    ),
+                  ),
+                );
+              },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [

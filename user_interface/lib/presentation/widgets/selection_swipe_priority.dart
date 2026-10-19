@@ -13,8 +13,13 @@
 // したがってSelectionAreaの *内側* に横ドラッグ認識器を置けば、プラット
 // フォームに関係なくスワイプ側を勝たせられる。指が止まっている長押しは
 // こちらが勝ちを主張しないため、長押し起点のテキスト選択はそのまま生き残る。
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
+import 'package:lefture/presentation/widgets/selection_floating_menu.dart';
 
 /// 選択がある間だけポインタを辞退する横ドラッグ認識器。
 ///
@@ -40,12 +45,29 @@ class SelectionAwareHorizontalDragRecognizer
 /// [SelectionArea]。
 ///
 /// 横ドラッグは最も近い横方向の[Scrollable]へ転送するので、ページスナップや
-/// フリングの物理は純正のまま保たれる。選択は長押し起点のみになり、コピーは
-/// 標準のコンテキストメニューから行える。
+/// フリングの物理は純正のまま保たれる。選択は長押し起点のみになり、選んだ文章の近くに
+/// 浮かぶメニュー(「AIに聞く」「コピー」。Deep Notes・復習カードと同じ形)が出る。
 class SwipePrioritySelectionArea extends StatefulWidget {
-  const SwipePrioritySelectionArea({super.key, required this.child});
+  const SwipePrioritySelectionArea({
+    super.key,
+    required this.child,
+    this.askLabel,
+    this.onAsk,
+    this.copyLabel,
+    this.world = ChatWorld.universe,
+  });
 
   final Widget child;
+
+  /// 選択のメニューに足す「AIに聞く」(AIチャットに、選んだ文章を添えて聞く)。[onAsk]と一緒に渡す。
+  final String? askLabel;
+  final void Function(String selectedText)? onAsk;
+
+  /// 「コピー」の文言。渡さなければ端末標準の文言。
+  final String? copyLabel;
+
+  /// メニューの色(宇宙の画面は暗く、紙の画面は紙の色)。
+  final ChatWorld world;
 
   @override
   State<SwipePrioritySelectionArea> createState() =>
@@ -55,6 +77,7 @@ class SwipePrioritySelectionArea extends StatefulWidget {
 class _SwipePrioritySelectionAreaState
     extends State<SwipePrioritySelectionArea> {
   bool _hasSelection = false;
+  String _selectedText = '';
   Drag? _drag;
 
   void _handleDragStart(DragStartDetails details) {
@@ -78,12 +101,42 @@ class _SwipePrioritySelectionAreaState
 
   @override
   Widget build(BuildContext context) {
+    final onAsk = widget.onAsk;
+    final askLabel = widget.askLabel;
     return SelectionArea(
       onSelectionChanged: (content) {
         final hasSelection = content != null && content.plainText.isNotEmpty;
+        _selectedText = content?.plainText ?? '';
         if (hasSelection != _hasSelection) {
           setState(() => _hasSelection = hasSelection);
         }
+      },
+      contextMenuBuilder: (context, state) {
+        final text = _selectedText.trim();
+        return buildSelectionFloatingMenu(
+          state: state,
+          world: widget.world,
+          actions: [
+            if (onAsk != null && askLabel != null && text.isNotEmpty)
+              SelectionMenuAction(
+                label: askLabel,
+                emphasized: true,
+                onTap: () {
+                  state.clearSelection();
+                  onAsk(text);
+                },
+              ),
+            SelectionMenuAction(
+              label:
+                  widget.copyLabel ??
+                  MaterialLocalizations.of(context).copyButtonLabel,
+              onTap: () {
+                unawaited(Clipboard.setData(ClipboardData(text: text)));
+                state.clearSelection();
+              },
+            ),
+          ],
+        );
       },
       child: RawGestureDetector(
         behavior: HitTestBehavior.translucent,

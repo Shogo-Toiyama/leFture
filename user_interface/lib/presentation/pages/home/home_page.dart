@@ -18,6 +18,7 @@ import 'package:lefture/application/recording/recording_language_controller.dart
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/ai_chat/ai_chat_entry_button.dart';
 import 'package:lefture/presentation/widgets/custom_app_bar.dart';
 import 'package:lefture/presentation/widgets/galaxy/galaxy_view.dart';
 import 'package:lefture/presentation/widgets/spaceship_announcement_modal.dart';
@@ -557,7 +558,12 @@ class HomePage extends HookConsumerWidget {
                 child: Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: GestureDetector(
+                    // 録音ボタンの右隣にAIチャットのボタンを並べる
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: GestureDetector(
                       onTap: () => context.push(AppRoutes.recording),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -605,6 +611,11 @@ class HomePage extends HookConsumerWidget {
                           ],
                         ),
                       ),
+                    ),
+                        ),
+                        const SizedBox(width: 12),
+                        const AiChatEntryButton(),
+                      ],
                     ),
                   ),
                 ),

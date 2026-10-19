@@ -15,6 +15,8 @@ import 'package:lefture/domain/entities/lecture_topic.dart';
 import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/ai_chat/ai_chat_entry_button.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 import 'package:lefture/presentation/widgets/blurred_summary_placeholder.dart';
 import 'package:lefture/presentation/widgets/custom_app_bar.dart';
 import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
@@ -103,6 +105,10 @@ class DeepNotesListPage extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.paper.background,
+      floatingActionButton: const AiChatEntryButton(
+        world: ChatWorld.paper,
+        translucent: true,
+      ),
       body: SafeArea(
         child: Column(
           children: [

@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { apiFetch } from './api';
 import type { UserProfile, UserProfileMetadata } from '../types/profile';
+import { aiConsentPatch, hasAiConsent, type AiConsentKind } from './aiConsent';
 
 export async function getProfile(): Promise<UserProfile> {
   const { data: userData } = await supabase.auth.getUser();
@@ -67,6 +68,16 @@ export function setLanguagePreferences(
 /** onboarding_page.dartのDoneステップ相当: onboarding_completed_atを立てる。 */
 export function markOnboardingCompleted(currentMetadata: UserProfileMetadata | null): Promise<UserProfile> {
   return updateMetadata(currentMetadata, { onboarding_completed_at: new Date().toISOString() });
+}
+
+/**
+ * AIへのデータ送信への同意を記録する。ほかの端末(アプリ)が書いた値を消さないよう、
+ * 手元の古いmetadataではなく、サーバーの最新を読んでから足す。今の版で同意済みなら何もしない。
+ */
+export async function markAiConsent(kind: AiConsentKind): Promise<UserProfile> {
+  const fresh = await getProfile();
+  if (hasAiConsent(fresh.metadata, kind)) return fresh;
+  return updateMetadata(fresh.metadata, aiConsentPatch(kind));
 }
 
 interface RequestAvatarUploadUrlResponse {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/router.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/application/chat/chat_lifecycle_watcher.dart';
 import 'package:lefture/application/activity/activity_ping_service.dart';
 import 'package:lefture/application/credit/credit_polling_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
@@ -25,6 +26,9 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // アプリ起動中ずっとバックグラウンド復帰/オンライン復帰を監視させる
     ref.watch(appLifecycleSyncWatcherProvider);
+
+    // 裏から戻ったとき、受信中だったチャットの返答をサーバーの内容で読み直す
+    ref.watch(chatLifecycleWatcherProvider);
 
     // クレジット情報の自動ポーリング（録音中・バックエンド処理中・クレジットページ表示中）を監視
     ref.watch(creditPollingProvider);

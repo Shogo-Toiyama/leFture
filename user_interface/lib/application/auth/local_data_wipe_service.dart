@@ -211,6 +211,8 @@ class LocalDataWipeService {
       await deleteForeign(_db.localTopicMaps, (t) => t.userId.equals(currentUserId).not());
       await deleteForeign(_db.localSyncCursors, (t) => t.userId.equals(currentUserId).not());
       await deleteForeign(_db.localCacheEntries, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localChatThreads, (t) => t.userId.equals(currentUserId).not());
+      await deleteForeign(_db.localChatMessages, (t) => t.userId.equals(currentUserId).not());
       // LocalUserProfilesはPKがユーザーID自身(id)。
       await deleteForeign(_db.localUserProfiles, (t) => t.id.equals(currentUserId).not());
     });

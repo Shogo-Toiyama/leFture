@@ -61,10 +61,12 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>We use the camera so you can photograph notes, slides, or a whiteboard and attach the photo to a conversation with the AI assistant.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need access to your microphone to record lectures and audio for AI analysis and study content generation.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We access your photo library to allow you to select photos for your profile avatar and attach screenshots when submitting feedback or support inquiries.</string>
+	<string>We access your photo library so you can choose photos for your profile avatar, attach screenshots to support inquiries, and attach photos of notes or slides to a conversation with the AI assistant.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>We use speech recognition to convert your recorded lectures into real-time transcripts.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

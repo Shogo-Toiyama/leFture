@@ -12,8 +12,6 @@ import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/themes/app_colors.dart'; // 色追加
-// AIチャットはApple審査対応のため一時的に非表示。再有効化時にコメントアウトを外す。
-// import 'package:lefture/presentation/widgets/ai_chat_sheet.dart';
 import 'package:lefture/application/recording/lecture_moments_provider.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/recording/live_transcript_provider.dart';
@@ -29,6 +27,7 @@ import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lefture/presentation/pages/profile/widgets/language_selection_sheet.dart';
 import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
+import 'package:lefture/presentation/widgets/ai_share_consent_dialog.dart';
 import 'package:lefture/presentation/widgets/asr_model_dialog_helpers.dart';
 import 'package:lefture/presentation/widgets/custom_dialog.dart';
 import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
@@ -253,168 +252,31 @@ class RecordingPage extends HookConsumerWidget {
 
   /// 録音音声・プロフィール情報をサードパーティAIサービス(文字起こし・要約・
   /// ノート生成)へ送信することへの同意を、最初のアップロード操作の直前に
-  /// 一度だけ確認する(Apple Guideline 5.1.1(i)/5.1.2(i)対応)。
-  /// 既に同意済みならダイアログを出さずtrueを返す。
+  /// 確認する(Apple Guideline 5.1.1(i)/5.1.2(i)対応)。
+  /// 今の版で同意済みならダイアログを出さずtrueを返す。送り先が変わって版が上がったときは、
+  /// 前の版に同意した人にも理由を添えてもう一度出す。
   Future<bool> _ensureAiSharingConsent(
     BuildContext context,
     WidgetRef ref,
     AppLocalizations l10n,
   ) async {
     final repo = ref.read(userProfileRepositoryProvider);
-    if (await repo.hasConsentedToAiRecordingProfileShare()) {
+    if (await repo.hasConsentedToAiRecordingShare()) {
       return true;
     }
+    final previousVersion = await repo.aiRecordingConsentVersionOnFile();
     if (!context.mounted) return false;
 
-    var expanded = false;
-    final agreed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          backgroundColor: const Color(0xFF13131C),
-          shape: RoundedRectangleBorder(
-            side: BorderSide(color: AppColors.universe.glassBorder),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.starGold.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.smart_toy_outlined,
-                  color: AppColors.starGold,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  l10n.aiSharingConsentDialogTitle,
-                  style: TextStyle(
-                    color: AppColors.universe.textStarlight,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.aiSharingConsentDialogMessage,
-                  style: TextStyle(
-                    color: AppColors.universe.textComet,
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Theme(
-                  data: Theme.of(ctx).copyWith(
-                    dividerColor: Colors.transparent,
-                  ),
-                  child: ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    childrenPadding: const EdgeInsets.only(bottom: 8),
-                    initiallyExpanded: expanded,
-                    onExpansionChanged: (value) =>
-                        setState(() => expanded = value),
-                    iconColor: AppColors.starGold,
-                    collapsedIconColor: AppColors.starGold,
-                    title: Text(
-                      l10n.aiSharingConsentDialogDetailsToggle,
-                      style: const TextStyle(
-                        color: AppColors.starGold,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    children: [
-                      Text(
-                        l10n.aiSharingConsentDialogDetailsBody,
-                        style: TextStyle(
-                          color: AppColors.universe.textComet,
-                          fontSize: 12.5,
-                          height: 1.6,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 4,
-                  children: [
-                    InkWell(
-                      onTap: () => ctx.push(AppRoutes.privacyPolicy),
-                      child: Text(
-                        l10n.aiSharingConsentDialogPrivacyPolicyLink,
-                        style: const TextStyle(
-                          color: AppColors.starGold,
-                          fontSize: 13,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                    InkWell(
-                      onTap: () => ctx.push(AppRoutes.contact),
-                      child: Text(
-                        l10n.aiSharingConsentDialogContactLink,
-                        style: const TextStyle(
-                          color: AppColors.starGold,
-                          fontSize: 13,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          actionsOverflowButtonSpacing: 8,
-          actionsOverflowDirection: VerticalDirection.down,
-          actions: [
-            TextButton(
-              onPressed: () => ctx.pop(false),
-              child: Text(
-                l10n.aiSharingConsentDialogCancelButton,
-                style: TextStyle(color: AppColors.universe.textComet),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () => ctx.pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.starGold,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                elevation: 0,
-              ),
-              child: Text(
-                l10n.aiSharingConsentDialogAgreeButton,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-      ),
+    final agreed = await showAiShareConsentDialog(
+      context,
+      title: l10n.aiSharingConsentDialogTitle,
+      message: l10n.aiSharingConsentDialogMessage,
+      notice: previousVersion > 0
+          ? l10n.aiSharingConsentDialogUpdatedNotice
+          : null,
     );
-
-    if (agreed == true) {
-      await repo.markAiRecordingProfileShareConsent();
+    if (agreed) {
+      await repo.markAiRecordingShareConsent();
       return true;
     }
     return false;
@@ -3143,56 +3005,6 @@ class _LiveTranscriptPanel extends HookConsumerWidget {
               ],
             ),
           ),
-          // AIチャットはApple審査対応のため一時的に非表示(Coming Soon的な
-          // 未完成機能を見せないため)。再度有効化する際はこのブロックと
-          // 冒頭の ai_chat_sheet.dart のimportのコメントアウトを外すこと。
-          /*
-          Divider(height: 1, color: AppColors.universe.glassBorder),
-          Opacity(
-            opacity: canInteract ? 1.0 : 0.4,
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Material(
-                      color: AppColors.universe.voidBackground.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(20),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: canInteract ? () => showAiChatSheet(context) : null,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: AppColors.universe.glassBorder),
-                          ),
-                          child: Text(
-                            'Ask AI about this lecture...',
-                            style: TextStyle(color: AppColors.universe.textComet, fontSize: 13),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Material(
-                    color: AppColors.starGold,
-                    shape: const CircleBorder(),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: canInteract ? () => showAiChatSheet(context) : null,
-                      child: const Padding(
-                        padding: EdgeInsets.all(10),
-                        child: Icon(Icons.auto_awesome, size: 18, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          */
         ],
       ),
     );

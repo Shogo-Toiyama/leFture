@@ -440,6 +440,37 @@ class LocalTopicMaps extends Table {
   Set<Column> get primaryKey => {courseId, userId};
 }
 
+// ===== AIチャットの表示用キャッシュ =====
+//
+// 正しいのはいつもサーバー(chat_threads / chat_messages)。ここは開いた瞬間に前回の内容を出すためだけの
+// キャッシュで、スレッドを開くたび・一覧を読み直すたびにサーバーの内容で丸ごと置き換える
+// (webでの編集・再生成・削除を正しく映すため、差分のマージはしない)。書き込み(送信・編集・削除)は
+// バックエンド経由だけで、ここに先に書くことはしない。行はサーバーの行をそのままJSONで持つので、
+// サーバー側で列が増えても、型(ChatThread / ChatMessage)の読み取りを直すだけで済む。
+
+class LocalChatThreads extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  DateTimeColumn get lastMessageAt => dateTime()();
+  // サーバーの行(Supabaseから読んだMap)をそのままJSON化したもの
+  TextColumn get rowJson => text()();
+
+  @override
+  Set<Column> get primaryKey => {id, userId};
+}
+
+class LocalChatMessages extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get threadId => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  // サーバーの行(Supabaseから読んだMap)をそのままJSON化したもの
+  TextColumn get rowJson => text()();
+
+  @override
+  Set<Column> get primaryKey => {id, userId};
+}
+
 // ===== ローカルキャッシュファイルの容量管理 =====
 
 /// R2からダウンロードしてローカルにキャッシュしたファイル(トランスクリプト/
@@ -551,6 +582,8 @@ class LocalErrorReports extends Table {
     LocalCacheEntries,
     LocalUserProfiles,
     LocalErrorReports,
+    LocalChatThreads,
+    LocalChatMessages,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -560,7 +593,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -777,6 +810,12 @@ class AppDatabase extends _$AppDatabase {
         // バージョン26: LocalErrorReports を新設(開発者へのエラー報告キュー)。
         // 新テーブルの追加なので既存データには一切触れない。
         await m.createTable(localErrorReports);
+      }
+      if (from < 27) {
+        // バージョン27: AIチャットの表示用キャッシュ(LocalChatThreads / LocalChatMessages)を新設。
+        // 新テーブルの追加なので既存データには一切触れない。
+        await m.createTable(localChatThreads);
+        await m.createTable(localChatMessages);
       }
     },
   );

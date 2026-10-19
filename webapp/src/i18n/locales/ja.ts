@@ -745,6 +745,16 @@ export const ja: Record<keyof typeof en, string> = {
 
   // Chat (横断チャットボット)
   chatTitle: 'チャット',
+  // AIへのデータ送信の同意(アプリと同じ文言)
+  aiConsentAgree: '同意して続ける',
+  aiConsentRecordingTitle: 'AIによるデータ処理について',
+  aiConsentRecordingMessage:
+    '録音した音声と、あなたのプロフィールの一部は、文字起こしとノート・要約の生成のために、外部のAIサービス(Cloudflare、Google、OpenAI、TogetherAI)へ送信されます。氏名やメールアドレスは送信されません。',
+  aiConsentRecordingUpdated:
+    'AIサービスの送信先を更新しました(OpenAIを追加)。内容をご確認のうえ、あらためて同意をお願いします。',
+  aiConsentChatTitle: 'AIチャットのデータ処理について',
+  aiConsentChatMessage:
+    'チャットで入力した内容や添付した資料、質問に関係する講義ノートの一部は、回答を作るために、外部のAIサービス(Anthropic、Google、OpenAI)と検索サービス(Brave、Tavily)へ送信されます。氏名やメールアドレスは送信されません(入力した内容や資料に含まれる場合を除く)。',
   chatOpen: 'チャットを開く',
   chatPanelResize: 'ドラッグでチャットの幅を変える(ダブルクリックで元に戻す)',
   chatNewConversation: '新しい会話',
@@ -796,7 +806,7 @@ export const ja: Record<keyof typeof en, string> = {
   chatDetailStatus: '状態',
   chatDetailStatusStopped: '途中で停止',
   chatReplyToSelection: '返信',
-  annotationAsk: '質問',
+  annotationAsk: 'AIに聞く',
   annotationHighlight: 'ハイライト',
   annotationNote: 'ノート',
   annotationSource: '出典',

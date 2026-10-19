@@ -1,11 +1,10 @@
 // lib/presentation/widgets/card_selection_toolbar.dart
 //
-// A GoodNotes-style toolbar shown at the top of Review Cards / Deep Notes
-// pages, between the grid-view icon and the page counter. Shows reaction
-// actions (Like / Dislike / Save) by default, and swaps to text-selection
-// actions (Highlight / Note / Copy / Source) while a selection is active.
-// Highlight and Note open their own draggable sub-toolbars; Copy / Source
-// are still UI-only placeholders.
+// The reaction toolbar (Like / Dislike / Save) shown at the top of Review Cards /
+// Deep Notes pages, between the grid-view icon and the page counter. It always
+// shows the reactions; the text-selection actions (Ask AI / Highlight / Note /
+// Source / Copy) live in the floating menu next to the selection
+// (selection_floating_menu.dart).
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -16,22 +15,14 @@ import 'package:lefture/presentation/themes/app_colors.dart';
 class CardSelectionToolbar extends HookWidget {
   const CardSelectionToolbar({
     super.key,
-    required this.hasSelection,
     this.accentColor,
     this.reaction,
     this.saved = false,
     this.onLike,
     this.onDislike,
     this.onSave,
-    this.isHighlightActive = false,
-    this.onHighlightTap,
-    this.isNoteActive = false,
-    this.onNoteTap,
-    this.onSourceTap,
-    this.onCopyTap,
   });
 
-  final bool hasSelection;
   final Color? accentColor;
 
   // "like" / "dislike" / null
@@ -40,14 +31,6 @@ class CardSelectionToolbar extends HookWidget {
   final VoidCallback? onLike;
   final VoidCallback? onDislike;
   final VoidCallback? onSave;
-
-  // Highlight/Noteサブツールバーが開いているかどうか(アイコンのアクティブ表示用)
-  final bool isHighlightActive;
-  final VoidCallback? onHighlightTap;
-  final bool isNoteActive;
-  final VoidCallback? onNoteTap;
-  final VoidCallback? onSourceTap;
-  final VoidCallback? onCopyTap;
 
   @override
   Widget build(BuildContext context) {
@@ -65,64 +48,37 @@ class CardSelectionToolbar extends HookWidget {
       canScrollRight.value = position.pixels < position.maxScrollExtent - 1;
     }
 
-    final buttons = hasSelection
-        ? [
-            _ToolbarButton(
-              icon: Icons.brush_outlined,
-              label: l10n.cardSelectionToolbarHighlightLabel,
-              color: color,
-              isActive: isHighlightActive,
-              onTap: onHighlightTap,
-            ),
-            _ToolbarButton(
-              icon: Icons.edit_note_rounded,
-              label: l10n.cardSelectionToolbarNoteLabel,
-              color: color,
-              isActive: isNoteActive,
-              onTap: onNoteTap,
-            ),
-            _ToolbarButton(
-              icon: Icons.copy_rounded,
-              label: l10n.cardSelectionToolbarCopyLabel,
-              color: color,
-              onTap: onCopyTap,
-            ),
-            _ToolbarButton(
-              icon: Icons.description_outlined,
-              label: l10n.cardSelectionToolbarSourceLabel,
-              color: color,
-              onTap: onSourceTap,
-            ),
-          ]
-        : [
-            _ToolbarButton(
-              icon: reaction == 'like' ? Icons.favorite : Icons.favorite_border,
-              label: l10n.cardSelectionToolbarLikeLabel,
-              color: color,
-              isActive: reaction == 'like',
-              onTap: onLike,
-            ),
-            _ToolbarButton(
-              icon: reaction == 'dislike' ? Icons.thumb_down : Icons.thumb_down_alt_outlined,
-              label: l10n.cardSelectionToolbarDislikeLabel,
-              color: color,
-              isActive: reaction == 'dislike',
-              onTap: onDislike,
-            ),
-            _ToolbarButton(
-              icon: saved ? Icons.bookmark : Icons.bookmark_border,
-              label: l10n.cardSelectionToolbarSaveLabel,
-              color: color,
-              isActive: saved,
-              onTap: onSave,
-            ),
-          ];
+    final buttons = [
+      _ToolbarButton(
+        icon: reaction == 'like' ? Icons.favorite : Icons.favorite_border,
+        label: l10n.cardSelectionToolbarLikeLabel,
+        color: color,
+        isActive: reaction == 'like',
+        onTap: onLike,
+      ),
+      _ToolbarButton(
+        icon: reaction == 'dislike'
+            ? Icons.thumb_down
+            : Icons.thumb_down_alt_outlined,
+        label: l10n.cardSelectionToolbarDislikeLabel,
+        color: color,
+        isActive: reaction == 'dislike',
+        onTap: onDislike,
+      ),
+      _ToolbarButton(
+        icon: saved ? Icons.bookmark : Icons.bookmark_border,
+        label: l10n.cardSelectionToolbarSaveLabel,
+        color: color,
+        isActive: saved,
+        onTap: onSave,
+      ),
+    ];
 
     useEffect(() {
       scrollController.addListener(updateFades);
       WidgetsBinding.instance.addPostFrameCallback((_) => updateFades());
       return () => scrollController.removeListener(updateFades);
-    }, [scrollController, hasSelection]);
+    }, [scrollController]);
 
     return SizedBox(
       height: 36,

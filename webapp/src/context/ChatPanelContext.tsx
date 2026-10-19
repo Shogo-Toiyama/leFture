@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ChatScreenRef, ChatSelection } from '../types/chat';
+import { useAiConsent } from './AiConsentContext';
 
 /**
  * 横断チャットボットの「右側パネル(狭い画面ではボトムシート)」の状態。
@@ -49,7 +50,9 @@ export const ChatPanelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [pageScreen, setPageScreen] = useState<ChatScreenRef | null>(null);
   const [lectureDetached, setLectureDetached] = useState(false);
 
-  const open = useCallback(
+  const { hasConsent, requestConsent } = useAiConsent();
+
+  const doOpen = useCallback(
     (request: ChatOpenRequest = {}) => {
       if (request.newConversation) {
         setThreadId(null);
@@ -65,6 +68,20 @@ export const ChatPanelProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setIsOpen(true);
     },
     [isOpen]
+  );
+
+  // チャットで入力した内容・資料をAIサービスへ送ることへの同意(アカウント単位)。まだなら聞いてから開く
+  const open = useCallback(
+    (request: ChatOpenRequest = {}) => {
+      if (hasConsent('chat')) {
+        doOpen(request);
+        return;
+      }
+      void requestConsent('chat').then((agreed) => {
+        if (agreed) doOpen(request);
+      });
+    },
+    [hasConsent, requestConsent, doOpen]
   );
 
   const close = useCallback(() => setIsOpen(false), []);

@@ -747,6 +747,16 @@ export const en = {
 
   // Chat (横断チャットボット)
   chatTitle: 'Chat',
+  // Consent to send data to AI services (same wording as the app)
+  aiConsentAgree: 'Agree & Continue',
+  aiConsentRecordingTitle: 'About AI Data Processing',
+  aiConsentRecordingMessage:
+    'Your recorded audio and some of your profile are sent to outside AI services (Cloudflare, Google, OpenAI, TogetherAI) to make transcripts, notes, and summaries. Your name and email address are not sent.',
+  aiConsentRecordingUpdated:
+    "We've updated which AI services your recordings are sent to (OpenAI added). Please review the details and agree again.",
+  aiConsentChatTitle: 'About AI Chat Data Processing',
+  aiConsentChatMessage:
+    'What you type in the chat, files you attach, and the parts of your lecture notes that relate to your question are sent to outside AI services (Anthropic, Google, OpenAI) and search services (Brave, Tavily) to write the answer. Your name and email address are not sent (unless they are in what you type or attach).',
   chatOpen: 'Open chat',
   chatPanelResize: 'Drag to resize the chat (double-click to reset)',
   chatNewConversation: 'New chat',
@@ -798,7 +808,7 @@ export const en = {
   chatDetailStatus: 'Status',
   chatDetailStatusStopped: 'Stopped partway',
   chatReplyToSelection: 'Reply',
-  annotationAsk: 'Ask',
+  annotationAsk: 'Ask AI',
   annotationHighlight: 'Highlight',
   annotationNote: 'Note',
   annotationSource: 'Source',
