@@ -540,7 +540,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           onClearSelectedText={clearSelection}
           lectureTitle={lectureTitle}
           onDetachLecture={onDetachLecture}
-          selectedAttachments={listedAttachments.filter((a) => a.selected)}
+          selectedAttachments={listedAttachments.filter((a) => a.selected && a.kind !== 'image')}
           onUnselectAttachment={(id) => void selectAttachment(id, false).catch(() => {})}
           // 編集中は、送ると消える資料を指せないようにする
           mentionables={
@@ -569,6 +569,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
         pendingRefs={pendingRefs}
         // 一覧は開いたまま(続けていくつも選べるように)。入力欄には裏で「@名前」が入る
         onAttach={(a, mode) => setInsertRequest({ attachment: a, mode, nonce: Date.now() })}
+        onPin={(a) => selectAttachment(a.id, true)}
         onUnpin={(a) => selectAttachment(a.id, false)}
         onClose={closeList}
       />

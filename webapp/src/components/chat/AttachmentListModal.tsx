@@ -19,8 +19,10 @@ interface AttachmentListModalProps {
   onView: (attachment: ChatAttachment) => void;
   /** 入力欄で指している資料(送る前。全文で添付する予定 / メンションする予定)。 */
   pendingRefs?: ChatAttachmentRef[];
-  /** 入力欄に入れる(全文で添付 / メンション)・入力欄から外す。一覧は開いたまま。 */
+  /** 入力欄に入れる(メンション)・入力欄から外す。一覧は開いたまま。 */
   onAttach: (attachment: ChatAttachment, mode: 'full' | 'mention' | 'remove') => void;
+  /** 全文で読む(ピン留め・チップ化)。失敗したら例外を投げる。 */
+  onPin?: (attachment: ChatAttachment) => Promise<void>;
   /** 全文で読むのをやめる。失敗したら例外を投げる。 */
   onUnpin: (attachment: ChatAttachment) => Promise<void>;
   onClose: () => void;
@@ -46,6 +48,7 @@ export const AttachmentListModal: React.FC<AttachmentListModalProps> = ({
   onView,
   pendingRefs = [],
   onAttach,
+  onPin,
   onUnpin,
   onClose,
 }) => {
@@ -76,6 +79,22 @@ export const AttachmentListModal: React.FC<AttachmentListModalProps> = ({
     .reduce((sum, a) => sum + a.token_count, 0);
   const hasPendingFull = attachments.some((a) => !a.selected && pendingMode.get(a.id) === 'full');
   const limitText = formatTokens(CHAT_MAX_SELECTED_TOKENS);
+
+  const pin = async (a: ChatAttachment) => {
+    setFailedId(null);
+    setPendingId(a.id);
+    try {
+      if (onPin) {
+        await onPin(a);
+      } else {
+        onAttach(a, 'full');
+      }
+    } catch {
+      setFailedId(a.id);
+    } finally {
+      setPendingId(null);
+    }
+  };
 
   const unpin = async (a: ChatAttachment) => {
     setFailedId(null);
@@ -189,12 +208,12 @@ export const AttachmentListModal: React.FC<AttachmentListModalProps> = ({
                       </button>
                       {expanded && (
                         <div className="chat-attachment-list-actions">
-                          {ready && !a.selected && pending !== 'full' && (
+                          {ready && !a.selected && a.kind !== 'image' && (
                             <button
                               type="button"
                               className="chat-attachment-action is-primary"
-                              disabled={tooLong}
-                              onClick={() => onAttach(a, 'full')}
+                              disabled={tooLong || pendingId === a.id}
+                              onClick={() => void pin(a)}
                             >
                               <FileStack size={15} />
                               <span>

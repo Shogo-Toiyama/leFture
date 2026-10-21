@@ -222,6 +222,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
           ),
         ),
         onView: _openAttachment,
+        onPin: (attachment) => _notifier.selectAttachment(attachment.id, true),
         onUnpin: (attachment) => _notifier.selectAttachment(attachment.id, false),
       ),
     );

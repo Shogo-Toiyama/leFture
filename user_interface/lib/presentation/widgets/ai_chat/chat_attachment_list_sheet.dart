@@ -29,6 +29,7 @@ Future<void> showChatAttachmentListSheet(
   required void Function(ChatAttachment attachment, ChatInsertMode mode)
   onAttach,
   required void Function(ChatAttachment attachment) onView,
+  required Future<void> Function(ChatAttachment attachment) onPin,
   required Future<void> Function(ChatAttachment attachment) onUnpin,
 }) {
   return showChatSheet<void>(
@@ -39,6 +40,7 @@ Future<void> showChatAttachmentListSheet(
       pendingRefs: pendingRefs,
       onAttach: onAttach,
       onView: onView,
+      onPin: onPin,
       onUnpin: onUnpin,
     ),
   );
@@ -50,6 +52,7 @@ class _AttachmentList extends ConsumerStatefulWidget {
     required this.pendingRefs,
     required this.onAttach,
     required this.onView,
+    required this.onPin,
     required this.onUnpin,
   });
 
@@ -57,6 +60,7 @@ class _AttachmentList extends ConsumerStatefulWidget {
   final ValueListenable<List<ChatAttachmentRef>> pendingRefs;
   final void Function(ChatAttachment attachment, ChatInsertMode mode) onAttach;
   final void Function(ChatAttachment attachment) onView;
+  final Future<void> Function(ChatAttachment attachment) onPin;
   final Future<void> Function(ChatAttachment attachment) onUnpin;
 
   @override
@@ -67,6 +71,20 @@ class _AttachmentListState extends ConsumerState<_AttachmentList> {
   String? _expandedId;
   String? _busyId;
   String? _failedId;
+
+  Future<void> _pin(ChatAttachment a) async {
+    setState(() {
+      _failedId = null;
+      _busyId = a.id;
+    });
+    try {
+      await widget.onPin(a);
+    } catch (_) {
+      if (mounted) setState(() => _failedId = a.id);
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
 
   Future<void> _unpin(ChatAttachment a) async {
     setState(() {
@@ -182,6 +200,7 @@ class _AttachmentListState extends ConsumerState<_AttachmentList> {
                         ),
                         onAttach: (mode) => widget.onAttach(a, mode),
                         onView: () => widget.onView(a),
+                        onPin: () => unawaited(_pin(a)),
                         onUnpin: () => unawaited(_unpin(a)),
                       ),
                   ],
@@ -264,6 +283,7 @@ class _Row extends ConsumerWidget {
     required this.onToggle,
     required this.onAttach,
     required this.onView,
+    required this.onPin,
     required this.onUnpin,
   });
 
@@ -277,6 +297,7 @@ class _Row extends ConsumerWidget {
   final VoidCallback onToggle;
   final void Function(ChatInsertMode mode) onAttach;
   final VoidCallback onView;
+  final VoidCallback onPin;
   final VoidCallback onUnpin;
 
   @override
@@ -457,7 +478,7 @@ class _Row extends ConsumerWidget {
                 children: [
                   if (ready &&
                       !a.selected &&
-                      pending != ChatAttachmentMode.full)
+                      a.kind != 'image')
                     action(
                       icon: Icons.layers_outlined,
                       label: l.aiChatAttachFull,
@@ -465,9 +486,9 @@ class _Row extends ConsumerWidget {
                       hint: tooLong
                           ? l.aiChatAttachmentTooLongToSelect
                           : '${l.aiChatAttachmentTokens(tokens(a.tokenCount))} · ${l.aiChatAttachmentCostPerTurn(cost)}',
-                      onTap: tooLong
+                      onTap: tooLong || busy
                           ? null
-                          : () => onAttach(ChatInsertMode.full),
+                          : onPin,
                     ),
                   if (ready && pending != ChatAttachmentMode.mention)
                     action(
