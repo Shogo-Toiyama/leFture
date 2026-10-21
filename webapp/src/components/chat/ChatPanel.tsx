@@ -152,6 +152,7 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
             // 作り直すと、受信中のストリームが切れてしまう。会話の切り替えは
             // useChatConversationがthreadIdの変化として扱う。
             threadId={panel.threadId}
+            world={isPaper ? 'paper' : 'universe'}
             onThreadCreated={panel.adoptThread}
             onTurnComplete={refreshThreadTitle}
             lectureId={lectureId}

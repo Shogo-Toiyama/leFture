@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Sparkles, Upload } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Upload } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import type { TranslationKey } from '../../i18n/translations';
 import { useChatConversation, type LocalChatMessage } from '../../hooks/useChatConversation';
@@ -22,9 +22,11 @@ import { AttachmentListModal } from './AttachmentListModal';
 import { AttachmentViewerModal, viewableFromAttachment, type ViewableAttachment } from './AttachmentViewerModal';
 import { ChatComposer, type ChatInsertRequest } from './ChatComposer';
 import { ChatMessageItem } from './ChatMessageItem';
+import { LaunchGateBackdrop, type ChatWorld } from './LaunchGateBackdrop';
 
 interface ChatConversationProps {
   threadId: string | null;
+  world?: ChatWorld;
   onThreadCreated: (threadId: string) => void;
   /** 1往復が終わったとき(スレッド名が付いた可能性があるので見出しを読み直す等)。 */
   onTurnComplete?: () => void;
@@ -97,6 +99,7 @@ const STICK_TO_BOTTOM_PX = 96;
 
 export const ChatConversation: React.FC<ChatConversationProps> = ({
   threadId,
+  world,
   onThreadCreated,
   onTurnComplete,
   lectureId,
@@ -136,6 +139,21 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   }, [onAttachmentListClose]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
+
+  const location = useLocation();
+  // 親に .is-paper があるか、もしくは world prop で paper/universe を判定
+  const [domIsPaper, setDomIsPaper] = useState(false);
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const check = () => setDomIsPaper(Boolean(el.closest('.is-paper')));
+    check();
+    const observer = new MutationObserver(check);
+    const host = el.closest('.chat-panel') || el.closest('.chat-fullscreen') || document.body;
+    observer.observe(host, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, [location.pathname]);
+  const resolvedWorld: ChatWorld = world ?? (domIsPaper ? 'paper' : 'universe');
   const [prefill, setPrefill] = useState<{
     text: string;
     attachments?: ChatDraftAttachment[];
@@ -437,33 +455,35 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
         </div>
       )}
       <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
-        <div className="chat-thread">
-          {loading ? (
-            <div className="chat-loading" aria-busy="true">
-              <span className="chat-skeleton is-user" />
-              <span className="chat-skeleton" />
-              <span className="chat-skeleton is-short" />
-            </div>
-          ) : loadError ? (
-            <div className="chat-empty">
-              <p>{t('chatLoadFailed')}</p>
-              <button type="button" className="chat-banner-btn is-primary" onClick={reload}>
-                {t('retry')}
-              </button>
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="chat-empty">
-              <span className="chat-empty-mark" aria-hidden="true">
-                <Sparkles size={20} />
-              </span>
-              <h2 className="chat-empty-title">{t('chatEmptyTitle')}</h2>
-              <p className="chat-empty-sub">{t('chatEmptySubtitle')}</p>
-              <div className="chat-suggestions">
-                {suggestions.map((text) => (
+        {messages.length === 0 && !loading && !loadError ? (
+          <div className="chat-empty-gate">
+            <LaunchGateBackdrop world={resolvedWorld} />
+            <div className="chat-gate-content">
+              <p
+                className="chat-gate-eyebrow rise"
+                style={{ '--d': '0.15s' } as React.CSSProperties}
+              >
+                AI CHAT
+              </p>
+              <h2
+                className="chat-gate-title rise"
+                style={{ '--d': '0.25s' } as React.CSSProperties}
+              >
+                {t('chatEmptyTitle')}
+              </h2>
+              <p
+                className="chat-gate-sub rise"
+                style={{ '--d': '0.35s' } as React.CSSProperties}
+              >
+                {t('chatEmptySubtitle')}
+              </p>
+              <div className="chat-gate-chips">
+                {suggestions.map((text, i) => (
                   <button
                     key={text}
                     type="button"
-                    className="chat-suggestion"
+                    className="chat-gate-chip rise"
+                    style={{ '--d': `${0.5 + i * 0.08}s` } as React.CSSProperties}
                     onClick={() => setPrefill({ text, nonce: Date.now() })}
                   >
                     {text}
@@ -471,37 +491,55 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
                 ))}
               </div>
             </div>
-          ) : (
-            messages.map((message, index) => (
-              <React.Fragment key={message.id}>
-                <ChatMessageItem
-                  message={message}
-                  attachments={attachmentsByMessage.get(message.id)}
-                  attachmentsById={attachmentsById}
-                  onOpenAttachment={(attachment, id) => setViewing({ attachment, id })}
-                  onOpenCitation={onOpenCitation}
-                  onResend={message.status === 'error' ? regenerateFor(index) : undefined}
-                  onRegenerate={message.role === 'assistant' ? regenerateFor(index) : undefined}
-                  onEdit={
-                    message.role === 'user' && !sending && !message.failedCode && !message.id.startsWith('local-')
-                      ? () => startEdit(message)
-                      : undefined
-                  }
-                  editState={
-                    message.id === editingId ? 'target' : editInfo?.laterIds.has(message.id) ? 'doomed' : undefined
-                  }
-                  onReplyToSelection={setReplySelection}
-                  question={
-                    message.role === 'assistant'
-                      ? [...messages.slice(0, index)].reverse().find((m) => m.role === 'user')?.content
-                      : undefined
-                  }
-                />
-                {renderFailure(message)}
-              </React.Fragment>
-            ))
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="chat-thread">
+            {loading ? (
+              <div className="chat-loading" aria-busy="true">
+                <span className="chat-skeleton is-user" />
+                <span className="chat-skeleton" />
+                <span className="chat-skeleton is-short" />
+              </div>
+            ) : loadError ? (
+              <div className="chat-empty">
+                <p>{t('chatLoadFailed')}</p>
+                <button type="button" className="chat-banner-btn is-primary" onClick={reload}>
+                  {t('retry')}
+                </button>
+              </div>
+            ) : (
+              messages.map((message, index) => (
+                <React.Fragment key={message.id}>
+                  <ChatMessageItem
+                    message={message}
+                    world={resolvedWorld}
+                    attachments={attachmentsByMessage.get(message.id)}
+                    attachmentsById={attachmentsById}
+                    onOpenAttachment={(attachment, id) => setViewing({ attachment, id })}
+                    onOpenCitation={onOpenCitation}
+                    onResend={message.status === 'error' ? regenerateFor(index) : undefined}
+                    onRegenerate={message.role === 'assistant' ? regenerateFor(index) : undefined}
+                    onEdit={
+                      message.role === 'user' && !sending && !message.failedCode && !message.id.startsWith('local-')
+                        ? () => startEdit(message)
+                        : undefined
+                    }
+                    editState={
+                      message.id === editingId ? 'target' : editInfo?.laterIds.has(message.id) ? 'doomed' : undefined
+                    }
+                    onReplyToSelection={setReplySelection}
+                    question={
+                      message.role === 'assistant'
+                        ? [...messages.slice(0, index)].reverse().find((m) => m.role === 'user')?.content
+                        : undefined
+                    }
+                  />
+                  {renderFailure(message)}
+                </React.Fragment>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       <div className="chat-footer">

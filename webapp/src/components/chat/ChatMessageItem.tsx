@@ -36,9 +36,12 @@ import { CitationPreviewModal } from './CitationPreviewModal';
 import { ChatMessageActions } from './ChatMessageActions';
 import { messageMentionIds, splitMessageText } from '../../lib/chatMentions';
 import { useAttachmentImageUrl } from '../../hooks/useAttachmentImageUrl';
+import { ChatThinkingIndicator } from './ChatThinkingIndicator';
+import type { ChatWorld } from './LaunchGateBackdrop';
 
 interface ChatMessageItemProps {
   message: LocalChatMessage;
+  world?: ChatWorld;
   /** このメッセージで添付した資料(userのみ。サーバーの一覧から)。 */
   attachments?: ChatAttachment[];
   /** この会話の資料(外したものも含む)。本文の中のチップ・外した知らせの名前に使う。 */
@@ -63,6 +66,7 @@ interface ChatMessageItemProps {
 
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   message,
+  world,
   attachments,
   attachmentsById,
   onOpenAttachment,
@@ -89,6 +93,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({
   return (
     <AssistantMessage
       message={message}
+      world={world}
       attachmentsById={attachmentsById}
       onOpenCitation={onOpenCitation}
       onResend={onResend}
@@ -384,6 +389,7 @@ const StoppedAttachmentsNotice: React.FC<{
 
 const AssistantMessage: React.FC<{
   message: LocalChatMessage;
+  world?: ChatWorld;
   attachmentsById?: Map<string, ChatAttachment>;
   onOpenCitation: (route: string) => void;
   onResend?: () => void;
@@ -391,7 +397,7 @@ const AssistantMessage: React.FC<{
   onReplyToSelection?: (selection: ChatSelection) => void;
   onRegenerate?: () => void;
   editState?: 'target' | 'doomed';
-}> = ({ message, attachmentsById, onOpenCitation, onResend, question, onReplyToSelection, onRegenerate, editState }) => {
+}> = ({ message, world, attachmentsById, onOpenCitation, onResend, question, onReplyToSelection, onRegenerate, editState }) => {
   const { t } = useLanguage();
   const [preview, setPreview] = useState<PreviewState | null>(null);
 
@@ -529,14 +535,11 @@ const AssistantMessage: React.FC<{
       className={`chat-msg is-assistant ${message.status === 'blocked' ? 'is-blocked' : ''} ${editState ? `is-edit-${editState}` : ''}`}
     >
       {showStage && !message.reconnecting && !message.stopping && (
-        <span className="chat-stage" aria-live="polite">
-          <span className="chat-dots" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-          {stageLabel}
-        </span>
+        <ChatThinkingIndicator
+          label={stageLabel}
+          world={world}
+          startedAt={message.created_at}
+        />
       )}
 
       {message.content &&
@@ -556,14 +559,11 @@ const AssistantMessage: React.FC<{
       <AttachmentNotice message={message} attachmentsById={attachmentsById} />
 
       {message.reconnecting && (
-        <span className="chat-stage">
-          <span className="chat-dots" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-          {t('chatReconnecting')}
-        </span>
+        <ChatThinkingIndicator
+          label={t('chatReconnecting')}
+          world={world}
+          startedAt={message.created_at}
+        />
       )}
 
       {message.status === 'error' && (
