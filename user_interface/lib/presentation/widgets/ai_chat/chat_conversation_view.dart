@@ -619,6 +619,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
                 selectedAttachments: [
                   for (final a in state.attachments)
                     if (a.selected &&
+                        a.kind != 'image' &&
                         (a.status == ChatAttachmentStatus.ready ||
                             a.status == ChatAttachmentStatus.processing))
                       a,

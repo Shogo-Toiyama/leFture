@@ -1110,7 +1110,15 @@ async def prepare_chat_turn(
     if len(mentions) > MAX_MENTIONS_PER_MESSAGE:
         raise ChatRequestError(413, "TOO_MANY_MENTIONS", f"At most {MAX_MENTIONS_PER_MESSAGE} materials per message.",
                                {"max_mentions": MAX_MENTIONS_PER_MESSAGE})
-    pin_requests = [att_id for att_id, mode in existing_refs if mode == "full"] + [a.id for a in attachments]
+
+    def _is_image_new_att(att: NewAttachment) -> bool:
+        if att.is_file and att.attachment_id:
+            return (drafts_by_id.get(att.attachment_id) or {}).get("kind") == "image"
+        return False
+
+    pin_requests = [att_id for att_id, mode in existing_refs if mode == "full"] + [
+        a.id for a in attachments if not _is_image_new_att(a)
+    ]
     attachment_modes = [{"id": att_id, "mode": mode} for att_id, mode in existing_refs] + \
                        [{"id": a.id, "mode": "full"} for a in attachments]
 
@@ -1703,9 +1711,97 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
     資料どうしも並列に読み、Lunaへの同時呼び出しはREAD_MAX_CONCURRENT_CALLSまでに抑える
     (2026-10-04の通しテストで、9千字と5.4万字の2本を1本ずつ読むと約19秒かかった)。
     """
+async def _background_transcribe_image(
+    llm: UnifiedLLM, admin_client, row: dict, limiter: asyncio.Semaphore
+) -> None:
+    """画像の文字起こしと要約を裏で非同期に行い、DBを更新する(回答の待ち時間に影響させない)。"""
+    from app.core.r2_storage import storage_service
+    extraction = row.get("extraction") or {}
+    image_keys: dict[str, str] = extraction.get("images") or {}
+
+    async def load(key: str) -> bytes:
+        return await asyncio.to_thread(storage_service.download_binary, image_keys[key])
+
+    try:
+        tr = await transcribe_file(llm, "image", units_from_json(extraction), load, limiter)
+    except Exception as e:
+        print(f"⚠️ [chat] background image transcribe failed for attachment {row.get('id')}: {e}")
+        admin_client.table("chat_attachments").update({"status": "failed"}).eq("id", row["id"]).execute()
+        return
+
+    content = tr.content[:MAX_FILE_CONTENT_CHARS]
+    title = tr.title or (row.get("file_name") or "")[:60] or "Image"
+    sections = [Section(index=1, start=0, end=len(content), title=title, description=tr.summary[:400])]
+    tokens = estimate_tokens(content) + 1550
+
+    try:
+        admin_client.table("chat_attachments").update({
+            "content": content,
+            "char_count": len(content),
+            "token_count": tokens,
+            "image_path": image_keys.get("main"),
+            "extraction": None,
+            "status": "blocked" if tr.blocked else "ready",
+            "title": title,
+            "summary": tr.summary,
+            "sections": [sec.to_json() for sec in sections],
+            "usage": tr.usage_json(),
+            "forbids_ai_code": tr.forbids_ai_code,
+        }).eq("id", row["id"]).execute()
+    except Exception as e:
+        print(f"⚠️ [chat] failed to update background image attachment {row.get('id')}: {e}")
+
+    task = asyncio.create_task(index_now("chat_attachment", row["id"]))
+    _BACKGROUND_TASKS.add(task)
+    task.add_done_callback(_BACKGROUND_TASKS.discard)
+
+
+async def _read_new_attachments(
+    llm: UnifiedLLM, admin_client, turn: PreparedTurn
+) -> tuple[bool, list[dict]]:
+    """
+    新しく添付された資料を読む(テキストはread_attachment、ファイルはtranscribe_file)。
+    審査で断った資料があれば blocked=True を返す(そのターンごと断る)。
+    通った資料はturn.attachmentsの後ろに足す。
+    画像資料は回答役が直接画像を読むため、Lunaによる文字起こし・要約は裏で非同期に行い、回答を待たせない。
+    """
     rows = turn.new_attachment_rows
     limiter = asyncio.Semaphore(READ_MAX_CONCURRENT_CALLS)
-    # 画像の資料: 回答役に渡すトークン数を数えるため、読み込んだ画像を覚えておく
+
+    image_rows = [r for r in rows if r.get("kind") == "image"]
+    non_image_rows = [r for r in rows if r.get("kind") != "image"]
+
+    # 画像資料: 回答役には画像バイナリを直接渡し、OCRテキストは使わないため、
+    # Luna によるテキスト化・要約は裏(バックグラウンド)で非同期に実行する(回答の待ち時間をゼロにする)。
+    new_images: list[Attachment] = []
+    for r in image_rows:
+        extraction = r.get("extraction") or {}
+        image_keys = extraction.get("images") or {}
+        image_path = image_keys.get("main")
+        title = (r.get("file_name") or "")[:60] or "Image"
+        att = Attachment(
+            id=r["id"],
+            title=title,
+            content="",
+            summary="",
+            sections=[],
+            message_id=r.get("message_id"),
+            created_at=r.get("created_at") or "",
+            token_count=1550,
+            kind="image",
+            image_path=image_path,
+            selected=False,
+        )
+        new_images.append(att)
+        bg_task = asyncio.create_task(_background_transcribe_image(llm, admin_client, r, limiter))
+        _BACKGROUND_TASKS.add(bg_task)
+        bg_task.add_done_callback(_BACKGROUND_TASKS.discard)
+
+    turn.attachments.extend(new_images)
+
+    if not non_image_rows:
+        return False, []
+
     images_seen: dict[str, bytes] = {}
 
     async def read_one(row: dict) -> tuple[ReadResult, Optional[dict]]:
@@ -1733,17 +1829,11 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
             content = content[:MAX_FILE_CONTENT_CHARS]
             file_usage["truncated"] = True
         row["content"] = content
-        if row["kind"] == "image":
-            row["image_path"] = image_keys.get("main")
-            title = tr.title or (row.get("file_name") or "")[:60]
-            return ReadResult(title=title, summary=tr.summary, forbids_ai_code=tr.forbids_ai_code,
-                              sections=[Section(index=1, start=0, end=len(content), title=title or "Image",
-                                                description=tr.summary[:400])]), file_usage
         if not content.strip():
             return ReadResult(error="no text in the file"), file_usage
         return await read_attachment(llm, content, limiter), file_usage
 
-    pairs = await asyncio.gather(*[read_one(row) for row in rows])
+    pairs = await asyncio.gather(*[read_one(row) for row in non_image_rows])
     results: list[ReadResult] = [r for r, _ in pairs]
     usage = [{**res.usage_json(), **({"file": fu} if fu else {})} for res, fu in pairs]
     blocked = any(res.blocked for res in results)
@@ -1751,7 +1841,7 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
 
     if blocked or error:
         def mark_unusable() -> None:
-            for i, row in enumerate(rows):
+            for i, row in enumerate(non_image_rows):
                 res = results[i] if i < len(results) else None
                 admin_client.table("chat_attachments").update({
                     "status": "blocked" if res and res.blocked else "failed",
@@ -1774,8 +1864,7 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
         sections=res.sections, message_id=row.get("message_id"), created_at=row.get("created_at") or "",
         token_count=token_count(row), forbids_ai_code=res.forbids_ai_code,
         kind=row.get("kind") or "text", image_path=row.get("image_path"),
-    ) for row, res in zip(rows, results)]
-    # 全文で読む枠への出し入れは、読み終えた後に _apply_pins がまとめて行う(新しく添付した資料は全文で添付)
+    ) for row, res in zip(non_image_rows, results)]
 
     def save() -> None:
         for a, res, (_, file_usage) in zip(new, results, pairs):
@@ -1786,7 +1875,6 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
             admin_client.table("chat_attachments").update({
                 **file_fields,
                 "status": "ready",
-                # 本人が付けた名前を優先し、無ければ要約役が付けた名前
                 "title": a.title or None,
                 "summary": res.summary,
                 "sections": [sec.to_json() for sec in res.sections],
@@ -1794,13 +1882,10 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
                 "selected": a.selected,
                 "forbids_ai_code": a.forbids_ai_code,
             }).eq("id", a.id).eq("status", "processing").execute()
-    # 読んでいる間に止められた: 停止の締めが読み終わっていない資料をfailedにしているので、readyに戻さない
     if turn.stop is not None:
         turn.stop.raise_if_stopped()
     await asyncio.to_thread(save)
     turn.attachments.extend(new)
-    # 資料の中の検索(attachment.search)に、次のターンから使えるように今すぐ入れる(返答は待たせない)。
-    # 失敗してもトリガが積んだキューをpatrolが後で処理する
     for a in new:
         task = asyncio.create_task(index_now("chat_attachment", a.id))
         _BACKGROUND_TASKS.add(task)
@@ -1936,9 +2021,10 @@ async def _run_turn_steps(
         if turn.attachment_notice:
             await emit("attachments", turn.attachment_notice)
 
-        # 資料の呼び名(A1…)と、このターンに全文で渡す資料(メンションした画像は、このターンだけ画像も渡す)
+        # 資料の呼び名(A1…)と、このターンに全文で渡す資料(新着画像・メンションした画像は、このターンだけ画像も渡す)
         turn.attachments = assign_handles(turn.attachments)
-        attachment_visibility = plan_visibility(turn.attachments, turn.mentions)
+        new_att_ids = {r["id"] for r in turn.new_attachment_rows}
+        attachment_visibility = plan_visibility(turn.attachments, turn.mentions, new_att_ids)
         # 履歴の本文の資料の印も、このターンの呼び名に直す(外した資料は [removed material])
         turn.history_rows = [{**r, "content": render_mentions(r.get("content") or "", turn.attachments)}
                              if r.get("role") == "user" else r for r in turn.history_rows]

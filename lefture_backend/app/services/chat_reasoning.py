@@ -48,7 +48,7 @@ class ReasoningConfig:
 # 2026-10-05に二段構えから一段へ(回答役をLunaにしたため。書き手もLunaなら、確かめ役のメモを
 # 挟む意味が無い)。2026-10-08から、推論が要るターンは回答役(Haiku 5.5)がeffort mediumで直接答える
 # (上の説明を参照)。二段構えに戻すときはmode="two_stage"。
-REASONING_CONFIG = ReasoningConfig(mode="single", single_model=None, single_effort="medium")
+REASONING_CONFIG = ReasoningConfig(mode="single", single_model=None, single_effort="high")
 
 # 確かめ役の待ち時間の上限。超えたり失敗したりしたら、メモなしで回答役がそのまま答える
 SOLVER_TIMEOUT_SECONDS = 40

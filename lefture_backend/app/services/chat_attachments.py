@@ -533,13 +533,22 @@ def assign_handles(attachments: list[Attachment]) -> list[Attachment]:
     return ordered
 
 
-def plan_visibility(attachments: list[Attachment], mentioned: Optional[list[str]] = None) -> Visibility:
+def plan_visibility(
+    attachments: list[Attachment],
+    mentioned: Optional[list[str]] = None,
+    new_attachment_ids: Optional[set[str]] = None,
+) -> Visibility:
     """
-    全文で渡すのは選択中(全文で添付した)資料と、このメッセージでメンションした画像(画像はそのターンだけ
-    画像そのものと書き起こしを渡す。1枚約1,550トークン)。上限は選ぶときに確かめてある。
+    全文で渡すのは選択中(全文で添付した)資料と、このメッセージで新しく添付した・メンションした画像(画像はそのターンだけ
+    画像そのものを渡す。1枚約1,550トークン)。上限は選ぶときに確かめてある。
     """
     mentioned_ids = set(mentioned or [])
-    full = {a.id for a in attachments if a.selected or (a.id in mentioned_ids and a.kind == "image" and a.image_path)}
+    new_ids = set(new_attachment_ids or [])
+    full = {
+        a.id for a in attachments
+        if a.selected
+        or (a.kind == "image" and a.image_path and (a.id in mentioned_ids or a.id in new_ids))
+    }
     return Visibility(full=full, mentioned=mentioned_ids)
 
 
@@ -604,11 +613,11 @@ def render_for_answer(attachments: list[Attachment], vis: Visibility) -> str:
     image_no = 0
     for a in attachments:
         if vis.is_full(a) and a.kind == "image" and a.image_path:
-            # 画像そのものはこのメッセージに付いている(answer_image_attachmentsと同じ順)
+            # 画像そのものはこのメッセージに付いている(answer_image_attachmentsと同じ順)。
+            # 画像直接入力の精度を損なわず、OCRの誤読による混乱を防ぐため、画像があるときはOCRテキストを重複して渡さない。
             image_no += 1
             blocks.append(f'<material handle="{a.handle}" title="{a.title}" kind="image">\n'
-                          f'The image itself is attached to this message (image {image_no}). Its transcription:\n'
-                          f'{a.content.strip()}\n</material>')
+                          f'The image itself is attached to this message (image {image_no}).\n</material>')
         elif vis.is_full(a):
             blocks.append(f'<material handle="{a.handle}" title="{a.title}">\n{a.content.strip()}\n</material>')
     listed = [a for a in attachments if not vis.is_full(a)]
