@@ -592,6 +592,8 @@ class PreparedTurn:
     attachment_tasks: list["asyncio.Task"] = field(default_factory=list)
     # 資料解析で拒絶(blocked)が発生したかのフラグ
     attachments_blocked: bool = False
+    # 資料ごとの読み込み原価・使用量(chat_messages.usage.attachments.readに残す)
+    attachments_read: list[dict] = field(default_factory=list)
     # 回答役に渡す画像(選択中の画像の資料、answer_image_attachmentsの順)。run_chat_turnが読み込む
     answer_images: list[bytes] = field(default_factory=list)
     # 本文が文中で指している資料のid(出てくる順)と、全文で読む枠に入れる資料のid(新しく添付したもの +
@@ -1721,16 +1723,6 @@ async def _finalize(
     return charged_micro
 
 
-async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTurn) -> tuple[bool, list[dict]]:
-    """
-    この送信で添付された資料を読み(審査・目次・要約)、行を確定する。
-    返り値は(断ったか, 1本ごとの原価の記録)。どれかを断ったら、断った資料はblocked、
-    ほかはfailed(このターンごと断るので使わない)にする。
-    読むのに失敗したら、全部failedにして例外を出す(呼び出し側がそのターンをerrorにする)。
-    通った資料はturn.attachmentsの後ろに足す。
-    資料どうしも並列に読み、Lunaへの同時呼び出しはREAD_MAX_CONCURRENT_CALLSまでに抑える
-    (2026-10-04の通しテストで、9千字と5.4万字の2本を1本ずつ読むと約19秒かかった)。
-    """
 async def _background_transcribe_image(
     llm: UnifiedLLM, admin_client, row: dict, limiter: asyncio.Semaphore, turn: Optional[PreparedTurn] = None
 ) -> None:
@@ -1744,39 +1736,49 @@ async def _background_transcribe_image(
 
     try:
         tr = await transcribe_file(llm, "image", units_from_json(extraction), load, limiter)
-    except Exception as e:
-        print(f"⚠️ [chat] background image transcribe failed for attachment {row.get('id')}: {e}")
-        admin_client.table("chat_attachments").update({"status": "failed"}).eq("id", row["id"]).execute()
-        return
+        if tr.blocked:
+            if turn is not None:
+                turn.attachments_blocked = True
+            admin_client.table("chat_attachments").update({
+                "status": "blocked",
+                "usage": tr.usage_json(),
+                "forbids_ai_code": tr.forbids_ai_code,
+            }).eq("id", row["id"]).execute()
+            return
 
-    if tr.blocked and turn is not None:
-        turn.attachments_blocked = True
+        content = tr.content[:MAX_FILE_CONTENT_CHARS]
+        title = tr.title or (row.get("file_name") or "")[:60] or "Image"
+        sections = [Section(index=1, start=0, end=len(content), title=title, description=tr.summary[:400])]
+        tokens = estimate_tokens(content) + 1550
 
-    content = tr.content[:MAX_FILE_CONTENT_CHARS]
-    title = tr.title or (row.get("file_name") or "")[:60] or "Image"
-    sections = [Section(index=1, start=0, end=len(content), title=title, description=tr.summary[:400])]
-    tokens = estimate_tokens(content) + 1550
-
-    try:
         admin_client.table("chat_attachments").update({
             "content": content,
             "char_count": len(content),
             "token_count": tokens,
             "image_path": image_keys.get("main"),
             "extraction": None,
-            "status": "blocked" if tr.blocked else "ready",
+            "status": "ready",
             "title": title,
             "summary": tr.summary,
             "sections": [sec.to_json() for sec in sections],
             "usage": tr.usage_json(),
             "forbids_ai_code": tr.forbids_ai_code,
         }).eq("id", row["id"]).execute()
-    except Exception as e:
-        print(f"⚠️ [chat] failed to update background image attachment {row.get('id')}: {e}")
 
-    task = asyncio.create_task(index_now("chat_attachment", row["id"]))
-    _BACKGROUND_TASKS.add(task)
-    task.add_done_callback(_BACKGROUND_TASKS.discard)
+        if turn is not None:
+            turn.attachments_read.append(tr.usage_json())
+
+        task = asyncio.create_task(index_now("chat_attachment", row["id"]))
+        _BACKGROUND_TASKS.add(task)
+        task.add_done_callback(_BACKGROUND_TASKS.discard)
+        task.add_done_callback(_ignore_task_exception)
+
+    except Exception as e:
+        print(f"⚠️ [chat] background image transcribe failed for attachment {row.get('id')}: {e}")
+        try:
+            admin_client.table("chat_attachments").update({"status": "failed"}).eq("id", row["id"]).execute()
+        except Exception:
+            pass
 
 
 async def _background_process_non_image(
@@ -1852,6 +1854,9 @@ async def _background_process_non_image(
             "usage": {**read_res.usage_json(), **({"file": file_usage} if file_usage else {})},
             "forbids_ai_code": read_res.forbids_ai_code,
         }).eq("id", row["id"]).execute()
+
+        if turn is not None:
+            turn.attachments_read.append({**read_res.usage_json(), **({"file": file_usage} if file_usage else {})})
 
         idx_task = asyncio.create_task(index_now("chat_attachment", row["id"]))
         _BACKGROUND_TASKS.add(idx_task)
@@ -2054,6 +2059,7 @@ async def _run_turn_steps(
     timer = turn.timer
 
     try:
+        attachments_read = turn.attachments_read
         await emit("meta", {
             "thread_id": turn.thread_id,
             "user_message_id": turn.user_message_id,
@@ -2269,7 +2275,7 @@ async def _run_turn_steps(
             "attachments": {
                 "count": len(turn.attachments),
                 "full": [a.handle for a in turn.attachments if attachment_visibility.is_full(a)],
-                "read": attachments_read,
+                "read": turn.attachments_read,
             } if turn.attachments else None,
             "timings": timer.to_json(),
         }
