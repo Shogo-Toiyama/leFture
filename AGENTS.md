@@ -5,7 +5,7 @@
 - **Anti-Mirroring & Tone Match**: Avoid mirroring or echoing the student's opening words, informal greetings, or exclamations. Match their emotional warmth and casual peer level in their language without copying their literal catchphrases.
 
 ## Development & Prompt Engineering Workflow
-- **Test Before Implementation**: When refining or fixing prompts, do not directly modify production files without testing. Always run a comparative test (testing both the current prompt and the candidate prompt across multiple runs against real/sample student turns) to observe any tone or formatting drift before finalizing changes.
+- **Test Before Implementation**: When refining or fixing prompts, do not directly modify production files without testing. Always run a comparative test (testing both the current prompt and the candidate prompt across multiple runs against real/sample student turns) to observe any tone or formatting drift before finalizing changes. Report results of cost, speed, tone of the response, or any other targetted metrics as well as the cost of the test itself.
 - **Minimal Changes**: Favor minimal, targeted prompt additions or edits over wholesale rewrites to prevent regression in other tone aspects.
 - **Always Search the Web for Latest Information**: Whenever discussing AI models, API specifications, pricing, feature flags, or specific implementation details, always verify the latest information via web search before answering or implementing. Never rely on outdated memory or assumptions.
 

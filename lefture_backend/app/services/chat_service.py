@@ -232,12 +232,23 @@ ROUTER_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "intent": {"type": "string", "enum": list(INTENTS)},
+        "retrieval_reason": {
+            "type": "string",
+            "description": "Brief explanation (1 sentence) of whether lecture retrieval is needed and why.",
+        },
         "needs_retrieval": {"type": "boolean"},
         "needs_reasoning": {"type": "boolean"},
         "reply_language": {"type": "string"},
         "thread_title": {"type": ["string", "null"]},
     },
-    "required": ["intent", "needs_retrieval", "needs_reasoning", "reply_language", "thread_title"],
+    "required": [
+        "intent",
+        "retrieval_reason",
+        "needs_retrieval",
+        "needs_reasoning",
+        "reply_language",
+        "thread_title",
+    ],
 }
 
 
@@ -307,6 +318,8 @@ class RouterDecision:
     needs_retrieval: bool
     reply_language: str
     thread_title: Optional[str]
+    # 資料取得の要否を判断した理由(自己回帰推論で探索要否を正確に判断するためのCoT)
+    retrieval_reason: Optional[str] = None
     # 正しく答えるのに手順を追った検討が要るか(計算・コードの追跡・生徒の解答の正誤判定・押し返しなど)。
     # Trueなら回答役の前に確かめ役が答えを確かめる(chat_reasoning.py)
     needs_reasoning: bool = False
@@ -318,6 +331,7 @@ class RouterDecision:
     def to_json(self) -> dict:
         return {
             "intent": self.intent,
+            "retrieval_reason": self.retrieval_reason,
             "needs_retrieval": self.needs_retrieval,
             "needs_reasoning": self.needs_reasoning,
             "reply_language": self.reply_language,
@@ -360,6 +374,7 @@ def normalize_router_output(raw: Any, message: str, is_first_message: bool) -> R
     needs_retrieval = bool(raw.get("needs_retrieval")) and intent not in ("chitchat", "blocked", "crisis")
     needs_reasoning = bool(raw.get("needs_reasoning")) and intent in ("learning", "personal")
     reply_language = raw.get("reply_language") if isinstance(raw.get("reply_language"), str) and raw.get("reply_language") else guess_language(message)
+    retrieval_reason = raw.get("retrieval_reason") if isinstance(raw.get("retrieval_reason"), str) else None
 
     title = raw.get("thread_title")
     if not is_first_message or not isinstance(title, str) or not title.strip():
@@ -373,6 +388,7 @@ def normalize_router_output(raw: Any, message: str, is_first_message: bool) -> R
         needs_reasoning=needs_reasoning,
         reply_language=reply_language[:10],
         thread_title=title,
+        retrieval_reason=retrieval_reason,
     )
 
 
