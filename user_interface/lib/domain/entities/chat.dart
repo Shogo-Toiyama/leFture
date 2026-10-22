@@ -437,6 +437,7 @@ List<String> _stringList(Object? raw) => raw is List
 /// 生成中に「どの段階か」を画面に出すための状態。readingAttachmentsは添付した資料の確認・目次づくり。
 enum ChatStage {
   readingAttachments,
+  indexingAttachments,
   thinking,
   searching,
   reasoning,
@@ -444,6 +445,7 @@ enum ChatStage {
 
   static ChatStage parse(Object? raw) => switch (raw) {
     'reading_attachments' => readingAttachments,
+    'indexing_attachments' => indexingAttachments,
     'searching' => searching,
     'reasoning' => reasoning,
     'writing' => writing,

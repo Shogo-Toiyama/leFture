@@ -3472,6 +3472,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiChatStageWriting => 'Writing…';
 
   @override
+  String get aiChatStageIndexingAttachments =>
+      'Finalizing document indexing. Please wait a moment…';
+
+  @override
   String get aiChatReconnecting =>
       'Connection lost. Waiting for the reply to finish…';
 

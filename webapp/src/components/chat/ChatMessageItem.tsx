@@ -463,6 +463,8 @@ const AssistantMessage: React.FC<{
   let stageLabel = t('chatStageThinking');
   if (message.stage === 'reading_attachments') {
     stageLabel = t('chatStageReadingAttachments');
+  } else if (message.stage === 'indexing_attachments') {
+    stageLabel = t('chatStageIndexingAttachments');
   } else if (message.stage === 'searching') {
     if (message.searchTarget === 'attachments' || detail.includes('attachments')) {
       stageLabel = t('chatStageReadingAttachment');
@@ -556,6 +558,14 @@ const AssistantMessage: React.FC<{
         ) : (
           markdownBody
         ))}
+
+      {isGenerating && Boolean(message.content) && message.stage === 'indexing_attachments' && (
+        <ChatThinkingIndicator
+          label={t('chatStageIndexingAttachments')}
+          world={world}
+          startedAt={message.created_at}
+        />
+      )}
 
       <AttachmentNotice message={message} attachmentsById={attachmentsById} />
 

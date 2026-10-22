@@ -3319,6 +3319,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aiChatStageWriting => '回答を書いています…';
 
   @override
+  String get aiChatStageIndexingAttachments => '資料のインデックスを完了しています。もう少々お待ちください…';
+
+  @override
   String get aiChatReconnecting => '接続が切れました。返答ができあがるのを待っています…';
 
   @override

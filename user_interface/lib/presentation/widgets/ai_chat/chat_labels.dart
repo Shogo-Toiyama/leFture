@@ -15,6 +15,8 @@ String chatStageLabel(AppLocalizations l, LocalChatMessage message) {
   switch (message.stage) {
     case ChatStage.readingAttachments:
       return l.aiChatStageReadingAttachments;
+    case ChatStage.indexingAttachments:
+      return l.aiChatStageIndexingAttachments;
     case ChatStage.searching:
       if (message.searchTarget == 'attachments' ||
           detail.contains('attachments')) {

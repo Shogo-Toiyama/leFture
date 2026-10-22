@@ -780,6 +780,7 @@ export const en = {
   chatStageReadingNotes: 'Checking lecture materials…',
   chatStageReasoning: 'Thinking it through…',
   chatStageWriting: 'Writing…',
+  chatStageIndexingAttachments: 'Finalizing document indexing. Please wait a moment…',
   chatReconnecting: 'Connection lost. Waiting for the reply to finish…',
   chatCreditsUsed: '{credits} credits',
   chatActionCopy: 'Copy',

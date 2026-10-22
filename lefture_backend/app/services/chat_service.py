@@ -588,6 +588,10 @@ class PreparedTurn:
     # このスレッドの使える資料(審査を通ったもの、添付順)と、この送信で添付された資料の行(processing)
     attachments: list[Attachment] = field(default_factory=list)
     new_attachment_rows: list[dict] = field(default_factory=list)
+    # 添付資料の裏処理タスク(画像やドキュメントのOCR・要約・インデックス化)。回答終了時に合流して確実に課金する
+    attachment_tasks: list["asyncio.Task"] = field(default_factory=list)
+    # 資料解析で拒絶(blocked)が発生したかのフラグ
+    attachments_blocked: bool = False
     # 回答役に渡す画像(選択中の画像の資料、answer_image_attachmentsの順)。run_chat_turnが読み込む
     answer_images: list[bytes] = field(default_factory=list)
     # 本文が文中で指している資料のid(出てくる順)と、全文で読む枠に入れる資料のid(新しく添付したもの +
@@ -1728,7 +1732,7 @@ async def _read_new_attachments(llm: UnifiedLLM, admin_client, turn: PreparedTur
     (2026-10-04の通しテストで、9千字と5.4万字の2本を1本ずつ読むと約19秒かかった)。
     """
 async def _background_transcribe_image(
-    llm: UnifiedLLM, admin_client, row: dict, limiter: asyncio.Semaphore
+    llm: UnifiedLLM, admin_client, row: dict, limiter: asyncio.Semaphore, turn: Optional[PreparedTurn] = None
 ) -> None:
     """画像の文字起こしと要約を裏で非同期に行い、DBを更新する(回答の待ち時間に影響させない)。"""
     from app.core.r2_storage import storage_service
@@ -1744,6 +1748,9 @@ async def _background_transcribe_image(
         print(f"⚠️ [chat] background image transcribe failed for attachment {row.get('id')}: {e}")
         admin_client.table("chat_attachments").update({"status": "failed"}).eq("id", row["id"]).execute()
         return
+
+    if tr.blocked and turn is not None:
+        turn.attachments_blocked = True
 
     content = tr.content[:MAX_FILE_CONTENT_CHARS]
     title = tr.title or (row.get("file_name") or "")[:60] or "Image"
@@ -1772,14 +1779,101 @@ async def _background_transcribe_image(
     task.add_done_callback(_BACKGROUND_TASKS.discard)
 
 
+async def _background_process_non_image(
+    llm: UnifiedLLM,
+    admin_client,
+    row: dict,
+    limiter: asyncio.Semaphore,
+    turn: Optional[PreparedTurn] = None,
+) -> None:
+    """非画像ファイル(PDF, Word等)の文字起こし・要約・目次分割・インデックス化を裏で非同期に行う。"""
+    from app.core.r2_storage import storage_service
+    extraction = row.get("extraction") or {}
+    image_keys: dict[str, str] = extraction.get("images") or {}
+    images_seen: dict[str, bytes] = {}
+
+    async def load(key: str) -> bytes:
+        data = await asyncio.to_thread(storage_service.download_binary, image_keys[key])
+        images_seen[image_keys[key]] = data
+        return data
+
+    try:
+        if row.get("kind", "text") == "text":
+            content = row.get("content") or ""
+            file_usage = None
+            read_res = await read_attachment(llm, content, limiter)
+        else:
+            tr = await transcribe_file(llm, row["kind"], units_from_json(extraction), load, limiter)
+            file_usage = tr.usage_json()
+            if tr.blocked:
+                if turn is not None:
+                    turn.attachments_blocked = True
+                admin_client.table("chat_attachments").update({
+                    "status": "blocked",
+                    "usage": {"file": file_usage},
+                }).eq("id", row["id"]).execute()
+                return
+            content = tr.content
+            if len(content) > MAX_FILE_CONTENT_CHARS:
+                content = content[:MAX_FILE_CONTENT_CHARS]
+                file_usage["truncated"] = True
+            if not content.strip():
+                admin_client.table("chat_attachments").update({"status": "failed"}).eq("id", row["id"]).execute()
+                return
+            read_res = await read_attachment(llm, content, limiter)
+
+        if read_res.blocked:
+            if turn is not None:
+                turn.attachments_blocked = True
+            admin_client.table("chat_attachments").update({
+                "status": "blocked",
+                "usage": {**read_res.usage_json(), **({"file": file_usage} if file_usage else {})},
+            }).eq("id", row["id"]).execute()
+            return
+
+        if read_res.error:
+            admin_client.table("chat_attachments").update({"status": "failed"}).eq("id", row["id"]).execute()
+            return
+
+        tokens = estimate_tokens(content)
+        title = row.get("title") or read_res.title or (row.get("file_name") or "")[:60] or "Document"
+        file_fields = {} if row.get("kind", "text") == "text" else {
+            "content": content,
+            "char_count": len(content),
+            "token_count": tokens,
+            "extraction": None,
+        }
+        admin_client.table("chat_attachments").update({
+            **file_fields,
+            "status": "ready",
+            "title": title,
+            "summary": read_res.summary,
+            "sections": [sec.to_json() for sec in read_res.sections],
+            "usage": {**read_res.usage_json(), **({"file": file_usage} if file_usage else {})},
+            "forbids_ai_code": read_res.forbids_ai_code,
+        }).eq("id", row["id"]).execute()
+
+        idx_task = asyncio.create_task(index_now("chat_attachment", row["id"]))
+        _BACKGROUND_TASKS.add(idx_task)
+        idx_task.add_done_callback(_BACKGROUND_TASKS.discard)
+        idx_task.add_done_callback(_ignore_task_exception)
+
+    except Exception as e:
+        print(f"⚠️ [chat] background doc processing failed for attachment {row.get('id')}: {e}")
+        try:
+            admin_client.table("chat_attachments").update({"status": "failed"}).eq("id", row["id"]).execute()
+        except Exception:
+            pass
+
+
 async def _read_new_attachments(
     llm: UnifiedLLM, admin_client, turn: PreparedTurn
 ) -> tuple[bool, list[dict]]:
     """
-    新しく添付された資料を読む(テキストはread_attachment、ファイルはtranscribe_file)。
-    審査で断った資料があれば blocked=True を返す(そのターンごと断る)。
-    通った資料はturn.attachmentsの後ろに足す。
-    画像資料は回答役が直接画像を読むため、Lunaによる文字起こし・要約は裏で非同期に行い、回答を待たせない。
+    新しく添付された資料を読む準備をする。
+    画像もドキュメントも、回答役には即座に渡せる表現(画像バイナリ、抽出テキスト)を渡し、
+    重い文字起こし・要約・インデックス化は裏タスクで並行実行する(回答の待ち時間をゼロにする)。
+    裏タスクは turn.attachment_tasks に保持し、回答完了時に合流して確実に課金する。
     """
     rows = turn.new_attachment_rows
     limiter = asyncio.Semaphore(READ_MAX_CONCURRENT_CALLS)
@@ -1787,8 +1881,7 @@ async def _read_new_attachments(
     image_rows = [r for r in rows if r.get("kind") == "image"]
     non_image_rows = [r for r in rows if r.get("kind") != "image"]
 
-    # 画像資料: 回答役には画像バイナリを直接渡し、OCRテキストは使わないため、
-    # Luna によるテキスト化・要約は裏(バックグラウンド)で非同期に実行する(回答の待ち時間をゼロにする)。
+    # 1. 画像資料
     new_images: list[Attachment] = []
     for r in image_rows:
         extraction = r.get("extraction") or {}
@@ -1809,105 +1902,61 @@ async def _read_new_attachments(
             selected=False,
         )
         new_images.append(att)
-        bg_task = asyncio.create_task(_background_transcribe_image(llm, admin_client, r, limiter))
+        bg_task = asyncio.create_task(_background_transcribe_image(llm, admin_client, r, limiter, turn))
         _BACKGROUND_TASKS.add(bg_task)
         bg_task.add_done_callback(_BACKGROUND_TASKS.discard)
+        turn.attachment_tasks.append(bg_task)
 
     turn.attachments.extend(new_images)
 
-    if not non_image_rows:
-        return False, []
+    # 2. 非画像資料(PDF, docx, txt)
+    new_docs: list[Attachment] = []
+    for r in non_image_rows:
+        kind = r.get("kind", "text")
+        preview_text = ""
+        if kind == "text":
+            preview_text = r.get("content") or ""
+        else:
+            extraction = r.get("extraction") or {}
+            units_raw = extraction.get("units") or []
+            pieces = []
+            for u in units_raw:
+                t = (u.get("text") or "").strip()
+                tail = (u.get("tail") or "").strip()
+                label = u.get("label") or ""
+                header = f"[{label}]\n" if label else ""
+                body = "\n".join(p for p in [t, tail] if p)
+                if body:
+                    pieces.append(f"{header}{body}")
+            preview_text = "\n\n".join(pieces)
+            if not preview_text:
+                preview_text = r.get("content") or ""
 
-    images_seen: dict[str, bytes] = {}
+        if len(preview_text) > MAX_FILE_CONTENT_CHARS:
+            preview_text = preview_text[:MAX_FILE_CONTENT_CHARS]
 
-    async def read_one(row: dict) -> tuple[ReadResult, Optional[dict]]:
-        """テキストはそのまま読む。ファイルは、画像として読む部分を書き起こして本文にしてから読む(chat_files.py)。"""
-        if row.get("kind", "text") == "text":
-            return await read_attachment(llm, row["content"], limiter), None
-        from app.core.r2_storage import storage_service
-        extraction = row.get("extraction") or {}
-        image_keys: dict[str, str] = extraction.get("images") or {}
+        title = (r.get("file_name") or "")[:60] or "Document"
+        tokens = estimate_tokens(preview_text)
+        att = Attachment(
+            id=r["id"],
+            title=title,
+            content=preview_text,
+            summary="",
+            sections=[],
+            message_id=r.get("message_id"),
+            created_at=r.get("created_at") or "",
+            token_count=tokens,
+            kind=kind,
+            selected=False,
+        )
+        new_docs.append(att)
+        bg_task = asyncio.create_task(_background_process_non_image(llm, admin_client, r, limiter, turn))
+        _BACKGROUND_TASKS.add(bg_task)
+        bg_task.add_done_callback(_BACKGROUND_TASKS.discard)
+        turn.attachment_tasks.append(bg_task)
 
-        async def load(key: str) -> bytes:
-            data = await asyncio.to_thread(storage_service.download_binary, image_keys[key])
-            images_seen[image_keys[key]] = data
-            return data
-
-        try:
-            tr = await transcribe_file(llm, row["kind"], units_from_json(extraction), load, limiter)
-        except Exception as e:
-            return ReadResult(error=f"transcribe failed: {e}"[:500]), None
-        file_usage = tr.usage_json()
-        if tr.blocked:
-            return ReadResult(blocked=True), file_usage
-        content = tr.content
-        if len(content) > MAX_FILE_CONTENT_CHARS:
-            content = content[:MAX_FILE_CONTENT_CHARS]
-            file_usage["truncated"] = True
-        row["content"] = content
-        if not content.strip():
-            return ReadResult(error="no text in the file"), file_usage
-        return await read_attachment(llm, content, limiter), file_usage
-
-    pairs = await asyncio.gather(*[read_one(row) for row in non_image_rows])
-    results: list[ReadResult] = [r for r, _ in pairs]
-    usage = [{**res.usage_json(), **({"file": fu} if fu else {})} for res, fu in pairs]
-    blocked = any(res.blocked for res in results)
-    error = next((res.error for res in results if res.error), None)
-
-    if blocked or error:
-        def mark_unusable() -> None:
-            for i, row in enumerate(non_image_rows):
-                res = results[i] if i < len(results) else None
-                admin_client.table("chat_attachments").update({
-                    "status": "blocked" if res and res.blocked else "failed",
-                    "usage": usage[i] if i < len(usage) else None,
-                }).eq("id", row["id"]).execute()
-        await asyncio.to_thread(mark_unusable)
-        if blocked:
-            return True, usage
-        raise RuntimeError(f"failed to read an attachment: {error}")
-
-    def token_count(row: dict) -> int:
-        if row.get("kind", "text") == "text":
-            return row.get("token_count") or estimate_tokens(row["content"])
-        tokens = estimate_tokens(row["content"])
-        image = images_seen.get(row.get("image_path") or "")
-        return tokens + (image_tokens(image) if image else 0)
-
-    new = [Attachment(
-        id=row["id"], title=row.get("title") or res.title, content=row["content"], summary=res.summary,
-        sections=res.sections, message_id=row.get("message_id"), created_at=row.get("created_at") or "",
-        token_count=token_count(row), forbids_ai_code=res.forbids_ai_code,
-        kind=row.get("kind") or "text", image_path=row.get("image_path"),
-    ) for row, res in zip(non_image_rows, results)]
-
-    def save() -> None:
-        for a, res, (_, file_usage) in zip(new, results, pairs):
-            file_fields = {} if a.kind == "text" else {
-                "content": a.content, "char_count": len(a.content), "token_count": a.token_count,
-                "image_path": a.image_path, "extraction": None,
-            }
-            admin_client.table("chat_attachments").update({
-                **file_fields,
-                "status": "ready",
-                "title": a.title or None,
-                "summary": res.summary,
-                "sections": [sec.to_json() for sec in res.sections],
-                "usage": {**res.usage_json(), **({"file": file_usage} if file_usage else {})},
-                "selected": a.selected,
-                "forbids_ai_code": a.forbids_ai_code,
-            }).eq("id", a.id).eq("status", "processing").execute()
-    if turn.stop is not None:
-        turn.stop.raise_if_stopped()
-    await asyncio.to_thread(save)
-    turn.attachments.extend(new)
-    for a in new:
-        task = asyncio.create_task(index_now("chat_attachment", a.id))
-        _BACKGROUND_TASKS.add(task)
-        task.add_done_callback(_BACKGROUND_TASKS.discard)
-        task.add_done_callback(_ignore_task_exception)
-    return False, usage
+    turn.attachments.extend(new_docs)
+    return False, []
 
 
 # 返答を待たせずに走らせる後片付け(資料のインデックス)。参照を持っておかないとGCで途中で消える
@@ -2010,25 +2059,11 @@ async def _run_turn_steps(
             "user_message_id": turn.user_message_id,
             "assistant_message_id": turn.assistant_message_id,
         })
-        # --- 1.5 添付された資料を読む(審査・目次・要約)。断ったらそのターンごと断る(課金なし) ---
-        attachments_read: list[dict] = []
+        # --- 1.5 添付された資料の並行読み込みを開始(回答を待たせない) ---
         if turn.new_attachment_rows:
-            await emit("status", {"stage": "reading_attachments"})
-            attachments_blocked, attachments_read = await _read_new_attachments(llm, admin_client, turn)
-            timer.mark("attachments_read")
+            await _read_new_attachments(llm, admin_client, turn)
+            timer.mark("attachments_started")
             stop.raise_if_stopped()
-            if attachments_blocked:
-                decision = RouterDecision(intent="blocked", needs_retrieval=False,
-                                          reply_language=guess_language(turn.language_hint()), thread_title=None)
-                text = blocked_text(decision.reply_language)
-                await emit("delta", {"text": text})
-                await _finalize(
-                    admin_client, turn, content=text, status="blocked", decision=decision, citations=[], billing=billing,
-                    usage_extra={"attachments_blocked": True, "attachments_read": attachments_read,
-                                 "timings": timer.to_json()}, charge=False,
-                )
-                await emit("done", {"status": "blocked", "credits_charged": 0})
-                return
 
         await emit("status", {"stage": "thinking"})
 
@@ -2263,6 +2298,26 @@ async def _run_turn_steps(
         citations = extract_citations(answer_text, materials)
         # 次のターンの「その次の回」「3番目」のために、開いたもの(無ければ使った材料)をUUIDで残す
         opened_refs = (navigation.opened_refs if navigation else []) or refs_from_materials(materials)
+
+        # 裏で走っている資料解析タスクの完了を待つ(確実に課金するため)
+        pending_att = [t for t in turn.attachment_tasks if not t.done()]
+        if pending_att:
+            await emit("status", {"stage": "indexing_attachments"})
+            await asyncio.gather(*pending_att, return_exceptions=True)
+
+        # 資料解析で有害判定(blocked)が出た場合は、安全のため回答を断り文に差し替える
+        if turn.attachments_blocked:
+            reply_lang = decision.reply_language if decision else guess_language(turn.language_hint())
+            text = blocked_text(reply_lang)
+            await emit("replace", {"text": text})
+            await _finalize(
+                admin_client, turn, content=text, status="blocked",
+                decision=decision, citations=[], billing=billing,
+                usage_extra={**usage_extra, "attachments_blocked": True}, charge=False,
+            )
+            await emit("done", {"status": "blocked", "credits_charged": 0})
+            return
+
         charged_micro = await _finalize(
             admin_client, turn, content=answer_text, status="complete",
             decision=decision, citations=citations, billing=billing,

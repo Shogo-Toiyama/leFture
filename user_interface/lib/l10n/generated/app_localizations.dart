@@ -6068,6 +6068,12 @@ abstract class AppLocalizations {
   /// **'Writing…'**
   String get aiChatStageWriting;
 
+  /// Status shown when the answer is ready but background attachment indexing/analysis is finishing before finalizing.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalizing document indexing. Please wait a moment…'**
+  String get aiChatStageIndexingAttachments;
+
   /// AI chat. Ported from the web app string "chatReconnecting".
   ///
   /// In en, this message translates to:

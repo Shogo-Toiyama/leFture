@@ -662,6 +662,17 @@ class ChatAssistantMessage extends StatelessWidget {
               thoughtText: message.thoughtText,
             ),
           if (m.content.isNotEmpty) markdown,
+          if (isGenerating &&
+              m.content.isNotEmpty &&
+              message.stage == ChatStage.indexingAttachments)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: _SmallStage(
+                label: l10n.aiChatStageIndexingAttachments,
+                world: world,
+                colors: c,
+              ),
+            ),
           _AttachmentNotice(
             message: message,
             attachmentsById: attachmentsById,

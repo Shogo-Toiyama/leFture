@@ -9,6 +9,14 @@
 - **Minimal Changes**: Favor minimal, targeted prompt additions or edits over wholesale rewrites to prevent regression in other tone aspects.
 - **Always Search the Web for Latest Information**: Whenever discussing AI models, API specifications, pricing, feature flags, or specific implementation details, always verify the latest information via web search before answering or implementing. Never rely on outdated memory or assumptions.
 
+## UI Localization & Multi-lingual Guidelines
+- **Strictly No Hardcoded UI Strings**: Whenever adding, editing, or displaying user-facing text in the UI (Flutter app or Webapp), never hardcode strings in widget or component files.
+- **Use Localization Files**:
+  - Flutter (`user_interface`): Always define and add translation keys in ARB / localization files (`user_interface/lib/l10n/app_en.arb`, `app_ja.arb`, etc.) and reference them via `l10n`.
+  - Webapp (`webapp`): Always define and add translation keys in i18n JSON / message files (`webapp/src/locales/en.json`, `webapp/src/locales/ja.json`, etc.) and reference them via `t(...)`.
+  - Always support both English and Japanese at minimum for every new user-facing label or status message.
+
+
 ## Chat Inspection & System Observability Guide
 When instructed to inspect chat contents, user sessions, or retrieval/navigator behavior, use the project virtualenv (`.venv/bin/python`) with `lefture_backend/.env` loaded to query Supabase directly.
 

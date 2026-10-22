@@ -141,7 +141,7 @@ export interface ChatMessage {
 }
 
 /** 生成中に「どの段階か」を画面に出すための状態。reading_attachmentsは添付した資料の確認・目次づくり。 */
-export type ChatStage = 'reading_attachments' | 'thinking' | 'searching' | 'reasoning' | 'writing';
+export type ChatStage = 'reading_attachments' | 'indexing_attachments' | 'thinking' | 'searching' | 'reasoning' | 'writing';
 
 /** 探索中に何を探しているか(探索役の1周ごと)。attachmentsは添付資料の目次・節を開いている。 */
 export type ChatSearchDetail = 'lectures' | 'chats' | 'web' | 'attachments';

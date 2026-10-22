@@ -1006,6 +1006,7 @@
   "aiChatStageReadingNotes": "講義資料を確認中…",
   "aiChatStageReasoning": "じっくり考えています…",
   "aiChatStageWriting": "回答を書いています…",
+  "aiChatStageIndexingAttachments": "資料のインデックスを完了しています。もう少々お待ちください…",
   "aiChatReconnecting": "接続が切れました。返答ができあがるのを待っています…",
   "aiChatCreditsUsed": "{credits}クレジット",
   "aiChatActionCopy": "コピー",

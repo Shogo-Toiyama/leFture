@@ -4534,6 +4534,10 @@
   "@aiChatStageWriting": {
     "description": "AI chat. Ported from the web app string \"chatStageWriting\"."
   },
+  "aiChatStageIndexingAttachments": "Finalizing document indexing. Please wait a moment…",
+  "@aiChatStageIndexingAttachments": {
+    "description": "Status shown when the answer is ready but background attachment indexing/analysis is finishing before finalizing."
+  },
   "aiChatReconnecting": "Connection lost. Waiting for the reply to finish…",
   "@aiChatReconnecting": {
     "description": "AI chat. Ported from the web app string \"chatReconnecting\"."

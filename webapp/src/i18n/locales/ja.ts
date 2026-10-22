@@ -778,6 +778,7 @@ export const ja: Record<keyof typeof en, string> = {
   chatStageReadingNotes: '講義資料を確認中…',
   chatStageReasoning: 'じっくり考えています…',
   chatStageWriting: '回答を書いています…',
+  chatStageIndexingAttachments: '資料のインデックスを完了しています。もう少々お待ちください…',
   chatReconnecting: '接続が切れました。返答ができあがるのを待っています…',
   chatCreditsUsed: '{credits}クレジット',
   chatActionCopy: 'コピー',
