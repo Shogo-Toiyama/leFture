@@ -2180,7 +2180,14 @@ async def _run_turn_steps(
         options = answer_options(answer_model, answer_effort, _answer_max_tokens(navigation, materials))
         timer.mark("answer_started")
         stop.raise_if_stopped()
-        async for delta in llm.generate_stream(answer_model, messages, state, options, stop_event=stop.event):
+
+        async def _on_thought(chunk: str) -> None:
+            if not stop.stopped:
+                await emit("thought", {"text": chunk})
+
+        async for delta in llm.generate_stream(
+            answer_model, messages, state, options, stop_event=stop.event, on_thought=_on_thought,
+        ):
             if "answer_first_token" not in timer.marks:
                 timer.mark("answer_first_token")
             progress.answer_parts.append(delta)
@@ -2195,8 +2202,11 @@ async def _run_turn_steps(
             "router_model": ROUTER_MODEL,
             "navigator": navigation.to_json() if navigation else None,
             "answer_model": answer_model,
-            "reasoning": {"mode": REASONING_CONFIG.mode, "checked_work": checked.to_json() if checked else None}
-            if decision.needs_reasoning else None,
+            "reasoning": {
+                "mode": REASONING_CONFIG.mode,
+                "checked_work": checked.to_json() if checked else None,
+                "thought": state.thought_text if state.thought_text else None,
+            } if decision.needs_reasoning else ({"thought": state.thought_text} if state.thought_text else None),
             "answer_input_tokens": state.input_tokens,
             "answer_output_tokens": state.output_tokens,
             "answer_cache_read_tokens": state.cache_read_tokens,

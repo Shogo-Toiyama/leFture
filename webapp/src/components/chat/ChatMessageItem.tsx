@@ -539,6 +539,7 @@ const AssistantMessage: React.FC<{
           label={stageLabel}
           world={world}
           startedAt={message.created_at}
+          thoughtText={message.thoughtText}
         />
       )}
 

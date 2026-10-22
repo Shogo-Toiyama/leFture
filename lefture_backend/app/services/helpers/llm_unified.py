@@ -429,6 +429,7 @@ class StreamState:
     """generate_stream()の結果置き場。async generatorは値を返せないため、
     呼び出し側が用意したこのオブジェクトに最終結果を書き込む。"""
     output_text: str = ""
+    thought_text: str = ""
     finish_reason: Optional[str] = None
     input_tokens: int = 0
     output_tokens: int = 0
@@ -520,12 +521,11 @@ class UnifiedLLM:
             # 頼まないとUnsupportedParamsErrorになる(gpt-6-lunaで2026-09-30に確認)
             if model in _REASONING_EFFORT_PASSTHROUGH_MODELS:
                 kwargs["allowed_openai_params"] = ["reasoning_effort"]
-            # Claudeは思考の表示をomittedに固定する。litellm 1.104.2はreasoning_effortを
-            # display: "summarized" に変換するが、summarizedだとAPIが思考の要約を流し終えるまで
-            # 本文を溜めるので、推論ターンの返答が最後にまとめて届く(2026-10-16に確認。思考は使わないので要約も不要)。
+            # Claudeの思考ストリーミング。adaptive thinkingで思考プロセスをストリーミングするために
+            # display: "summarized" を指定する(thinking_deltaがreasoning_contentとして流れてくる)。
             # thinkingを明示すれば、どのバージョンでも引数の順に関係なくこれがそのまま送られる
             if model.startswith("anthropic/") and options.reasoning_effort != "none":
-                kwargs["thinking"] = {"type": "adaptive", "display": "omitted"}
+                kwargs["thinking"] = {"type": "adaptive", "display": "summarized"}
 
         # JSONモードの指定
         # NOTE: GPT-OSS models have a known token conflict between Harmony format and response_format,
@@ -637,17 +637,20 @@ class UnifiedLLM:
         state: StreamState,
         options: Optional[LLMOptions] = None,
         stop_event: Optional[asyncio.Event] = None,
+        on_thought: Optional[Callable[[str], Awaitable[None]]] = None,
     ) -> AsyncIterator[str]:
         """
         テキストの差分(delta)を順次yieldするストリーミング版。終了後、
         stateに全文・終了理由・トークン数が入り、コストはgenerate()と同じく
         BillingEngineに記録される(思考トークンはlitellmがoutputに合算する)。
 
+        on_thought: 思考ストリーム(thinking_delta / reasoning_content)が届くたびに呼ばれる非同期コールバック。
+
         使い方:
             state = StreamState()
-            async for delta in llm.generate_stream(model, messages, state):
+            async for delta in llm.generate_stream(model, messages, state, on_thought=...):
                 ...
-            # ここでstate.output_text / state.finish_reason が確定している
+            # ここでstate.output_text / state.thought_text / state.finish_reason が確定している
 
         stop_event: 立つとすぐ接続を閉じて打ち切る(チャットの途中停止)。思考中でチャンクが来ない間も効く。
         打ち切ったときはstate.stopped、使用量は入力と書いた分の概算(見えない思考トークンは数えられない)。
@@ -666,6 +669,7 @@ class UnifiedLLM:
             raise RuntimeError(f"LiteLLM Error with model {model}: {e}") from e
 
         parts: List[str] = []
+        thought_parts: List[str] = []
         stop_wait = asyncio.ensure_future(stop_event.wait()) if stop_event is not None else None
         try:
             async for chunk in _until_stopped(response, stop_wait):
@@ -681,7 +685,13 @@ class UnifiedLLM:
                 choice = chunk.choices[0]
                 if getattr(choice, "finish_reason", None):
                     state.finish_reason = choice.finish_reason
-                delta = getattr(getattr(choice, "delta", None), "content", None)
+                delta_obj = getattr(choice, "delta", None)
+                thought_delta = getattr(delta_obj, "reasoning_content", None)
+                if thought_delta:
+                    thought_parts.append(thought_delta)
+                    if on_thought is not None:
+                        await on_thought(thought_delta)
+                delta = getattr(delta_obj, "content", None)
                 if delta:
                     parts.append(delta)
                     yield delta
@@ -701,6 +711,7 @@ class UnifiedLLM:
                         pass
 
         state.output_text = "".join(parts)
+        state.thought_text = "".join(thought_parts)
         state.elapsed_seconds = time.perf_counter() - start_time
 
         # 通常は最後のチャンクにusageが載る。載らなかった場合だけ概算で埋める

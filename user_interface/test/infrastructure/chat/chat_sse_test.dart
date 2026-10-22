@@ -108,6 +108,13 @@ void main() {
               as ChatDeltaEvent;
       expect(e.text, 'hi');
     });
+
+    test('thoughtイベントを読める', () {
+      final e =
+          parseChatSseBlock('event: thought\ndata: {"text":"思考プロセス..."}')!
+              as ChatThoughtEvent;
+      expect(e.text, '思考プロセス...');
+    });
   });
 
   group('parseChatSse', () {

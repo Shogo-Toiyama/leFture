@@ -160,6 +160,7 @@ export type ChatStreamEvent =
     }
   | { type: 'sources'; sources: ChatCitation[] }
   | ({ type: 'attachments' } & ChatAttachmentNotice)
+  | { type: 'thought'; text: string }
   | { type: 'delta'; text: string }
   | { type: 'replace'; text: string }
   | { type: 'done'; status: ChatMessageStatus; citations?: ChatCitation[]; credits_charged: number }

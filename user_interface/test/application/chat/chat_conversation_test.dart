@@ -70,6 +70,18 @@ void main() {
 
       repo.controller.add(
         const ChatStatusEvent(
+          stage: ChatStage.reasoning,
+        ),
+      );
+      repo.controller.add(const ChatThoughtEvent('考え'));
+      repo.controller.add(const ChatThoughtEvent('てみる'));
+      await _pump();
+      s = read();
+      expect(s.messages.last.thoughtText, '考えてみる');
+      expect(s.messages.last.stage, ChatStage.reasoning);
+
+      repo.controller.add(
+        const ChatStatusEvent(
           stage: ChatStage.searching,
           detail: ['lectures'],
           query: 'heap',
@@ -102,6 +114,7 @@ void main() {
       expect(reply.message.citations, hasLength(1));
       expect(reply.message.creditsChargedMicro, 500000);
       expect(reply.stage, isNull);
+      expect(reply.thoughtText, isNull);
     });
 
     test('空のメッセージは送らない。送信中の二重送信も無視する', () async {

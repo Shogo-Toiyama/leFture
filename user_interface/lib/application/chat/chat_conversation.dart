@@ -18,6 +18,7 @@ class LocalChatMessage {
     this.failedCode,
     this.failedDetail = const {},
     this.stage,
+    this.thoughtText,
     this.searchDetail = const [],
     this.searchQuery,
     this.searchTarget,
@@ -39,6 +40,9 @@ class LocalChatMessage {
 
   /// 生成中の段階(assistantのみ)。
   final ChatStage? stage;
+
+  /// 生成中の思考テキスト(assistantのみ。完了後は破棄される)。
+  final String? thoughtText;
 
   /// stageがsearchingのとき、今の周で探しているもの('lectures' / 'chats' / 'web' / 'attachments')。
   final List<String> searchDetail;
@@ -74,6 +78,7 @@ class LocalChatMessage {
     ChatMessage? message,
     ({String code, Map<String, dynamic> detail})? failed,
     ChatStage? stage,
+    String? thoughtText,
     List<String>? searchDetail,
     String? searchQuery,
     String? searchTarget,
@@ -90,6 +95,7 @@ class LocalChatMessage {
       failedCode: failed?.code ?? failedCode,
       failedDetail: failed?.detail ?? failedDetail,
       stage: clearProgress ? null : stage ?? this.stage,
+      thoughtText: clearProgress ? null : thoughtText ?? this.thoughtText,
       searchDetail: clearProgress
           ? const []
           : searchDetail ?? this.searchDetail,
@@ -447,6 +453,13 @@ class ChatConversation extends _$ChatConversation {
             ),
           );
           unawaited(_refreshAttachments(state.threadId));
+        case ChatThoughtEvent():
+          patch(
+            assistantId,
+            (m) => m.copyWith(
+              thoughtText: (m.thoughtText ?? '') + event.text,
+            ),
+          );
         case ChatDeltaEvent():
           patch(
             assistantId,

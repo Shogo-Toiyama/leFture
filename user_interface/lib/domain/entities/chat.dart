@@ -475,6 +475,7 @@ sealed class ChatStreamEvent {
         'attachments' => ChatAttachmentsEvent(
           ChatAttachmentNotice.fromMap(data),
         ),
+        'thought' => ChatThoughtEvent((data['text'] as String?) ?? ''),
         'delta' => ChatDeltaEvent((data['text'] as String?) ?? ''),
         'replace' => ChatReplaceEvent((data['text'] as String?) ?? ''),
         'done' => ChatDoneEvent(
@@ -533,6 +534,11 @@ class ChatSourcesEvent extends ChatStreamEvent {
 class ChatAttachmentsEvent extends ChatStreamEvent {
   const ChatAttachmentsEvent(this.notice);
   final ChatAttachmentNotice notice;
+}
+
+class ChatThoughtEvent extends ChatStreamEvent {
+  const ChatThoughtEvent(this.text);
+  final String text;
 }
 
 class ChatDeltaEvent extends ChatStreamEvent {

@@ -29,6 +29,8 @@ export interface LocalChatMessage extends ChatMessage {
   failedDetail?: Record<string, unknown>;
   /** 生成中の段階(assistantのみ) */
   stage?: ChatStage;
+  /** 生成中の思考テキスト(assistantのみ。完了後は破棄される) */
+  thoughtText?: string;
   /** stageがsearchingのとき、今の周で探しているもの。 */
   searchDetail?: ChatSearchDetail[];
   searchQuery?: string;
@@ -361,6 +363,13 @@ export function useChatConversation(threadId: string | null, options: Options = 
             });
             void refreshAttachments(activeThreadIdRef.current);
             break;
+          case 'thought':
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, thoughtText: (m.thoughtText ?? '') + event.text } : m
+              )
+            );
+            break;
           case 'delta':
             setMessages((prev) =>
               prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + event.text } : m))
@@ -375,11 +384,17 @@ export function useChatConversation(threadId: string | null, options: Options = 
               citations: event.citations ?? [],
               credits_charged_micro: Math.round((event.credits_charged ?? 0) * 1_000_000),
               stage: undefined,
+              thoughtText: undefined,
               pendingSources: undefined,
             });
             break;
           case 'error':
-            patchMessage(assistantId, { status: 'error', stage: undefined, pendingSources: undefined });
+            patchMessage(assistantId, {
+              status: 'error',
+              stage: undefined,
+              thoughtText: undefined,
+              pendingSources: undefined,
+            });
             break;
         }
       };
