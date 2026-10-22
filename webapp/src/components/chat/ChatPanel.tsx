@@ -8,7 +8,6 @@ import { getChatThread } from '../../lib/chat';
 import { getLecture } from '../../lib/lectures';
 import { lectureDisplayTitle } from '../../types/lecture';
 import { AiSettingsSheet } from './AiSettingsSheet';
-import { AttachmentListButton } from './AttachmentListModal';
 import { ChatConversation } from './ChatConversation';
 import { ChatPlanNotice } from './ChatPlanNotice';
 import { ChatThreadList } from './ChatThreadList';
@@ -39,8 +38,6 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
   }, [routeLectureId, setLectureDetached]);
 
   const [threadTitle, setThreadTitle] = useState<string | null>(null);
-  // この会話の資料の数(1本以上あるときだけヘッダーにクリップのボタンを出す)と、一覧を開いているか
-  const [attachmentCount, setAttachmentCount] = useState(0);
   const [attachmentListOpen, setAttachmentListOpen] = useState(false);
   // AIチャット設定(覚え書き・AIのメモ・自分像への入口)のシート
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
@@ -67,6 +64,8 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
   };
 
   const isHistory = panel.view === 'history';
+  const isNewConversation = !isHistory && !panel.threadId;
+  const isWide = !stacked;
   const isPaper = Boolean(
     location.pathname.includes('/review-cards') ||
     location.pathname.includes('/deep-notes') ||
@@ -107,37 +106,84 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
           <span className="chat-panel-title">
             {isHistory ? t('chatHistory') : threadTitle || (panel.threadId ? t('chatThreadUntitled') : t('chatNewConversation'))}
           </span>
-          {!isHistory && attachmentCount > 0 && (
-            <AttachmentListButton count={attachmentCount} onClick={() => setAttachmentListOpen(true)} />
+          {isHistory ? (
+            <>
+              <button
+                type="button"
+                className={`chat-icon-btn ${aiSettingsOpen ? 'is-active' : ''}`}
+                onClick={() => setAiSettingsOpen((v) => !v)}
+                aria-label={t('aiSettingsButton')}
+                aria-expanded={aiSettingsOpen}
+                title={t('aiSettingsButton')}
+              >
+                <SlidersHorizontal size={16} />
+              </button>
+              <button
+                type="button"
+                className="chat-icon-btn"
+                onClick={() => navigate(panel.threadId ? `/chat/${panel.threadId}` : '/chat/new')}
+                aria-label={t('chatOpenFullScreen')}
+                title={t('chatOpenFullScreen')}
+              >
+                <Maximize2 size={16} />
+              </button>
+            </>
+          ) : isNewConversation ? (
+            <>
+              <button
+                type="button"
+                className={`chat-icon-btn ${aiSettingsOpen ? 'is-active' : ''}`}
+                onClick={() => setAiSettingsOpen((v) => !v)}
+                aria-label={t('aiSettingsButton')}
+                aria-expanded={aiSettingsOpen}
+                title={t('aiSettingsButton')}
+              >
+                <SlidersHorizontal size={16} />
+              </button>
+              <button
+                type="button"
+                className="chat-icon-btn"
+                onClick={() => navigate('/chat/new')}
+                aria-label={t('chatOpenFullScreen')}
+                title={t('chatOpenFullScreen')}
+              >
+                <Maximize2 size={16} />
+              </button>
+            </>
+          ) : (
+            <>
+              {isWide && (
+                <button
+                  type="button"
+                  className={`chat-icon-btn ${aiSettingsOpen ? 'is-active' : ''}`}
+                  onClick={() => setAiSettingsOpen((v) => !v)}
+                  aria-label={t('aiSettingsButton')}
+                  aria-expanded={aiSettingsOpen}
+                  title={t('aiSettingsButton')}
+                >
+                  <SlidersHorizontal size={16} />
+                </button>
+              )}
+              <button
+                type="button"
+                className="chat-icon-btn"
+                onClick={() => panel.showConversation(null)}
+                aria-label={t('chatNewConversation')}
+                title={t('chatNewConversation')}
+              >
+                <SquarePen size={16} />
+              </button>
+              <button
+                type="button"
+                className="chat-icon-btn"
+                onClick={() => navigate(panel.threadId ? `/chat/${panel.threadId}` : '/chat/new')}
+                aria-label={t('chatOpenFullScreen')}
+                title={t('chatOpenFullScreen')}
+              >
+                <Maximize2 size={16} />
+              </button>
+            </>
           )}
-          <button
-            type="button"
-            className="chat-icon-btn"
-            onClick={() => panel.showConversation(null)}
-            aria-label={t('chatNewConversation')}
-            title={t('chatNewConversation')}
-          >
-            <SquarePen size={16} />
-          </button>
-          <button
-            type="button"
-            className={`chat-icon-btn ${aiSettingsOpen ? 'is-active' : ''}`}
-            onClick={() => setAiSettingsOpen((v) => !v)}
-            aria-label={t('aiSettingsButton')}
-            aria-expanded={aiSettingsOpen}
-            title={t('aiSettingsButton')}
-          >
-            <SlidersHorizontal size={16} />
-          </button>
-          <button
-            type="button"
-            className="chat-icon-btn"
-            onClick={() => navigate(panel.threadId ? `/chat/${panel.threadId}` : '/chat/new')}
-            aria-label={t('chatOpenFullScreen')}
-            title={t('chatOpenFullScreen')}
-          >
-            <Maximize2 size={16} />
-          </button>
           <button type="button" className="chat-icon-btn" onClick={panel.close} aria-label={t('close')} title={t('close')}>
             <X size={18} />
           </button>
@@ -166,7 +212,6 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
             variant="panel"
             attachmentListOpen={attachmentListOpen}
             onAttachmentListClose={() => setAttachmentListOpen(false)}
-            onAttachmentCountChange={setAttachmentCount}
           />
         )}
         <AiSettingsSheet
@@ -192,6 +237,7 @@ const PanelHistory: React.FC = () => {
         loading={loading}
         activeThreadId={panel.threadId}
         onSelect={(id) => panel.showConversation(id)}
+        onNewConversation={() => panel.showConversation(null)}
         onRename={rename}
         onDelete={async (id) => {
           await remove(id);

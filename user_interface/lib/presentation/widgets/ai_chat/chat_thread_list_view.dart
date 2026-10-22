@@ -16,6 +16,7 @@ class ChatThreadListView extends ConsumerStatefulWidget {
     super.key,
     required this.colors,
     required this.onSelect,
+    this.onNewConversation,
     this.activeThreadId,
     this.onDeleted,
   });
@@ -23,6 +24,9 @@ class ChatThreadListView extends ConsumerStatefulWidget {
   final ChatColors colors;
   final String? activeThreadId;
   final void Function(String threadId) onSelect;
+
+  /// 新しい会話を始めるボタンを押したとき。
+  final VoidCallback? onNewConversation;
 
   /// 会話を削除した(今開いていた会話なら、呼び出し側が新しい会話に切り替える)。
   final void Function(String threadId)? onDeleted;
@@ -142,22 +146,83 @@ class _ChatThreadListViewState extends ConsumerState<ChatThreadListView> {
         ),
       ),
       data: (list) {
+        final newButton = _newThreadTile(context);
         if (list.isEmpty) {
           return Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              l.aiChatThreadsEmpty,
-              style: TextStyle(color: c.stageText, fontSize: 13.5, height: 1.6),
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                newButton,
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    l.aiChatThreadsEmpty,
+                    style: TextStyle(
+                      color: c.stageText,
+                      fontSize: 13.5,
+                      height: 1.6,
+                    ),
+                  ),
+                ),
+              ],
             ),
           );
         }
-        return ListView.separated(
+        return ListView.builder(
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
-          itemCount: list.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 4),
-          itemBuilder: (context, i) => _row(context, list[i]),
+          itemCount: list.length + 1,
+          itemBuilder: (context, i) {
+            if (i == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: newButton,
+              );
+            }
+            final thread = list[i - 1];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: _row(context, thread),
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _newThreadTile(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final c = widget.colors;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.accent.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: c.accent.withValues(alpha: .28),
+        ),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: widget.onNewConversation,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+          child: Row(
+            children: [
+              Icon(Icons.add_rounded, size: 20, color: c.accent),
+              const SizedBox(width: 10),
+              Text(
+                l.aiChatNewConversation,
+                style: TextStyle(
+                  color: c.accent,
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -9,7 +9,6 @@ import { ChatConversation } from '../../components/chat/ChatConversation';
 import { ChatThreadList } from '../../components/chat/ChatThreadList';
 import { ChatPlanNotice } from '../../components/chat/ChatPlanNotice';
 import { AiSettingsSheet } from '../../components/chat/AiSettingsSheet';
-import { AttachmentListButton } from '../../components/chat/AttachmentListModal';
 
 /**
  * 会話の置き場(専用ページ)。
@@ -68,6 +67,7 @@ const ChatListView: React.FC = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { threads, loading, error, refetch, rename, remove } = useChatThreads();
+  const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
 
   const goBack = useCallback(() => {
     navigateOutOfChat(navigate);
@@ -94,10 +94,16 @@ const ChatListView: React.FC = () => {
         </div>
 
         <div className="chat-fullscreen-topbar-right">
-          <Link to="/chat/new" className="chat-new-btn">
-            <SquarePen size={16} />
-            {t('chatNewConversation')}
-          </Link>
+          <button
+            type="button"
+            className={`chat-icon-btn ${aiSettingsOpen ? 'is-active' : ''}`}
+            onClick={() => setAiSettingsOpen((v) => !v)}
+            aria-label={t('aiSettingsButton')}
+            aria-expanded={aiSettingsOpen}
+            title={t('aiSettingsButton')}
+          >
+            <SlidersHorizontal size={18} />
+          </button>
           <button
             type="button"
             className="chat-icon-btn"
@@ -127,12 +133,14 @@ const ChatListView: React.FC = () => {
               threads={threads}
               loading={loading}
               onSelect={(id) => navigate(`/chat/${id}`)}
+              onNewConversation={() => navigate('/chat/new')}
               onRename={rename}
               onDelete={remove}
             />
           )}
         </div>
       </main>
+      <AiSettingsSheet open={aiSettingsOpen} onClose={() => setAiSettingsOpen(false)} onNavigate={() => setAiSettingsOpen(false)} fixed />
     </div>
   );
 };
@@ -141,8 +149,6 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [title, setTitle] = useState<string | null>(null);
-  // この会話の資料の数(1本以上あるときだけクリップのボタンを出す)と、一覧を開いているか
-  const [attachmentCount, setAttachmentCount] = useState(0);
   const [attachmentListOpen, setAttachmentListOpen] = useState(false);
   const [aiSettingsOpen, setAiSettingsOpen] = useState(false);
   useEffect(() => setAttachmentListOpen(false), [threadId]);
@@ -180,9 +186,6 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
         </div>
 
         <div className="chat-fullscreen-topbar-right">
-          {attachmentCount > 0 && (
-            <AttachmentListButton count={attachmentCount} onClick={() => setAttachmentListOpen(true)} />
-          )}
           {threadId && (
             <Link
               to="/chat/new"
@@ -229,7 +232,6 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
           variant="page"
           attachmentListOpen={attachmentListOpen}
           onAttachmentListClose={() => setAttachmentListOpen(false)}
-          onAttachmentCountChange={setAttachmentCount}
         />
       </main>
       <AiSettingsSheet open={aiSettingsOpen} onClose={() => setAiSettingsOpen(false)} onNavigate={() => setAiSettingsOpen(false)} fixed />

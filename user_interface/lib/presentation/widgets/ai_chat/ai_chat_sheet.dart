@@ -487,14 +487,10 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
     final l10n = AppLocalizations.of(context);
     final colors = ChatColors.of(_world);
     final conversationState = ref.watch(chatConversationProvider);
-    final attachmentCount = [
-      for (final a in conversationState.attachments)
-        if (a.status == ChatAttachmentStatus.ready ||
-            a.status == ChatAttachmentStatus.processing)
-          a,
-    ].length;
     final isHistory = _view == _SheetView.history;
     final threadId = conversationState.threadId;
+    final isNewConversation =
+        !isHistory && (threadId == null && conversationState.messages.isEmpty);
     // 会話の名前は、スレッド一覧(端末のキャッシュ)から引く。名前が付く前は「新しい会話」
     final threadTitle = threadId == null
         ? null
@@ -536,14 +532,13 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
                   colors: colors,
                   title: title,
                   isHistory: isHistory,
-                  attachmentCount: isHistory ? 0 : attachmentCount,
+                  isNewConversation: isNewConversation,
                   onBackOrHistory: () => setState(
                     () => _view = isHistory
                         ? _SheetView.conversation
                         : _SheetView.history,
                   ),
                   onNew: _newConversation,
-                  onAttachments: _controller.openAttachmentList,
                   onSettings: widget.onOpenAiSettings ?? _openAiSettings,
                   onClose: _close,
                 ),
@@ -562,6 +557,7 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
                         colors: colors,
                         activeThreadId: conversationState.threadId,
                         onSelect: _showConversation,
+                        onNewConversation: _newConversation,
                         onDeleted: (id) {
                           if (id == conversationState.threadId) {
                             _newConversation();
@@ -687,10 +683,9 @@ class _Header extends StatelessWidget {
     required this.colors,
     required this.title,
     required this.isHistory,
-    required this.attachmentCount,
+    required this.isNewConversation,
     required this.onBackOrHistory,
     required this.onNew,
-    required this.onAttachments,
     required this.onSettings,
     required this.onClose,
   });
@@ -698,10 +693,9 @@ class _Header extends StatelessWidget {
   final ChatColors colors;
   final String title;
   final bool isHistory;
-  final int attachmentCount;
+  final bool isNewConversation;
   final VoidCallback onBackOrHistory;
   final VoidCallback onNew;
-  final VoidCallback onAttachments;
   final VoidCallback? onSettings;
   final VoidCallback onClose;
 
@@ -709,6 +703,8 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final c = colors;
+    final isWide = MediaQuery.sizeOf(context).width >= 600;
+
     Widget button(
       IconData icon,
       String tooltip,
@@ -724,12 +720,32 @@ class _Header extends StatelessWidget {
       ),
       icon: Icon(icon, size: 24, color: active ? c.accent : c.actionForeground),
     );
+
+    final actions = <Widget>[];
+
+    if (isHistory) {
+      if (onSettings != null) {
+        actions.add(button(Icons.tune_rounded, l.aiSettingsButton, onSettings));
+      }
+    } else if (isNewConversation) {
+      if (onSettings != null) {
+        actions.add(button(Icons.tune_rounded, l.aiSettingsButton, onSettings));
+      }
+    } else {
+      if (isWide && onSettings != null) {
+        actions.add(button(Icons.tune_rounded, l.aiSettingsButton, onSettings));
+      }
+      actions.add(button(Icons.edit_square, l.aiChatNewConversation, onNew));
+    }
+
+    actions.add(button(Icons.close_rounded, l.aiChatClose, onClose));
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
       child: Row(
         children: [
           button(
-            isHistory ? Icons.chevron_left_rounded : Icons.history_rounded,
+            isHistory ? Icons.chevron_left_rounded : Icons.forum_rounded,
             isHistory
                 ? MaterialLocalizations.of(context).backButtonTooltip
                 : l.aiChatHistory,
@@ -748,42 +764,7 @@ class _Header extends StatelessWidget {
               ),
             ),
           ),
-          if (attachmentCount > 0)
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                button(
-                  Icons.attach_file_rounded,
-                  l.aiChatAttachmentsOpen('$attachmentCount'),
-                  onAttachments,
-                ),
-                Positioned(
-                  right: 4,
-                  top: 6,
-                  child: IgnorePointer(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: c.accent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '$attachmentCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          button(Icons.edit_square, l.aiChatNewConversation, onNew),
-          if (onSettings != null)
-            button(Icons.tune_rounded, l.aiSettingsButton, onSettings),
-          button(Icons.close_rounded, l.aiChatClose, onClose),
+          ...actions,
         ],
       ),
     );

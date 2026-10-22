@@ -16271,6 +16271,44 @@ body.is-resizing-chat iframe {
 
 /* ── 会話の一覧 ───────────────────────────────────────────────────────── */
 
+.chat-thread-new-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 179, 0, 0.28);
+  background: rgba(255, 179, 0, 0.08);
+  color: var(--amber-glow, #ffb300);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.chat-thread-new-btn:hover {
+  background: rgba(255, 179, 0, 0.14);
+  border-color: rgba(255, 179, 0, 0.45);
+}
+
+.chat-fullscreen.is-paper .chat-thread-new-btn,
+.chat-page.is-paper .chat-thread-new-btn,
+.chat-panel.is-paper .chat-thread-new-btn {
+  border-color: rgba(180, 83, 9, 0.28);
+  background: rgba(180, 83, 9, 0.06);
+  color: #b45309;
+}
+
+.chat-fullscreen.is-paper .chat-thread-new-btn:hover,
+.chat-page.is-paper .chat-thread-new-btn:hover,
+.chat-panel.is-paper .chat-thread-new-btn:hover {
+  background: rgba(180, 83, 9, 0.12);
+  border-color: rgba(180, 83, 9, 0.4);
+}
+
 .chat-threads {
   display: grid;
   gap: 6px;

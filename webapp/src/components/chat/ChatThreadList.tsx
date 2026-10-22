@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, MessageSquareText, Pencil, Trash2, X } from 'lucide-react';
+import { Check, MessageSquareText, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { ConfirmModal } from '../modals/ConfirmModal';
 import type { ChatThread } from '../../types/chat';
@@ -9,6 +9,7 @@ interface ChatThreadListProps {
   loading: boolean;
   activeThreadId?: string | null;
   onSelect: (threadId: string) => void;
+  onNewConversation?: () => void;
   onRename: (threadId: string, title: string) => Promise<void>;
   onDelete: (threadId: string) => Promise<void>;
 }
@@ -18,6 +19,7 @@ export const ChatThreadList: React.FC<ChatThreadListProps> = ({
   loading,
   activeThreadId,
   onSelect,
+  onNewConversation,
   onRename,
   onDelete,
 }) => {
@@ -61,12 +63,29 @@ export const ChatThreadList: React.FC<ChatThreadListProps> = ({
     );
   }
 
+  const newButton = onNewConversation ? (
+    <button
+      type="button"
+      className="chat-thread-new-btn"
+      onClick={onNewConversation}
+    >
+      <Plus size={18} />
+      <span>{t('chatNewConversation')}</span>
+    </button>
+  ) : null;
+
   if (threads.length === 0) {
-    return <p className="chat-threads-empty">{t('chatThreadsEmpty')}</p>;
+    return (
+      <>
+        {newButton}
+        <p className="chat-threads-empty">{t('chatThreadsEmpty')}</p>
+      </>
+    );
   }
 
   return (
     <>
+      {newButton}
       <ul className="chat-threads">
         {threads.map((thread) => {
           const title = thread.title || t('chatThreadUntitled');
