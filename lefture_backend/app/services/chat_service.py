@@ -1531,6 +1531,40 @@ def _format_student_memos(memos: list[dict]) -> str:
             lines.append(f"- {m['content']}")
     return "\n".join(lines)
 
+def format_student_message_for_answer(turn: PreparedTurn) -> str:
+    """
+    回答役に見せる生徒のメッセージ。
+    テキスト選択(Ask AI)や返信引用がある場合、その対象を動的ラベル([Selected text from ...]:)で
+    本文の直前に明示して、モデルの第一アテンションが確実に選択対象へ向くようにする。
+    """
+    raw_message = turn.message_for_prompt
+    prefix_parts = []
+
+    if turn.reply_quote:
+        prefix_parts.append(
+            f"[Quoted from your earlier reply]:\n\"\"\"\n{turn.reply_quote.strip()}\n\"\"\""
+        )
+    elif turn.selected_text:
+        # 動的ラベルの決定
+        label = "Selected text from screen"
+        page = turn.screen_page
+        if page:
+            if page.kind == "deep_note":
+                label = f"Selected text from Deep Note ({page.title})"
+            elif page.kind == "review_card":
+                label = f"Selected text from Review Cards ({page.title})"
+            elif page.kind == "fun_fact":
+                label = f"Selected text from Fun Fact ({page.title})"
+            elif page.title:
+                label = f"Selected text from {page.title}"
+        prefix_parts.append(
+            f"[{label}]:\n\"\"\"\n{turn.selected_text.strip()}\n\"\"\""
+        )
+
+    if prefix_parts:
+        return "\n\n".join(prefix_parts) + "\n\n" + raw_message
+    return raw_message
+
 
 def _build_answer_messages(
     turn: PreparedTurn,
@@ -1587,7 +1621,7 @@ def _build_answer_messages(
         # 探索役が開こうとして読めなかったリンク(ログインが要る授業サイトなど)
         "LINK_NOTES": "\n".join(f"- {url}: {reason}" for url, reason in link_failures or []),
         "REPLY_LANGUAGE": decision.reply_language,
-        "MESSAGE": turn.message_for_prompt,
+        "MESSAGE": format_student_message_for_answer(turn),
     })
     # 選択中の画像の資料(render_for_answerが「image N」と書いた順)。回答役は画像を読めるモデルであること
     return [Message(role="system", content=system), *history,
@@ -2155,11 +2189,15 @@ async def _run_turn_steps(
             await emit("done", {"status": decision.intent, "credits_charged": 0})
             return
 
-        # 推論が要るターンで、全文を渡していない資料があれば、振り分け役が探索不要と判断しても探しに行く
-        # (確かめ役が資料の本文を見ずに一般論で「訂正」を作り、仕様書と逆のことを答えた失敗の対策、10章)
+        # 推論が要るターンで、言及された資料(または新規添付)のうち全文を渡していないものがあれば、
+        # 振り分け役が探索不要と判断しても探しに行く(確かめ役が仕様書を見ずに一般論で答えるのを防ぐ)
         retrieval_forced = False
-        must_check_attachments = decision.needs_reasoning and any(
-            not attachment_visibility.is_full(a) for a in turn.attachments)
+        has_relevant_unopened_attachment = any(
+            (attachment_visibility.is_mentioned(a) or a.id in {r.get("id") for r in turn.new_attachment_rows})
+            and not attachment_visibility.is_full(a)
+            for a in turn.attachments
+        )
+        must_check_attachments = decision.needs_reasoning and has_relevant_unopened_attachment
         if must_check_attachments and not decision.needs_retrieval:
             decision.needs_retrieval = True
             retrieval_forced = True

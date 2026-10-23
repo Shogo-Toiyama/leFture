@@ -29,6 +29,7 @@ contents_generation/test_codes/core_extraction_test/transcript_data.json
 contents_generation/test_codes/core_extraction_test/simple_transcript.txt
 contents_generation/test_codes/faster_whisper/lecture_audio.m4a
 contents_generation/test_codes/faster-whisper/transcript_result.json
+contents_generation/test_codes/cs118_midterm
 docs/*
 
 # Web / Node

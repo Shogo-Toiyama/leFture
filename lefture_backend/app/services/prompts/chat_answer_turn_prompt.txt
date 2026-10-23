@@ -1,3 +1,21 @@
+<student_message>
+${MESSAGE}
+</student_message>
+
+<reply_language>${REPLY_LANGUAGE}</reply_language>
+
+<!--IF:HAS_SCREEN_CONTEXT-->
+<screen_context>
+${SCREEN_CONTEXT}
+</screen_context>
+
+<!--END_IF-->
+<!--IF:HAS_ATTACHMENTS-->
+<attached_materials>
+${ATTACHMENTS}
+</attached_materials>
+
+<!--END_IF-->
 <sources>
 <!--IF:HAS_SOURCES-->
 ${SOURCES}
@@ -13,24 +31,6 @@ You did try to open these links, and they could not be read for the reason given
 <!--END_IF-->
 <!--IF:HAS_SOURCES-->Use only the sources the reply needs. Cite at most one source per sentence: when several sources say the same thing, pick the clearest one. Write "…a new record.⟦W1.2⟧", not "…a new record.⟦W1.2⟧⟦W3.1⟧". Cite the unit, never a bare source number.
 <!--END_IF-->
-<!--IF:HAS_ATTACHMENTS-->
-<attached_materials>
-${ATTACHMENTS}
-</attached_materials>
-
-<!--END_IF-->
-
-<!--IF:HAS_SCREEN_CONTEXT-->
-<screen_context>
-${SCREEN_CONTEXT}
-</screen_context>
-
-<!--END_IF-->
-<reply_language>${REPLY_LANGUAGE}</reply_language>
-
-<student_message>
-${MESSAGE}
-</student_message>
 <!--IF:HAS_AI_CODE_RULE-->
 
 <assignment_rules>
