@@ -42,3 +42,8 @@ contents_generation/test_codes/review_card_generation_test/output/
 contents_generation/test_codes/deep_notes_generation_test/output/
 contents_generation/test_codes/deep_notes_generation_test/*.json
 contents_generation/test_codes/review_card_generation_test/*.json
+contents_generation/test_codes/llmlingua2_experiment/multilingual_raw/
+contents_generation/test_codes/llmlingua2_experiment/*.json
+contents_generation/test_codes/llmlingua2_experiment/*.txt
+contents_generation/test_codes/llmlingua2_experiment/cs118_project1_spec.md
+contents_generation/test_codes/llmlingua2_experiment/proj2_spec.md

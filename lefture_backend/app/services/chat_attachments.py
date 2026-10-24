@@ -52,11 +52,11 @@ MAX_ATTACHMENTS_PER_THREAD = 30
 MAX_ATTACHMENTS_PER_MESSAGE = 5
 MAX_ATTACHMENT_TITLE_CHARS = 100
 
-# 全文で渡す資料(選択中)の合計の上限(トークン、estimate_tokensの概算)。英語の10万字の資料が
-# 1本丸ごと入る大きさ。1万トークンにつき1ターン約+0.45クレジット(回答役Lunaの入力$0.10/M ×
-# CHAT_CREDIT_MARKUP 1.5 × 300クレジット/$。推論ターンも同じLuna)。webappの
-# CHAT_CREDITS_PER_10K_TOKENS(一覧の目安の表示)と揃える。
-MAX_SELECTED_TOKENS = 30_000
+# 全文で渡す資料(選択中)の合計の上限(トークン、estimate_tokensの概算)。
+# 30,000〜40,000トークンの長文資料は、添付時にModal LLMLingua-2でソフト圧縮(Rate 0.7〜0.6)して約25k〜30kトークンに押し込む。
+# 圧縮による安全マージンを考慮し、選択枠の上限を36,000トークンまで許容する。
+MAX_SELECTED_TOKENS = 36_000
+
 
 # 節の区切り(文字数)。見出しらしい行があればそこで、無ければ段落の切れ目で区切る
 SECTION_TARGET_CHARS = 2500
@@ -144,6 +144,9 @@ class Attachment:
     image_path: Optional[str] = None
     # 全文で読み始めた・最後にメンションされた時刻(全文で読む枠を超えたら、古いものから外す)
     selected_at: str = ""
+    # LLMLingua-2 でソフト圧縮された資料か
+    compressed: bool = False
+
 
     @property
     def char_count(self) -> int:
@@ -175,7 +178,9 @@ class Attachment:
                    forbids_ai_code=bool(row.get("forbids_ai_code")),
                    kind=row.get("kind") or "text", image_path=row.get("image_path"),
                    selected_at=row.get("selected_at") or "",
+                   compressed=bool(row.get("compressed") or (row.get("metadata") or {}).get("compressed")),
                    token_count=token_count if isinstance(token_count, int) else estimate_tokens(content))
+
 
 
 @dataclass
@@ -619,7 +624,8 @@ def render_for_answer(attachments: list[Attachment], vis: Visibility) -> str:
             blocks.append(f'<material handle="{a.handle}" title="{a.title}" kind="image">\n'
                           f'The image itself is attached to this message (image {image_no}).\n</material>')
         elif vis.is_full(a):
-            blocks.append(f'<material handle="{a.handle}" title="{a.title}">\n{a.content.strip()}\n</material>')
+            comp_attr = ' compressed="true"' if a.compressed else ""
+            blocks.append(f'<material handle="{a.handle}" title="{a.title}"{comp_attr}>\n{a.content.strip()}\n</material>')
     listed = [a for a in attachments if not vis.is_full(a)]
     if listed:
         lines = [f"- {_line(a)}: {a.summary or '(no summary)'}"

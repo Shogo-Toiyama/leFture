@@ -168,6 +168,7 @@ export const AttachmentListModal: React.FC<AttachmentListModalProps> = ({
                   else if (a.kind === 'pdf' && a.page_count) meta.push(t('chatFilePages', { count: a.page_count }));
                   else if (a.kind === 'pptx' && a.page_count) meta.push(t('chatFileSlides', { count: a.page_count }));
                   if (a.kind !== 'image') meta.push(t('chatAttachmentChars', { count: formatNumber(a.char_count) }));
+                  if (a.metadata?.compressed) meta.push(t('chatAttachmentCondensed'));
                   meta.push(formatDate(a.created_at, { month: 'numeric', day: 'numeric' }));
                   const ready = a.status === 'ready';
                   const tooLong = a.token_count > CHAT_MAX_SELECTED_TOKENS;

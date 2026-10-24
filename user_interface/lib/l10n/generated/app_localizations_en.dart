@@ -3476,6 +3476,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Finalizing document indexing. Please wait a moment…';
 
   @override
+  String get aiChatStageOrganizingMaterials => 'Organizing relevant materials…';
+
+  @override
   String get aiChatReconnecting =>
       'Connection lost. Waiting for the reply to finish…';
 
@@ -3882,6 +3885,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiChatAttachmentProcessing => 'Checking';
+
+  @override
+  String get aiChatAttachmentCondensed => 'Condensed';
 
   @override
   String get aiChatAttachmentBlocked => 'This material could not be used';

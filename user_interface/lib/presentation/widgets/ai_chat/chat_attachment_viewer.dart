@@ -185,6 +185,7 @@ class _AttachmentViewerState extends ConsumerState<_AttachmentViewer> {
       else if (a.fileKind == ChatFileKind.pptx && a.pageCount != null)
         l.aiChatFileSlides('${a.pageCount}'),
       if (a.content.isNotEmpty) l.aiChatAttachmentChars(fmt(a.content.length)),
+      if (a.isCompressed) l.aiChatAttachmentCondensed,
     ];
     final textStyle = TextStyle(color: c.text, fontSize: 13.5, height: 1.7);
 

@@ -671,6 +671,7 @@ class ChatAttachment {
     required this.createdAt,
     this.fileName,
     this.pageCount,
+    this.metadata = const {},
   });
 
   final String id;
@@ -699,11 +700,16 @@ class ChatAttachment {
   final String? fileName;
   final int? pageCount;
 
+  /// 追加のメタデータ(圧縮フラグ等)
+  final Map<String, dynamic> metadata;
+
+  bool get isCompressed => metadata['compressed'] == true;
+
   ChatFileKind? get fileKind => ChatFileKind.tryParse(kind);
 
   /// Supabaseから読む列(webappのATTACHMENT_COLUMNSと同じ)。
   static const columns =
-      'id, thread_id, message_id, kind, status, title, content, char_count, token_count, selected, summary, sections, created_at, file_name, page_count';
+      'id, thread_id, message_id, kind, status, title, content, char_count, token_count, selected, summary, sections, created_at, file_name, page_count, metadata';
 
   factory ChatAttachment.fromMap(Map<String, dynamic> map) => ChatAttachment(
     id: map['id'] as String,
@@ -727,6 +733,9 @@ class ChatAttachment {
     createdAt: DateTime.parse(map['created_at'] as String),
     fileName: map['file_name'] as String?,
     pageCount: (map['page_count'] as num?)?.toInt(),
+    metadata: map['metadata'] is Map
+        ? Map<String, dynamic>.from(map['metadata'] as Map)
+        : const {},
   );
 }
 

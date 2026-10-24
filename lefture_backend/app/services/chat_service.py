@@ -51,8 +51,10 @@ from app.services.chat_materials import (
     material_from_chunk,
     normalize_citations,
     select_materials,
+    select_materials_async,
     sources_event,
 )
+from app.services.chat_compressor import compress_attachment_content_if_needed
 from app.services.chat_navigator import (
     CAPABILITIES as NAVIGATOR_CAPABILITIES,
     LECTURE_SOURCE_TYPES,
@@ -1383,6 +1385,7 @@ async def _gather_materials(
     attachment_visibility: Optional[Visibility] = None,
     must_check_attachments: bool = False,
     user_goal: Optional[str] = None,
+    on_compressing: Optional[Callable[[], Awaitable[None]]] = None,
 ) -> tuple[list[Material], Optional[NavigationResult]]:
     """
     探索役(chat_navigator.py)で回答役に渡す材料を集める。探索役が1周目から動かない
@@ -1462,7 +1465,7 @@ async def _gather_materials(
             navigation = await navigate(llm, nav_input, tools, on_lap=on_lap, on_fetch=on_fetch)
             print(f"🧭 [chat] message={turn.assistant_message_id} {summarize_for_log(navigation)}")
             if not navigation.failed_before_any_fetch:
-                return select_materials(allowed(navigation.materials)), navigation
+                return await select_materials_async(allowed(navigation.materials), billing=billing, on_compressing=on_compressing), navigation
         except Exception as e:
             print(f"⚠️ [chat] navigator failed, falling back to plain search: {e}")
 
@@ -1476,7 +1479,7 @@ async def _gather_materials(
     except Exception as e:
         print(f"⚠️ [chat] retrieval failed, answering without sources: {e}")
         chunks = []
-    return select_materials(allowed([material_from_chunk(c) for c in chunks])), navigation
+    return await select_materials_async(allowed([material_from_chunk(c) for c in chunks]), billing=billing, on_compressing=on_compressing), navigation
 
 
 def _answer_max_tokens(navigation: Optional[NavigationResult], materials: list[Material]) -> int:
@@ -1702,9 +1705,13 @@ async def _load_answer_images(turn: PreparedTurn, vis: Visibility) -> list[bytes
 
 
 def _chargeable_usd(records: list) -> float:
-    """請求の元にする原価(トークンと、Web検索の回数)。Cloud Runの時間の概算は含めない。"""
-    return sum(r.cost_usd for r in records
-               if r.dimension == "tokens" or (r.dimension == "count" and r.resource in CHARGEABLE_COUNT_RESOURCES))
+    """請求の元にする原価(トークン、Web検索の回数、およびプロンプト圧縮等のModal GPU時間)。Cloud Runの時間の概算は含めない。"""
+    return sum(
+        r.cost_usd for r in records
+        if r.dimension == "tokens"
+        or (r.dimension == "count" and r.resource in CHARGEABLE_COUNT_RESOURCES)
+        or (r.dimension == "time" and r.resource == "modal/t4")
+    )
 
 
 async def _finalize(
@@ -1891,22 +1898,32 @@ async def _background_process_non_image(
             return
 
         tokens = estimate_tokens(content)
+        # 30,000〜40,000 トークンの長文資料は、Modal LLMLingua-2 でソフト圧縮して 30,000 枠内に押し込む
+        content, tokens, was_compressed = await compress_attachment_content_if_needed(content, tokens, billing=llm.billing)
+
         title = row.get("title") or read_res.title or (row.get("file_name") or "")[:60] or "Document"
-        file_fields = {} if row.get("kind", "text") == "text" else {
+        meta = dict(row.get("metadata") or {})
+        if was_compressed:
+            meta["compressed"] = True
+
+        file_fields = {
             "content": content,
             "char_count": len(content),
             "token_count": tokens,
-            "extraction": None,
-        }
+        } if (was_compressed or row.get("kind", "text") != "text") else {}
+        if row.get("kind", "text") != "text":
+            file_fields["extraction"] = None
         admin_client.table("chat_attachments").update({
             **file_fields,
             "status": "ready",
             "title": title,
             "summary": read_res.summary,
+            "metadata": meta,
             "sections": [sec.to_json() for sec in read_res.sections],
             "usage": {**read_res.usage_json(), **({"file": file_usage} if file_usage else {})},
             "forbids_ai_code": read_res.forbids_ai_code,
         }).eq("id", row["id"]).execute()
+
 
         if turn is not None:
             turn.attachments_read.append({**read_res.usage_json(), **({"file": file_usage} if file_usage else {})})
@@ -2260,9 +2277,13 @@ async def _run_turn_steps(
                     payload["handle"] = info["handle"]
                 await emit("status", payload)
 
+            async def on_compressing() -> None:
+                await emit("status", {"stage": "searching", "detail": ["organizing"]})
+
             materials, navigation = await _gather_materials(
                 llm, billing, user_client, turn, history, map_task, chat_map_task, await blocked_task, on_fetch,
-                attachment_visibility, must_check_attachments, user_goal=decision.user_goal)
+                attachment_visibility, must_check_attachments, user_goal=decision.user_goal,
+                on_compressing=on_compressing)
             timer.mark("retrieval_done")
             # 探索役の中で握りつぶされた停止を、ここで拾い直す
             stop.raise_if_stopped()

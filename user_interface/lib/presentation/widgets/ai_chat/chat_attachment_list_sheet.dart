@@ -317,6 +317,7 @@ class _Row extends ConsumerWidget {
         l.aiChatAttachmentChars(
           NumberFormat.decimalPattern(locale).format(a.charCount),
         ),
+      if (a.isCompressed) l.aiChatAttachmentCondensed,
       DateFormat.Md(locale).format(a.createdAt.toLocal()),
     ];
     final ready = a.status == ChatAttachmentStatus.ready;

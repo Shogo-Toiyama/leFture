@@ -3322,6 +3322,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aiChatStageIndexingAttachments => '資料のインデックスを完了しています。もう少々お待ちください…';
 
   @override
+  String get aiChatStageOrganizingMaterials => '関連する資料を整理しています…';
+
+  @override
   String get aiChatReconnecting => '接続が切れました。返答ができあがるのを待っています…';
 
   @override
@@ -3710,6 +3713,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aiChatAttachmentProcessing => '確認中';
+
+  @override
+  String get aiChatAttachmentCondensed => '圧縮済み';
 
   @override
   String get aiChatAttachmentBlocked => 'この資料は使えませんでした';

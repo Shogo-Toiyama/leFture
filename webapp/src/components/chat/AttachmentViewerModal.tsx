@@ -20,6 +20,7 @@ export interface ViewableAttachment {
   /** 送ったファイルのとき: 元のファイル(画像なら画像)を開くための資料のid */
   fileId?: string;
   pageCount?: number | null;
+  isCompressed?: boolean;
 }
 
 export function viewableFromAttachment(a: ChatAttachment): ViewableAttachment {
@@ -32,6 +33,7 @@ export function viewableFromAttachment(a: ChatAttachment): ViewableAttachment {
     kind: a.kind,
     fileId: a.kind !== 'text' ? a.id : undefined,
     pageCount: a.page_count,
+    isCompressed: a.metadata?.compressed === true,
   };
 }
 
@@ -161,6 +163,11 @@ export const AttachmentViewerModal: React.FC<AttachmentViewerModalProps> = ({ at
               {attachment.content.length > 0 && (
                 <span className="citation-modal-badge-meta">
                   {t('chatAttachmentChars', { count: formatNumber(attachment.content.length) })}
+                </span>
+              )}
+              {attachment.isCompressed && (
+                <span className="citation-modal-badge-meta">
+                  {t('chatAttachmentCondensed')}
                 </span>
               )}
               {attachment.status && attachment.status !== 'ready' && <AttachmentStatusBadge status={attachment.status} />}

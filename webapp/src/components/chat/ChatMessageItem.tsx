@@ -466,7 +466,9 @@ const AssistantMessage: React.FC<{
   } else if (message.stage === 'indexing_attachments') {
     stageLabel = t('chatStageIndexingAttachments');
   } else if (message.stage === 'searching') {
-    if (message.searchTarget === 'attachments' || detail.includes('attachments')) {
+    if (detail.includes('organizing')) {
+      stageLabel = t('chatStageOrganizingMaterials');
+    } else if (message.searchTarget === 'attachments' || detail.includes('attachments')) {
       stageLabel = t('chatStageReadingAttachment');
     } else if (message.searchTarget === 'web' || detail.includes('web')) {
       stageLabel = truncatedQuery

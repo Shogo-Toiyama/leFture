@@ -98,7 +98,7 @@ function normalizeMessage(row: Record<string, unknown>): ChatMessage {
 }
 
 const ATTACHMENT_COLUMNS =
-  'id, thread_id, message_id, kind, status, title, content, char_count, token_count, selected, summary, sections, created_at, file_name, page_count';
+  'id, thread_id, message_id, kind, status, title, content, char_count, token_count, selected, summary, sections, created_at, file_name, page_count, metadata';
 
 /**
  * スレッドの資料(外したものを除く)。添付順。断った・失敗した資料も返す(送ったメッセージの横に

@@ -16,7 +16,7 @@
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Awaitable, Callable, Optional
 
 from app.services.chat_attachments import estimate_tokens
 from app.services.chat_units import Unit, mark_units, passage, split_units, strip_citations
@@ -69,6 +69,9 @@ class Material:
     handle: Optional[str] = None
     # Webのページだけ
     url: Optional[str] = None
+    # LLMLingua-2 でソフト圧縮された材料か
+    compressed: bool = False
+
 
     @property
     def is_web(self) -> bool:
@@ -223,6 +226,84 @@ def select_materials(materials: list[Material]) -> list[Material]:
     return out
 
 
+async def select_materials_async(
+    materials: list[Material],
+    billing: Optional[Any] = None,
+    on_compressing: Optional[Callable[[], Awaitable[None]]] = None,
+) -> list[Material]:
+    """
+    回答役に渡す材料を選ぶ(非同期・LLMLingua-2ソフト圧縮対応版)。
+    全材料の合計トークン数が MATERIALS_MAX_TOKENS (15,000) を超える場合、
+    35,000トークン以下なら、まず真ん中を削る前に Modal LLMLingua-2 でソフト圧縮(Rate 0.7)を適用し、
+    中身を欠落させずに 15,000 枠内に押し込む。
+    圧縮後も超過している場合(または元から35,000超の場合)のみ、最終手段として truncate_head_tail で安全に中略する。
+    """
+    merged: dict[str, Material] = {}
+    for m in materials:
+        cur = merged.get(m.key)
+        if cur is None:
+            merged[m.key] = m
+            continue
+        if (m.similarity or 0) > (cur.similarity or 0):
+            cur.similarity = m.similarity
+
+    ranked = sorted(merged.values(), key=lambda m: (PRIORITY.get(m.kind, 9), -(m.similarity or 0)))
+    if len(ranked) > MATERIALS_MAX_ITEMS:
+        ranked = ranked[:MATERIALS_MAX_ITEMS]
+
+    total_tokens = sum(estimate_tokens(m.content or "") for m in ranked)
+    if total_tokens <= MATERIALS_MAX_TOKENS:
+        return ranked
+
+    # 15,000 トークンを超過している場合(上限 35,000 トークンまで):
+    # まず長い材料を Modal LLMLingua-2 でソフト圧縮(Rate 0.7)してスリム化し、
+    # その後に残りの超過分のみ truncate_head_tail することで、中略による文章の欠落を最小限に抑える！
+    if total_tokens <= 35_000:
+        import asyncio
+        from app.services.chat_compressor import compress_text
+
+        tasks = []
+        indices = []
+        for idx, m in enumerate(ranked):
+            m_tok = estimate_tokens(m.content or "")
+            if m_tok >= 300:  # 短すぎる断片は圧縮不要
+                tasks.append(compress_text(m.content or "", rate=0.7, billing=billing))
+                indices.append(idx)
+
+        if tasks:
+            if on_compressing is not None:
+                try:
+                    await on_compressing()
+                except Exception as e:
+                    print(f"⚠️ [chat_materials] on_compressing callback failed: {e}")
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for idx, res in zip(indices, results):
+                if isinstance(res, str) and res:
+                    new_tok = estimate_tokens(res)
+                    old_tok = estimate_tokens(ranked[idx].content or "")
+                    if new_tok < old_tok:
+                        ranked[idx].content = res
+                        ranked[idx].compressed = True
+
+    # 圧縮後に再計算
+    total_tokens = sum(estimate_tokens(m.content or "") for m in ranked)
+    if total_tokens <= MATERIALS_MAX_TOKENS:
+        return ranked
+
+    # それでも超過している場合: 残りの超過分のみ従来のヘッドテール中略で安全にトリミング(フォールバック)
+    ratio = MATERIALS_MAX_TOKENS / total_tokens
+
+    out: list[Material] = []
+    for m in ranked:
+        m_tokens = estimate_tokens(m.content or "")
+        target = max(150, int(m_tokens * ratio))
+        if m_tokens > target:
+            m.content = truncate_head_tail(m.content, target)
+        out.append(m)
+    return out
+
+
+
 def numbered(materials: list[Material]) -> list[tuple["int | str", Material]]:
     """
     出典の番号を振る。講義・チャットは1, 2, …、Webは"W1", "W2", …(別の番号)。
@@ -282,11 +363,14 @@ def format_sources_block(materials: list[Material]) -> str:
         if not rows:
             continue
         parts.append(heading)
-        if key == "web":
-            parts += [f"[{n}] {m.label}\n{m.url}\n{body(n, m)}" for n, m in rows]
-        else:
-            parts += [f"[{n}] {m.label}\n{body(n, m)}" for n, m in rows]
+        for n, m in rows:
+            suffix = " (condensed for length)" if getattr(m, "compressed", False) else ""
+            if key == "web":
+                parts.append(f"[{n}] {m.label}{suffix}\n{m.url}\n{body(n, m)}")
+            else:
+                parts.append(f"[{n}] {m.label}{suffix}\n{body(n, m)}")
     return "\n\n".join(parts)
+
 
 
 # 引用の読み取り。回答役は ⟦3.5⟧ / ⟦3.5-7⟧ / ⟦W1.2⟧ で引用する(二重括弧は普通の文章・数式・コードに

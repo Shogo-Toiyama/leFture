@@ -4538,6 +4538,10 @@
   "@aiChatStageIndexingAttachments": {
     "description": "Status shown when the answer is ready but background attachment indexing/analysis is finishing before finalizing."
   },
+  "aiChatStageOrganizingMaterials": "Organizing relevant materials…",
+  "@aiChatStageOrganizingMaterials": {
+    "description": "Status shown while compressing/organizing extensive materials before generating reply."
+  },
   "aiChatReconnecting": "Connection lost. Waiting for the reply to finish…",
   "@aiChatReconnecting": {
     "description": "AI chat. Ported from the web app string \"chatReconnecting\"."
@@ -5099,6 +5103,10 @@
   "aiChatAttachmentProcessing": "Checking",
   "@aiChatAttachmentProcessing": {
     "description": "AI chat. Ported from the web app string \"chatAttachmentProcessing\"."
+  },
+  "aiChatAttachmentCondensed": "Condensed",
+  "@aiChatAttachmentCondensed": {
+    "description": "Badge shown on compressed attachments in chat."
   },
   "aiChatAttachmentBlocked": "This material could not be used",
   "@aiChatAttachmentBlocked": {

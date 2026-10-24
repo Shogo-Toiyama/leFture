@@ -6074,6 +6074,12 @@ abstract class AppLocalizations {
   /// **'Finalizing document indexing. Please wait a moment…'**
   String get aiChatStageIndexingAttachments;
 
+  /// Status shown while compressing/organizing extensive materials before generating reply.
+  ///
+  /// In en, this message translates to:
+  /// **'Organizing relevant materials…'**
+  String get aiChatStageOrganizingMaterials;
+
   /// AI chat. Ported from the web app string "chatReconnecting".
   ///
   /// In en, this message translates to:
@@ -6787,6 +6793,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checking'**
   String get aiChatAttachmentProcessing;
+
+  /// Badge shown on compressed attachments in chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Condensed'**
+  String get aiChatAttachmentCondensed;
 
   /// AI chat. Ported from the web app string "chatAttachmentBlocked".
   ///
