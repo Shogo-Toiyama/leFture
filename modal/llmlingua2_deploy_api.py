@@ -10,8 +10,44 @@ import modal
 APP_NAME = "lefture-llmlingua2"
 MODEL_ID = "microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank"
 
-# 自然言語圧縮時に絶対に落とさない否定・制約トークン
-DEFAULT_FORCE_TOKENS = ["\n", "not", "don't", "doesn't", "cannot", "never", "unless", "except"]
+# 自然言語圧縮時に絶対に落とさない否定・制約トークン（13言語対応）
+DEFAULT_FORCE_TOKENS = [
+    "\n",
+    # English
+    "not", "Not", "no", "No", "don't", "Don't", "doesn't", "Doesn't", "cannot", "Cannot",
+    "never", "Never", "unless", "Unless", "except", "Except", "without", "Without",
+    "prohibited", "Prohibited", "forbidden", "Forbidden",
+    # Japanese
+    "ない", "ず", "ぬ", "ません", "禁止", "不可", "除き", "以外", "なく", "ならず", "だめ", "禁ずる", "厳禁", "無効",
+    # Chinese (Simplified & Cantonese / Traditional)
+    "不", "没", "无", "非", "禁", "未", "除非", "除外", "免", "严禁", "唔", "咪", "冇", "毋", "嚴禁",
+    # Korean
+    "안", "못", "않", "없", "금지", "말고", "제외", "아니", "불가",
+    # French
+    "pas", "ne", "Ne", "plus", "Plus", "jamais", "Jamais", "rien", "aucun", "Aucun",
+    "aucune", "Aucune", "sauf", "Sauf", "sans", "Sans", "interdit", "Interdit",
+    # Spanish
+    "nunca", "Nunca", "jamás", "Jamás", "nada", "nadie", "excepto", "Excepto",
+    "salvo", "Salvo", "sin", "Sin", "ningún", "Ningún", "ninguno", "Ninguno",
+    "ninguna", "Ninguna", "prohibido", "Prohibido",
+    # Portuguese
+    "não", "Não", "ninguém", "Ninguém", "exceto", "Exceto", "sem", "Sem",
+    "nenhum", "Nenhum", "nenhuma", "Nenhuma",
+    # German
+    "nicht", "Nicht", "kein", "Kein", "keine", "Keine", "keinen", "Keinen",
+    "keinem", "keiner", "nie", "Nie", "niemals", "Niemals", "ohne", "Ohne",
+    "außer", "Außer", "verboten", "Verboten",
+    # Italian
+    "non", "Non", "mai", "Mai", "niente", "nessuno", "Nessuno", "nessun", "Nessun",
+    "nessuna", "Nessuna", "tranne", "Tranne", "senza", "Senza", "vietato", "Vietato",
+    # Russian
+    "не", "Не", "ни", "Ни", "нет", "Нет", "нельзя", "Нельзя", "кроме", "Кроме",
+    "без", "Без", "запрещено", "Запрещено", "запрещается", "Запрещается",
+    # Arabic
+    "لا", "لم", "لن", "ما", "غير", "بدون", "إلا", "ليس", "ممنوع", "محظور",
+    # Hindi
+    "नहीं", "मत", "ना", "बिना", "सिवाय", "अलावा", "वर्जित", "निषेध",
+]
 
 # ==========================================
 # 2. イメージビルド定義（事前ダウンロード Bake-in）
@@ -21,7 +57,12 @@ def download_model():
     from llmlingua import PromptCompressor
     print(f"📥 Building image: Downloading {MODEL_ID} and assets...")
     snapshot_download(repo_id=MODEL_ID)
-    _ = PromptCompressor(model_name=MODEL_ID, device_map="cpu", use_llmlingua2=True)
+    _ = PromptCompressor(
+        model_name=MODEL_ID,
+        device_map="cpu",
+        use_llmlingua2=True,
+        llmlingua2_config={"max_force_token": 500},
+    )
     print("✅ Model & assets pre-download complete!")
 
 
@@ -115,6 +156,7 @@ class LLMLingua2API:
             model_name=MODEL_ID,
             device_map="cuda",
             use_llmlingua2=True,
+            llmlingua2_config={"max_force_token": 500},
         )
 
         elapsed = time.perf_counter() - t0
