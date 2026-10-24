@@ -156,6 +156,9 @@ def available_layers(blocked: frozenset[str] = frozenset()) -> list[str]:
 _CITATION_BRACKET_RE = re.compile(r"⟦([^⟧]*)⟧")
 _SID_PART_RE = re.compile(r"[sS]?0*(\d+)(?:\s*-\s*[sS]?0*(\d+))?")
 _HANDLE_RE = re.compile(r"^(C\d+)(?:/(L\d+)(?:/(?:T(\d+)|s(\d+)(?:-(\d+))?))?)?$")
+_COURSE_SUB_RE = re.compile(r"^(C\d+)/(topics|keywords|announcements)$")
+_MULTI_CARDS_RE = re.compile(r"^(C\d+)/L(\d+)-(\d+)/cards$")
+_LEC_SUB_RE = re.compile(r"^(C\d+)/(L\d+)/(announcements|cards)$")
 # S{n}(この会話の節) / S{n}/T{k}(その節の往復) / P{n}(過去のチャット) /
 # P{n}/S{m}(その過去のチャットの節) / P{n}/T{k}(その過去のチャットの往復) /
 # H{n}(この会話の2段目の節) / P{n}/H{m}(その過去のチャットの2段目の節)
@@ -210,16 +213,32 @@ def available_targets(web_left: bool = True, search_left: bool = True) -> list[s
 
 @dataclass
 class ParsedHandle:
-    kind: str  # course / lecture / topic / transcript
+    kind: str  # course / lecture / topic / transcript / course_topics / course_keywords / course_announcements / lecture_announcements / lecture_cards / multi_lecture_cards
     course: str
     lecture: Optional[str] = None
     topic_index: Optional[int] = None
     sid_start: Optional[int] = None
     sid_end: Optional[int] = None
+    lecture_start: Optional[int] = None
+    lecture_end: Optional[int] = None
 
 
 def parse_handle(handle: str) -> Optional[ParsedHandle]:
-    m = _HANDLE_RE.match(handle or "")
+    h = (handle or "").strip()
+    m_course_sub = _COURSE_SUB_RE.match(h)
+    if m_course_sub:
+        c, sub = m_course_sub.groups()
+        return ParsedHandle(kind=f"course_{sub}", course=c)
+    m_multi = _MULTI_CARDS_RE.match(h)
+    if m_multi:
+        c, l1, l2 = m_multi.groups()
+        a, b = int(l1), int(l2)
+        return ParsedHandle(kind="multi_lecture_cards", course=c, lecture_start=min(a, b), lecture_end=max(a, b))
+    m_lec_sub = _LEC_SUB_RE.match(h)
+    if m_lec_sub:
+        c, l, sub = m_lec_sub.groups()
+        return ParsedHandle(kind=f"lecture_{sub}", course=c, lecture=f"{c}/{l}")
+    m = _HANDLE_RE.match(h)
     if not m:
         return None
     course, lec, topic, sid_a, sid_b = m.groups()
@@ -718,21 +737,52 @@ def build_system_prompt(can_transcript: bool = True) -> str:
 
 
 def openable_handles(nav_input: NavigatorInput, state: NavState) -> list[str]:
-    """開ける呼び名: 全コース・全講義・この会話の節・最近のチャット・中身や検索結果に
+    """開ける呼び名: 全コース・全講義・各コース集約・この会話の節・最近のチャット・中身や検索結果に
     出てきたもの・前のターンのもの。開いたものは除く。"""
     m = nav_input.student_map
     screen_topic = [nav_input.screen_topic_handle()] if nav_input.screen_topic_handle() else []
     chat_scope = nav_input.chat_map.scope_handles() if nav_input.chat_map and CAPABILITIES["CAN_CHAT"] else []
     links = nav_input.link_handles() if state.link_opens_left() > 0 else []
-    handles = (m.scope_handles() + chat_scope + nav_input.attachment_scope_handles() + links + screen_topic
-               + state.previous_turn_handles + state.surfaced_not_opened())
+
+    course_sub_handles: list[str] = []
+    for c in m.courses:
+        course_sub_handles.extend([
+            f"{c.handle}/topics",
+            f"{c.handle}/keywords",
+            f"{c.handle}/announcements",
+        ])
+        n_lecs = len(c.lectures)
+        if n_lecs > 1:
+            course_sub_handles.append(f"{c.handle}/L1-{n_lecs}/cards")
+        for lec in c.lectures:
+            course_sub_handles.append(f"{lec.handle}/announcements")
+            course_sub_handles.append(f"{lec.handle}/cards")
+
+    handles = (
+        m.scope_handles()
+        + course_sub_handles
+        + chat_scope
+        + nav_input.attachment_scope_handles()
+        + links
+        + screen_topic
+        + state.previous_turn_handles
+        + state.surfaced_not_opened()
+    )
     return [h for h in _dedupe(handles) if h not in state.opened and _plan_allows_handle(nav_input, h)]
 
 
 def _plan_allows_handle(nav_input: NavigatorInput, handle: str) -> bool:
-    """文字起こしの範囲(C1/L2/s10-20)は、今のプランで文字起こしを使えるときだけ開ける。"""
+    """文字起こし・キーワード・カード等は、今のプランで使えるときだけ開ける。"""
     parsed = parse_handle(handle)
-    return nav_input.can_transcript or parsed is None or parsed.kind != "transcript"
+    if parsed is None:
+        return True
+    if parsed.kind == "transcript" and not nav_input.can_transcript:
+        return False
+    if parsed.kind == "course_keywords" and "keyword" in nav_input.blocked_source_types:
+        return False
+    if parsed.kind in ("lecture_cards", "multi_lecture_cards") and "review_card" in nav_input.blocked_source_types:
+        return False
+    return True
 
 
 def build_schema(nav_input: NavigatorInput, state: NavState) -> dict[str, Any]:
@@ -889,9 +939,13 @@ def validate_operations(
             is_attachment = CAPABILITIES["CAN_ATTACHMENTS"] and bool(_ATTACHMENT_HANDLE_RE.match(handle or ""))
             is_link = ((bool(_LINK_HANDLE_RE.match(handle or "")) and handle in nav_input.link_handles())
                        or _link_section(handle or "", state) is not None)
+            is_valid_multi_cards = (
+                parsed is not None and parsed.kind == "multi_lecture_cards"
+                and m.course(parsed.course) is not None
+            )
             if not _plan_allows_handle(nav_input, handle or ""):
                 reason = "transcript_not_in_plan"
-            elif (handle not in openable
+            elif ((handle not in openable and not is_valid_multi_cards)
                   or (parsed is None and parsed_chat is None and not is_web and not is_attachment and not is_link)):
                 reason = "handle_not_openable"
             elif parsed and parsed.kind == "transcript" and parsed.sid_end - parsed.sid_start + 1 > TRANSCRIPT_MAX_SENTENCES:
@@ -1067,15 +1121,228 @@ async def open_handle(
             for x in course.lectures
         ]
         body = "\n".join(lines) or "(No lectures recorded yet.)"
+        sub_surfaced = [f"{handle}/topics", f"{handle}/keywords", f"{handle}/announcements"]
         return Opened(
             handle=handle,
             text=f"Course {handle}: {course.title}\n{body}",
             material=Material(key=f"course:{course.id}", kind="course", label=f"{course.title} / Lectures",
                               content=body, source_type="course", course_id=course.id, handle=handle),
+            surfaced=sub_surfaced + [x.handle for x in course.lectures],
+            ref={"type": "course", "id": course.id},
+        )
+
+    if parsed.kind == "course_topics":
+        topics_map = await source.course_topics([x.id for x in course.lectures])
+        lines = [f"# {course.title} — Course Topics & Syllabus Tree"]
+        surfaced = []
+        for x in course.lectures:
+            t_list = topics_map.get(x.id, [])
+            when = f" ({x.date.isoformat()})" if x.date else ""
+            lines.append(f"- {x.handle}: {x.title}{when}")
+            for t in t_list:
+                t_idx = t.get("index")
+                t_title = t.get("title") or "Untitled"
+                lines.append(f"  - T{t_idx}: {t_title}")
+                surfaced.append(f"{x.handle}/T{t_idx}")
+        body = "\n".join(lines)
+        return Opened(
+            handle=handle,
+            text=f"Course Topics {handle}: {course.title}\n{body}",
+            material=Material(
+                key=f"course_topics:{course.id}",
+                kind="course_topics",
+                label=f"{course.title} / Syllabus & Topics",
+                content=body,
+                source_type="course_topics",
+                course_id=course.id,
+                handle=handle,
+            ),
+            surfaced=surfaced,
+            ref={"type": "course", "id": course.id},
+        )
+
+    if parsed.kind == "course_keywords":
+        kws_map = await source.course_keywords([x.id for x in course.lectures])
+        lines = [f"# {course.title} — Key Terms & Glossary"]
+        count = 0
+        for x in course.lectures:
+            k_list = kws_map.get(x.id, [])
+            if not k_list:
+                continue
+            lines.append(f"\n### {x.handle}: {x.title}")
+            for k in k_list:
+                count += 1
+                if count > 120:
+                    lines.append("- *(Remaining keywords omitted for brevity)*")
+                    break
+                kw = k.get("keyword", "")
+                df = k.get("definition", "")
+                if df:
+                    lines.append(f"- **{kw}**: {df}")
+                else:
+                    lines.append(f"- **{kw}**")
+            if count > 120:
+                break
+        body = "\n".join(lines)
+        return Opened(
+            handle=handle,
+            text=f"Course Glossary {handle}: {course.title}\n{body}",
+            material=Material(
+                key=f"course_keywords:{course.id}",
+                kind="course_keywords",
+                label=f"{course.title} / Glossary & Key Terms",
+                content=body,
+                source_type="course_keywords",
+                course_id=course.id,
+                handle=handle,
+            ),
+            ref={"type": "course", "id": course.id},
+        )
+
+    if parsed.kind == "course_announcements":
+        lec_ids = [x.id for x in course.lectures]
+        anns = await source.announcements(lec_ids)
+        lines = [f"# {course.title} — Class Announcements & Exam Hints"]
+        anns_by_lec: dict[str, list[dict]] = {}
+        for a in anns:
+            anns_by_lec.setdefault(a["lecture_id"], []).append(a)
+
+        def _type_pri(t: str) -> int:
+            return {"HINT": 0, "EVENT": 1, "TODO": 2, "INFO": 3}.get((t or "").upper(), 4)
+
+        has_any = False
+        for x in course.lectures:
+            items = anns_by_lec.get(x.id, [])
+            if not items:
+                continue
+            has_any = True
+            lines.append(f"\n### {x.handle}: {x.title}")
+            sorted_items = sorted(items, key=lambda it: _type_pri(it.get("type")))
+            for item in sorted_items[:10]:
+                itype = (item.get("type") or "INFO").upper()
+                ititle = (item.get("title") or "").strip()
+                idesc = (item.get("description") or "").strip()
+                loc = f" (Ref: {item['location']})" if item.get("location") else ""
+                lines.append(f"- **[{itype}] {ititle}**: {idesc}{loc}")
+
+        if not has_any:
+            lines.append("(No announcements recorded for this course.)")
+
+        body = "\n".join(lines)
+        return Opened(
+            handle=handle,
+            text=f"Course Announcements {handle}: {course.title}\n{body}",
+            material=Material(
+                key=f"course_announcements:{course.id}",
+                kind="course_announcements",
+                label=f"{course.title} / Announcements & Hints",
+                content=body,
+                source_type="course_announcements",
+                course_id=course.id,
+                handle=handle,
+            ),
+            ref={"type": "course", "id": course.id},
+        )
+
+    if parsed.kind == "multi_lecture_cards":
+        start_idx, end_idx = parsed.lecture_start, parsed.lecture_end
+        target_lecs = []
+        for x in course.lectures:
+            try:
+                l_num = int(x.handle.rsplit("/L", 1)[1])
+                if start_idx <= l_num <= end_idx:
+                    target_lecs.append((l_num, x))
+            except (ValueError, IndexError):
+                pass
+        target_lecs.sort(key=lambda item: item[0])
+
+        if not target_lecs:
+            return Opened(handle=handle, text=f"{handle}: (no lectures found in range L{start_idx}-L{end_idx})", material=None)
+
+        cards_map = await source.multi_lecture_review_cards(
+            [x.id for _, x in target_lecs], card_types=("core_why", "gotcha")
+        )
+        lines = [f"# {course.title} — Review Cards (L{start_idx} to L{end_idx})"]
+        has_cards = False
+        for l_num, x in target_lecs:
+            cards = cards_map.get(x.id, [])
+            if cards:
+                has_cards = True
+                lines.append(f"\n### {x.handle}: {x.title}")
+                lines.append(format_lecture_review_cards(cards))
+
+        if not has_cards:
+            lines.append("(No Core Why or Gotcha review cards recorded in this lecture span.)")
+
+        body = "\n".join(lines)
+        return Opened(
+            handle=handle,
+            text=f"Review Cards {handle}: L{start_idx} to L{end_idx}\n{body}",
+            material=Material(
+                key=f"review_cards:{course.id}:L{start_idx}-L{end_idx}",
+                kind="review_cards",
+                label=f"{course.title} / Review Cards (L{start_idx}–L{end_idx})",
+                content=body,
+                source_type="review_cards",
+                course_id=course.id,
+                handle=handle,
+            ),
             ref={"type": "course", "id": course.id},
         )
 
     when = lec.date.isoformat() if lec.date else "no date"
+    if parsed.kind == "lecture_announcements":
+        anns = await source.announcements([lec.id])
+        lines = [f"# {lec.title} ({when}) — Lecture Announcements & Hints"]
+        if not anns:
+            lines.append("(No announcements recorded for this lecture.)")
+        else:
+            def _type_pri(t: str) -> int:
+                return {"HINT": 0, "EVENT": 1, "TODO": 2, "INFO": 3}.get((t or "").upper(), 4)
+            sorted_items = sorted(anns, key=lambda it: _type_pri(it.get("type")))
+            for item in sorted_items:
+                itype = (item.get("type") or "INFO").upper()
+                ititle = (item.get("title") or "").strip()
+                idesc = (item.get("description") or "").strip()
+                loc = f" (Ref: {item['location']})" if item.get("location") else ""
+                lines.append(f"- **[{itype}] {ititle}**: {idesc}{loc}")
+        body = "\n".join(lines)
+        return Opened(
+            handle=handle,
+            text=f"Lecture Announcements {handle}: {lec.title}\n{body}",
+            material=Material(
+                key=f"announcements:{lec.id}",
+                kind="announcements",
+                label=f"{course.title} / {lec.title} / Announcements",
+                content=body,
+                source_type="announcements",
+                lecture_id=lec.id,
+                course_id=course.id,
+                handle=handle,
+            ),
+            ref={"type": "lecture", "id": lec.id},
+        )
+
+    if parsed.kind == "lecture_cards":
+        cards = await source.lecture_review_cards(lec.id, card_types=("core_why", "gotcha"))
+        cards_section = format_lecture_review_cards(cards) or "(No Core Why or Gotcha review cards recorded for this lecture.)"
+        body = f"# {lec.title} ({when}) — Review Cards\n\n{cards_section}"
+        return Opened(
+            handle=handle,
+            text=f"Review Cards {handle}: {lec.title}\n{body}",
+            material=Material(
+                key=f"review_cards:{lec.id}",
+                kind="review_cards",
+                label=f"{course.title} / {lec.title} / Review Cards",
+                content=body,
+                source_type="review_cards",
+                lecture_id=lec.id,
+                course_id=course.id,
+                handle=handle,
+            ),
+            ref={"type": "lecture", "id": lec.id},
+        )
+
     if parsed.kind == "lecture":
         summary = (await source.lecture_summaries([lec.id])).get(lec.id, "")
         topics = await source.lecture_topics(lec.id)
@@ -1103,7 +1370,7 @@ async def open_handle(
                               content=f"Lecture date: {when}\n{body}",
                               source_type="lecture_summary", source_id=lec.id, lecture_id=lec.id,
                               course_id=course.id, handle=handle),
-            surfaced=[f"{handle}/T{t['index']}" for t in topics],
+            surfaced=[f"{handle}/announcements", f"{handle}/cards"] + [f"{handle}/T{t['index']}" for t in topics],
             ref={"type": "lecture", "id": lec.id},
         )
 

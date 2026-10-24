@@ -1,0 +1,233 @@
+{
+  "model": "gpt-6-luna",
+  "capabilities": {
+    "CAN_OPEN": true,
+    "CAN_BY_DATE": true,
+    "CAN_CHAT": true,
+    "CAN_WEB": true,
+    "CAN_ATTACHMENTS": true,
+    "CAN_LINKS": true
+  },
+  "set": "main",
+  "runs": [
+    [
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 3.38,
+        "output": {
+          "reasoning": "「前に授業でやった」ヒープ挿入の説明を求めているので、授業資料を確認します。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "授業でのヒープ挿入の説明",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "heap insertion, inserting into a heap, sift up, percolate up",
+              "within": "C1",
+              "layer": "all"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 4.54,
+        "output": {
+          "reasoning": "授業で扱ったヒープへの挿入方法を尋ねており、該当する講義の内容を確認します。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "講義3のヒープ挿入の説明",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L3"
+            }
+          ]
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 3.04,
+        "output": {
+          "reasoning": "授業で扱った挿入方法を聞いており、該当トピックの詳細を確認する必要があります。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "授業でのヒープ挿入の手順",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L3/T2"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_heap_insert",
+        "category": "lecture.outline",
+        "lap": 4,
+        "elapsed": 4.32,
+        "output": {
+          "reasoning": "授業で扱った挿入手順を知りたいという依頼ですが、該当する講義とトピックの内容をすでに取得しています。",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "enough_now",
+          "missing": "",
+          "operations": [],
+          "goal": [
+            "ヒープの末尾に新しい要素を追加する。",
+            "最小ヒープでは、親より小さい間は親と交換して上へ移動する（bubble up）。",
+            "計算量は O(log n)。授業の例では [2,5,3] に 1 を挿入すると、2回の交換で根に移動する。"
+          ]
+        },
+        "score": {
+          "done": true,
+          "n_ops": 0,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": true
+        }
+      },
+      {
+        "case": "outline_known_lecture",
+        "category": "lecture.outline",
+        "lap": 1,
+        "elapsed": 3.49,
+        "output": {
+          "reasoning": "They point to a specific lecture and ask about a concept covered there, so the class material can clarify the course’s explanation.",
+          "need": "implied",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "CS 161 lecture 6 coverage of LR and RL rotations",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "AVL tree LR and RL rotations",
+              "layer": "all",
+              "within": "C1/L6"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 2,
+          "detour": true,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_known_lecture",
+        "category": "lecture.outline",
+        "lap": 2,
+        "elapsed": 3.17,
+        "output": {
+          "reasoning": "The lecture summary gives the rotation order, but the topic note can clarify how to distinguish LR from RL.",
+          "need": "implied",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Lecture 6’s LR/RL double-rotation explanation",
+          "operations": [
+            {
+              "op": "open",
+              "handle": "C1/L6/T4"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 0,
+          "detour": false,
+          "grounds_agree": false
+        }
+      },
+      {
+        "case": "outline_known_lecture",
+        "category": "lecture.outline",
+        "lap": 3,
+        "elapsed": 2.03,
+        "output": {
+          "reasoning": "The lecture note gives only the rotation order; a class search may surface the step-by-step distinction the student is unsure about.",
+          "need": "explicit",
+          "fetch_from": [
+            "class"
+          ],
+          "status": "need_more",
+          "missing": "Lecture 6’s step-by-step LR/RL distinction",
+          "operations": [
+            {
+              "op": "find",
+              "target": "lecture.concept",
+              "query": "LR RL double rotations AVL zig-zag step-by-step",
+              "within": "C1/L6",
+              "layer": "all"
+            }
+          ],
+          "goal": []
+        },
+        "score": {
+          "done": false,
+          "n_ops": 1,
+          "pass": true,
+          "matched_alt": 1,
+          "detour": true,
+          "grounds_agree": false
+        }
+      }
+    ]
+  ],
+  "cost_usd": 0.005334947737520793
+}

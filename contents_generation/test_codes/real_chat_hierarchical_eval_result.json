@@ -1,0 +1,204 @@
+[
+  {
+    "case": {
+      "id": "case1_network_overview",
+      "name": "Case 1: コース全体の徹底理解（実在ネットワーク Turn 32 再現）",
+      "course": "C5",
+      "message": "最後、この授業を徹底理解したいです。",
+      "screen_lecture_id": "58f80444-c9a2-46f2-9075-075c6f6f643b",
+      "user_goal": "The student wants a comprehensive overview and deep understanding of the entire Network Fundamental course.",
+      "expected_handle_prefix": "C5/topics",
+      "old_laps": 4,
+      "old_stop_reason": "max_laps",
+      "old_note": "13講義を個別に開きまくり、4周上限 (max_laps) で力尽きていた"
+    },
+    "lap_count": 3,
+    "stop_reason": "enough_now",
+    "lap1_requests": [
+      "open C5/topics"
+    ],
+    "materials_count": 2,
+    "total_tokens": 39928,
+    "elapsed_sec": 7.73,
+    "is_hit": true,
+    "materials_summary": [
+      {
+        "kind": "course_topics",
+        "label": "Network Fundamental / Syllabus & Topics",
+        "tokens": 1321
+      },
+      {
+        "kind": "review_cards",
+        "label": "Network Fundamental / Review Cards (L1–L13)",
+        "tokens": 38607
+      }
+    ],
+    "goal": [
+      "Give a structured, course-wide learning path that connects the major ideas from physical signaling through Ethernet, bridges, and IP routing.",
+      "Prioritize the core principles and common pitfalls, then suggest a practical way to check understanding.",
+      "Respond in Japanese."
+    ]
+  },
+  {
+    "case": {
+      "id": "case2_haskell_syllabus",
+      "name": "Case 2: 講義トピックの一覧・総復習（実在Haskell Turn 1 再現）",
+      "course": "C4",
+      "message": "授業で習ったHaskellについて、総復習したい。まずはどんなことを習ったか、一覧で出して欲しい。",
+      "screen_lecture_id": null,
+      "user_goal": "The student wants a structured list and syllabus of all Haskell and functional programming topics covered in the course.",
+      "expected_handle_prefix": "C4/topics",
+      "old_laps": 3,
+      "old_stop_reason": "enough_now",
+      "old_note": "15単語の過剰セマンティック検索を行い、講義4と6を手探りで開いて3周消費していた"
+    },
+    "lap_count": 2,
+    "stop_reason": "enough_now",
+    "lap1_requests": [
+      "open C4/topics"
+    ],
+    "materials_count": 1,
+    "total_tokens": 907,
+    "elapsed_sec": 4.22,
+    "is_hit": true,
+    "materials_summary": [
+      {
+        "kind": "course_topics",
+        "label": "Programming Language / Syllabus & Topics",
+        "tokens": 907
+      }
+    ],
+    "goal": [
+      "日本語で、授業で扱ったHaskellの内容を講義ごとに一覧化する。",
+      "基礎・リスト処理・高階関数・データ構造と型システムの流れが分かるように整理する。"
+    ]
+  },
+  {
+    "case": {
+      "id": "case3_exam_hints",
+      "name": "Case 3: 教授の試験ヒント・アナウンス（新機能の本命検証）",
+      "course": "C5",
+      "message": "この授業で教授がテストに出そうって言ったところや注意点ってどこ？",
+      "screen_lecture_id": null,
+      "user_goal": "The student wants to know test tips, professor hints, and warnings about exam-relevant topics mentioned in class.",
+      "expected_handle_prefix": "C5/announcements",
+      "old_laps": "N/A",
+      "old_stop_reason": "failed/general",
+      "old_note": "以前はアナウンスメント専用ハンドルがなく、文字起こしを闇雲に探すか一般的な回答しかできなかった"
+    },
+    "lap_count": 3,
+    "stop_reason": "enough_now",
+    "lap1_requests": [
+      "open C1/announcements",
+      "open C2/announcements",
+      "open C3/announcements",
+      "open C4/announcements",
+      "open C5/announcements"
+    ],
+    "materials_count": 6,
+    "total_tokens": 5892,
+    "elapsed_sec": 7.6,
+    "is_hit": true,
+    "materials_summary": [
+      {
+        "kind": "course_announcements",
+        "label": "Guide & Notes / Announcements & Hints",
+        "tokens": 129
+      },
+      {
+        "kind": "course_announcements",
+        "label": "Machine Learning / Announcements & Hints",
+        "tokens": 149
+      },
+      {
+        "kind": "course_announcements",
+        "label": "Berkeley / Announcements & Hints",
+        "tokens": 24
+      },
+      {
+        "kind": "course_announcements",
+        "label": "Programming Language / Announcements & Hints",
+        "tokens": 2102
+      },
+      {
+        "kind": "course_announcements",
+        "label": "Network Fundamental / Announcements & Hints",
+        "tokens": 2741
+      },
+      {
+        "kind": "course_announcements",
+        "label": "Human Computer Interactions / Announcements & Hints",
+        "tokens": 747
+      }
+    ],
+    "goal": [
+      "授業が特定されていないので、告知にテストのヒントがあった科目ごとに要点をまとめる。",
+      "プログラミング言語では、引数渡し・代入・ミューテーション、Haskellのタプル型シグネチャやリスト処理、カリー化・部分適用、ガード・不変データ構造・再帰などが注意点。",
+      "ネットワークでは、OSIモデルやPDU/SDUなど出題されない項目、試験対象のスライド範囲、CRC計算、ブリッジのエイジングやVLANなどのヒントを示す。HCIでは指定論文の理解と手書きでの記述練習が挙がっている。"
+    ]
+  },
+  {
+    "case": {
+      "id": "case4_multi_lecture_cards",
+      "name": "Case 4: 複数講義の要点＆落とし穴復習（実在ネットワーク Turn 28 発展）",
+      "course": "C5",
+      "message": "前半（講義1から講義5）の重要ポイントと、テストで引っかかりやすい罠をまとめて",
+      "screen_lecture_id": "520f093b-0ccf-46b3-a42d-8e2b2f277c1b",
+      "user_goal": "The student wants a review of Core Why principles and common gotcha pitfalls across lectures 1 to 5.",
+      "expected_handle_prefix": "C5/L1-5/cards",
+      "old_laps": 4,
+      "old_stop_reason": "max_laps",
+      "old_note": "講義1〜5を個別に開きまくり、大量の本文テキストで枠を圧迫していた"
+    },
+    "lap_count": 2,
+    "stop_reason": "enough_now",
+    "lap1_requests": [
+      "open C5/L1-13/cards"
+    ],
+    "materials_count": 1,
+    "total_tokens": 38607,
+    "elapsed_sec": 5.64,
+    "is_hit": false,
+    "materials_summary": [
+      {
+        "kind": "review_cards",
+        "label": "Network Fundamental / Review Cards (L1–L13)",
+        "tokens": 38607
+      }
+    ],
+    "goal": [
+      "Summarize the core takeaways from lectures 1–5, focusing on packet switching and layered networking, congestion control, and digital signaling/coding and transmission limits.",
+      "Highlight likely traps, such as Internet vs. Web, layer boundaries, ECN signaling, and the tradeoffs and limits involving bandwidth, noise, synchronization, and coding.",
+      "Reply in Japanese and keep the review scoped to lectures 1–5."
+    ]
+  },
+  {
+    "case": {
+      "id": "case5_concept_search_regression",
+      "name": "Case 5: 特定概念の深掘り検索（退行防止の確認・実在Turn 30）",
+      "course": "C5",
+      "message": "RTS/CTS、NAV、hidden terminal problemのコンセプトを詳しく知りたい",
+      "screen_lecture_id": "fa43feba-7b95-437d-8a43-c1c43141f079",
+      "user_goal": "The student wants an in-depth conceptual explanation of RTS/CTS, NAV, and hidden terminal problem in wireless MAC.",
+      "expected_handle_prefix": "lecture.concept",
+      "old_laps": 1,
+      "old_stop_reason": "enough_now",
+      "old_note": "全体ハンドルに誤爆せず、適切に概念検索へ行けるかの退行防止テスト"
+    },
+    "lap_count": 3,
+    "stop_reason": "enough_now",
+    "lap1_requests": [
+      "lecture.concept \"RTS/CTS NAV hidden terminal problem wireless MAC\" (within C5)"
+    ],
+    "materials_count": 0,
+    "total_tokens": 0,
+    "elapsed_sec": 6.09,
+    "is_hit": true,
+    "materials_summary": [],
+    "goal": [
+      "Explain RTS/CTS, NAV, and the hidden terminal problem using general networking knowledge.",
+      "Connect RTS/CTS and NAV to how 802.11 reduces collisions between hidden stations.",
+      "Note that the class materials did not surface relevant details."
+    ]
+  }
+]

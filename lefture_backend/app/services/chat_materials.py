@@ -38,7 +38,11 @@ PRIORITY = {
     "review_cards": 1,
     "chat_section": 1,
     "chunk": 2,
+    "announcements": 2,
+    "course_announcements": 2,
     "lecture": 3,
+    "course_topics": 3,
+    "course_keywords": 3,
     "course": 4,
     "chat_thread": 4,
     "link_page": 0,  # 生徒が示したリンクのページ(探索役が開いた)

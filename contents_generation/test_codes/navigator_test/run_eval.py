@@ -121,7 +121,24 @@ class WorldLectureSource:
                 lec_h, idx = h.rsplit("/T", 1)
                 out[tid] = (f"lec-{lec_h}", int(idx))
         return out
+    async def lecture_review_cards(
+        self, lecture_id: str, card_types: tuple[str, ...] = ("core_why", "gotcha")
+    ) -> list[dict]:
+        return []
 
+    async def course_topics(self, lecture_ids: list[str]) -> dict[str, list[dict]]:
+        return {}
+
+    async def course_keywords(self, lecture_ids: list[str]) -> dict[str, list[dict]]:
+        return {}
+
+    async def announcements(self, lecture_ids: list[str]) -> list[dict]:
+        return []
+
+    async def multi_lecture_review_cards(
+        self, lecture_ids: list[str], card_types: tuple[str, ...] = ("core_why", "gotcha")
+    ) -> dict[str, list[dict]]:
+        return {}
 
 SOURCE = WorldLectureSource()
 

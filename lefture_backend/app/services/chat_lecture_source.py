@@ -61,6 +61,24 @@ class LectureSource(Protocol):
         """[{id, topic_number, title, card_type, card_content}] をtopic_number順に。"""
         ...
 
+    async def course_topics(self, lecture_ids: list[str]) -> dict[str, list[dict]]:
+        """lecture_id -> [{index, title, topic_type}] をindex順に。"""
+        ...
+
+    async def course_keywords(self, lecture_ids: list[str]) -> dict[str, list[dict]]:
+        """lecture_id -> [{keyword, definition, topic_number}] をtopic_number順に。"""
+        ...
+
+    async def announcements(self, lecture_ids: list[str]) -> list[dict]:
+        """[{id, lecture_id, type, title, description, location}]"""
+        ...
+
+    async def multi_lecture_review_cards(
+        self, lecture_ids: list[str], card_types: tuple[str, ...] = ("core_why", "gotcha")
+    ) -> dict[str, list[dict]]:
+        """lecture_id -> [{id, topic_number, title, card_type, card_content}]"""
+        ...
+
 
 class DbLectureSource:
     """本番用。1ターンの間だけ使い、同じ講義の読み直しを避けるため中身を覚えておく。"""
@@ -175,4 +193,82 @@ class DbLectureSource:
 
         res = await asyncio.to_thread(_q)
         return res.data or []
+
+    async def course_topics(self, lecture_ids: list[str]) -> dict[str, list[dict]]:
+        if not lecture_ids:
+            return {}
+
+        def _q():
+            return self._client.table("lecture_topics").select(
+                "lecture_id, index, topic_title, topic_type"
+            ).eq("user_id", self._user_id).in_("lecture_id", lecture_ids) \
+             .is_("deleted_at", "null").order("index").execute()
+
+        res = await asyncio.to_thread(_q)
+        out: dict[str, list[dict]] = {}
+        for r in (res.data or []):
+            if r.get("index") is not None:
+                lid = r["lecture_id"]
+                out.setdefault(lid, []).append({
+                    "index": r["index"],
+                    "title": (r.get("topic_title") or "").strip(),
+                    "topic_type": r.get("topic_type"),
+                })
+        return out
+
+    async def course_keywords(self, lecture_ids: list[str]) -> dict[str, list[dict]]:
+        if "keyword" in self._blocked or not lecture_ids:
+            return {}
+
+        def _q():
+            return self._client.table("keywords").select(
+                "lecture_id, keyword, definition, topic_number"
+            ).eq("user_id", self._user_id).in_("lecture_id", lecture_ids) \
+             .is_("deleted_at", "null").order("topic_number").execute()
+
+        res = await asyncio.to_thread(_q)
+        out: dict[str, list[dict]] = {}
+        for r in (res.data or []):
+            kw = (r.get("keyword") or "").strip()
+            if kw:
+                lid = r["lecture_id"]
+                out.setdefault(lid, []).append({
+                    "keyword": kw,
+                    "definition": (r.get("definition") or "").strip(),
+                    "topic_number": r.get("topic_number"),
+                })
+        return out
+
+    async def announcements(self, lecture_ids: list[str]) -> list[dict]:
+        if not lecture_ids:
+            return []
+
+        def _q():
+            return self._client.table("announcements").select(
+                "id, lecture_id, type, title, description, location"
+            ).eq("user_id", self._user_id).in_("lecture_id", lecture_ids) \
+             .is_("deleted_at", "null").execute()
+
+        res = await asyncio.to_thread(_q)
+        return res.data or []
+
+    async def multi_lecture_review_cards(
+        self, lecture_ids: list[str], card_types: tuple[str, ...] = ("core_why", "gotcha")
+    ) -> dict[str, list[dict]]:
+        if "review_card" in self._blocked or not lecture_ids:
+            return {}
+
+        def _q():
+            return self._client.table("review_cards").select(
+                "id, lecture_id, topic_number, title, card_type, card_content"
+            ).eq("user_id", self._user_id).in_("lecture_id", lecture_ids) \
+             .in_("card_type", list(card_types)) \
+             .is_("deleted_at", "null").order("topic_number").execute()
+
+        res = await asyncio.to_thread(_q)
+        out: dict[str, list[dict]] = {}
+        for r in (res.data or []):
+            lid = r["lecture_id"]
+            out.setdefault(lid, []).append(r)
+        return out
 
