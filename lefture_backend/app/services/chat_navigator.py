@@ -39,7 +39,12 @@ from app.services.chat_attachments import Attachment, Visibility, render_for_nav
 from app.services.chat_links import Link, LinkPage, render_for_navigator as render_links_for_navigator
 from app.services.chat_lecture_source import LectureSource, first_sentence
 from app.services.chat_map import ChatMap, MapLecture, StudentMap
-from app.services.chat_materials import LINK_PAGE_MAX_CHARS, Material, material_from_chunk
+from app.services.chat_materials import (
+    LINK_PAGE_MAX_CHARS,
+    Material,
+    format_lecture_review_cards,
+    material_from_chunk,
+)
 from app.services.chat_thread_source import ChatThreadSource
 from app.services.helpers.helpers import _load_prompt, _render_conditional_sections
 from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
@@ -1058,7 +1063,7 @@ async def open_handle(
         summaries = await source.lecture_summaries([x.id for x in course.lectures])
         lines = [
             f"{x.handle} ({x.date.isoformat() if x.date else 'no date'}) {x.title}"
-            + (f" — {first_sentence(summaries.get(x.id), COURSE_LINE_CHARS)}" if summaries.get(x.id) else "")
+            + (f"\n  Summary: {summaries[x.id].strip()}" if summaries.get(x.id) else "")
             for x in course.lectures
         ]
         body = "\n".join(lines) or "(No lectures recorded yet.)"
@@ -1072,18 +1077,29 @@ async def open_handle(
 
     when = lec.date.isoformat() if lec.date else "no date"
     if parsed.kind == "lecture":
-        summary = (await source.lecture_summaries([lec.id])).get(lec.id, "")[:LECTURE_SUMMARY_CHARS]
+        summary = (await source.lecture_summaries([lec.id])).get(lec.id, "")
         topics = await source.lecture_topics(lec.id)
-        topic_lines = [f"{handle}/T{t['index']} {t['title']}"
-                       + (f" — {first_sentence(t['summary'], TOPIC_LINE_CHARS)}" if t["summary"] else "")
-                       for t in topics]
-        body = f"Summary: {summary or '(no summary)'}\n" + (
-            "Topics:\n" + "\n".join(topic_lines) if topic_lines else "(No topics recorded for this lecture.)")
+        topic_lines = [
+            f"{handle}/T{t['index']} {t['title']}"
+            + (f" — {t['summary'].strip()}" if t.get("summary") else "")
+            for t in topics
+        ]
+        # ReviewCards (core_why, gotcha) を取得して講義マテリアルに同梱
+        cards = await source.lecture_review_cards(lec.id, card_types=("core_why", "gotcha"))
+        cards_section = format_lecture_review_cards(cards)
+
+        body_parts = [f"Summary: {summary or '(no summary)'}"]
+        if topic_lines:
+            body_parts.append("Topics:\n" + "\n".join(topic_lines))
+        if cards_section:
+            body_parts.append("Key Review Cards (Core Why & Gotchas):\n" + cards_section)
+
+        body = "\n\n".join(body_parts)
         return Opened(
             handle=handle,
             text=f"Lecture {handle}: {lec.title} ({when})\n{body}",
             material=Material(key=f"lecture:{lec.id}", kind="lecture",
-                              label=f"{course.title} / {lec.title} / Lecture Summary",
+                              label=f"{course.title} / {lec.title} / Lecture Overview & Review Cards",
                               content=f"Lecture date: {when}\n{body}",
                               source_type="lecture_summary", source_id=lec.id, lecture_id=lec.id,
                               course_id=course.id, handle=handle),
@@ -1098,14 +1114,14 @@ async def open_handle(
         note_nav, note_ans, ranges = rewrite_citations(detail.get("deep_note") or "", parsed.lecture, nav_input.can_transcript)
         keywords = "; ".join(f"{k}: {d}" if d else k for k, d in detail.get("keywords") or [])
         head = f"Summary: {detail['summary'] or '(no summary)'}" + (f"\nKeywords: {keywords}" if keywords else "")
-        text = f"Topic {handle}: {detail['title']}\n{head}\nDeep Note:\n{note_nav[:TOPIC_TEXT_CHARS] or '(none)'}"
+        text = f"Topic {handle}: {detail['title']}\n{head}\nDeep Note:\n{note_nav or '(none)'}"
         content = f"{head}" + (f"\nDeep Note:\n{note_ans}" if note_ans else "")
         return Opened(
             handle=handle,
             text=text,
             material=Material(key=f"topic:{lec.id}:{parsed.topic_index}", kind="topic",
                               label=f"{course.title} / {lec.title} / Topic: {detail['title']}",
-                              content=content[:TOPIC_TEXT_CHARS],
+                              content=content,
                               source_type="deep_note" if note_ans else "topic_summary",
                               source_id=detail.get("id"), lecture_id=lec.id, course_id=course.id,
                               metadata={"topic_number": parsed.topic_index}, handle=handle),

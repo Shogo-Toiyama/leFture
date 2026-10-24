@@ -18,21 +18,24 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from app.services.chat_attachments import estimate_tokens
 from app.services.chat_units import Unit, mark_units, passage, split_units, strip_citations
 
-MATERIALS_MAX_CHARS = 12000
-MATERIALS_MAX_ITEMS = 12
-# 1つの材料の上限(ほかの材料が入る余地を残す)
-MATERIAL_MAX_CHARS = 4000
-# 生徒が示したリンクのページ(課題の指示・参照先)は、それ自体が質問の中心なので長めに渡す。
-# 合計の枠にはMATERIAL_MAX_CHARS分だけ数える(ほかの材料を押し出さない)
-LINK_PAGE_MAX_CHARS = 10000
+# 回答役(Haiku 5.5)のプロンプト枠(65Kトークン)のうち、探索役が集めた材料の合計上限
+MATERIALS_MAX_TOKENS = 15000
+MATERIALS_MAX_ITEMS = 100
 
-# 深いもの・具体的なものほど先に入れる(同じ関係の中での順番)
+# 互換用定数(文字数制限は撤廃し、トークン数で管理)
+MATERIALS_MAX_CHARS = 60000
+MATERIAL_MAX_CHARS = 30000
+LINK_PAGE_MAX_CHARS = 30000
+
+# 表示順・並び順(深いもの・具体的なものほど先に見せる)
 PRIORITY = {
     "transcript": 0,
     "chat_turn": 0,
     "topic": 1,
+    "review_cards": 1,
     "chat_section": 1,
     "chunk": 2,
     "lecture": 3,
@@ -118,11 +121,78 @@ def material_from_chunk(chunk: dict, handle: Optional[str] = None) -> Material:
     )
 
 
+def format_review_card_content(blocks: Any) -> str:
+    """review_cards.card_content(jsonb配列)をテキスト化する。"""
+    if not isinstance(blocks, list):
+        return ""
+    lines = []
+    for b in blocks:
+        if not isinstance(b, dict):
+            continue
+        t = b.get("type")
+        if t in ("paragraph", "quote"):
+            lines.append(b.get("text") or "")
+        elif t == "callout":
+            lines.append(f"[{b.get('alert_type', 'info')}] {b.get('text') or ''}")
+        elif t == "code":
+            lines.append(b.get("code_string") or "")
+        elif t == "list":
+            for item in (b.get("items") or []):
+                lines.append(f"- {item}")
+    return "\n".join(l for l in lines if l)
+
+
+def format_lecture_review_cards(cards: list[dict]) -> str:
+    """講義に紐づくReviewCards(core_why, gotcha)をMarkdownリストに整形する。"""
+    if not cards:
+        return ""
+    lines = []
+    for c in cards:
+        ctype = c.get("card_type", "")
+        badge = "Gotcha ⚠️" if ctype == "gotcha" else "Core Why 💡" if ctype == "core_why" else ctype.title()
+        title = c.get("title") or ""
+        body = format_review_card_content(c.get("card_content"))
+        lines.append(f"- **[{badge}] {title}**:\n  {body}")
+    return "\n\n".join(lines)
+
+
+def truncate_head_tail(text: str, target_tokens: int) -> str:
+    """
+    目標トークン数に収まるように、テキストの冒頭と末尾を残して真ん中を抜く(Head-Tail Truncation)。
+    """
+    text = (text or "").strip()
+    current_tokens = estimate_tokens(text)
+    if current_tokens <= target_tokens or target_tokens <= 20:
+        return text
+
+    target_chars = int(len(text) * (target_tokens / current_tokens))
+    half_chars = max(30, target_chars // 2)
+
+    # 改行でキリが良いところを探す
+    head_part = text[:half_chars]
+    last_nl = head_part.rfind("\n")
+    if last_nl > half_chars * 0.7:
+        head_part = head_part[:last_nl]
+
+    tail_part = text[-half_chars:]
+    first_nl = tail_part.find("\n")
+    if 0 <= first_nl < half_chars * 0.3:
+        tail_part = tail_part[first_nl + 1:]
+
+    omitted_chars = len(text) - len(head_part) - len(tail_part)
+    if omitted_chars <= 50:
+        return text
+
+    marker = f"\n\n... [Omitted / 中略: {omitted_chars:,} characters] ...\n\n"
+    return head_part.rstrip() + marker + tail_part.lstrip()
+
+
 def select_materials(materials: list[Material]) -> list[Material]:
     """
     回答役に渡す材料を選ぶ。同じkeyは1つにまとめ(類似度は高い方を採用)、
     深いもの → 類似度の高いものの順に並べる。
-    合計の文字数と件数の上限を超えたら、そこで止める(長い材料は切り詰める)。
+    全材料の合計トークン数がMATERIALS_MAX_TOKENSを超える場合は、
+    特定の材料を丸ごと切り捨てるのではなく、各材料から均等な割合で真ん中を抜く(Head-Tail Truncation)。
     """
     merged: dict[str, Material] = {}
     for m in materials:
@@ -134,20 +204,22 @@ def select_materials(materials: list[Material]) -> list[Material]:
             cur.similarity = m.similarity
 
     ranked = sorted(merged.values(), key=lambda m: (PRIORITY.get(m.kind, 9), -(m.similarity or 0)))
+    if len(ranked) > MATERIALS_MAX_ITEMS:
+        ranked = ranked[:MATERIALS_MAX_ITEMS]
+
+    total_tokens = sum(estimate_tokens(m.content or "") for m in ranked)
+    if total_tokens <= MATERIALS_MAX_TOKENS:
+        return ranked
+
+    # トークン超過時: 全材料から超過割合に応じて均等に真ん中を抜く(プロポーショナル・トリミング)
+    ratio = MATERIALS_MAX_TOKENS / total_tokens
     out: list[Material] = []
-    used = 0
     for m in ranked:
-        if len(out) >= MATERIALS_MAX_ITEMS:
-            break
-        room = MATERIALS_MAX_CHARS - used
-        if room < 300:
-            break
-        is_link = m.kind == "link_page"
-        limit = LINK_PAGE_MAX_CHARS if is_link else min(MATERIAL_MAX_CHARS, room)
-        if len(m.content) > limit:
-            m.content = m.content[:limit].rstrip() + " …"
+        m_tokens = estimate_tokens(m.content or "")
+        target = max(150, int(m_tokens * ratio))
+        if m_tokens > target:
+            m.content = truncate_head_tail(m.content, target)
         out.append(m)
-        used += min(len(m.content), MATERIAL_MAX_CHARS if is_link else len(m.content)) + len(m.label)
     return out
 
 

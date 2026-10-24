@@ -55,6 +55,12 @@ class LectureSource(Protocol):
         """lecture_topics.id → (lecture_id, index)。検索で当たったトピックを呼び名に直すため。"""
         ...
 
+    async def lecture_review_cards(
+        self, lecture_id: str, card_types: tuple[str, ...] = ("core_why", "gotcha")
+    ) -> list[dict]:
+        """[{id, topic_number, title, card_type, card_content}] をtopic_number順に。"""
+        ...
+
 
 class DbLectureSource:
     """本番用。1ターンの間だけ使い、同じ講義の読み直しを避けるため中身を覚えておく。"""
@@ -153,3 +159,20 @@ class DbLectureSource:
                 .eq("user_id", self._user_id).in_("id", topic_ids).execute()
         res = await asyncio.to_thread(_q)
         return {r["id"]: (r["lecture_id"], r["index"]) for r in (res.data or []) if r.get("index") is not None}
+
+    async def lecture_review_cards(
+        self, lecture_id: str, card_types: tuple[str, ...] = ("core_why", "gotcha")
+    ) -> list[dict]:
+        if "review_card" in self._blocked:
+            return []
+
+        def _q():
+            return self._client.table("review_cards").select(
+                "id, topic_number, title, card_type, card_content"
+            ).eq("user_id", self._user_id).eq("lecture_id", lecture_id) \
+             .in_("card_type", list(card_types)) \
+             .is_("deleted_at", "null").order("topic_number").execute()
+
+        res = await asyncio.to_thread(_q)
+        return res.data or []
+
