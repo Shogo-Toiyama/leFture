@@ -1,0 +1,272 @@
+[
+  {
+    "scenario_id": 1,
+    "scenario_name": "Scenario 1: Quiz Answer (ライブロックになる？)",
+    "run_idx": 1,
+    "duration_sec": 1.028,
+    "in_tokens": 2772,
+    "out_tokens": 173,
+    "cost_usd": 0.0003772310374978464,
+    "output": {
+      "intent": "learning",
+      "user_goal": "The student is asking if the RTS/CTS mechanism, which was just explained, can lead to a livelock. They are seeking a detailed explanation of this concept in the context of wireless networking.",
+      "retrieval_reason": "The student is asking a follow-up question about a concept (RTS/CTS) that was just explained and is directly related to the current lecture topic. The answer requires reasoning about the potential failure modes of the protocol, not retrieval of new information.",
+      "needs_retrieval": false,
+      "needs_reasoning": true,
+      "reply_language": "ja",
+      "thread_title": "無線LANの隠れ端末とRTS/CTS"
+    }
+  },
+  {
+    "scenario_id": 1,
+    "scenario_name": "Scenario 1: Quiz Answer (ライブロックになる？)",
+    "run_idx": 2,
+    "duration_sec": 0.889,
+    "in_tokens": 2772,
+    "out_tokens": 173,
+    "cost_usd": 0.00014554999375796876,
+    "output": {
+      "intent": "learning",
+      "user_goal": "The student is asking if the RTS/CTS mechanism, which was just explained, can lead to a livelock. They are seeking a detailed explanation of this concept in the context of wireless networking.",
+      "retrieval_reason": "The student is asking a follow-up question about a concept (RTS/CTS) that was just explained and is directly related to the current lecture topic. The answer requires reasoning about the potential failure modes of the protocol, not retrieval of new information.",
+      "needs_retrieval": false,
+      "needs_reasoning": true,
+      "reply_language": "ja",
+      "thread_title": "無線LANの隠れ端末とRTS/CTS"
+    }
+  },
+  {
+    "scenario_id": 1,
+    "scenario_name": "Scenario 1: Quiz Answer (ライブロックになる？)",
+    "run_idx": 3,
+    "duration_sec": 0.929,
+    "in_tokens": 2772,
+    "out_tokens": 173,
+    "cost_usd": 0.00014673818374832162,
+    "output": {
+      "intent": "learning",
+      "user_goal": "The student is asking if the RTS/CTS mechanism, which was just explained, can lead to a livelock. They are seeking a detailed explanation of this concept in the context of wireless networking.",
+      "retrieval_reason": "The student is asking a follow-up question about a concept (RTS/CTS) that was just explained and is directly related to the current lecture topic. The answer requires reasoning about the potential failure modes of the protocol, not retrieval of new information.",
+      "needs_retrieval": false,
+      "needs_reasoning": true,
+      "reply_language": "ja",
+      "thread_title": "無線LANの隠れ端末とRTS/CTS"
+    }
+  },
+  {
+    "scenario_id": 2,
+    "scenario_name": "Scenario 2: Sequence Advance (単語まとめ追いかけ中、次に行っていい？)",
+    "run_idx": 1,
+    "duration_sec": 0.734,
+    "in_tokens": 3125,
+    "out_tokens": 134,
+    "cost_usd": 0.00038811310623902836,
+    "output": {
+      "intent": "learning",
+      "user_goal": "The student wants to move on to the next topic in the summary provided by the assistant. The student is asking for confirmation to proceed.",
+      "retrieval_reason": "No retrieval is needed as the student is asking to continue with the current topic flow based on the previous assistant's response.",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "reply_language": "ja",
+      "thread_title": "データリンク層（フレーム・誤り検出・符号化）"
+    }
+  },
+  {
+    "scenario_id": 2,
+    "scenario_name": "Scenario 2: Sequence Advance (単語まとめ追いかけ中、次に行っていい？)",
+    "run_idx": 2,
+    "duration_sec": 0.715,
+    "in_tokens": 3125,
+    "out_tokens": 134,
+    "cost_usd": 0.00015544302625023762,
+    "output": {
+      "intent": "learning",
+      "user_goal": "The student wants to move on to the next topic in the summary provided by the assistant. The student is asking for confirmation to proceed.",
+      "retrieval_reason": "No retrieval is needed as the student is asking to continue with the current topic flow based on the previous assistant's response.",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "reply_language": "ja",
+      "thread_title": "データリンク層（フレーム・誤り検出・符号化）"
+    }
+  },
+  {
+    "scenario_id": 2,
+    "scenario_name": "Scenario 2: Sequence Advance (単語まとめ追いかけ中、次に行っていい？)",
+    "run_idx": 3,
+    "duration_sec": 0.663,
+    "in_tokens": 3125,
+    "out_tokens": 134,
+    "cost_usd": 0.0001538679587482568,
+    "output": {
+      "intent": "learning",
+      "user_goal": "The student wants to move on to the next topic in the summary provided by the assistant. The student is asking for confirmation to proceed.",
+      "retrieval_reason": "No retrieval is needed as the student is asking to continue with the current topic flow based on the previous assistant's response.",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "reply_language": "ja",
+      "thread_title": "データリンク層（フレーム・誤り検出・符号化）"
+    }
+  },
+  {
+    "scenario_id": 3,
+    "scenario_name": "Scenario 3: Screen Context / Ask AI (これってどういうこと？)",
+    "run_idx": 1,
+    "duration_sec": 0.801,
+    "in_tokens": 2883,
+    "out_tokens": 151,
+    "cost_usd": 0.00037271957500027497,
+    "output": {
+      "intent": "learning",
+      "user_goal": "The student is asking for clarification on a diagram related to the hidden terminal problem and RTS/CTS handshake, which is part of the current lecture on \"Reliable communication protocol design and performance\". They want to understand the meaning of the diagram.",
+      "retrieval_reason": "The student is asking for an explanation of a diagram presented in the lecture, which requires understanding the visual information provided in the lecture material.",
+      "needs_retrieval": true,
+      "needs_reasoning": true,
+      "reply_language": "ja",
+      "thread_title": "Reliable communication protocol design and performance"
+    }
+  },
+  {
+    "scenario_id": 3,
+    "scenario_name": "Scenario 3: Screen Context / Ask AI (これってどういうこと？)",
+    "run_idx": 2,
+    "duration_sec": 0.672,
+    "in_tokens": 2883,
+    "out_tokens": 151,
+    "cost_usd": 0.0001398108237391338,
+    "output": {
+      "intent": "learning",
+      "user_goal": "The student is asking for clarification on a diagram related to the hidden terminal problem and RTS/CTS handshake, which is part of the current lecture on \"Reliable communication protocol design and performance\". They want to understand the meaning of the diagram.",
+      "retrieval_reason": "The student is asking for an explanation of a diagram presented in the lecture, which requires understanding the visual information provided in the lecture material.",
+      "needs_retrieval": true,
+      "needs_reasoning": true,
+      "reply_language": "ja",
+      "thread_title": "Reliable communication protocol design and performance"
+    }
+  },
+  {
+    "scenario_id": 3,
+    "scenario_name": "Scenario 3: Screen Context / Ask AI (これってどういうこと？)",
+    "run_idx": 3,
+    "duration_sec": 0.861,
+    "in_tokens": 2883,
+    "out_tokens": 151,
+    "cost_usd": 0.00014546807251088323,
+    "output": {
+      "intent": "learning",
+      "user_goal": "The student is asking for clarification on a diagram related to the hidden terminal problem and RTS/CTS handshake, which is part of the current lecture on \"Reliable communication protocol design and performance\". They want to understand the meaning of the diagram.",
+      "retrieval_reason": "The student is asking for an explanation of a diagram presented in the lecture, which requires understanding the visual information provided in the lecture material.",
+      "needs_retrieval": true,
+      "needs_reasoning": true,
+      "reply_language": "ja",
+      "thread_title": "Reliable communication protocol design and performance"
+    }
+  },
+  {
+    "scenario_id": 4,
+    "scenario_name": "Scenario 4: Emotional Venting (課題多すぎてパンクしそう)",
+    "run_idx": 1,
+    "duration_sec": 0.638,
+    "in_tokens": 1815,
+    "out_tokens": 111,
+    "cost_usd": 0.0002450234550008085,
+    "output": {
+      "intent": "personal",
+      "user_goal": "The student is expressing feelings of being overwhelmed due to a heavy workload and seeks empathetic listening and encouragement.",
+      "retrieval_reason": "No retrieval is needed as the student is expressing personal feelings and not asking for academic information.",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "reply_language": "ja",
+      "thread_title": "Feeling overwhelmed with assignments"
+    }
+  },
+  {
+    "scenario_id": 4,
+    "scenario_name": "Scenario 4: Emotional Venting (課題多すぎてパンクしそう)",
+    "run_idx": 2,
+    "duration_sec": 0.591,
+    "in_tokens": 1815,
+    "out_tokens": 111,
+    "cost_usd": 0.00010493127000032924,
+    "output": {
+      "intent": "personal",
+      "user_goal": "The student is expressing feelings of being overwhelmed due to a heavy workload and seeks empathetic listening and encouragement.",
+      "retrieval_reason": "No retrieval is needed as the student is expressing personal feelings and not asking for academic information.",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "reply_language": "ja",
+      "thread_title": "Feeling overwhelmed with assignments"
+    }
+  },
+  {
+    "scenario_id": 4,
+    "scenario_name": "Scenario 4: Emotional Venting (課題多すぎてパンクしそう)",
+    "run_idx": 3,
+    "duration_sec": 0.908,
+    "in_tokens": 1815,
+    "out_tokens": 111,
+    "cost_usd": 0.00011445143250030466,
+    "output": {
+      "intent": "personal",
+      "user_goal": "The student is expressing feelings of being overwhelmed due to a heavy workload and seeks empathetic listening and encouragement.",
+      "retrieval_reason": "No retrieval is needed as the student is expressing personal feelings and not asking for academic information.",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "reply_language": "ja",
+      "thread_title": "Feeling overwhelmed with assignments"
+    }
+  },
+  {
+    "scenario_id": 5,
+    "scenario_name": "Scenario 5: Progress Sharing (ロボコン機体テスト動いた！)",
+    "run_idx": 1,
+    "duration_sec": 0.73,
+    "in_tokens": 1813,
+    "out_tokens": 121,
+    "cost_usd": 0.00025159188749063763,
+    "output": {
+      "intent": "personal",
+      "user_goal": "The student is sharing an exciting update about their robot competition club's robot testing. They are looking for a positive and encouraging response.",
+      "retrieval_reason": "No retrieval is needed as the student is sharing a personal update and not asking for academic information.",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "reply_language": "ja",
+      "thread_title": "ロボコンの機体テスト"
+    }
+  },
+  {
+    "scenario_id": 5,
+    "scenario_name": "Scenario 5: Progress Sharing (ロボコン機体テスト動いた！)",
+    "run_idx": 2,
+    "duration_sec": 0.61,
+    "in_tokens": 1813,
+    "out_tokens": 121,
+    "cost_usd": 0.00010930673624015414,
+    "output": {
+      "intent": "personal",
+      "user_goal": "The student is sharing an exciting update about their robot competition club's robot testing. They are looking for a positive and encouraging response.",
+      "retrieval_reason": "No retrieval is needed as the student is sharing a personal update and not asking for academic information.",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "reply_language": "ja",
+      "thread_title": "ロボコンの機体テスト"
+    }
+  },
+  {
+    "scenario_id": 5,
+    "scenario_name": "Scenario 5: Progress Sharing (ロボコン機体テスト動いた！)",
+    "run_idx": 3,
+    "duration_sec": 0.667,
+    "in_tokens": 1813,
+    "out_tokens": 121,
+    "cost_usd": 0.00011101190123100767,
+    "output": {
+      "intent": "personal",
+      "user_goal": "The student is sharing an exciting update about their robot competition club's robot testing. They are looking for a positive and encouraging response.",
+      "retrieval_reason": "No retrieval is needed as the student is sharing a personal update and not asking for academic information.",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "reply_language": "ja",
+      "thread_title": "ロボコンの機体テスト"
+    }
+  }
+]

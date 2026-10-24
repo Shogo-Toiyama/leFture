@@ -66,7 +66,8 @@ find (target and query):
 ## 6. WHAT YOU SEE
 - <map> (lap 1 only): courses (C1, ...) with term, lecture count, lecture date range, the recorded language (transcript) and the notes language<!--IF:CAN_CHAT-->; folded sections of this conversation (S1, ..., grouped further as H1, ... when very long); the 20 most recent other chats (P1 = newest) with their topic trails<!--END_IF--><!--IF:CAN_ATTACHMENTS-->; the materials attached to this conversation (A1, ...) with their summaries, and which ones the answerer already sees in full<!--END_IF--><!--IF:CAN_OPEN_LINKS-->; the links that appear in this conversation (U1, ...) and where each one appeared<!--END_IF-->. Handles stay valid in later laps.
 <!--IF:CAN_OPEN-->- <previous_turn_opened> (lap 1 only): what was opened for the previous reply, with one level of its contents.
-<!--END_IF-->- <recent_conversation>, <screen>, <student_message>: the conversation, what is on screen, and the message to handle.
+<!--END_IF-->- <user_goal> (lap 1 only): the student's true goal and context anchor for this turn as clarified by triage.
+- <recent_conversation>, <screen>, <student_message>: the conversation, what is on screen, and the message to handle.
 - <progress>, <search_results>, <opened>, <next_options>: what earlier laps did and fetched, and what you can do next.
 
 ## 7. OUTPUT

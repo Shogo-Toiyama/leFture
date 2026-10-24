@@ -74,9 +74,9 @@ TRANSCRIPT_MAX_SENTENCES = 60
 # 日付で引く範囲の上限(日数)
 BY_DATE_MAX_DAYS = 400
 
-# 探索役に見せる直近の会話
-RECENT_CONVERSATION_MAX_MESSAGES = 6
-RECENT_CONVERSATION_MAX_CHARS = 500
+# 探索役に見せる直近の会話(未要約の全履歴が見えるように拡張)
+RECENT_CONVERSATION_MAX_MESSAGES = 20
+RECENT_CONVERSATION_MAX_CHARS = 1200
 
 # チャットを開いたときの一覧1行(学生の発言・返答それぞれ)と、1往復を開いたときの全文
 CHAT_TURN_LIST_USER_CHARS = 150
@@ -326,6 +326,8 @@ class NavigatorInput:
     must_check_attachments: bool = False
     # この会話に出てきたリンク(呼び名U1…を振ったもの。chat_links.collect_links)
     links: list[Link] = field(default_factory=list)
+    # 仕分け役が整理した、このターンの生徒の真の目的と文脈アンカー
+    user_goal: Optional[str] = None
 
     @property
     def can_transcript(self) -> bool:
@@ -948,6 +950,8 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
         parts.append(f"<map>\n{map_text}\n</map>")
         if state.previous_turn_text and CAPABILITIES["CAN_OPEN"]:
             parts.append(f"<previous_turn_opened>\n{state.previous_turn_text}\n</previous_turn_opened>")
+        if nav_input.user_goal:
+            parts.append(f"<user_goal>\n{nav_input.user_goal}\n</user_goal>")
 
     if nav_input.recent_conversation:
         conv = "\n".join(

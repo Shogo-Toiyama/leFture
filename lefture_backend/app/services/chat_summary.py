@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from app.core.supabase import get_supabase_client
-from app.services.chat_attachments import plain_mentions
+from app.services.chat_attachments import estimate_tokens, plain_mentions
 from app.services.helpers.credits import consume_chat_summary_credits
 from app.services.helpers.helpers import _load_prompt
 from app.services.helpers.llm_unified import BillingEngine, LLMOptions, Message, UnifiedLLM
@@ -27,6 +27,10 @@ SUMMARY_MODEL = "gpt-6-luna"
 
 FOLD_TRIGGER_TURNS = 15
 FOLD_SIZE_TURNS = 10
+# 未要約の往復の合計トークン数がこれを超えた場合も畳む(長文スレッドでコンテキストが肥大化するのを防ぐ)
+FOLD_TRIGGER_TOKENS = 20_000
+# トークン超過で畳む際、直近の会話文脈を維持するために生テキストで残す往復数
+KEEP_RECENT_TURNS_ON_TOKEN_OVERFLOW = 5
 # 2段目: 2段目に入っていない1段目のブロックがこの数になったら、古い方からこの数を畳む
 LEVEL2_TRIGGER_BLOCKS = 15
 LEVEL2_FOLD_BLOCKS = 10
@@ -209,6 +213,47 @@ def rows_after_fold_point(rows: list[dict], fold_end_message_id: Optional[str]) 
         if row.get("id") == fold_end_message_id:
             return rows[i + 1:]
     return rows
+
+
+def turn_tokens(turn: Turn) -> int:
+    """1往復(生徒の質問 + AIの完了した返答)の合計トークン数の概算。"""
+    return estimate_tokens(turn.user_content) + estimate_tokens(turn.assistant_content)
+
+
+def turns_total_tokens(turns: list[Turn]) -> int:
+    """複数の往復の合計トークン数。"""
+    return sum(turn_tokens(t) for t in turns)
+
+
+def should_fold_summary(turns: list[Turn]) -> bool:
+    """
+    未要約の往復(user発言 + 完了した返答)を畳むべきか判定する。
+    1. 15往復に達した(通常の定期折りたたみ)
+    2. 未要約の合計トークン数が FOLD_TRIGGER_TOKENS (20,000トークン) に達した(長文肥大化の防止)
+    ※ 判定対象は常に完全な往復(Turn)単位であり、AIの返答がない未完了の質問単体で畳むことはない。
+    ※ 最低でも2往復以上ある場合のみトークン数での折りたたみを許可(直近の会話文脈を残すため)。
+    """
+    if len(turns) >= FOLD_TRIGGER_TURNS:
+        return True
+    if len(turns) >= 2 and turns_total_tokens(turns) >= FOLD_TRIGGER_TOKENS:
+        return True
+    return False
+
+
+def select_fold_batch(turns: list[Turn]) -> list[Turn]:
+    """
+    畳む往復(Turn)のリストを選択する。
+    - 15往復以上の通常トリガー: 古い方から10往復(FOLD_SIZE_TURNS)
+    - トークン超過トリガー: 直近の会話文脈を維持するため最新5往復(KEEP_RECENT_TURNS_ON_TOKEN_OVERFLOW)
+      を生で残し、それより前の古い往復を畳む(最低でも最新1往復は必ず残す)。
+    ※ 畳む対象は常に完全な往復(Turn)であり、AIの返答を抜いて生徒の発言だけを畳むことは絶対にない。
+    """
+    if len(turns) >= FOLD_TRIGGER_TURNS:
+        return turns[:FOLD_SIZE_TURNS]
+    # トークン超過時: 最新 keep_count 往復を残し、古い往復を畳む
+    keep_count = min(KEEP_RECENT_TURNS_ON_TOKEN_OVERFLOW, max(1, len(turns) - 1))
+    fold_count = max(1, len(turns) - keep_count)
+    return turns[:fold_count]
 
 
 def summary_language(turns: list[Turn]) -> str:
@@ -445,10 +490,10 @@ async def _fold_level1(admin_client, thread_id: str, user_id: str) -> int:
             _fetch_rows_after, admin_client, thread_id, last["end_message_created_at"] if last else None
         )
         turns = pair_turns(rows, first_number=(last["turn_end"] + 1) if last else 1)
-        if len(turns) < FOLD_TRIGGER_TURNS:
+        if not should_fold_summary(turns):
             return created
 
-        batch = turns[:FOLD_SIZE_TURNS]
+        batch = select_fold_batch(turns)
         prior_titles = [sec["title"] for b in blocks for sec in b.get("sections") or []]
         next_handle = 1 + max((sec["handle"] for b in blocks for sec in b.get("sections") or []), default=0)
         header = last["header"] if last else dict(EMPTY_HEADER)

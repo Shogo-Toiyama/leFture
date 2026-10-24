@@ -114,12 +114,14 @@ from app.services.chat_links import collect_links, fetch_link
 from app.services.profile_store import load_chat_memory
 from app.services.chat_summary import (
     FOLD_TRIGGER_TURNS,
+    Turn,
     fetch_active_blocks,
     pair_turns,
     render_notes_for_answer,
     render_summary_for_answer,
     join_after_stop,
     rows_after_fold_point,
+    should_fold_summary,
     unanswered_after_stop,
 )
 from app.services.chat_stop import TurnStop, TurnStopped, guarded, register as register_stop, \
@@ -208,8 +210,8 @@ BLOCKED_MAX_MESSAGES = 10
 RAW_MAX_TURNS = 20
 RAW_FETCH_MESSAGES = RAW_MAX_TURNS * 4
 HISTORY_MAX_CHARS_PER_MESSAGE = 2000
-ROUTER_HISTORY_MAX_MESSAGES = 6
-ROUTER_HISTORY_MAX_CHARS_PER_MESSAGE = 500
+ROUTER_HISTORY_MAX_MESSAGES = 20
+ROUTER_HISTORY_MAX_CHARS_PER_MESSAGE = 1200
 
 # 探索役が動かなかったときの予備の検索(本文そのもので1回だけ)
 RETRIEVAL_MATCH_COUNT_PER_QUERY = 8
@@ -232,6 +234,10 @@ ROUTER_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "intent": {"type": "string", "enum": list(INTENTS)},
+        "user_goal": {
+            "type": "string",
+            "description": "Clear, self-contained statement in English capturing the student's true goal, resolving context anchors, handling multiple intents, and desired outcome.",
+        },
         "retrieval_reason": {
             "type": "string",
             "description": "Brief explanation (1 sentence) of whether lecture retrieval is needed and why.",
@@ -243,6 +249,7 @@ ROUTER_SCHEMA: dict[str, Any] = {
     },
     "required": [
         "intent",
+        "user_goal",
         "retrieval_reason",
         "needs_retrieval",
         "needs_reasoning",
@@ -318,6 +325,8 @@ class RouterDecision:
     needs_retrieval: bool
     reply_language: str
     thread_title: Optional[str]
+    # 生徒の真の目的・文脈アンカー・複合要求・成功条件の言語化
+    user_goal: Optional[str] = None
     # 資料取得の要否を判断した理由(自己回帰推論で探索要否を正確に判断するためのCoT)
     retrieval_reason: Optional[str] = None
     # 正しく答えるのに手順を追った検討が要るか(計算・コードの追跡・生徒の解答の正誤判定・押し返しなど)。
@@ -331,6 +340,7 @@ class RouterDecision:
     def to_json(self) -> dict:
         return {
             "intent": self.intent,
+            "user_goal": self.user_goal,
             "retrieval_reason": self.retrieval_reason,
             "needs_retrieval": self.needs_retrieval,
             "needs_reasoning": self.needs_reasoning,
@@ -358,6 +368,7 @@ def fallback_router_decision(message: str) -> RouterDecision:
         needs_retrieval=True,
         reply_language=guess_language(message),
         thread_title=None,
+        user_goal=None,
         fallback=True,
     )
 
@@ -374,6 +385,7 @@ def normalize_router_output(raw: Any, message: str, is_first_message: bool) -> R
     needs_retrieval = bool(raw.get("needs_retrieval")) and intent not in ("chitchat", "blocked", "crisis")
     needs_reasoning = bool(raw.get("needs_reasoning")) and intent in ("learning", "personal")
     reply_language = raw.get("reply_language") if isinstance(raw.get("reply_language"), str) and raw.get("reply_language") else guess_language(message)
+    user_goal = raw.get("user_goal") if isinstance(raw.get("user_goal"), str) and raw.get("user_goal").strip() else None
     retrieval_reason = raw.get("retrieval_reason") if isinstance(raw.get("retrieval_reason"), str) else None
 
     title = raw.get("thread_title")
@@ -388,6 +400,7 @@ def normalize_router_output(raw: Any, message: str, is_first_message: bool) -> R
         needs_reasoning=needs_reasoning,
         reply_language=reply_language[:10],
         thread_title=title,
+        user_goal=user_goal,
         retrieval_reason=retrieval_reason,
     )
 
@@ -607,6 +620,8 @@ class PreparedTurn:
     carried_messages: list[str] = field(default_factory=list)
     # 途中停止の状態(run_chat_turnが入れる)。課金のある呼び出しの入口で確認する
     stop: Optional[TurnStop] = None
+    # 今回完了した返答の本文(要約エンキュー判定で未要約往復に含めるため)
+    assistant_content: Optional[str] = None
 
     @property
     def message_for_prompt(self) -> str:
@@ -1367,6 +1382,7 @@ async def _gather_materials(
     on_fetch: Optional[Callable[[dict], Awaitable[None]]] = None,
     attachment_visibility: Optional[Visibility] = None,
     must_check_attachments: bool = False,
+    user_goal: Optional[str] = None,
 ) -> tuple[list[Material], Optional[NavigationResult]]:
     """
     探索役(chat_navigator.py)で回答役に渡す材料を集める。探索役が1周目から動かない
@@ -1412,6 +1428,7 @@ async def _gather_materials(
             attachment_visibility=attachment_visibility,
             must_check_attachments=must_check_attachments,
             links=_turn_links(turn),
+            user_goal=user_goal,
         )
         # 速度の計測: ベクトル化1回ごと・検索RPC1本ごとの所要時間(ユーザー用クライアントの
         # 1本目が接続の張り直しで遅いかどうかも、rpc_msの先頭で分かる)
@@ -1612,12 +1629,14 @@ def _build_answer_messages(
         "HAS_AI_CODE_RULE": bool(ai_code_rule),
         "HAS_SCREEN_CONTEXT": bool(screen_context),
         "HAS_LINK_NOTES": bool(link_failures),
+        "HAS_USER_GOAL": bool(decision.user_goal),
     })
     turn_message = fill_placeholders(turn_template, {
         "SOURCES": format_sources_block(materials),
         "ATTACHMENTS": attachments_text,
         "AI_CODE_RULE": ai_code_rule,
         "SCREEN_CONTEXT": screen_context,
+        "USER_GOAL": decision.user_goal or "",
         # 探索役が開こうとして読めなかったリンク(ログインが要る授業サイトなど)
         "LINK_NOTES": "\n".join(f"- {url}: {reason}" for url, reason in link_failures or []),
         "REPLY_LANGUAGE": decision.reply_language,
@@ -2058,16 +2077,31 @@ EnqueueSummary = Callable[[str, int], Awaitable[None]]
 
 async def _maybe_enqueue_summary(turn: PreparedTurn, enqueue_summary: Optional[EnqueueSummary]) -> None:
     """
-    今回の往復を含めて未要約が15往復以上なら、畳む処理をCloud Tasksに積む。
+    今回の往復(AIの返答が完了したもの)を含めて、未要約が15往復以上または20,000トークン以上なら、
+    畳む処理をCloud Tasksに積む。
     畳むのが遅れても次のターンは原文を少し多めに送るだけなので、ここで失敗しても
     返答自体には影響させない(次のターンでまた積まれる)。
+    ※ 判定・折りたたみは常に完全な往復(Turn: user発言 + 完了した返答)の単位で行われ、
+      AIの返答を抜いて生徒の発言だけを畳むことは絶対にない。
     """
     if enqueue_summary is None:
         return
-    unsummarized = len(pair_turns(turn.history_rows)) + 1
-    if unsummarized < FOLD_TRIGGER_TURNS:
+    last_block = turn.summary_blocks[-1] if turn.summary_blocks else None
+    first_num = (last_block["turn_end"] + 1) if last_block else 1
+    turns = pair_turns(turn.history_rows, first_number=first_num)
+    if turn.assistant_content and turn.assistant_content.strip():
+        turns.append(Turn(
+            number=first_num + len(turns),
+            user_message_id=turn.user_message_id,
+            assistant_message_id=turn.assistant_message_id,
+            user_content=turn.content,
+            assistant_content=turn.assistant_content,
+            assistant_created_at=datetime.now(timezone.utc).isoformat(),
+            reply_language=None,
+        ))
+    if not should_fold_summary(turns):
         return
-    next_block_index = (turn.summary_blocks[-1]["block_index"] + 1) if turn.summary_blocks else 1
+    next_block_index = (last_block["block_index"] + 1) if last_block else 1
     try:
         await enqueue_summary(turn.thread_id, next_block_index)
     except Exception as e:
@@ -2228,7 +2262,7 @@ async def _run_turn_steps(
 
             materials, navigation = await _gather_materials(
                 llm, billing, user_client, turn, history, map_task, chat_map_task, await blocked_task, on_fetch,
-                attachment_visibility, must_check_attachments)
+                attachment_visibility, must_check_attachments, user_goal=decision.user_goal)
             timer.mark("retrieval_done")
             # 探索役の中で握りつぶされた停止を、ここで拾い直す
             stop.raise_if_stopped()
@@ -2371,6 +2405,7 @@ async def _run_turn_steps(
                 **({"attachment_notice": turn.attachment_notice} if turn.attachment_notice else {}),
             } or None,
         )
+        turn.assistant_content = answer_text
         await emit("done", {
             "status": "complete",
             "citations": citations,
@@ -2414,6 +2449,11 @@ class TurnProgress:
     answer_parts: list[str] = field(default_factory=list)
     answer_usage: Optional[dict] = None
 
+    @property
+    def current_text(self) -> str:
+        """ここまでに受信・生成された返答の全文。"""
+        return "".join(self.answer_parts)
+
 
 def _fail_unread_attachments(admin_client, turn: PreparedTurn) -> list[str]:
     """止めたとき、読み終わっていない(processingの)資料をfailedにし、そのidを返す(画面で知らせる)。"""
@@ -2429,7 +2469,7 @@ async def _finalize_stopped(
     admin_client, turn: PreparedTurn, billing: BillingEngine, progress: TurnProgress,
 ) -> int:
     """止めたところまでを返答として確定し、ここまでに発生した原価を請求する。消費したμクレジットを返す。"""
-    text = "".join(progress.answer_parts)
+    text = progress.current_text
     citations: list[dict] = []
     if text.strip():
         text = normalize_citations(text, progress.materials)
@@ -2551,6 +2591,7 @@ async def run_chat_turn(
             _BACKGROUND_TASKS.add(task)
             task.add_done_callback(_BACKGROUND_TASKS.discard)
             task.add_done_callback(_ignore_task_exception)
+        turn.assistant_content = progress.current_text
         await _maybe_enqueue_summary(turn, enqueue_summary)
     finally:
         stop_wait.cancel()
