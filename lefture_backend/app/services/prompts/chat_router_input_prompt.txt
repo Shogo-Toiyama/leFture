@@ -2,6 +2,13 @@
 ${EARLIER_CONVERSATION}
 </earlier_conversation>
 
+<!--IF:HAS_REFERENCED_SOURCES-->
+<referenced_sources>
+${REFERENCED_SOURCES}
+</referenced_sources>
+
+<!--END_IF-->
+
 <recent_conversation>
 ${RECENT_CONVERSATION}
 </recent_conversation>

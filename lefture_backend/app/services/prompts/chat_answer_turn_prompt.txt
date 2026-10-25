@@ -36,10 +36,19 @@ You did try to open these links, and they could not be read for the reason given
 <assignment_rules>
 ${AI_CODE_RULE}
 </assignment_rules>
+<!--END_IF-->
+
 <!--IF:HAS_USER_GOAL-->
 <user_goal>
 ${USER_GOAL}
 </user_goal>
+<user_goal> is a supplementary context hypothesis from triage to resolve pronouns or fragmented requests. Always treat the student's actual message as the primary ground truth; if <user_goal> seems misaligned with their actual request, follow their true intent.
+
+<!--END_IF-->
+<!--IF:HAS_RETRIEVAL_REASONING-->
+<retrieval_reasoning>
+${RETRIEVAL_REASONING}
+</retrieval_reasoning>
 
 <!--END_IF-->
 <how_to_write_this_reply>

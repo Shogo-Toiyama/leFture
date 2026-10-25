@@ -102,3 +102,10 @@ Standing notes for this conversation (keep following them unless the student cha
 ${CONVERSATION_NOTES}
 </conversation_notes>
 <!--END_IF-->
+<!--IF:HAS_REFERENCED_SOURCES-->
+Verbatim source turns referenced by the standing notes:
+<referenced_sources>
+${REFERENCED_SOURCES}
+</referenced_sources>
+Use these verbatim turns as the ground-truth anchor when following an overarching agenda, roadmap, or criteria established earlier in the conversation.
+<!--END_IF-->

@@ -73,9 +73,9 @@ SUMMARY_SCHEMA: dict[str, Any] = {
                 "properties": {
                     "title": {"type": "string"},
                     "bullets": {"type": "array", "items": {"type": "string"}},
-                    "rounds": {"type": "array", "items": {"type": "integer"}},
+                    "turns": {"type": "array", "items": {"type": "integer"}},
                 },
-                "required": ["title", "bullets", "rounds"],
+                "required": ["title", "bullets", "turns"],
             },
         },
         "header": {
@@ -87,9 +87,10 @@ SUMMARY_SCHEMA: dict[str, Any] = {
                         "type": "object",
                         "properties": {
                             "text": {"type": "string"},
-                            "source_round": {"type": "integer"},
+                            "source_turn": {"type": "integer"},
+                            "needs_source": {"type": "boolean"},
                         },
-                        "required": ["text", "source_round"],
+                        "required": ["text", "source_turn", "needs_source"],
                     },
                 }
                 for k in HEADER_CATEGORIES
@@ -281,17 +282,17 @@ def build_summary_messages(
         items = header.get(key) or []
         if items:
             header_lines.append(f"[{key}]")
-            header_lines.extend(f"- {it['text']} (source_round={it['source_turn']})" for it in items)
+            header_lines.extend(f"- {it['text']} (source_turn={it.get('source_turn') or it.get('source_round')})" for it in items)
     header_text = "\n".join(header_lines) if header_lines else "(none yet)"
 
-    rounds_text = "\n\n".join(
-        f"[round {t.number}] Student: {t.user_content}\n[round {t.number}] Assistant: {t.assistant_content}"
+    turns_text = "\n\n".join(
+        f"[turn {t.number}] Student: {t.user_content}\n[turn {t.number}] Assistant: {t.assistant_content}"
         for t in turns
     )
     user_content = (
         f"<previous_section_titles>\n{titles_text}\n</previous_section_titles>\n\n"
         f"<current_header>\n{header_text}\n</current_header>\n\n"
-        f"<rounds_to_fold>\n{rounds_text}\n</rounds_to_fold>"
+        f"<turns_to_fold>\n{turns_text}\n</turns_to_fold>"
     )
     return [Message(role="system", content=system), Message(role="user", content=user_content)]
 
@@ -311,12 +312,13 @@ def validate_summary_output(raw: Any, turns: list[Turn], next_handle: int) -> tu
     for sec in raw["sections"]:
         title = (sec.get("title") or "").strip()
         bullets = [b.strip() for b in sec.get("bullets") or [] if isinstance(b, str) and b.strip()]
-        rounds = sorted({r for r in sec.get("rounds") or [] if isinstance(r, int)})
+        turns_list = sec.get("turns") if sec.get("turns") is not None else sec.get("rounds")
+        sec_turns = sorted({r for r in turns_list or [] if isinstance(r, int)})
         if not title or not bullets:
             raise SummaryValidationError(f"section without title or bullets: {sec!r}")
-        if not rounds or not set(rounds) <= batch_numbers:
-            raise SummaryValidationError(f"section rounds {rounds} outside this batch {sorted(batch_numbers)}")
-        sections.append({"handle": next_handle + len(sections), "title": title, "bullets": bullets, "turns": rounds})
+        if not sec_turns or not set(sec_turns) <= batch_numbers:
+            raise SummaryValidationError(f"section turns {sec_turns} outside this batch {sorted(batch_numbers)}")
+        sections.append({"handle": next_handle + len(sections), "title": title, "bullets": bullets, "turns": sec_turns})
     if not sections:
         raise SummaryValidationError("no sections")
 
@@ -325,15 +327,30 @@ def validate_summary_output(raw: Any, turns: list[Turn], next_handle: int) -> tu
         items = []
         for it in raw["header"].get(key) or []:
             text = (it.get("text") or "").strip()
-            source = it.get("source_round")
+            source = it.get("source_turn") if it.get("source_turn") is not None else it.get("source_round")
+            needs_source = bool(it.get("needs_source", False))
             if not text:
                 continue
             if not isinstance(source, int) or not 1 <= source <= last_number:
-                raise SummaryValidationError(f"header item {text!r} has source_round {source!r} outside 1..{last_number}")
-            items.append({"text": text, "source_turn": source})
+                raise SummaryValidationError(f"header item {text!r} has source_turn {source!r} outside 1..{last_number}")
+            items.append({"text": text, "source_turn": source, "needs_source": needs_source})
         header[key] = items
 
     return sections, header
+
+
+def extract_source_turns_to_fetch(header: Optional[dict]) -> list[int]:
+    """headerの中で needs_source が True に設定されている source_turn の一意なリスト(昇順)を返す。"""
+    if not header:
+        return []
+    turns = set()
+    for cat in HEADER_CATEGORIES:
+        for it in header.get(cat) or []:
+            if it.get("needs_source"):
+                s = it.get("source_turn") or it.get("source_round")
+                if isinstance(s, int):
+                    turns.add(s)
+    return sorted(turns)
 
 
 def uncovered_level1(level1: list[dict], level2: list[dict]) -> list[dict]:
@@ -400,12 +417,21 @@ def render_summary_for_answer(blocks: list[dict], level2: Optional[list[dict]] =
 def render_notes_for_answer(header: Optional[dict]) -> str:
     if not header:
         return ""
-    lines = []
+    blocks = []
     for key in HEADER_CATEGORIES:
         items = header.get(key) or []
         if items:
-            lines.append(f"{_HEADER_LABELS[key]}: " + "; ".join(it["text"] for it in items))
-    return "\n".join(lines)
+            sorted_items = sorted(
+                items,
+                key=lambda it: it.get("source_turn") if it.get("source_turn") is not None else (it.get("source_round") or 0)
+            )
+            item_lines = []
+            for it in sorted_items:
+                s = it.get("source_turn") if it.get("source_turn") is not None else it.get("source_round")
+                turn_suffix = f" (turn {s})" if s else ""
+                item_lines.append(f"- {it['text']}{turn_suffix}")
+            blocks.append(f"{_HEADER_LABELS[key]}:\n" + "\n".join(item_lines))
+    return "\n\n".join(blocks)
 
 
 # =========================================================

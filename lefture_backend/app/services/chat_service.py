@@ -117,6 +117,7 @@ from app.services.profile_store import load_chat_memory
 from app.services.chat_summary import (
     FOLD_TRIGGER_TURNS,
     Turn,
+    extract_source_turns_to_fetch,
     fetch_active_blocks,
     pair_turns,
     render_notes_for_answer,
@@ -211,6 +212,8 @@ BLOCKED_MAX_MESSAGES = 10
 # RAW_MAX_TURNSは要約が遅れたとき・失敗し続けたときの上限。
 RAW_MAX_TURNS = 20
 RAW_FETCH_MESSAGES = RAW_MAX_TURNS * 4
+# 未要約の履歴全体の合計トークン上限。要約が遅延した場合でも文字数で切らず古い完全往復単位でドロップする
+RAW_HISTORY_MAX_TOKENS = 30_000
 HISTORY_MAX_CHARS_PER_MESSAGE = 2000
 ROUTER_HISTORY_MAX_MESSAGES = 20
 ROUTER_HISTORY_MAX_CHARS_PER_MESSAGE = 1200
@@ -422,30 +425,46 @@ def merge_search_results(result_lists: list[list[dict]], top_k: int = RETRIEVAL_
 
 
 def build_history_messages(
-    rows: list[dict], max_turns: int, max_chars: int,
+    rows: list[dict],
+    max_turns: int = RAW_MAX_TURNS,
+    max_chars: Optional[int] = None,
     attachment_titles: Optional[dict[str, list[str]]] = None,
 ) -> list[Message]:
     """
-    まだ要約に畳んでいない会話を回答役に渡す形に変換する。完了した往復だけを使い、
-    断った(blocked)・危機対応(crisis)・失敗(error)・生成中(streaming)の
-    返答と、それに対応するuserメッセージは含めない(悪意ある長文で以降の
-    入力トークンが膨らまないようにするため、および危機対応の文脈を
-    通常の会話に持ち込まないため)。往復の数え方は要約側(pair_turns)と共通。
-    attachment_titles(userメッセージのID → そのとき添付した資料の名前)があれば、
-    「ここで資料を添付した」印を付ける(本文は資料の枠で渡るので、履歴には入れない)。
+    まだ要約に畳んでいない会話を回答役に渡す形に変換する。
+    - 完了した往復(Turn)だけを使い、文の途中で機械的に文字数カットしない(文の途切れによる幻覚を防ぐ)。
+    - 万が一、要約タスクの遅延等で未要約往復が膨大になった場合でも、文字数で切るのではなく
+      「古い完全な往復(PairTurn)」単位でドロップし、最新の往復を安全にRAW_HISTORY_MAX_TOKENS以内に収める。
     """
+    all_turns = pair_turns(rows)[-max_turns:]
+    # トークン上限(30,000トークン)を超える場合、古い完全な往復から丸ごと除外する(最新1往復は必ず残す)
+    cumulative_tokens = 0
+    selected_turns: list[Turn] = []
+    for t in reversed(all_turns):
+        t_tokens = estimate_tokens(t.user_content or "") + estimate_tokens(t.assistant_content or "")
+        if selected_turns and (cumulative_tokens + t_tokens > RAW_HISTORY_MAX_TOKENS):
+            break
+        selected_turns.append(t)
+        cumulative_tokens += t_tokens
+    selected_turns.reverse()
+
     messages = []
-    for t in pair_turns(rows)[-max_turns:]:
-        user_content = t.user_content[:max_chars]
-        # 選択していたテキストを残す(そのときの「これ」「ここ」の対象。後の往復で指示語が
-        # 続いたときに、選択が外れていても何を指していたか分かるようにする)
+    for t in selected_turns:
+        user_content = t.user_content
+        if max_chars is not None and max_chars > 0:
+            user_content = user_content[:max_chars]
         if t.user_selected_text:
             user_content = f"[Selected: {t.user_selected_text[:MAX_SELECTED_TEXT_CHARS_IN_HISTORY]}] {user_content}"
         titles = (attachment_titles or {}).get(t.user_message_id)
         if titles:
             user_content = f"{history_marker(titles)}{user_content}"
+
+        asst_content = t.assistant_content
+        if max_chars is not None and max_chars > 0:
+            asst_content = asst_content[:max_chars]
+
         messages.append(Message(role="user", content=user_content))
-        messages.append(Message(role="assistant", content=t.assistant_content[:max_chars]))
+        messages.append(Message(role="assistant", content=asst_content))
     return messages
 
 
@@ -1259,12 +1278,17 @@ async def _run_router(
     history: list[Message],
     courses_text: str = "(unknown)",
     attachments_text: str = "(none)",
+    referenced_sources: Optional[str] = None,
 ) -> RouterDecision:
     is_first_message = turn.is_new_thread or not turn.thread_has_title
     # 指示文は毎ターン同じsystemに置き、変わる入力はすべて後ろのuserに入れる
     # (先頭が一致する部分にだけプロンプトキャッシュが効くため)。
-    user_input = fill_placeholders(_load_prompt("chat_router_input_prompt.txt"), {
+    input_template = _render_conditional_sections(_load_prompt("chat_router_input_prompt.txt"), {
+        "HAS_REFERENCED_SOURCES": bool(referenced_sources),
+    })
+    user_input = fill_placeholders(input_template, {
         "EARLIER_CONVERSATION": memory.for_router(),
+        "REFERENCED_SOURCES": referenced_sources or "",
         "RECENT_CONVERSATION": format_router_conversation(history),
         "SCREEN_CONTEXT": format_screen_context(
             turn.lecture_label, turn.selected_text, turn.screen_page, full_page=False,
@@ -1386,6 +1410,7 @@ async def _gather_materials(
     must_check_attachments: bool = False,
     user_goal: Optional[str] = None,
     on_compressing: Optional[Callable[[], Awaitable[None]]] = None,
+    referenced_sources: Optional[str] = None,
 ) -> tuple[list[Material], Optional[NavigationResult]]:
     """
     探索役(chat_navigator.py)で回答役に渡す材料を集める。探索役が1周目から動かない
@@ -1432,6 +1457,7 @@ async def _gather_materials(
             must_check_attachments=must_check_attachments,
             links=_turn_links(turn),
             user_goal=user_goal,
+            referenced_sources=referenced_sources,
         )
         # 速度の計測: ベクトル化1回ごと・検索RPC1本ごとの所要時間(ユーザー用クライアントの
         # 1本目が接続の張り直しで遅いかどうかも、rpc_msの先頭で分かる)
@@ -1586,6 +1612,31 @@ def format_student_message_for_answer(turn: PreparedTurn) -> str:
     return raw_message
 
 
+async def _fetch_referenced_source_turns(
+    admin_client, thread_id: str, source_turns: list[int]
+) -> str:
+    """
+    needs_source: True の source_turn の完全な生テキストを DB から取得して整形する。
+    """
+    if not source_turns:
+        return ""
+    def _q():
+        return admin_client.table("chat_messages").select("id, role, content, status, router, created_at") \
+            .eq("thread_id", thread_id).is_("deleted_at", "null") \
+            .order("created_at").execute()
+    res = await asyncio.to_thread(_q)
+    all_turns = {t.number: t for t in pair_turns(res.data or [])}
+
+    parts = []
+    for num in sorted(source_turns):
+        t = all_turns.get(num)
+        if t:
+            parts.append(f"[Turn {num}] Student: {t.user_content}\n[Turn {num}] Assistant: {t.assistant_content}")
+        else:
+            print(f"⚠️ [chat] referenced source turn {num} not found in thread {thread_id}")
+    return "\n\n".join(parts)
+
+
 def _build_answer_messages(
     turn: PreparedTurn,
     decision: RouterDecision,
@@ -1597,6 +1648,8 @@ def _build_answer_messages(
     open_questions: Optional[list[str]] = None,
     attachment_visibility: Optional[Visibility] = None,
     link_failures: Optional[list[tuple[str, str]]] = None,
+    referenced_sources: Optional[str] = None,
+    retrieval_reasoning: Optional[str] = None,
 ) -> list[Message]:
     """
     並びは「system(固定の指示+プロフィール → 要約 → 会話の前提) → 原文の履歴 → 今回の文脈+質問」。
@@ -1612,6 +1665,7 @@ def _build_answer_messages(
         "HAS_NOTES": bool(memory.notes),
         "HAS_STUDENT_MEMOS": bool(student_memos),
         "HAS_OPEN_QUESTIONS": bool(open_questions),
+        "HAS_REFERENCED_SOURCES": bool(referenced_sources),
     })
     system = fill_placeholders(system_template, {
         "STUDENT_PROFILE": profile,
@@ -1619,6 +1673,7 @@ def _build_answer_messages(
         "OPEN_QUESTIONS": "\n".join(f"- {q}" for q in open_questions or []),
         "CONVERSATION_SUMMARY": memory.summary,
         "CONVERSATION_NOTES": memory.notes,
+        "REFERENCED_SOURCES": referenced_sources or "",
     })
     screen_context = format_screen_context(
         turn.lecture_label, turn.selected_text, turn.screen_page, reply_quote=turn.reply_quote)
@@ -1633,6 +1688,7 @@ def _build_answer_messages(
         "HAS_SCREEN_CONTEXT": bool(screen_context),
         "HAS_LINK_NOTES": bool(link_failures),
         "HAS_USER_GOAL": bool(decision.user_goal),
+        "HAS_RETRIEVAL_REASONING": bool(retrieval_reasoning),
     })
     turn_message = fill_placeholders(turn_template, {
         "SOURCES": format_sources_block(materials),
@@ -1640,6 +1696,7 @@ def _build_answer_messages(
         "AI_CODE_RULE": ai_code_rule,
         "SCREEN_CONTEXT": screen_context,
         "USER_GOAL": decision.user_goal or "",
+        "RETRIEVAL_REASONING": retrieval_reasoning or "",
         # 探索役が開こうとして読めなかったリンク(ログインが要る授業サイトなど)
         "LINK_NOTES": "\n".join(f"- {url}: {reason}" for url, reason in link_failures or []),
         "REPLY_LANGUAGE": decision.reply_language,
@@ -2173,7 +2230,14 @@ async def _run_turn_steps(
         # 選択中の画像の資料は、画像そのものも回答役に渡す。振り分け役・探索役と並行で読み込んでおく
         answer_images_task = asyncio.create_task(_load_answer_images(turn, attachment_visibility))
         answer_images_task.add_done_callback(_ignore_task_exception)
-        history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, HISTORY_MAX_CHARS_PER_MESSAGE,
+        # 会話ノートに needs_source: True があれば、該当ターンの生テキストをDBから取得
+        active_header = turn.summary_blocks[-1].get("header") if turn.summary_blocks else None
+        source_turns_needed = extract_source_turns_to_fetch(active_header)
+        referenced_sources = ""
+        if source_turns_needed:
+            referenced_sources = await _fetch_referenced_source_turns(admin_client, turn.thread_id, source_turns_needed)
+
+        history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, None,
                                          _attachment_titles_by_message(turn.attachments))
         memory = ConversationMemory.from_blocks(turn.summary_blocks, turn.summary_level2)
         # 地図(コース一覧)とプランはprepare_chat_turnで事前チェックと並行に読み始めている。
@@ -2223,7 +2287,8 @@ async def _run_turn_steps(
             print(f"⚠️ [chat] failed to load the student map for the router: {e}")
             router_map = None
         decision = await _run_router(llm, turn, memory, history, router_courses_text(router_map),
-                                     render_for_router(turn.attachments, attachment_visibility))
+                                     render_for_router(turn.attachments, attachment_visibility),
+                                     referenced_sources=referenced_sources)
         progress.decision = decision
         timer.mark("router_done")
         stop.raise_if_stopped()
@@ -2283,7 +2348,7 @@ async def _run_turn_steps(
             materials, navigation = await _gather_materials(
                 llm, billing, user_client, turn, history, map_task, chat_map_task, await blocked_task, on_fetch,
                 attachment_visibility, must_check_attachments, user_goal=decision.user_goal,
-                on_compressing=on_compressing)
+                on_compressing=on_compressing, referenced_sources=referenced_sources)
             timer.mark("retrieval_done")
             # 探索役の中で握りつぶされた停止を、ここで拾い直す
             stop.raise_if_stopped()
@@ -2292,15 +2357,19 @@ async def _run_turn_steps(
 
         # --- 4. 回答 ---
         turn.answer_images = await answer_images_task
-        # 探索役のgoal(返答で何を書くか)は回答役に渡さない。探索役は回答役より少ない情報で会話の意味を
-        # 決めつけ、回答役がそれに従ってしまう(2026-10-08「コマンドを決めつけず」でコマンドを出さなかった、
-        # 10-09「3と4」を生徒のコードのコメントの番号と読み違えた。goalなしなら回答役は3/3で正しく読めた)。
-        # 会話の読み取りは、会話全体と資料を見ている回答役に任せる。goalは探索役の周回と出力の長さの判断にだけ使う
+        # 探索役の最終思考(なぜ情報が足りているか、どう回答すべきと見立てたか)を取得
+        retrieval_reasoning = ""
+        if navigation and navigation.laps:
+            last_lap = navigation.laps[-1]
+            retrieval_reasoning = getattr(last_lap, "reasoning", "") if hasattr(last_lap, "reasoning") else (last_lap.get("reasoning", "") if isinstance(last_lap, dict) else "")
+
         messages = _build_answer_messages(
             turn, decision, memory, history, profile, materials,
             student_memos=student_memos, open_questions=open_questions,
             attachment_visibility=attachment_visibility,
             link_failures=navigation.link_failures if navigation else None,
+            referenced_sources=referenced_sources,
+            retrieval_reasoning=retrieval_reasoning,
         )
         messages, trimmed_turns = fit_answer_input(messages)
         answer_model, answer_effort = ANSWER_MODEL, ANSWER_REASONING_EFFORT

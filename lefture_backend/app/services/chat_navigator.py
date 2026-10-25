@@ -352,6 +352,8 @@ class NavigatorInput:
     links: list[Link] = field(default_factory=list)
     # 仕分け役が整理した、このターンの生徒の真の目的と文脈アンカー
     user_goal: Optional[str] = None
+    # 過去の会話ノートから引き継がれた重要な原文ターン(アジェンダなど)
+    referenced_sources: Optional[str] = None
 
     @property
     def can_transcript(self) -> bool:
@@ -1011,6 +1013,8 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
             parts.append(f"<previous_turn_opened>\n{state.previous_turn_text}\n</previous_turn_opened>")
         if nav_input.user_goal:
             parts.append(f"<user_goal>\n{nav_input.user_goal}\n</user_goal>")
+        if nav_input.referenced_sources:
+            parts.append(f"<referenced_sources>\n{nav_input.referenced_sources}\n</referenced_sources>")
 
     if nav_input.recent_conversation:
         conv = "\n".join(
