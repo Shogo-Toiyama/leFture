@@ -1,12 +1,24 @@
 # Repository Guidelines & AI Assistant Instructions
 
+> [!CAUTION]
+> ### 🚨 STRICT RULE: ZERO HALLUCINATION & EVIDENCE-FIRST INVESTIGATION 🚨
+> - **Zero Hallucination / No Guesswork**: NEVER guess or assume facts, metrics, costs, or system behaviors. If something is unknown or ambiguous, explicitly state: **"I do not know"** or **"Data is missing"**.
+> - **Verify via Code, Database, or Experiments**: If there is any uncertainty, do not theorize—write scripts, query Supabase, inspect actual logs, or run experiments to verify the truth.
+> - **Explicitly State Missing Information**: If data or information is insufficient to draw a definitive conclusion, explicitly clarify **what specific data is missing** and why it cannot be answered yet.
+> - **Search for Latest Facts**: Always fetch live data via web search or local tools (Supabase / code inspection) before stating specs, pricing, or behaviors.
+
 ## Prompt Guidelines
 - **Strictly English Only**: All prompt files (under `lefture_backend/app/services/prompts/` and across the codebase) and internal LLM instructions must be written purely in English. Never use Japanese or any other non-English language inside prompts under any circumstances.
 - **Anti-Mirroring & Tone Match**: Avoid mirroring or echoing the student's opening words, informal greetings, or exclamations. Match their emotional warmth and casual peer level in their language without copying their literal catchphrases.
 
 ## Development & Prompt Engineering Workflow
-- **Test Before Implementation**: When refining or fixing prompts, do not directly modify production files without testing. Always run a comparative test (testing both the current prompt and the candidate prompt across multiple runs against real/sample student turns) to observe any tone or formatting drift before finalizing changes. Report results of cost, speed, tone of the response, or any other targetted metrics as well as the cost of the test itself.
-- **Minimal Changes**: Favor minimal, targeted prompt additions or edits over wholesale rewrites to prevent regression in other tone aspects.
+- **Test Before Implementation**: When refining, fixing prompts, or adding new features/caching, do not directly modify production files without testing.
+- **Dedicated Experiment Directory**: Always conduct experiments inside `contents_generation/test_codes/<new_folder>`. Create a dedicated directory and build the self-contained experiment environment there.
+- **Production-Identical Environment**: All experiment environments must fetch real data, contexts, and parameters from Supabase and production backend code to mirror production execution as closely as possible.
+- **Mandatory Dry-Run Before API Calls**: Always execute dry-runs (empty/mock calls or full validation without external token spends) to confirm that the script, parameters, prompt formatting, and schemas run without errors before making actual API calls.
+- **Metrics & Reporting**: Explicitly report execution speed (latency/TTFT), token consumption, cost (including the cost of the test itself), tone of the response, or any other targeted metrics.
+- **Persistent Result Artifacts**: Assign appropriate, timestamped names to test runs and save all execution results and summaries inside the experiment folder (`results/`).
+- **Minimal Changes**: Favor minimal, targeted additions or edits over wholesale rewrites to prevent regression.
 - **Always Search the Web for Latest Information**: Whenever discussing AI models, API specifications, pricing, feature flags, or specific implementation details, always verify the latest information via web search before answering or implementing. Never rely on outdated memory or assumptions.
 
 ## UI Localization & Multi-lingual Guidelines

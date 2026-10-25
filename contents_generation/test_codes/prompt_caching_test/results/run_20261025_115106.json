@@ -1,0 +1,46 @@
+[
+  {
+    "step_name": "Step 1: Thread A Turn 1 (Cold Cache Write)",
+    "latency_s": 4.142746375058778,
+    "input_tokens": 7188,
+    "read_tokens": 7092,
+    "write_tokens": 0,
+    "uncached_input": 96,
+    "output_tokens": 600,
+    "cost_usd": 0.00038051999999999997,
+    "output_sample": "はい、少なくとも**Lecture 12「Network Layer & DHCP」**の講義ノートにDHCPの項目がありました！🎉 ノートには「DHCP: dynamic host configuration...」と冒頭だけ書かれていて、残りの内容は今の画面からは見えていません。なので、どこまで詳しくやったかは確かめられていないんです。\n\nDHCPは、ネットワークに接続した端末に**"
+  },
+  {
+    "step_name": "Step 2: Thread A Turn 2 (Warm Cache Hit on History)",
+    "latency_s": 2.8145771250128746,
+    "input_tokens": 7199,
+    "read_tokens": 7185,
+    "write_tokens": 0,
+    "uncached_input": 14,
+    "output_tokens": 391,
+    "cost_usd": 0.00026875,
+    "output_sample": "ごめんなさい、現在時刻はこちらからわからないんです。お使いの端末の時計で確認してもらえますか？\n\nあと、さっきの「第12回の講義で扱っています」は確かめずに答えてしまいました。今の会話では講義の内容は見えていないので、DHCPを扱った回があるかどうかは言い切れません。講義ノートや録音の文字起こしで「DHCP」を検索してもらえれば、どの回で出てくるかすぐわかりますよ！"
+  },
+  {
+    "step_name": "Step 3: Thread B Turn 1 (Cross-Thread Hit on Fixed Prompt)",
+    "latency_s": 3.715949708945118,
+    "input_tokens": 7190,
+    "read_tokens": 7092,
+    "write_tokens": 0,
+    "uncached_input": 98,
+    "output_tokens": 600,
+    "cost_usd": 0.00038072,
+    "output_sample": ""
+  },
+  {
+    "step_name": "Step 4: Thread A Turn 3 (History Altered / Intentional Miss)",
+    "latency_s": 3.793453959049657,
+    "input_tokens": 7258,
+    "read_tokens": 7092,
+    "write_tokens": 83,
+    "uncached_input": 83,
+    "output_tokens": 600,
+    "cost_usd": 0.00038959499999999996,
+    "output_sample": "わあ、明日の朝に向けて復習するなんて最高ですね！📚\n\n今見えているのは**「重要ポイント」のタイトルだけ**で、中身の全文までは確認できていません。そのう"
+  }
+]

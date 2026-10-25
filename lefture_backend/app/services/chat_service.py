@@ -1746,6 +1746,31 @@ def fit_answer_input(messages: list[Message], limit: int = ANSWER_MAX_INPUT_ESTI
     return [system, *history, last], dropped
 
 
+def apply_prompt_cache_controls(messages: list[Message], model: str) -> list[Message]:
+    """
+    Anthropicモデル(Haiku 5.5等)向けにプロンプトキャッシュ(2段階: 1時間TTL)を設定する。
+    1. system メッセージ (固定指示 + プロフィール + 要約)
+    2. 会話履歴内の最後の assistant メッセージ (直前までの全履歴)
+    ※ 他のモデル(OpenAI/Gemini)ではキャッシュ指定は不要(自動キャッシュ)。
+    """
+    if not model.startswith("anthropic/") or not messages:
+        return messages
+
+    cache_control = {"type": "ephemeral", "ttl": "1h"}
+
+    # 1箇所目: system メッセージ
+    if messages[0].role == "system":
+        messages[0].cache_control = cache_control
+
+    # 2箇所目: 履歴内の最後の assistant メッセージ (直前のターン)
+    for m in reversed(messages[1:-1]):
+        if m.role == "assistant":
+            m.cache_control = cache_control
+            break
+
+    return messages
+
+
 async def _load_answer_images(turn: PreparedTurn, vis: Visibility) -> list[bytes]:
     """
     選択中の画像の資料の画像を読み込み、回答役に渡す大きさに縮める。読めなかった画像は、その資料を
@@ -2403,6 +2428,7 @@ async def _run_turn_steps(
                 answer_effort = REASONING_CONFIG.single_effort
                 # 一段で推論するときは、考えている間(最初の1文字まで)「じっくり考えています…」を出す
                 thinking = answer_effort not in (None, "none")
+        messages = apply_prompt_cache_controls(messages, answer_model)
         await emit("status", {"stage": "reasoning" if thinking else "writing"})
         state = StreamState()
         options = answer_options(answer_model, answer_effort, _answer_max_tokens(navigation, materials))

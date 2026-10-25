@@ -49,9 +49,11 @@ PRICE_MATRIX = {
         "gpt-6-luna": {"input": 0.10, "output": 0.50, "cache_read": 0.01, "cache_write": 0.125},
         # 2026-10-07リリース。チャットの回答役(2026-10-07にLunaから変更)。プロンプトが10万トークンを超えると、
         # そのリクエストは入力も出力も5倍の単価になる(long_context)。回答役はchat_serviceの
-        # ANSWER_MAX_INPUT_ESTIMATEで超えないように組み立てる。キャッシュ(cache_control)は今は使っていない。
+        # ANSWER_MAX_INPUT_ESTIMATEで超えないように組み立てる。
+        # 1時間TTLキャッシュ: cache_writeは通常入力の2.0倍($0.20/M)、cache_readは0.10倍($0.01/M)。
         "anthropic/claude-haiku-5-5": {
             "input": 0.10, "output": 0.50,
+            "cache_read": 0.01, "cache_write": 0.20,
             "long_context": {"above_input_tokens": 100_000, "input": 0.50, "output": 2.50},
         },
         # 横断チャットボット段階0(knowledge_chunks)の埋め込みモデル。
@@ -379,15 +381,20 @@ class Message:
     # 一緒に渡す画像(JPEGのバイト列)。チャットに添付した画像・ページの書き起こしで使う。
     # contentを文字列のまま保つため別の欄にしている(履歴の切り詰め・ログなどはcontentだけを見る)
     images: List[bytes] = field(default_factory=list)
+    # Anthropic/LiteLLM の明示的プロンプトキャッシュ用 (例: {"type": "ephemeral", "ttl": "1h"})
+    cache_control: Optional[Dict[str, Any]] = None
 
 
 def _litellm_message(m: Message) -> Dict[str, Any]:
-    """画像があれば、OpenAI形式の [text, image_url(data URI)...] にする(GeminiもlitellmがOpenAI形式から変換する)。"""
-    if not m.images:
+    """画像やcache_controlがあれば、OpenAI/Anthropic形式の [text, image_url...] にする。"""
+    if not m.images and not m.cache_control:
         return {"role": m.role, "content": m.content}
     parts: List[Dict[str, Any]] = []
     if m.content:
-        parts.append({"type": "text", "text": m.content})
+        text_part: Dict[str, Any] = {"type": "text", "text": m.content}
+        if m.cache_control:
+            text_part["cache_control"] = m.cache_control
+        parts.append(text_part)
     for data in m.images:
         parts.append({"type": "image_url",
                       "image_url": {"url": "data:image/jpeg;base64," + base64.b64encode(data).decode("ascii")}})
@@ -444,14 +451,22 @@ class StreamState:
 def _cache_token_counts(usage: Any) -> tuple[int, int]:
     """
     litellmのusageからキャッシュの(読み込み, 書き込み)トークン数を取る。
-    どちらもprompt_tokensの内訳。Geminiの暗黙キャッシュ(cachedContentTokenCount)と
-    OpenAIの自動キャッシュ(cached_tokens / cache_write_tokens)は、litellmが
-    prompt_tokens_detailsに揃えて入れる(2026-09-29にストリーミング/非ストリーミング
-    の両方で実測確認)。
+    どちらもprompt_tokensの内訳。Geminiの暗黙キャッシュ(cachedContentTokenCount)、
+    OpenAIの自動キャッシュ(cached_tokens / cache_write_tokens)、および
+    Anthropicの明示的キャッシュ(cache_read_input_tokens / cache_creation_input_tokens)に対応。
     """
     details = getattr(usage, "prompt_tokens_details", None)
-    read = int(getattr(details, "cached_tokens", 0) or 0)
-    write = int(getattr(details, "cache_write_tokens", 0) or 0)
+    read = int(
+        getattr(details, "cached_tokens", 0)
+        or getattr(usage, "cache_read_input_tokens", 0)
+        or 0
+    )
+    write = int(
+        getattr(details, "cache_write_tokens", 0)
+        or getattr(details, "cache_creation_tokens", 0)
+        or getattr(usage, "cache_creation_input_tokens", 0)
+        or 0
+    )
     return read, write
 
 

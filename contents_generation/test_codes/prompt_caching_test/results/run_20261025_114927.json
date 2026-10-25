@@ -1,0 +1,36 @@
+[
+  {
+    "step_name": "Step 1: Thread A Turn 1 (Cold Cache Write)",
+    "dry_run": true,
+    "breakpoints": [
+      "Msg #0 (system) block #0: {'type': 'ephemeral'}"
+    ],
+    "chars": 22722
+  },
+  {
+    "step_name": "Step 2: Thread A Turn 2 (Warm Cache Hit on History)",
+    "dry_run": true,
+    "breakpoints": [
+      "Msg #0 (system) block #0: {'type': 'ephemeral'}",
+      "Msg #2 (assistant) block #0: {'type': 'ephemeral'}"
+    ],
+    "chars": 22681
+  },
+  {
+    "step_name": "Step 3: Thread B Turn 1 (Cross-Thread Hit on Fixed Prompt)",
+    "dry_run": true,
+    "breakpoints": [
+      "Msg #0 (system) block #0: {'type': 'ephemeral'}"
+    ],
+    "chars": 22730
+  },
+  {
+    "step_name": "Step 4: Thread A Turn 3 (History Altered / Intentional Miss)",
+    "dry_run": true,
+    "breakpoints": [
+      "Msg #0 (system) block #0: {'type': 'ephemeral'}",
+      "Msg #2 (assistant) block #0: {'type': 'ephemeral'}"
+    ],
+    "chars": 22793
+  }
+]
