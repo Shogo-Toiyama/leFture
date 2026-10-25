@@ -2,6 +2,8 @@
 ${MESSAGE}
 </student_message>
 
+<current_time>${CURRENT_TIME}</current_time>
+
 <reply_language>${REPLY_LANGUAGE}</reply_language>
 
 <!--IF:HAS_SCREEN_CONTEXT-->

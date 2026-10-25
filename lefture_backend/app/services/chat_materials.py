@@ -101,7 +101,7 @@ class Material:
         }
 
 
-def material_from_chunk(chunk: dict, handle: Optional[str] = None) -> Material:
+def material_from_chunk(chunk: dict, handle: Optional[str] = None, student_map: Optional[Any] = None) -> Material:
     """検索で当たったknowledge_chunksの行を材料に。contentの1行目「[コース / 講義 / 種類]」をラベルにする。"""
     content = (chunk.get("content") or "").strip()
     lines = content.splitlines()
@@ -109,6 +109,22 @@ def material_from_chunk(chunk: dict, handle: Optional[str] = None) -> Material:
     if lines and lines[0].startswith("[") and lines[0].endswith("]"):
         label = lines[0].strip("[]")
         content = "\n".join(lines[1:]).strip()
+
+    # student_mapがあれば、講義の日時(曜日・時刻)をラベルに補完する
+    lec_id = chunk.get("lecture_id")
+    if student_map and lec_id:
+        h = student_map.lecture_handle(lec_id)
+        lec = student_map.lecture(h) if h else None
+        if lec and hasattr(lec, "format_when"):
+            when = lec.format_when()
+            if when != "no date" and when not in label:
+                parts = [p.strip() for p in label.split("/")]
+                if len(parts) >= 2:
+                    parts[1] = f"{parts[1]} ({when})"
+                    label = " / ".join(parts)
+                elif label:
+                    label = f"{label} ({when})"
+
     # Deep Note・FunFact等のチャンクに残る引用記号(⟦s000143⟧ / ⟦1⟧)は回答役には要らず、
     # 出典のハイライト(passages)に出ても読めないので剥がす。開いたトピックと同じ扱い
     content = strip_citations(content)

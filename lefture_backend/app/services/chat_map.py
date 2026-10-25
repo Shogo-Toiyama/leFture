@@ -48,14 +48,20 @@ def resolve_timezone(name: Optional[str]) -> tzinfo:
     return timezone.utc
 
 
-def _to_date(value: Optional[str], tz: tzinfo) -> Optional[date]:
-    """lecture_datetime(timestamptz)を、ユーザーのタイムゾーンでの日付に。"""
+def _to_datetime(value: Optional[str], tz: tzinfo) -> Optional[datetime]:
+    """lecture_datetime(timestamptz)を、ユーザーのタイムゾーンでのdatetimeに。"""
     if not value:
         return None
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(tz).date()
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(tz)
     except ValueError:
         return None
+
+
+def _to_date(value: Optional[str], tz: tzinfo) -> Optional[date]:
+    """lecture_datetime(timestamptz)を、ユーザーのタイムゾーンでの日付に。"""
+    dt = _to_datetime(value, tz)
+    return dt.date() if dt else None
 
 
 @dataclass
@@ -65,6 +71,15 @@ class MapLecture:
     course_handle: str
     title: str
     date: Optional[date]
+    datetime: Optional[datetime] = None
+
+    def format_when(self) -> str:
+        """講義の日時と曜日を整形(例: 2026-10-20 (Tue) 13:00)。時刻が無ければ日付と曜日。"""
+        if self.datetime:
+            return self.datetime.strftime("%Y-%m-%d (%a) %H:%M")
+        if self.date:
+            return self.date.strftime("%Y-%m-%d (%a)")
+        return "no date"
 
 
 @dataclass
@@ -138,10 +153,10 @@ class StudentMap:
         return sorted(out, key=lambda lec: (lec.date, lec.handle))
 
     def describe(self, handle: str) -> str:
-        """画面の文脈などで「C2/L4 (Price Elasticity of Demand, 2026-04-10)」のように添える説明。"""
+        """画面の文脈などで「C2/L4 (Price Elasticity of Demand, 2026-04-10 (Fri) 10:30)」のように添える説明。"""
         lec = self.lecture(handle)
         if lec:
-            when = f", {lec.date.isoformat()}" if lec.date else ""
+            when = f", {lec.format_when()}" if (lec.datetime or lec.date) else ""
             return f"{handle} ({self.course(lec.course_handle).title} / {lec.title}{when})"
         c = self.course(handle)
         return f"{handle} ({c.title})" if c else handle
@@ -332,10 +347,12 @@ def load_student_map(admin_client, user_id: str, tz: tzinfo = timezone.utc) -> S
             notes_language=_majority([r.get("display_language") for r in rows]),
         )
         for j, lec in enumerate(rows, start=1):
+            lec_dt = _to_datetime(lec.get("lecture_datetime"), tz)
             course.lectures.append(MapLecture(
                 handle=f"{handle}/L{j}", id=lec["id"], course_handle=handle,
                 title=(lec.get("title") or lec.get("title_generated") or "(untitled lecture)").strip(),
-                date=_to_date(lec.get("lecture_datetime"), tz),
+                date=lec_dt.date() if lec_dt else None,
+                datetime=lec_dt,
             ))
         courses.append(course)
 

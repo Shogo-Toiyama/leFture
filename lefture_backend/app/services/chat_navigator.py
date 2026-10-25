@@ -1294,7 +1294,7 @@ async def open_handle(
             ref={"type": "course", "id": course.id},
         )
 
-    when = lec.date.isoformat() if lec.date else "no date"
+    when = lec.format_when() if hasattr(lec, "format_when") else (lec.date.isoformat() if lec.date else "no date")
     if parsed.kind == "lecture_announcements":
         anns = await source.announcements([lec.id])
         lines = [f"# {lec.title} ({when}) — Lecture Announcements & Hints"]
@@ -1317,7 +1317,7 @@ async def open_handle(
             material=Material(
                 key=f"announcements:{lec.id}",
                 kind="announcements",
-                label=f"{course.title} / {lec.title} / Announcements",
+                label=f"{course.title} / {lec.title} ({when}) / Announcements",
                 content=body,
                 source_type="announcements",
                 lecture_id=lec.id,
@@ -1337,7 +1337,7 @@ async def open_handle(
             material=Material(
                 key=f"review_cards:{lec.id}",
                 kind="review_cards",
-                label=f"{course.title} / {lec.title} / Review Cards",
+                label=f"{course.title} / {lec.title} ({when}) / Review Cards",
                 content=body,
                 source_type="review_cards",
                 lecture_id=lec.id,
@@ -1370,7 +1370,7 @@ async def open_handle(
             handle=handle,
             text=f"Lecture {handle}: {lec.title} ({when})\n{body}",
             material=Material(key=f"lecture:{lec.id}", kind="lecture",
-                              label=f"{course.title} / {lec.title} / Lecture Overview & Review Cards",
+                              label=f"{course.title} / {lec.title} ({when}) / Lecture Overview & Review Cards",
                               content=f"Lecture date: {when}\n{body}",
                               source_type="lecture_summary", source_id=lec.id, lecture_id=lec.id,
                               course_id=course.id, handle=handle),
@@ -1386,12 +1386,12 @@ async def open_handle(
         keywords = "; ".join(f"{k}: {d}" if d else k for k, d in detail.get("keywords") or [])
         head = f"Summary: {detail['summary'] or '(no summary)'}" + (f"\nKeywords: {keywords}" if keywords else "")
         text = f"Topic {handle}: {detail['title']}\n{head}\nDeep Note:\n{note_nav or '(none)'}"
-        content = f"{head}" + (f"\nDeep Note:\n{note_ans}" if note_ans else "")
+        content = f"Lecture date: {when}\n{head}" + (f"\nDeep Note:\n{note_ans}" if note_ans else "")
         return Opened(
             handle=handle,
             text=text,
             material=Material(key=f"topic:{lec.id}:{parsed.topic_index}", kind="topic",
-                              label=f"{course.title} / {lec.title} / Topic: {detail['title']}",
+                              label=f"{course.title} / {lec.title} ({when}) / Topic: {detail['title']}",
                               content=content,
                               source_type="deep_note" if note_ans else "topic_summary",
                               source_id=detail.get("id"), lecture_id=lec.id, course_id=course.id,
@@ -1414,7 +1414,8 @@ async def open_handle(
         handle=handle,
         text=f"Transcript {handle} ({course.title} / {lec.title}, {when}):\n{body}",
         material=Material(key=f"transcript:{lec.id}:{parsed.sid_start}-{parsed.sid_end}", kind="transcript",
-                          label=f"{course.title} / {lec.title} / Transcript", content=body,
+                          label=f"{course.title} / {lec.title} ({when}) / Transcript",
+                          content=f"Lecture date: {when}\n{body}",
                           source_type="transcript_topic", lecture_id=lec.id, course_id=course.id,
                           metadata={"sid_start": parsed.sid_start, "sid_end": parsed.sid_end}, handle=handle),
         ref={"type": "transcript", "lecture_id": lec.id, "sid_start": parsed.sid_start, "sid_end": parsed.sid_end},
@@ -2125,7 +2126,7 @@ async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavSt
     for o in find_outcomes:
         state.outcomes.append(o)
         for hit in o.hits:
-            state.search_materials.append(material_from_chunk(hit.chunk, handle=hit.handle))
+            state.search_materials.append(material_from_chunk(hit.chunk, handle=hit.handle, student_map=m))
     for o in web_outcomes:
         state.outcomes.append(o)
         for page in o.pages:

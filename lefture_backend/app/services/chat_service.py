@@ -1504,8 +1504,7 @@ async def _gather_materials(
                                  turn.stop)
     except Exception as e:
         print(f"⚠️ [chat] retrieval failed, answering without sources: {e}")
-        chunks = []
-    return await select_materials_async(allowed([material_from_chunk(c) for c in chunks]), billing=billing, on_compressing=on_compressing), navigation
+    return await select_materials_async(allowed([material_from_chunk(c, student_map=student_map) for c in chunks]), billing=billing, on_compressing=on_compressing), navigation
 
 
 def _answer_max_tokens(navigation: Optional[NavigationResult], materials: list[Material]) -> int:
@@ -1690,11 +1689,14 @@ def _build_answer_messages(
         "HAS_USER_GOAL": bool(decision.user_goal),
         "HAS_RETRIEVAL_REASONING": bool(retrieval_reasoning),
     })
+    tz = resolve_timezone(turn.timezone_name)
+    current_time_str = datetime.now(tz).strftime("%Y-%m-%d (%a) %H:%M")
     turn_message = fill_placeholders(turn_template, {
         "SOURCES": format_sources_block(materials),
         "ATTACHMENTS": attachments_text,
         "AI_CODE_RULE": ai_code_rule,
         "SCREEN_CONTEXT": screen_context,
+        "CURRENT_TIME": current_time_str,
         "USER_GOAL": decision.user_goal or "",
         "RETRIEVAL_REASONING": retrieval_reasoning or "",
         # 探索役が開こうとして読めなかったリンク(ログインが要る授業サイトなど)
