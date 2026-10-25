@@ -27,6 +27,8 @@ ${ATTACHMENTS}
 
 <is_first_message>${IS_FIRST_MESSAGE}</is_first_message>
 
+<current_time>${CURRENT_TIME}</current_time>
+
 <new_message>
 ${NEW_MESSAGE}
 </new_message>

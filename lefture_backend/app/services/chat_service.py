@@ -1286,6 +1286,8 @@ async def _run_router(
     input_template = _render_conditional_sections(_load_prompt("chat_router_input_prompt.txt"), {
         "HAS_REFERENCED_SOURCES": bool(referenced_sources),
     })
+    tz = resolve_timezone(turn.timezone_name)
+    current_time_str = datetime.now(tz).strftime("%Y-%m-%d (%a) %H:%M")
     user_input = fill_placeholders(input_template, {
         "EARLIER_CONVERSATION": memory.for_router(),
         "REFERENCED_SOURCES": referenced_sources or "",
@@ -1296,6 +1298,7 @@ async def _run_router(
         "COURSES": courses_text,
         "ATTACHMENTS": attachments_text,
         "IS_FIRST_MESSAGE": "true" if is_first_message else "false",
+        "CURRENT_TIME": current_time_str,
         "NEW_MESSAGE": turn.message_for_prompt,
     })
     options = LLMOptions(output_type="json", json_schema=ROUTER_SCHEMA, temperature=0.0)
@@ -1437,14 +1440,17 @@ async def _gather_materials(
     # Webは講義・チャットがまだ無い人にも使えるので、探索役は常に呼ぶ
     if has_lectures or has_chats or NAVIGATOR_CAPABILITIES["CAN_WEB"]:
         admin_client = get_supabase_client()
-        chat_source = DbChatThreadSource(admin_client, turn.user_id)
+        tz = resolve_timezone(turn.timezone_name)
+        now = datetime.now(tz)
+        current_time_str = now.strftime("%Y-%m-%d (%a) %H:%M")
         nav_input = NavigatorInput(
             message=turn.message_for_prompt,
             selected_text=turn.selected_text,
             screen_lecture_id=turn.context_lecture_id,
             recent_conversation=history,
-            today=datetime.now(resolve_timezone(turn.timezone_name)).date(),
+            today=now.date(),
             student_map=student_map or StudentMap(),
+            current_time_str=current_time_str,
             chat_map=chat_map or ChatMap(),
             current_thread_id=turn.thread_id,
             previous_turn_refs=_previous_turn_refs(turn.history_rows),

@@ -331,6 +331,7 @@ class NavigatorInput:
     recent_conversation: list[Message]
     today: date
     student_map: StudentMap
+    current_time_str: Optional[str] = None
     chat_map: Optional[ChatMap] = None
     # 今のスレッドのID(chat.thread/chat.allの絞り込み・当たった往復がどのスレッドのものかの判定に使う)
     current_thread_id: Optional[str] = None
@@ -488,10 +489,30 @@ class DateOutcome:
         if not self.lectures:
             return f"{self.request.label()}:\n(no lectures in this range)"
         lines = [
-            f"- {lec.handle} ({lec.date.isoformat() if lec.date else 'no date'}) {self.course_titles.get(lec.course_handle, '')} / {lec.title}"
+            f"- {lec.handle} ({lec.format_when() if hasattr(lec, 'format_when') else (lec.date.isoformat() if lec.date else 'no date')}) {self.course_titles.get(lec.course_handle, '')} / {lec.title}"
             for lec in self.lectures
         ]
         return f"{self.request.label()}:\n" + "\n".join(lines)
+
+    def to_material(self) -> Optional[Material]:
+        """日付で引いた講義の一覧を、回答役に見せる材料(Material)に変換する。"""
+        if not self.lectures:
+            return None
+        lines = []
+        for lec in self.lectures:
+            when = lec.format_when() if hasattr(lec, "format_when") else (lec.date.isoformat() if lec.date else "no date")
+            course_title = self.course_titles.get(lec.course_handle, "")
+            lines.append(f"- {lec.handle} ({when}) {course_title} / {lec.title}")
+        span_str = f"{self.request.date_from} to {self.request.date_to}"
+        within_str = f" in {self.request.within}" if self.request.within else ""
+        body = f"Lectures recorded ({span_str}{within_str}):\n" + "\n".join(lines)
+        return Material(
+            key=f"by_date:{self.request.date_from}:{self.request.date_to}:{self.request.within or 'all'}",
+            kind="lecture",
+            label=f"Lectures ({span_str})",
+            content=body,
+            source_type="lecture_summary",
+        )
 
     def summary(self) -> str:
         return f"{self.request.label()} → {len(self.lectures)} lecture(s)"
@@ -997,7 +1018,8 @@ def validate_operations(
 
 def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> str:
     m = nav_input.student_map
-    parts = [f"<today>{nav_input.today.isoformat()}</today>"]
+    cur_time = nav_input.current_time_str or nav_input.today.isoformat()
+    parts = [f"<today>{nav_input.today.isoformat()}</today>", f"<current_time>{cur_time}</current_time>"]
 
     if lap == 1:
         map_text = "Courses:\n" + m.render_courses()
@@ -2132,6 +2154,10 @@ async def execute_lap(record: LapRecord, nav_input: NavigatorInput, state: NavSt
         for page in o.pages:
             state.search_materials.append(web_material(page, opened=False))
     state.outcomes += date_outcomes
+    for o in date_outcomes:
+        mat = o.to_material()
+        if mat:
+            state.search_materials.append(mat)
     record.done = ([f"open {op.handle}" for op in opened] + [o.summary() for o in find_outcomes]
                    + [o.summary() for o in web_outcomes] + [o.summary() for o in date_outcomes])
 
