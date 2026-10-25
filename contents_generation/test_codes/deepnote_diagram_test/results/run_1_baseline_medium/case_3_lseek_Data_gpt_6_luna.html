@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lseek Data Access Flow - GPT 6 Luna</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 32px 16px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 600px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>lseek Data Access Flow</strong> (diagram)</span>
+    <span>GPT 6 Luna | 27.93s | 4509 tok ($0.00268)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #dbe3ef;
+      --paper: #ffffff;
+      --soft: #f8fafc;
+      --indigo: #4f46e5;
+      --emerald: #059669;
+      --amber: #d97706;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 600px;
+      margin: 16px auto;
+      padding: 22px;
+      color: var(--ink);
+      background: var(--paper);
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .deepnote-figure-card *,
+    .deepnote-figure-card *::before,
+    .deepnote-figure-card *::after {
+      box-sizing: border-box;
+    }
+
+    .deepnote-figure-card .figure-heading {
+      margin: 0 0 5px;
+      font-size: 19px;
+      line-height: 1.3;
+      letter-spacing: -0.025em;
+      font-weight: 750;
+    }
+
+    .deepnote-figure-card .figure-subtitle {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .deepnote-figure-card .flow {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .deepnote-figure-card .flow-node {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--soft);
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.4;
+      font-weight: 650;
+    }
+
+    .deepnote-figure-card .start-node {
+      color: #3730a3;
+      border-color: #c7d2fe;
+      background: #eef2ff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .deepnote-figure-card .calc-node {
+      background: #fff;
+    }
+
+    .deepnote-figure-card .flow-arrow {
+      height: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #94a3b8;
+    }
+
+    .deepnote-figure-card .flow-arrow svg {
+      display: block;
+      width: 16px;
+      height: 20px;
+    }
+
+    .deepnote-figure-card .decision-label {
+      margin: 2px 0 10px;
+      color: #475569;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.4;
+      font-weight: 700;
+      letter-spacing: 0.045em;
+      text-transform: uppercase;
+    }
+
+    .deepnote-figure-card .path-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .deepnote-figure-card .path-card {
+      padding: 13px 14px 12px;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .deepnote-figure-card .path-card.direct {
+      --accent: var(--emerald);
+      --tint: #ecfdf5;
+      --badge-ink: #047857;
+    }
+
+    .deepnote-figure-card .path-card.single {
+      --accent: var(--amber);
+      --tint: #fffbeb;
+      --badge-ink: #b45309;
+    }
+
+    .deepnote-figure-card .path-card.double {
+      --accent: var(--indigo);
+      --tint: #eef2ff;
+      --badge-ink: #4338ca;
+    }
+
+    .deepnote-figure-card .path-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 9px;
+    }
+
+    .deepnote-figure-card .path-title {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 750;
+    }
+
+    .deepnote-figure-card .path-badge {
+      flex: 0 0 auto;
+      padding: 4px 7px;
+      border-radius: 999px;
+      color: var(--badge-ink);
+      background: var(--tint);
+      font-size: 9px;
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: 0.055em;
+      text-transform: uppercase;
+    }
+
+    .deepnote-figure-card .steps {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 5px;
+    }
+
+    .deepnote-figure-card .step {
+      padding: 7px 9px;
+      border: 1px solid #edf1f6;
+      border-radius: 7px;
+      color: #334155;
+      background: #fbfcfe;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .deepnote-figure-card .step-arrow {
+      display: flex;
+      justify-content: center;
+      height: 13px;
+      color: var(--accent);
+    }
+
+    .deepnote-figure-card .step-arrow svg {
+      width: 12px;
+      height: 13px;
+    }
+
+    .deepnote-figure-card .merge-label {
+      margin: 10px 0 0;
+      color: #64748b;
+      text-align: center;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .deepnote-figure-card .data-node {
+      border-color: #a7f3d0;
+      color: #065f46;
+      background: #ecfdf5;
+    }
+
+    @media (max-width: 420px) {
+      .deepnote-figure-card {
+        padding: 17px 14px;
+      }
+
+      .deepnote-figure-card .figure-heading {
+        font-size: 17px;
+      }
+
+      .deepnote-figure-card .path-card {
+        padding: 12px 11px 11px;
+      }
+
+      .deepnote-figure-card .path-heading {
+        align-items: flex-start;
+      }
+
+      .deepnote-figure-card .path-badge {
+        font-size: 8px;
+      }
+    }
+  </style>
+
+  <h2 class="figure-heading">Accessing File Data with <code>lseek</code></h2>
+  <p class="figure-subtitle">The logical block number determines which inode pointer path leads to the requested data.</p>
+
+  <div class="flow">
+    <div class="flow-node start-node">lseek(fd, offset, whence)</div>
+
+    <div class="flow-arrow" aria-hidden="true">
+      <svg viewBox="0 0 16 20" fill="none">
+        <path d="M8 1v15m0 0 5-5m-5 5-5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="flow-node calc-node">Calculate logical block number<br><span style="font-weight:500;color:#64748b">target byte offset ÷ block size</span></div>
+
+    <div class="flow-arrow" aria-hidden="true">
+      <svg viewBox="0 0 16 20" fill="none">
+        <path d="M8 1v15m0 0 5-5m-5 5-5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="decision-label">Choose path based on file size</div>
+
+    <div class="path-list">
+      <section class="path-card direct" aria-label="Small file, direct block path">
+        <div class="path-heading">
+          <h3 class="path-title">Small File (Direct Block)</h3>
+          <span class="path-badge">Direct</span>
+        </div>
+        <div class="steps">
+          <div class="step">Access inode; get data block pointer</div>
+        </div>
+      </section>
+
+      <section class="path-card single" aria-label="Medium file, single indirect path">
+        <div class="path-heading">
+          <h3 class="path-title">Medium File (Single Indirect)</h3>
+          <span class="path-badge">1 level</span>
+        </div>
+        <div class="steps">
+          <div class="step">Access inode; get indirect block pointer</div>
+          <div class="step-arrow" aria-hidden="true">
+            <svg viewBox="0 0 12 13" fill="none"><path d="M6 1v9m0 0 3-3m-3 3L3 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="step">Access indirect block; get data block pointer</div>
+        </div>
+      </section>
+
+      <section class="path-card double" aria-label="Large file, double indirect path">
+        <div class="path-heading">
+          <h3 class="path-title">Large File (Double Indirect)</h3>
+          <span class="path-badge">2 levels</span>
+        </div>
+        <div class="steps">
+          <div class="step">Access inode; get double indirect block pointer</div>
+          <div class="step-arrow" aria-hidden="true">
+            <svg viewBox="0 0 12 13" fill="none"><path d="M6 1v9m0 0 3-3m-3 3L3 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="step">Access double indirect block; get single indirect block pointer</div>
+          <div class="step-arrow" aria-hidden="true">
+            <svg viewBox="0 0 12 13" fill="none"><path d="M6 1v9m0 0 3-3m-3 3L3 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div class="step">Access single indirect block; get data block pointer</div>
+        </div>
+      </section>
+    </div>
+
+    <p class="merge-label">Each path resolves to a data block pointer</p>
+    <div class="flow-arrow" aria-hidden="true">
+      <svg viewBox="0 0 16 20" fill="none">
+        <path d="M8 1v15m0 0 5-5m-5 5-5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="flow-node data-node">Access Data Block</div>
+  </div>
+</div>
+  </div>
+</body>
+</html>

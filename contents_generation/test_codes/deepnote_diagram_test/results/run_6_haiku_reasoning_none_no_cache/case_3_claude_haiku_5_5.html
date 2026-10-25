@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初期通信時のブリッジの学習とフラッディング - Claude Haiku 5.5</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 12px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 520px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>初期通信時のブリッジの学習とフラッディング</strong> (diagram)</span>
+    <span>Claude Haiku 5.5 | 29.91s | 9522 tok ($0.00473)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+      padding: 16px;
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      color: #1e293b;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .deepnote-figure-card .dn-head { margin-bottom: 8px; }
+    .deepnote-figure-card .dn-tag {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #4f46e5;
+      background: #eef2ff;
+      border-radius: 999px;
+      padding: 2px 10px;
+    }
+    .deepnote-figure-card h3 {
+      margin: 6px 0 2px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .deepnote-figure-card .dn-sub {
+      margin: 0;
+      font-size: 13px;
+      color: #334155;
+    }
+    .deepnote-figure-card .dn-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin: 8px 0 4px;
+    }
+    .deepnote-figure-card .dn-steps {
+      list-style: none;
+      margin: 12px 0 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .deepnote-figure-card .dn-steps li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .deepnote-figure-card .dn-num {
+      flex: 0 0 auto;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .deepnote-figure-card .dn-body { flex: 1; min-width: 0; }
+    .deepnote-figure-card .dn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .deepnote-figure-card .dn-pill {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 2px 9px;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+    .deepnote-figure-card .pill-indigo { color: #4f46e5; background: #eef2ff; }
+    .deepnote-figure-card .pill-emerald { color: #059669; background: #ecfdf5; }
+    .deepnote-figure-card .pill-amber { color: #d97706; background: #fffbeb; }
+    .deepnote-figure-card .pill-rose { color: #e11d48; background: #fff1f2; }
+    .deepnote-figure-card .dn-text {
+      margin: 0;
+      font-size: 14px;
+      color: #334155;
+    }
+    .deepnote-figure-card .dn-text b {
+      color: #d97706;
+      font-weight: 700;
+    }
+    .deepnote-figure-card .dn-foot {
+      margin-top: 12px;
+      text-align: center;
+    }
+    .deepnote-figure-card .dn-goal {
+      display: inline-block;
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      background: #e11d48;
+      border-radius: 999px;
+      padding: 6px 16px;
+    }
+    @media (max-width: 360px) {
+      .deepnote-figure-card { padding: 12px; }
+    }
+  </style>
+
+  <div class="dn-head">
+    <span class="dn-tag">初期通信</span>
+    <h3>ブリッジの学習とフラッディング</h3>
+    <p class="dn-sub">A → D のフレームが届くまで</p>
+  </div>
+
+  <svg class="dn-svg" viewBox="0 0 340 230" role="img" aria-label="AからDへのフレームがブリッジ1とブリッジ2を通過し、Dに届く図">
+    <defs>
+      <marker id="dnArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+        <path d="M0,0 L8,4 L0,8 z" fill="#d97706"/>
+      </marker>
+    </defs>
+
+    <!-- Bridge 1 upper port to Bridge 2 upper port (flooding) -->
+    <path d="M75 100 V62 H250 V100" fill="none" stroke="#d97706" stroke-width="3" stroke-linejoin="round" marker-end="url(#dnArrow)"/>
+    <text x="162" y="52" text-anchor="middle" font-size="14" font-weight="700" fill="#d97706">上側へフラッディング</text>
+
+    <!-- A to Bridge 1 lower port -->
+    <path d="M75 144 V188" fill="none" stroke="#d97706" stroke-width="3" marker-end="url(#dnArrow)"/>
+    <text x="84" y="172" font-size="14" font-weight="700" fill="#059669">下側</text>
+
+    <!-- Bridge 2 to C and D (flooding) -->
+    <path d="M225 144 V188" fill="none" stroke="#d97706" stroke-width="3" marker-end="url(#dnArrow)"/>
+    <path d="M280 144 V188" fill="none" stroke="#d97706" stroke-width="3" marker-end="url(#dnArrow)"/>
+    <text x="219" y="170" text-anchor="end" font-size="14" font-weight="700" fill="#d97706">左下</text>
+    <text x="287" y="170" font-size="14" font-weight="700" fill="#d97706">右下</text>
+
+    <!-- Bridge 1 -->
+    <rect x="30" y="100" width="90" height="44" rx="10" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+    <text x="75" y="127" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">ブリッジ1</text>
+
+    <!-- Bridge 2 -->
+    <rect x="200" y="100" width="100" height="44" rx="10" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+    <text x="250" y="127" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">ブリッジ2</text>
+
+    <!-- Nodes -->
+    <rect x="45" y="188" width="60" height="32" rx="8" fill="#ffffff" stroke="#4f46e5" stroke-width="2"/>
+    <text x="75" y="209" text-anchor="middle" font-size="14" font-weight="700" fill="#4f46e5">A</text>
+
+    <rect x="190" y="188" width="70" height="32" rx="8" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="225" y="209" text-anchor="middle" font-size="14" font-weight="700" fill="#64748b">C</text>
+
+    <rect x="252" y="188" width="56" height="32" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="2.5"/>
+    <text x="280" y="209" text-anchor="middle" font-size="14" font-weight="700" fill="#059669">D</text>
+
+    <!-- Step badges -->
+    <circle cx="30" cy="100" r="0" fill="none"/>
+  </svg>
+
+  <ol class="dn-steps">
+    <li>
+      <span class="dn-num">1</span>
+      <div class="dn-body">
+        <div class="dn-row">
+          <span class="dn-pill pill-indigo">ブリッジ1</span>
+          <span class="dn-pill pill-emerald">Aは「下側」</span>
+        </div>
+        <p class="dn-text">Dの場所は不明 → <b>上側</b>へフラッディング</p>
+      </div>
+    </li>
+    <li>
+      <span class="dn-num">2</span>
+      <div class="dn-body">
+        <div class="dn-row">
+          <span class="dn-pill pill-indigo">ブリッジ2</span>
+          <span class="dn-pill pill-emerald">Aは「上側」</span>
+        </div>
+        <p class="dn-text">Dは不明 → <b>右下・左下</b>へフラッディング</p>
+      </div>
+    </li>
+    <li>
+      <span class="dn-num">3</span>
+      <div class="dn-body">
+        <div class="dn-row">
+          <span class="dn-pill pill-amber">フレーム</span>
+        </div>
+        <p class="dn-text">右下ポートの先にあるDへ到達</p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="dn-foot">
+    <span class="dn-goal">Dに届いた ✓</span>
+  </div>
+</div>
+  </div>
+</body>
+</html>

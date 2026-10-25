@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPT Device Layout - GPT 6 Luna</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 32px 16px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 600px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>GPT Device Layout</strong> (diagram)</span>
+    <span>GPT 6 Luna | 29.25s | 4688 tok ($0.00265)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --indigo: #4f46e5;
+      --amber: #d97706;
+      --emerald: #059669;
+      --rose: #e11d48;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 600px;
+      margin: 16px auto;
+      padding: 22px;
+      color: var(--ink);
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .deepnote-figure-card *,
+    .deepnote-figure-card *::before,
+    .deepnote-figure-card *::after {
+      box-sizing: border-box;
+    }
+
+    .deepnote-figure-card .figure-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    .deepnote-figure-card h2 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.25;
+      letter-spacing: -0.025em;
+      font-weight: 750;
+    }
+
+    .deepnote-figure-card .gpt-badge {
+      flex: 0 0 auto;
+      padding: 5px 9px;
+      color: #4338ca;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 0.06em;
+    }
+
+    .deepnote-figure-card .subtitle {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .deepnote-figure-card .map-wrap {
+      padding: 14px 12px 10px;
+      background: #f8fafc;
+      border: 1px solid #e8edf4;
+      border-radius: 10px;
+    }
+
+    .deepnote-figure-card .map-kicker {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 0 1px 10px;
+      color: #475569;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+
+    .deepnote-figure-card .map-kicker span:last-child {
+      color: #94a3b8;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: none;
+    }
+
+    .deepnote-figure-card svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      overflow: visible;
+    }
+
+    .deepnote-figure-card .storage-bar {
+      stroke: #cbd5e1;
+      stroke-width: 1.5;
+    }
+
+    .deepnote-figure-card .svg-index {
+      fill: #475569;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: inherit;
+    }
+
+    .deepnote-figure-card .svg-label {
+      fill: #ffffff;
+      font-size: 12px;
+      font-weight: 750;
+      font-family: inherit;
+      text-anchor: middle;
+    }
+
+    .deepnote-figure-card .svg-sub {
+      fill: rgba(255, 255, 255, 0.88);
+      font-size: 10px;
+      font-weight: 600;
+      font-family: inherit;
+      text-anchor: middle;
+    }
+
+    .deepnote-figure-card .svg-dark-label {
+      fill: #334155;
+      font-size: 11px;
+      font-weight: 750;
+      font-family: inherit;
+      text-anchor: middle;
+    }
+
+    .deepnote-figure-card .svg-boundary {
+      stroke: #ffffff;
+      stroke-width: 2;
+    }
+
+    .deepnote-figure-card .legend {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 14px;
+      margin: 16px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .deepnote-figure-card .legend li {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .deepnote-figure-card .swatch {
+      flex: 0 0 10px;
+      width: 10px;
+      height: 10px;
+      margin-top: 4px;
+      border-radius: 3px;
+    }
+
+    .deepnote-figure-card .legend strong {
+      display: block;
+      margin-bottom: 2px;
+      color: #1e293b;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .deepnote-figure-card .legend span.text {
+      display: block;
+      color: #64748b;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .deepnote-figure-card .figure-note {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin: 16px 0 0;
+      padding: 10px 11px;
+      color: #475569;
+      background: #f8fafc;
+      border-left: 3px solid #94a3b8;
+      border-radius: 4px 7px 7px 4px;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .deepnote-figure-card .figure-note strong {
+      color: #334155;
+    }
+
+    @media (max-width: 420px) {
+      .deepnote-figure-card {
+        padding: 17px 14px;
+      }
+
+      .deepnote-figure-card h2 {
+        font-size: 18px;
+      }
+
+      .deepnote-figure-card .map-wrap {
+        padding: 12px 8px 8px;
+      }
+
+      .deepnote-figure-card .legend {
+        grid-template-columns: 1fr;
+        gap: 9px;
+      }
+
+      .deepnote-figure-card .svg-label {
+        font-size: 11px;
+      }
+
+      .deepnote-figure-card .svg-sub {
+        font-size: 9px;
+      }
+    }
+  </style>
+
+  <div class="figure-heading">
+    <h2>GPT device layout</h2>
+    <span class="gpt-badge">UEFI</span>
+  </div>
+  <p class="subtitle">How GPT metadata and data partitions are arranged across a storage device.</p>
+
+  <div class="map-wrap">
+    <div class="map-kicker">
+      <span>Storage device · block order</span>
+      <span>Diagram not to scale</span>
+    </div>
+
+    <svg viewBox="0 0 560 132" role="img" aria-labelledby="gpt-title gpt-desc">
+      <title id="gpt-title">GPT storage device block layout</title>
+      <desc id="gpt-desc">From left to right: block 0 is the Protective MBR, block 1 is the Primary GPT Header, blocks 2 through X hold partition entries, the main area contains actual partitions, and the final block holds a backup GPT Header.</desc>
+
+      <text x="24" y="18" class="svg-index">START OF DEVICE</text>
+      <text x="536" y="18" class="svg-index" text-anchor="end">END OF DEVICE</text>
+
+      <rect x="20" y="34" width="520" height="56" rx="8" fill="#ffffff" class="storage-bar"/>
+      <path d="M28 34 H92 V90 H28 Q20 90 20 82 V42 Q20 34 28 34Z" fill="#d97706" class="svg-boundary"/>
+      <rect x="92" y="34" width="68" height="56" fill="#4f46e5" class="svg-boundary"/>
+      <rect x="160" y="34" width="104" height="56" fill="#6366f1" class="svg-boundary"/>
+      <rect x="264" y="34" width="236" height="56" fill="#059669" class="svg-boundary"/>
+      <path d="M500 34 H532 Q540 34 540 42 V82 Q540 90 532 90 H500Z" fill="#e11d48" class="svg-boundary"/>
+
+      <text x="56" y="58" class="svg-label">MBR</text>
+      <text x="56" y="74" class="svg-sub">Block 0</text>
+
+      <text x="126" y="58" class="svg-label">GPT</text>
+      <text x="126" y="74" class="svg-sub">Block 1</text>
+
+      <text x="212" y="57" class="svg-label">Entries</text>
+      <text x="212" y="74" class="svg-sub">Blocks 2–X</text>
+
+      <text x="382" y="58" class="svg-label">Actual partitions</text>
+      <text x="382" y="74" class="svg-sub">Main device area</text>
+
+      <text x="520" y="58" class="svg-dark-label">Backup</text>
+      <text x="520" y="74" class="svg-dark-label">header</text>
+
+      <text x="20" y="111" class="svg-index">LBA 0</text>
+      <text x="540" y="111" class="svg-index" text-anchor="end">Last LBA</text>
+      <path d="M72 107 H484" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+      <path d="M478 103 L484 107 L478 111" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+    </svg>
+  </div>
+
+  <ul class="legend" aria-label="GPT layout details">
+    <li>
+      <span class="swatch" style="background:#d97706"></span>
+      <div><strong>Block 0 · Protective MBR</strong><span class="text">Helps prevent legacy MBR-only tools from treating the GPT disk as empty.</span></div>
+    </li>
+    <li>
+      <span class="swatch" style="background:#4f46e5"></span>
+      <div><strong>Block 1 · Primary GPT Header</strong><span class="text">Identifies the GPT layout and locates its partition-entry array.</span></div>
+    </li>
+    <li>
+      <span class="swatch" style="background:#6366f1"></span>
+      <div><strong>Blocks 2–X · Partition entries</strong><span class="text">Describe the partitions and their locations on the device.</span></div>
+    </li>
+    <li>
+      <span class="swatch" style="background:#059669"></span>
+      <div><strong>Main area · Actual partitions</strong><span class="text">The largest region, used for partition data.</span></div>
+    </li>
+    <li>
+      <span class="swatch" style="background:#e11d48"></span>
+      <div><strong>Last block · Backup GPT Header</strong><span class="text">A redundant header copy, available if the primary header is damaged.</span></div>
+    </li>
+  </ul>
+
+  <p class="figure-note"><strong>Block size:</strong> 512 bytes in the layout described here. The widths in the diagram are schematic; metadata blocks are not drawn to scale.</p>
+</div>
+  </div>
+</body>
+</html>

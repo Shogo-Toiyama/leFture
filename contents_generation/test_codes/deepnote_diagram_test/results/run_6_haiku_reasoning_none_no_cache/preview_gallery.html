@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepNote Diagram Test (run_6_haiku_reasoning_none_no_cache)</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 32px 16px;
+  }
+  header {
+    max-width: 720px;
+    margin: 0 auto 32px auto;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 16px;
+  }
+  h1 { margin: 0 0 8px 0; font-size: 22px; color: #0f172a; }
+  .case-card {
+    max-width: 720px;
+    margin: 0 auto 40px auto;
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+  .case-header {
+    padding: 16px 20px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .case-header h2 { margin: 0 0 6px 0; font-size: 17px; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+  .badge {
+    font-size: 11px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .badge.diagram { background: #4f46e5; color: #fff; }
+  .badge.chart { background: #059669; color: #fff; }
+  .case-desc { margin: 0; color: #64748b; font-size: 13px; line-height: 1.45; }
+  .stats-pill {
+    background: #eef2ff;
+    color: #4f46e5;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .mobile-viewport {
+    background: #FAF5E9;
+    padding: 24px 16px;
+    display: flex;
+    justify-content: center;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>🏛️ DeepNotes Diagram Test (run_6_haiku_reasoning_none_no_cache)</h1>
+    <p style="margin: 0; color: #64748b; font-size: 14px;">Claude Haiku 5.5 | Reasoning: NONE | No Cache | Clean Mobile-First Baseline</p>
+  </header>
+  
+            <section class="case-card">
+              <div class="case-header">
+                <div>
+                  <h2>性差別的な模擬面接後の数学課題の成績 <span class="badge bar_chart">bar_chart</span></h2>
+                  <p class="case-desc">棒グラフ。X軸は「性別（女性、男性）」、Y軸は「数学課題の成績」。各性別につき2本の棒があり、左側が「性差別的な扱いを受けた場合（黒または濃い色）」、右側が「非性差別的な扱いを受けた場合（灰色または薄い色）」。男性の場合、両方の棒の高さはほぼ同じで、成績に差がないことを示す。女性の場合、性差別的な扱いを受けた場合の棒は非性差別的な扱いを受けた場合の棒よりも著しく低いことを示す。</p>
+                </div>
+                <div class="stats-pill">22.71s | 7291 tok | $0.00350</div>
+              </div>
+              <div class="mobile-viewport">
+                <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+      padding: 16px;
+      color: #1e293b;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .deepnote-figure-card .dn-badge {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #4f46e5;
+      background: #eef2ff;
+      border-radius: 999px;
+      padding: 3px 10px;
+      letter-spacing: 0.02em;
+    }
+    .deepnote-figure-card .dn-title {
+      margin: 8px 0 10px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .deepnote-figure-card .dn-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: #334155;
+    }
+    .deepnote-figure-card .dn-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .deepnote-figure-card .dn-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+    .deepnote-figure-card .dn-chart {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+    }
+    .deepnote-figure-card .dn-insights {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .deepnote-figure-card .dn-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 11px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 13px;
+      color: #334155;
+    }
+    .deepnote-figure-card .dn-pill {
+      flex-shrink: 0;
+      font-size: 11.5px;
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 3px 9px;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+    .deepnote-figure-card .pill-rose { background: #e11d48; }
+    .deepnote-figure-card .pill-emerald { background: #059669; }
+    .deepnote-figure-card .pill-amber { background: #d97706; }
+    .deepnote-figure-card .dn-row strong {
+      color: #0f172a;
+      font-weight: 700;
+    }
+    .deepnote-figure-card .dn-takeaway {
+      margin-top: 12px;
+      padding: 11px 13px;
+      border-radius: 10px;
+      background: #eef2ff;
+      border-left: 4px solid #4f46e5;
+      font-size: 13px;
+      color: #1e293b;
+    }
+    .deepnote-figure-card .dn-takeaway-title {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #4f46e5;
+      margin-bottom: 2px;
+    }
+    .deepnote-figure-card svg text {
+      font-family: inherit;
+    }
+  </style>
+
+  <span class="dn-badge">📊 研究結果</span>
+  <div class="dn-title">性差別的な模擬面接後の数学課題の成績</div>
+
+  <div class="dn-legend">
+    <span class="dn-legend-item"><span class="dn-swatch" style="background:#0f172a;"></span>性差別的な扱い</span>
+    <span class="dn-legend-item"><span class="dn-swatch" style="background:#cbd5e1;"></span>非性差別的な扱い</span>
+  </div>
+
+  <svg class="dn-chart" viewBox="0 0 340 230" role="img" aria-label="女性は性差別的な扱いで成績が大きく低下し、男性は扱いによる差がほぼない棒グラフ">
+    <!-- Grid lines -->
+    <line x1="44" y1="58" x2="330" y2="58" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4"/>
+    <line x1="44" y1="124" x2="330" y2="124" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4"/>
+
+    <!-- Axes -->
+    <line x1="44" y1="16" x2="44" y2="190" stroke="#334155" stroke-width="1.5"/>
+    <line x1="44" y1="190" x2="330" y2="190" stroke="#334155" stroke-width="1.5"/>
+
+    <!-- Y-axis labels -->
+    <text x="36" y="22" font-size="12" fill="#334155" text-anchor="end">高</text>
+    <text x="36" y="194" font-size="12" fill="#334155" text-anchor="end">低</text>
+    <text x="14" y="103" font-size="12" fill="#334155" text-anchor="middle" transform="rotate(-90 14 103)">成績</text>
+
+    <!-- Women group: dark (sexist) -->
+    <rect x="64" y="128" width="52" height="62" rx="4" fill="#0f172a"/>
+    <!-- Women group: gray (non-sexist) -->
+    <rect x="124" y="58" width="52" height="132" rx="4" fill="#cbd5e1"/>
+
+    <!-- Men group: dark (sexist) -->
+    <rect x="204" y="60" width="52" height="130" rx="4" fill="#0f172a"/>
+    <!-- Men group: gray (non-sexist) -->
+    <rect x="264" y="56" width="52" height="134" rx="4" fill="#cbd5e1"/>
+
+    <!-- Reference line from women non-sexist level -->
+    <line x1="64" y1="58" x2="176" y2="58" stroke="#e11d48" stroke-width="1.5" stroke-dasharray="5 4"/>
+
+    <!-- Value labels -->
+    <text x="90" y="118" font-size="12" font-weight="700" fill="#e11d48" text-anchor="middle">大きく低下</text>
+    <text x="150" y="48" font-size="12" font-weight="700" fill="#334155" text-anchor="middle">男性並み</text>
+    <text x="230" y="52" font-size="12" font-weight="700" fill="#059669" text-anchor="middle">ほぼ同じ</text>
+    <text x="290" y="48" font-size="12" font-weight="700" fill="#059669" text-anchor="middle">ほぼ同じ</text>
+
+    <!-- Group labels -->
+    <text x="120" y="212" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">女性</text>
+    <text x="260" y="212" font-size="14" font-weight="700" fill="#0f172a" text-anchor="middle">男性</text>
+  </svg>
+
+  <div class="dn-insights">
+    <div class="dn-row">
+      <span class="dn-pill pill-rose">女性</span>
+      <span>性差別的な質問で<strong>成績が著しく低下</strong></span>
+    </div>
+    <div class="dn-row">
+      <span class="dn-pill pill-emerald">女性</span>
+      <span>非性差別的な質問なら<strong>男性と同等</strong></span>
+    </div>
+    <div class="dn-row">
+      <span class="dn-pill pill-amber">男性</span>
+      <span>扱いによる差は<strong>ほぼなし</strong></span>
+    </div>
+  </div>
+
+  <div class="dn-takeaway">
+    <span class="dn-takeaway-title">💡 ステレオタイプ脅威とは</span>
+    否定的なステレオタイプにさらされた女性は、本来の能力を発揮できず、パフォーマンスが損なわれる。
+  </div>
+</div>
+              </div>
+            </section>
+            
+            <section class="case-card">
+              <div class="case-header">
+                <div>
+                  <h2>バースト性トラフィックと帯域幅利用 <span class="badge graph">graph</span></h2>
+                  <p class="case-desc">横軸を時間、縦軸を帯域幅として、音声トラフィック（ほぼ一定の低いレベル）とデータトラフィック（長いアイドル期間と短い高いピーク）のグラフを並べて表示する。統計的多重化がデータトラフィックのピークを効率的に利用できることを示す。</p>
+                </div>
+                <div class="stats-pill">22.32s | 7789 tok | $0.00373</div>
+              </div>
+              <div class="mobile-viewport">
+                <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      box-sizing: border-box;
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+      padding: 16px;
+      color: #1e293b;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .deepnote-figure-card .dnf-title {
+      margin: 0 0 2px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .deepnote-figure-card .dnf-sub {
+      margin: 0 0 12px;
+      font-size: 12px;
+      color: #475569;
+    }
+    .deepnote-figure-card .dnf-panel {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 10px 6px;
+      margin-bottom: 10px;
+      background: #f8fafc;
+    }
+    .deepnote-figure-card .dnf-panel-head {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px 8px;
+      margin-bottom: 4px;
+    }
+    .deepnote-figure-card .dnf-pill {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+    .deepnote-figure-card .dnf-pill.voice { background: #059669; }
+    .deepnote-figure-card .dnf-pill.data { background: #4f46e5; }
+    .deepnote-figure-card .dnf-desc {
+      font-size: 13px;
+      color: #334155;
+      font-weight: 600;
+    }
+    .deepnote-figure-card svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .deepnote-figure-card .dnf-insight {
+      background: #fffbeb;
+      border-left: 4px solid #d97706;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin: 12px 0;
+      font-size: 14px;
+      color: #1e293b;
+    }
+    .deepnote-figure-card .dnf-insight strong {
+      color: #b45309;
+    }
+    .deepnote-figure-card .dnf-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .deepnote-figure-card .dnf-box {
+      border-radius: 10px;
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+    }
+    .deepnote-figure-card .dnf-box.bad { border-top: 3px solid #e11d48; }
+    .deepnote-figure-card .dnf-box.good { border-top: 3px solid #059669; }
+    .deepnote-figure-card .dnf-box-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 4px;
+    }
+    .deepnote-figure-card .dnf-box-mid {
+      font-size: 12px;
+      color: #475569;
+    }
+    .deepnote-figure-card .dnf-big {
+      font-size: 20px;
+      font-weight: 800;
+      margin-top: 4px;
+      line-height: 1.2;
+    }
+    .deepnote-figure-card .dnf-box.bad .dnf-big { color: #e11d48; }
+    .deepnote-figure-card .dnf-box.good .dnf-big { color: #059669; }
+    .deepnote-figure-card .dnf-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .deepnote-figure-card .dnf-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+    }
+    .deepnote-figure-card .dnf-tag.up {
+      background: #ecfdf5;
+      color: #065f46;
+      border-color: #a7f3d0;
+    }
+  </style>
+
+  <h3 class="dnf-title">バースト性トラフィックと帯域幅利用</h3>
+  <p class="dnf-sub">横軸: 時間 ／ 縦軸: 帯域幅</p>
+
+  <div class="dnf-panel">
+    <div class="dnf-panel-head">
+      <span class="dnf-pill voice">音声</span>
+      <span class="dnf-desc">ほぼ一定の低いレベル</span>
+    </div>
+    <svg viewBox="0 0 320 110" role="img" aria-label="音声トラフィック: 一定の低い帯域">
+      <line x1="44" y1="8" x2="44" y2="90" stroke="#94a3b8" stroke-width="1.5"/>
+      <line x1="44" y1="90" x2="310" y2="90" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="12" y="50" font-size="12" fill="#475569" text-anchor="middle" transform="rotate(-90 12 50)">帯域幅</text>
+      <text x="306" y="106" font-size="12" fill="#475569" text-anchor="end">時間</text>
+      <path d="M44 62 L90 60 L130 63 L170 61 L220 62 L260 60 L310 62 L310 90 L44 90 Z" fill="rgba(5,150,105,0.12)"/>
+      <path d="M44 62 L90 60 L130 63 L170 61 L220 62 L260 60 L310 62" fill="none" stroke="#059669" stroke-width="3" stroke-linejoin="round"/>
+      <text x="292" y="50" font-size="12" font-weight="700" fill="#059669" text-anchor="end">常時</text>
+    </svg>
+  </div>
+
+  <div class="dnf-panel">
+    <div class="dnf-panel-head">
+      <span class="dnf-pill data">データ</span>
+      <span class="dnf-desc">長いアイドル＋短い高いピーク</span>
+    </div>
+    <svg viewBox="0 0 320 110" role="img" aria-label="データトラフィック: 長いアイドルと短い高いピーク">
+      <line x1="44" y1="8" x2="44" y2="90" stroke="#94a3b8" stroke-width="1.5"/>
+      <line x1="44" y1="90" x2="310" y2="90" stroke="#94a3b8" stroke-width="1.5"/>
+      <text x="12" y="50" font-size="12" fill="#475569" text-anchor="middle" transform="rotate(-90 12 50)">帯域幅</text>
+      <text x="306" y="106" font-size="12" fill="#475569" text-anchor="end">時間</text>
+      <path d="M44 90 L70 90 L80 18 L92 18 L102 90 L190 90 L200 34 L212 34 L222 90 L262 90 L270 14 L282 14 L292 90 L310 90 Z" fill="rgba(79,70,229,0.15)" stroke="#4f46e5" stroke-width="2.5" stroke-linejoin="round"/>
+      <text x="86" y="12" font-size="12" font-weight="700" fill="#4f46e5" text-anchor="middle">ピーク</text>
+      <text x="146" y="80" font-size="12" font-weight="700" fill="#64748b" text-anchor="middle">アイドル</text>
+    </svg>
+  </div>
+
+  <div class="dnf-insight">
+    統計的多重化は、<strong>他のユーザーのアイドル時間</strong>を使い、自分のピーク時に<strong>全帯域</strong>を利用できる仕組みです。
+  </div>
+
+  <div class="dnf-compare">
+    <div class="dnf-box bad">
+      <div class="dnf-box-label">厳密な分割</div>
+      <div class="dnf-box-mid">100人で分割 → 1人 0.1 Mbps</div>
+      <div class="dnf-big">10秒</div>
+    </div>
+    <div class="dnf-box good">
+      <div class="dnf-box-label">統計的多重化</div>
+      <div class="dnf-box-mid">自分の番に 10 Mbps を独占</div>
+      <div class="dnf-big">0.1秒</div>
+    </div>
+  </div>
+
+  <div class="dnf-tags">
+    <span class="dnf-tag up">遅延 ↓</span>
+    <span class="dnf-tag up">スループット ↑</span>
+  </div>
+</div>
+              </div>
+            </section>
+            
+            <section class="case-card">
+              <div class="case-header">
+                <div>
+                  <h2>初期通信時のブリッジの学習とフラッディング <span class="badge diagram">diagram</span></h2>
+                  <p class="case-desc">AからDへのフレームがブリッジ1とブリッジ2を通過する様子を示す。ブリッジ1はAを「下側ポート」で学習し、Dが不明なため「上側ポート」へフラッディングする。ブリッジ2はAを「上側ポート」で学習し、Dが不明なため「右下ポート」と「左下ポート」へフラッディングする。最終的にDにフレームが届く。</p>
+                </div>
+                <div class="stats-pill">29.91s | 9522 tok | $0.00473</div>
+              </div>
+              <div class="mobile-viewport">
+                <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+      padding: 16px;
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      color: #1e293b;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .deepnote-figure-card .dn-head { margin-bottom: 8px; }
+    .deepnote-figure-card .dn-tag {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #4f46e5;
+      background: #eef2ff;
+      border-radius: 999px;
+      padding: 2px 10px;
+    }
+    .deepnote-figure-card h3 {
+      margin: 6px 0 2px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .deepnote-figure-card .dn-sub {
+      margin: 0;
+      font-size: 13px;
+      color: #334155;
+    }
+    .deepnote-figure-card .dn-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin: 8px 0 4px;
+    }
+    .deepnote-figure-card .dn-steps {
+      list-style: none;
+      margin: 12px 0 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .deepnote-figure-card .dn-steps li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .deepnote-figure-card .dn-num {
+      flex: 0 0 auto;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .deepnote-figure-card .dn-body { flex: 1; min-width: 0; }
+    .deepnote-figure-card .dn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .deepnote-figure-card .dn-pill {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 2px 9px;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+    .deepnote-figure-card .pill-indigo { color: #4f46e5; background: #eef2ff; }
+    .deepnote-figure-card .pill-emerald { color: #059669; background: #ecfdf5; }
+    .deepnote-figure-card .pill-amber { color: #d97706; background: #fffbeb; }
+    .deepnote-figure-card .pill-rose { color: #e11d48; background: #fff1f2; }
+    .deepnote-figure-card .dn-text {
+      margin: 0;
+      font-size: 14px;
+      color: #334155;
+    }
+    .deepnote-figure-card .dn-text b {
+      color: #d97706;
+      font-weight: 700;
+    }
+    .deepnote-figure-card .dn-foot {
+      margin-top: 12px;
+      text-align: center;
+    }
+    .deepnote-figure-card .dn-goal {
+      display: inline-block;
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      background: #e11d48;
+      border-radius: 999px;
+      padding: 6px 16px;
+    }
+    @media (max-width: 360px) {
+      .deepnote-figure-card { padding: 12px; }
+    }
+  </style>
+
+  <div class="dn-head">
+    <span class="dn-tag">初期通信</span>
+    <h3>ブリッジの学習とフラッディング</h3>
+    <p class="dn-sub">A → D のフレームが届くまで</p>
+  </div>
+
+  <svg class="dn-svg" viewBox="0 0 340 230" role="img" aria-label="AからDへのフレームがブリッジ1とブリッジ2を通過し、Dに届く図">
+    <defs>
+      <marker id="dnArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+        <path d="M0,0 L8,4 L0,8 z" fill="#d97706"/>
+      </marker>
+    </defs>
+
+    <!-- Bridge 1 upper port to Bridge 2 upper port (flooding) -->
+    <path d="M75 100 V62 H250 V100" fill="none" stroke="#d97706" stroke-width="3" stroke-linejoin="round" marker-end="url(#dnArrow)"/>
+    <text x="162" y="52" text-anchor="middle" font-size="14" font-weight="700" fill="#d97706">上側へフラッディング</text>
+
+    <!-- A to Bridge 1 lower port -->
+    <path d="M75 144 V188" fill="none" stroke="#d97706" stroke-width="3" marker-end="url(#dnArrow)"/>
+    <text x="84" y="172" font-size="14" font-weight="700" fill="#059669">下側</text>
+
+    <!-- Bridge 2 to C and D (flooding) -->
+    <path d="M225 144 V188" fill="none" stroke="#d97706" stroke-width="3" marker-end="url(#dnArrow)"/>
+    <path d="M280 144 V188" fill="none" stroke="#d97706" stroke-width="3" marker-end="url(#dnArrow)"/>
+    <text x="219" y="170" text-anchor="end" font-size="14" font-weight="700" fill="#d97706">左下</text>
+    <text x="287" y="170" font-size="14" font-weight="700" fill="#d97706">右下</text>
+
+    <!-- Bridge 1 -->
+    <rect x="30" y="100" width="90" height="44" rx="10" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+    <text x="75" y="127" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">ブリッジ1</text>
+
+    <!-- Bridge 2 -->
+    <rect x="200" y="100" width="100" height="44" rx="10" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+    <text x="250" y="127" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">ブリッジ2</text>
+
+    <!-- Nodes -->
+    <rect x="45" y="188" width="60" height="32" rx="8" fill="#ffffff" stroke="#4f46e5" stroke-width="2"/>
+    <text x="75" y="209" text-anchor="middle" font-size="14" font-weight="700" fill="#4f46e5">A</text>
+
+    <rect x="190" y="188" width="70" height="32" rx="8" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="225" y="209" text-anchor="middle" font-size="14" font-weight="700" fill="#64748b">C</text>
+
+    <rect x="252" y="188" width="56" height="32" rx="8" fill="#ecfdf5" stroke="#059669" stroke-width="2.5"/>
+    <text x="280" y="209" text-anchor="middle" font-size="14" font-weight="700" fill="#059669">D</text>
+
+    <!-- Step badges -->
+    <circle cx="30" cy="100" r="0" fill="none"/>
+  </svg>
+
+  <ol class="dn-steps">
+    <li>
+      <span class="dn-num">1</span>
+      <div class="dn-body">
+        <div class="dn-row">
+          <span class="dn-pill pill-indigo">ブリッジ1</span>
+          <span class="dn-pill pill-emerald">Aは「下側」</span>
+        </div>
+        <p class="dn-text">Dの場所は不明 → <b>上側</b>へフラッディング</p>
+      </div>
+    </li>
+    <li>
+      <span class="dn-num">2</span>
+      <div class="dn-body">
+        <div class="dn-row">
+          <span class="dn-pill pill-indigo">ブリッジ2</span>
+          <span class="dn-pill pill-emerald">Aは「上側」</span>
+        </div>
+        <p class="dn-text">Dは不明 → <b>右下・左下</b>へフラッディング</p>
+      </div>
+    </li>
+    <li>
+      <span class="dn-num">3</span>
+      <div class="dn-body">
+        <div class="dn-row">
+          <span class="dn-pill pill-amber">フレーム</span>
+        </div>
+        <p class="dn-text">右下ポートの先にあるDへ到達</p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="dn-foot">
+    <span class="dn-goal">Dに届いた ✓</span>
+  </div>
+</div>
+              </div>
+            </section>
+            
+            <section class="case-card">
+              <div class="case-header">
+                <div>
+                  <h2>二分探索木への要素追加と構造共有 <span class="badge diagram">diagram</span></h2>
+                  <p class="case-desc">元の二分探索木（例：根が25、左の子が20、右の子が36など）に新しいノード13を追加する様子を示す。13の挿入経路（25 -> 20 -> 10 -> 12 -> 15）にあるノードだけが新しいバージョンとして再作成され、それ以外のノード（例：36、22、5など）は元の構造からそのまま共有されることを視覚的に示す。古い経路のノードはガベージコレクションの対象となる。</p>
+                </div>
+                <div class="stats-pill">25.42s | 8707 tok | $0.00418</div>
+              </div>
+              <div class="mobile-viewport">
+                <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.07);
+      padding: 16px;
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", sans-serif;
+      color: #1e293b;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .dn-head { margin-bottom: 10px; }
+    .dn-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+      line-height: 1.4;
+    }
+    .dn-sub {
+      font-size: 13px;
+      color: #334155;
+      margin: 0;
+      line-height: 1.5;
+    }
+    .dn-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 12px 0 8px 0;
+    }
+    .dn-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: #334155;
+      line-height: 1.2;
+    }
+    .dn-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .dn-svg-wrap {
+      width: 100%;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 8px 4px;
+    }
+    .dn-svg-wrap svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .dn-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .dn-step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #1e293b;
+      line-height: 1.4;
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 7px 10px;
+      border-left: 3px solid #4f46e5;
+    }
+    .dn-step.emerald { border-left-color: #059669; }
+    .dn-step.amber { border-left-color: #d97706; }
+    .dn-step.rose { border-left-color: #e11d48; }
+    .dn-step-num {
+      font-weight: 700;
+      color: #4f46e5;
+      flex-shrink: 0;
+    }
+    .dn-footer {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      font-size: 11.5px;
+      color: #475569;
+    }
+    .dn-badge-stat {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #065f46;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+    .dn-badge-gc {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #9f1239;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+  </style>
+
+  <div class="dn-head">
+    <p class="dn-title">二分探索木への要素追加と構造共有</p>
+    <p class="dn-sub">ノード <strong>13</strong> を追加。経路上のノードだけ作り直し、残りは共有します。</p>
+  </div>
+
+  <div class="dn-legend">
+    <span class="dn-pill"><span class="dn-dot" style="background:#4f46e5;"></span>再作成（新バージョン）</span>
+    <span class="dn-pill"><span class="dn-dot" style="background:#94a3b8;"></span>共有（そのまま再利用）</span>
+    <span class="dn-pill"><span class="dn-dot" style="background:#059669;"></span>新規ノード 13</span>
+  </div>
+
+  <div class="dn-svg-wrap">
+    <svg viewBox="0 0 360 380" role="img" aria-label="ノード13追加後の二分探索木：経路上のノードは再作成、それ以外は共有">
+      <!-- Edges: new path (indigo) -->
+      <g stroke="#4f46e5" stroke-width="2.5" fill="none" stroke-linecap="round">
+        <line x1="190" y1="32" x2="100" y2="96"/>
+        <line x1="100" y1="96" x2="50" y2="160"/>
+        <line x1="50" y1="160" x2="90" y2="224"/>
+        <line x1="90" y1="224" x2="150" y2="288"/>
+      </g>
+      <!-- Edge to new node 13 (emerald) -->
+      <line x1="150" y1="288" x2="130" y2="352" stroke="#059669" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Shared edges (gray) -->
+      <g stroke="#94a3b8" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="none">
+        <line x1="190" y1="32" x2="280" y2="96"/>
+        <line x1="100" y1="96" x2="150" y2="160"/>
+        <line x1="50" y1="160" x2="20" y2="224"/>
+      </g>
+
+      <!-- Node: 25 (re-created) -->
+      <circle cx="190" cy="32" r="18" fill="#4f46e5" stroke="#ffffff" stroke-width="2"/>
+      <text x="190" y="37" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">25</text>
+
+      <!-- Node: 20 (re-created) -->
+      <circle cx="100" cy="96" r="18" fill="#4f46e5" stroke="#ffffff" stroke-width="2"/>
+      <text x="100" y="101" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">20</text>
+
+      <!-- Node: 36 (shared) -->
+      <circle cx="280" cy="96" r="18" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+      <text x="280" y="101" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">36</text>
+
+      <!-- Node: 10 (re-created) -->
+      <circle cx="50" cy="160" r="18" fill="#4f46e5" stroke="#ffffff" stroke-width="2"/>
+      <text x="50" y="165" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">10</text>
+
+      <!-- Node: 22 (shared) -->
+      <circle cx="150" cy="160" r="18" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+      <text x="150" y="165" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">22</text>
+
+      <!-- Node: 5 (shared) -->
+      <circle cx="20" cy="224" r="18" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+      <text x="20" y="229" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">5</text>
+
+      <!-- Node: 12 (re-created) -->
+      <circle cx="90" cy="224" r="18" fill="#4f46e5" stroke="#ffffff" stroke-width="2"/>
+      <text x="90" y="229" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">12</text>
+
+      <!-- Node: 15 (re-created) -->
+      <circle cx="150" cy="288" r="18" fill="#4f46e5" stroke="#ffffff" stroke-width="2"/>
+      <text x="150" y="293" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">15</text>
+
+      <!-- Node: 13 (new) -->
+      <circle cx="130" cy="352" r="18" fill="#059669" stroke="#ffffff" stroke-width="2"/>
+      <text x="130" y="357" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">13</text>
+
+      <!-- Callout for new node -->
+      <text x="200" y="356" font-size="12" font-weight="700" fill="#059669">← 新規</text>
+    </svg>
+  </div>
+
+  <div class="dn-steps">
+    <div class="dn-step emerald">
+      <span class="dn-step-num">①</span>
+      <span>新しいノード 13 を作成</span>
+    </div>
+    <div class="dn-step">
+      <span class="dn-step-num">②</span>
+      <span>親の 15 → 12 → 10 → 20 → 25 を順に複製</span>
+    </div>
+    <div class="dn-step amber">
+      <span class="dn-step-num" style="color:#d97706;">③</span>
+      <span>36・22・5 は元の木をそのまま共有</span>
+    </div>
+  </div>
+
+  <div class="dn-footer">
+    <span class="dn-badge-stat">再作成 6ノード（O(log n)）</span>
+    <span class="dn-badge-gc">旧パスは GC 対象</span>
+  </div>
+</div>
+              </div>
+            </section>
+            
+</body>
+</html>

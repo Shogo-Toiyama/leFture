@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>バースト性トラフィックと帯域幅利用 - Claude Haiku 5.5</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 12px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 520px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>バースト性トラフィックと帯域幅利用</strong> (graph)</span>
+    <span>Claude Haiku 5.5 | 7.74s | 4338 tok ($0.00177)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+      border-radius: 12px;
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+      color: #0f172a;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .deepnote-figure-card .dn-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+      line-height: 1.4;
+    }
+    .deepnote-figure-card .dn-subtitle {
+      font-size: 13px;
+      color: #334155;
+      margin: 0 0 12px 0;
+      line-height: 1.5;
+    }
+    .deepnote-figure-card .dn-chart {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+    }
+    .deepnote-figure-card .dn-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .deepnote-figure-card .dn-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      color: #334155;
+      line-height: 1.3;
+    }
+    .deepnote-figure-card .dn-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .deepnote-figure-card .dn-takeaway {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #eef2ff;
+      border-left: 4px solid #4f46e5;
+      font-size: 13px;
+      color: #1e293b;
+      line-height: 1.55;
+    }
+    .deepnote-figure-card .dn-takeaway strong {
+      color: #4f46e5;
+    }
+    .deepnote-figure-card .dn-axis-label {
+      font-size: 12px;
+      fill: #334155;
+      font-family: inherit;
+    }
+    .deepnote-figure-card .dn-svg-label {
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+    }
+  </style>
+
+  <h3 class="dn-title">バースト性トラフィックと帯域幅利用</h3>
+  <p class="dn-subtitle">データは「たまに大きく」、音声は「常に小さく」。だから共有できる。</p>
+
+  <svg class="dn-chart" viewBox="0 0 320 300" role="img" aria-label="音声トラフィックは一定の低いレベル、データトラフィックは長いアイドルと短い高いピークを示すグラフ">
+    <!-- Panel 1: Voice -->
+    <text x="16" y="24" class="dn-svg-label" fill="#059669">① 音声トラフィック</text>
+    <line x1="40" y1="38" x2="40" y2="110" stroke="#64748b" stroke-width="1.5"/>
+    <line x1="40" y1="110" x2="304" y2="110" stroke="#64748b" stroke-width="1.5"/>
+    <text x="10" y="50" class="dn-axis-label" transform="rotate(-90 14 74)">帯域幅</text>
+    <text x="280" y="126" class="dn-axis-label">時間</text>
+    <path d="M40 90 L304 90" fill="none" stroke="#059669" stroke-width="3" stroke-linecap="round"/>
+    <path d="M40 90 L304 90 L304 110 L40 110 Z" fill="#059669" opacity="0.12"/>
+
+    <!-- Panel 2: Data -->
+    <text x="16" y="164" class="dn-svg-label" fill="#4f46e5">② データトラフィック</text>
+    <line x1="40" y1="178" x2="40" y2="262" stroke="#64748b" stroke-width="1.5"/>
+    <line x1="40" y1="262" x2="304" y2="262" stroke="#64748b" stroke-width="1.5"/>
+    <text x="10" y="200" class="dn-axis-label" transform="rotate(-90 14 220)">帯域幅</text>
+    <text x="280" y="280" class="dn-axis-label">時間</text>
+    <path d="M40 260 L110 260 L120 200 L132 260 L220 260 L230 196 L242 260 L304 260"
+          fill="none" stroke="#4f46e5" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M40 260 L110 260 L120 200 L132 260 L220 260 L230 196 L242 260 L304 260 Z"
+          fill="#4f46e5" opacity="0.12"/>
+    <text x="104" y="190" class="dn-axis-label" fill="#e11d48" font-weight="600">ピーク</text>
+    <text x="224" y="186" class="dn-axis-label" fill="#e11d48" font-weight="600">ピーク</text>
+    <text x="150" y="250" class="dn-axis-label" fill="#64748b">アイドル</text>
+  </svg>
+
+  <ul class="dn-legend">
+    <li class="dn-badge"><span class="dn-dot" style="background:#059669"></span>音声: 一定・低い</li>
+    <li class="dn-badge"><span class="dn-dot" style="background:#4f46e5"></span>データ: 長いアイドル・短い高ピーク</li>
+  </ul>
+
+  <div class="dn-takeaway">
+    <strong>ポイント:</strong> 統計的多重化は、データのアイドル時間を他のユーザーが使えるため、<strong>ピーク時の全帯域</strong>を効率よく利用できる。
+  </div>
+</div>
+  </div>
+</body>
+</html>

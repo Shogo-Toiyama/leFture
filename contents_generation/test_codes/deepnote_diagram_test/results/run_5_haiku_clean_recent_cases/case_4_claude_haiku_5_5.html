@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二分探索木への要素追加と構造共有 - Claude Haiku 5.5</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 12px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 520px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>二分探索木への要素追加と構造共有</strong> (diagram)</span>
+    <span>Claude Haiku 5.5 | 18.28s | 7058 tok ($0.00337)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+      padding: 16px;
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      color: #1e293b;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .dnf-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 4px;
+    }
+    .dnf-sub {
+      font-size: 13px;
+      color: #334155;
+      margin: 0 0 12px;
+    }
+    .dnf-svg-wrap {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 8px 4px;
+    }
+    .dnf-svg-wrap svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .dnf-svg-wrap text {
+      font-size: 13px;
+      font-weight: 700;
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+    .dnf-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 12px 0 10px;
+    }
+    .dnf-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      line-height: 1.3;
+    }
+    .dnf-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .b-indigo { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+    .b-indigo .dnf-dot { background: #4f46e5; }
+    .b-emerald { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+    .b-emerald .dnf-dot { background: #059669; }
+    .b-slate { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+    .b-slate .dnf-dot { background: #94a3b8; }
+    .b-rose { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+    .b-rose .dnf-dot { background: #e11d48; }
+    .dnf-steps {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 0;
+      display: grid;
+      gap: 8px;
+    }
+    .dnf-steps li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #1e293b;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 10px;
+      line-height: 1.4;
+    }
+    .dnf-num {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 11.5px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dnf-footer {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 13px;
+      color: #334155;
+    }
+    .dnf-complexity {
+      font-size: 13px;
+      font-weight: 700;
+      color: #047857;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 8px;
+      padding: 4px 10px;
+    }
+  </style>
+
+  <p class="dnf-title">二分探索木への要素追加と構造共有</p>
+  <p class="dnf-sub">13 を挿入。経路上のノードだけ作り直し、残りは共有</p>
+
+  <div class="dnf-svg-wrap">
+    <svg viewBox="0 0 360 350" role="img" aria-label="13を挿入した二分探索木。経路上のノードは再作成、その他は共有">
+      <!-- Edges: rebuilt path (indigo) -->
+      <g stroke="#4f46e5" stroke-width="2.5" fill="none">
+        <line x1="180" y1="30" x2="95" y2="90"/>
+        <line x1="95" y1="90" x2="50" y2="150"/>
+        <line x1="50" y1="150" x2="95" y2="210"/>
+        <line x1="95" y1="210" x2="125" y2="270"/>
+      </g>
+      <!-- Edge: new node (emerald) -->
+      <line x1="125" y1="270" x2="95" y2="330" stroke="#059669" stroke-width="2.5"/>
+      <!-- Edges: shared (slate) -->
+      <g stroke="#94a3b8" stroke-width="2" fill="none">
+        <line x1="180" y1="30" x2="265" y2="90"/>
+        <line x1="95" y1="90" x2="150" y2="150"/>
+        <line x1="50" y1="150" x2="20" y2="210"/>
+      </g>
+
+      <!-- Shared nodes (slate) -->
+      <g>
+        <circle cx="265" cy="90" r="17" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+        <text x="265" y="91" fill="#334155">36</text>
+        <circle cx="150" cy="150" r="17" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+        <text x="150" y="151" fill="#334155">22</text>
+        <circle cx="20" cy="210" r="17" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+        <text x="20" y="211" fill="#334155">5</text>
+      </g>
+
+      <!-- Rebuilt path nodes (indigo) -->
+      <g>
+        <circle cx="180" cy="30" r="17" fill="#4f46e5"/>
+        <text x="180" y="31" fill="#ffffff">25</text>
+        <circle cx="95" cy="90" r="17" fill="#4f46e5"/>
+        <text x="95" y="91" fill="#ffffff">20</text>
+        <circle cx="50" cy="150" r="17" fill="#4f46e5"/>
+        <text x="50" y="151" fill="#ffffff">10</text>
+        <circle cx="95" cy="210" r="17" fill="#4f46e5"/>
+        <text x="95" y="211" fill="#ffffff">12</text>
+        <circle cx="125" cy="270" r="17" fill="#4f46e5"/>
+        <text x="125" y="271" fill="#ffffff">15</text>
+      </g>
+
+      <!-- New node (emerald) -->
+      <g>
+        <circle cx="95" cy="330" r="17" fill="#059669"/>
+        <text x="95" y="331" fill="#ffffff">13</text>
+      </g>
+
+      <!-- Callouts -->
+      <g font-size="11.5" font-weight="600" fill="#334155" style="text-anchor:start;">
+        <text x="210" y="260" fill="#4338ca">再作成</text>
+        <text x="130" y="330" fill="#047857">新規</text>
+        <text x="282" y="122" fill="#475569">共有</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="dnf-legend">
+    <span class="dnf-badge b-indigo"><span class="dnf-dot"></span>経路上で再作成</span>
+    <span class="dnf-badge b-emerald"><span class="dnf-dot"></span>新しいノード</span>
+    <span class="dnf-badge b-slate"><span class="dnf-dot"></span>そのまま共有</span>
+    <span class="dnf-badge b-rose"><span class="dnf-dot"></span>旧経路はGC対象</span>
+  </div>
+
+  <ol class="dnf-steps">
+    <li><span class="dnf-num">1</span><span>新ノード 13 を作成</span></li>
+    <li><span class="dnf-num">2</span><span>親から根まで（15→12→10→20→25）を再作成</span></li>
+    <li><span class="dnf-num">3</span><span>経路外のノード（5・22・36）は共有</span></li>
+  </ol>
+
+  <div class="dnf-footer">
+    <span>作成ノード数は木の高さに比例</span>
+    <span class="dnf-complexity">計算量 O(log n)</span>
+  </div>
+</div>
+  </div>
+</body>
+</html>

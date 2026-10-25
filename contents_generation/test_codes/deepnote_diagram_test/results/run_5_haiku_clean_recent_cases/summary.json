@@ -1,0 +1,70 @@
+[
+  {
+    "case_id": "case_1",
+    "title": "性差別的な模擬面接後の数学課題の成績",
+    "type": "bar_chart",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": "low",
+    "elapsed_seconds": 9.240710020065308,
+    "cost_usd": 0.002015717361240182,
+    "usage": {
+      "prompt_tokens": 2077,
+      "completion_tokens": 2647,
+      "total_tokens": 4724
+    },
+    "html_path": "results/run_5_haiku_clean_recent_cases/case_1_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_2",
+    "title": "バースト性トラフィックと帯域幅利用",
+    "type": "graph",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": "low",
+    "elapsed_seconds": 7.73881196975708,
+    "cost_usd": 0.0017728564975101502,
+    "usage": {
+      "prompt_tokens": 2093,
+      "completion_tokens": 2245,
+      "total_tokens": 4338
+    },
+    "html_path": "results/run_5_haiku_clean_recent_cases/case_2_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_3",
+    "title": "初期通信時のブリッジの学習とフラッディング",
+    "type": "diagram",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": "low",
+    "elapsed_seconds": 9.677523851394653,
+    "cost_usd": 0.002210616281252308,
+    "usage": {
+      "prompt_tokens": 2321,
+      "completion_tokens": 2913,
+      "total_tokens": 5234
+    },
+    "html_path": "results/run_5_haiku_clean_recent_cases/case_3_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_4",
+    "title": "二分探索木への要素追加と構造共有",
+    "type": "diagram",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": "low",
+    "elapsed_seconds": 18.2759530544281,
+    "cost_usd": 0.0033739571450108656,
+    "usage": {
+      "prompt_tokens": 2343,
+      "completion_tokens": 4715,
+      "total_tokens": 7058
+    },
+    "html_path": "results/run_5_haiku_clean_recent_cases/case_4_claude_haiku_5_5.html",
+    "error": null
+  }
+]

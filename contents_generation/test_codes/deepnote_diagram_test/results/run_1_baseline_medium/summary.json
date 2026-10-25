@@ -1,0 +1,138 @@
+[
+  {
+    "case_id": "case_1_Moore's_La",
+    "title": "Moore",
+    "type": "chart",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": "medium",
+    "elapsed_seconds": 29.52730703353882,
+    "cost_usd": 0.004793918807522301,
+    "usage": {
+      "prompt_tokens": 1806,
+      "completion_tokens": 7455,
+      "total_tokens": 9261
+    },
+    "html_path": "results/run_1_baseline_medium/case_1_Moore's_La_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_2_GPT_Device",
+    "title": "GPT Device Layout",
+    "type": "diagram",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": "medium",
+    "elapsed_seconds": 17.68694567680359,
+    "cost_usd": 0.0033358035762501414,
+    "usage": {
+      "prompt_tokens": 2402,
+      "completion_tokens": 5130,
+      "total_tokens": 7532
+    },
+    "html_path": "results/run_1_baseline_medium/case_2_GPT_Device_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_3_lseek_Data",
+    "title": "lseek Data Access Flow",
+    "type": "diagram",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": "medium",
+    "elapsed_seconds": 24.030171155929565,
+    "cost_usd": 0.004105701177497581,
+    "usage": {
+      "prompt_tokens": 1738,
+      "completion_tokens": 6422,
+      "total_tokens": 8160
+    },
+    "html_path": "results/run_1_baseline_medium/case_3_lseek_Data_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_4_活動電位のフェーズ",
+    "title": "活動電位のフェーズ",
+    "type": "chart",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": "medium",
+    "elapsed_seconds": 39.34064984321594,
+    "cost_usd": 0.005470717231250135,
+    "usage": {
+      "prompt_tokens": 2905,
+      "completion_tokens": 8000,
+      "total_tokens": 10905
+    },
+    "html_path": "results/run_1_baseline_medium/case_4_活動電位のフェーズ_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_1_Moore's_La",
+    "title": "Moore",
+    "type": "chart",
+    "model_name": "GPT 6 Luna",
+    "model_id": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "elapsed_seconds": 47.74466109275818,
+    "cost_usd": 0.004113137993758265,
+    "usage": {
+      "prompt_tokens": 1155,
+      "completion_tokens": 5073,
+      "total_tokens": 6228
+    },
+    "html_path": "results/run_1_baseline_medium/case_1_Moore's_La_gpt_6_luna.html",
+    "error": null
+  },
+  {
+    "case_id": "case_2_GPT_Device",
+    "title": "GPT Device Layout",
+    "type": "diagram",
+    "model_name": "GPT 6 Luna",
+    "model_id": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "elapsed_seconds": 29.25278115272522,
+    "cost_usd": 0.0026541310200104023,
+    "usage": {
+      "prompt_tokens": 1513,
+      "completion_tokens": 3175,
+      "total_tokens": 4688
+    },
+    "html_path": "results/run_1_baseline_medium/case_2_GPT_Device_gpt_6_luna.html",
+    "error": null
+  },
+  {
+    "case_id": "case_3_lseek_Data",
+    "title": "lseek Data Access Flow",
+    "type": "diagram",
+    "model_name": "GPT 6 Luna",
+    "model_id": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "elapsed_seconds": 27.934877395629883,
+    "cost_usd": 0.002677334993761685,
+    "usage": {
+      "prompt_tokens": 1107,
+      "completion_tokens": 3402,
+      "total_tokens": 4509
+    },
+    "html_path": "results/run_1_baseline_medium/case_3_lseek_Data_gpt_6_luna.html",
+    "error": null
+  },
+  {
+    "case_id": "case_4_活動電位のフェーズ",
+    "title": "活動電位のフェーズ",
+    "type": "chart",
+    "model_name": "GPT 6 Luna",
+    "model_id": "gpt-6-luna",
+    "reasoning_effort": "medium",
+    "elapsed_seconds": 41.669013023376465,
+    "cost_usd": 0.004220239668728738,
+    "usage": {
+      "prompt_tokens": 2190,
+      "completion_tokens": 5393,
+      "total_tokens": 7583
+    },
+    "html_path": "results/run_1_baseline_medium/case_4_活動電位のフェーズ_gpt_6_luna.html",
+    "error": null
+  }
+]

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二分探索木への要素追加と構造共有 - Claude Haiku 5.5</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 12px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 520px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>二分探索木への要素追加と構造共有</strong> (diagram)</span>
+    <span>Claude Haiku 5.5 | 20.79s | 7560 tok ($0.00347)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+      padding: 16px;
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      color: #1e293b;
+      font-family: "Hiragino Sans", "Noto Sans JP", "Yu Gothic", system-ui, sans-serif;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .deepnote-figure-card .dn-title {
+      margin: 0 0 4px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.4;
+    }
+    .deepnote-figure-card .dn-sub {
+      margin: 0 0 12px;
+      font-size: 13px;
+      color: #334155;
+      line-height: 1.5;
+    }
+    .deepnote-figure-card .dn-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .deepnote-figure-card .dn-pill {
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      line-height: 1.4;
+    }
+    .deepnote-figure-card .dn-pill.new { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
+    .deepnote-figure-card .dn-pill.new-leaf { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+    .deepnote-figure-card .dn-pill.shared { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+    .deepnote-figure-card .dn-pill.gc { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+    .deepnote-figure-card svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px dashed #e2e8f0;
+    }
+    .deepnote-figure-card .dn-steps {
+      list-style: none;
+      margin: 12px 0 0;
+      padding: 0;
+      display: grid;
+      gap: 6px;
+    }
+    .deepnote-figure-card .dn-steps li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #334155;
+    }
+    .deepnote-figure-card .dn-num {
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 11.5px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .deepnote-figure-card .dn-takeaway {
+      margin-top: 12px;
+      padding: 8px 10px;
+      border-left: 3px solid #d97706;
+      background: #fffbeb;
+      font-size: 13px;
+      font-weight: 600;
+      color: #92400e;
+      border-radius: 6px;
+      line-height: 1.5;
+    }
+  </style>
+
+  <h3 class="dn-title">二分探索木への要素追加と構造共有</h3>
+  <p class="dn-sub">13を追加：経路上のノードだけ作り直し、残りは共有</p>
+
+  <div class="dn-legend">
+    <span class="dn-pill new">新規作成</span>
+    <span class="dn-pill new-leaf">追加ノード 13</span>
+    <span class="dn-pill shared">共有（再利用）</span>
+    <span class="dn-pill gc">旧経路は GC 対象</span>
+  </div>
+
+  <svg viewBox="0 0 360 410" role="img" aria-label="13を追加した二分探索木。経路上のノード25,20,10,12,15と13は新規作成、36,22,5は共有">
+    <!-- Edges: new path (indigo) -->
+    <g stroke="#4f46e5" stroke-width="2.5" fill="none">
+      <line x1="180" y1="35" x2="110" y2="105"/>
+      <line x1="110" y1="105" x2="60" y2="175"/>
+      <line x1="60" y1="175" x2="100" y2="245"/>
+      <line x1="100" y1="245" x2="150" y2="315"/>
+      <line x1="150" y1="315" x2="120" y2="385"/>
+    </g>
+    <!-- Edges: shared (gray) -->
+    <g stroke="#94a3b8" stroke-width="2" stroke-dasharray="4 3" fill="none">
+      <line x1="180" y1="35" x2="270" y2="105"/>
+      <line x1="110" y1="105" x2="165" y2="175"/>
+      <line x1="60" y1="175" x2="20" y2="245"/>
+    </g>
+
+    <!-- Shared nodes -->
+    <g>
+      <circle cx="270" cy="105" r="18" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+      <text x="270" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">36</text>
+      <circle cx="165" cy="175" r="18" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+      <text x="165" y="180" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">22</text>
+      <circle cx="20" cy="245" r="18" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+      <text x="20" y="250" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">5</text>
+    </g>
+
+    <!-- New path nodes -->
+    <g>
+      <circle cx="180" cy="35" r="18" fill="#4f46e5"/>
+      <text x="180" y="40" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">25</text>
+      <circle cx="110" cy="105" r="18" fill="#4f46e5"/>
+      <text x="110" y="110" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">20</text>
+      <circle cx="60" cy="175" r="18" fill="#4f46e5"/>
+      <text x="60" y="180" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">10</text>
+      <circle cx="100" cy="245" r="18" fill="#4f46e5"/>
+      <text x="100" y="250" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">12</text>
+      <circle cx="150" cy="315" r="18" fill="#4f46e5"/>
+      <text x="150" y="320" text-anchor="middle" font-size="14" font-weight="700" fill="#ffffff">15</text>
+    </g>
+
+    <!-- Inserted node 13 -->
+    <g>
+      <circle cx="120" cy="385" r="20" fill="#059669"/>
+      <text x="120" y="391" text-anchor="middle" font-size="15" font-weight="700" fill="#ffffff">13</text>
+      <text x="150" y="390" font-size="12" font-weight="600" fill="#047857">追加</text>
+    </g>
+  </svg>
+
+  <ol class="dn-steps">
+    <li><span class="dn-num">1</span><span>13 のノードを新しく作成</span></li>
+    <li><span class="dn-num">2</span><span>親 15 → 12 → 10 → 20 → 25 を順に作り直す</span></li>
+    <li><span class="dn-num">3</span><span>36・22・5 は元の構造をそのまま共有</span></li>
+  </ol>
+
+  <div class="dn-takeaway">変わるのは根までの経路だけ：O(log n) で更新できる</div>
+</div>
+  </div>
+</body>
+</html>

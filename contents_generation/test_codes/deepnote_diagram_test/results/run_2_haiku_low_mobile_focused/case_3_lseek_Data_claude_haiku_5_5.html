@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lseek Data Access Flow - Claude Haiku 5.5</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 12px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 520px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>lseek Data Access Flow</strong> (diagram)</span>
+    <span>Claude Haiku 5.5 | 8.25s | 4365 tok ($0.00174)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+      padding: 16px;
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #0f172a;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .deepnote-figure-card .dn-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 2px 0;
+    }
+    .deepnote-figure-card .dn-subtitle {
+      font-size: 11.5px;
+      color: #475569;
+      margin: 0 0 12px 0;
+    }
+    .deepnote-figure-card .dn-flow {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+    }
+    .deepnote-figure-card .dn-node {
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      line-height: 1.4;
+      text-align: center;
+      border: 1.5px solid #cbd5e1;
+      background: #f8fafc;
+      color: #1e293b;
+      font-weight: 600;
+    }
+    .deepnote-figure-card .dn-node.start { background: #eef2ff; border-color: #4f46e5; color: #312e81; }
+    .deepnote-figure-card .dn-node.end { background: #ecfdf5; border-color: #059669; color: #065f46; }
+    .deepnote-figure-card .dn-node.step { background: #ffffff; border-color: #cbd5e1; }
+    .deepnote-figure-card .dn-connector {
+      display: flex;
+      justify-content: center;
+      height: 22px;
+    }
+    .deepnote-figure-card .dn-connector svg { width: 24px; height: 22px; }
+    .deepnote-figure-card .dn-branches {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .deepnote-figure-card .dn-branch {
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 10px;
+      background: #ffffff;
+    }
+    .deepnote-figure-card .dn-branch.small { border-color: #059669; }
+    .deepnote-figure-card .dn-branch.medium { border-color: #d97706; }
+    .deepnote-figure-card .dn-branch.large { border-color: #e11d48; }
+    .deepnote-figure-card .dn-pill {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+    .deepnote-figure-card .pill-small { background: #059669; }
+    .deepnote-figure-card .pill-medium { background: #d97706; }
+    .deepnote-figure-card .pill-large { background: #e11d48; }
+    .deepnote-figure-card .dn-steps {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .deepnote-figure-card .dn-chip {
+      font-size: 13px;
+      line-height: 1.35;
+      padding: 6px 9px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      color: #1e293b;
+      border: 1px solid #e2e8f0;
+    }
+    .deepnote-figure-card .dn-arrow {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 700;
+    }
+    .deepnote-figure-card .dn-legend {
+      margin-top: 12px;
+      font-size: 11.5px;
+      color: #475569;
+      text-align: center;
+    }
+  </style>
+
+  <p class="dn-title">lseek Data Access Flow</p>
+  <p class="dn-subtitle">Finding a byte through inode and indirect blocks</p>
+
+  <div class="dn-flow">
+    <div class="dn-node start">lseek(fd, offset, whence)</div>
+
+    <div class="dn-connector">
+      <svg viewBox="0 0 24 22" aria-hidden="true">
+        <line x1="12" y1="0" x2="12" y2="16" stroke="#64748b" stroke-width="2"/>
+        <polygon points="7,15 17,15 12,22" fill="#64748b"/>
+      </svg>
+    </div>
+
+    <div class="dn-node step">Calculate logical block number</div>
+
+    <div class="dn-connector">
+      <svg viewBox="0 0 24 22" aria-hidden="true">
+        <line x1="12" y1="0" x2="12" y2="16" stroke="#64748b" stroke-width="2"/>
+        <polygon points="7,15 17,15 12,22" fill="#64748b"/>
+      </svg>
+    </div>
+
+    <div class="dn-branches">
+      <div class="dn-branch small">
+        <span class="dn-pill pill-small">Small File (Direct Block)</span>
+        <div class="dn-steps">
+          <span class="dn-chip">Access inode</span>
+          <span class="dn-arrow">→</span>
+          <span class="dn-chip">Get data block pointer</span>
+        </div>
+      </div>
+
+      <div class="dn-branch medium">
+        <span class="dn-pill pill-medium">Medium File (Single Indirect)</span>
+        <div class="dn-steps">
+          <span class="dn-chip">Access inode</span>
+          <span class="dn-arrow">→</span>
+          <span class="dn-chip">Get indirect pointer</span>
+          <span class="dn-arrow">→</span>
+          <span class="dn-chip">Read indirect block</span>
+          <span class="dn-arrow">→</span>
+          <span class="dn-chip">Get data block pointer</span>
+        </div>
+      </div>
+
+      <div class="dn-branch large">
+        <span class="dn-pill pill-large">Large File (Double Indirect)</span>
+        <div class="dn-steps">
+          <span class="dn-chip">Access inode</span>
+          <span class="dn-arrow">→</span>
+          <span class="dn-chip">Get double indirect pointer</span>
+          <span class="dn-arrow">→</span>
+          <span class="dn-chip">Read double indirect block</span>
+          <span class="dn-arrow">→</span>
+          <span class="dn-chip">Get single indirect pointer</span>
+          <span class="dn-arrow">→</span>
+          <span class="dn-chip">Read single indirect block</span>
+          <span class="dn-arrow">→</span>
+          <span class="dn-chip">Get data block pointer</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dn-connector">
+      <svg viewBox="0 0 24 22" aria-hidden="true">
+        <line x1="12" y1="0" x2="12" y2="16" stroke="#64748b" stroke-width="2"/>
+        <polygon points="7,15 17,15 12,22" fill="#64748b"/>
+      </svg>
+    </div>
+
+    <div class="dn-node end">Access Data Block</div>
+  </div>
+
+  <p class="dn-legend">Worst case: 3 I/O accesses (inode → indirect → data)</p>
+</div>
+  </div>
+</body>
+</html>

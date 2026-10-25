@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPT Device Layout - Claude Haiku 5.5</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 12px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 520px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>GPT Device Layout</strong> (diagram)</span>
+    <span>Claude Haiku 5.5 | 9.18s | 5084 tok ($0.00212)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+      padding: 18px 16px 16px;
+      font-family: "SF Mono", "JetBrains Mono", "Menlo", "Consolas", monospace;
+      color: #0f172a;
+      box-sizing: border-box;
+      background-image: linear-gradient(#f1f5f9 1px, transparent 1px);
+      background-size: 100% 22px;
+      background-position: 0 0;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .dn-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px solid #0f172a;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .dn-title {
+      font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.02em;
+      margin: 0;
+    }
+    .dn-tag {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #475569;
+      border: 1px solid #94a3b8;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .dn-body {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .dn-row {
+      display: grid;
+      grid-template-columns: 64px 1fr auto;
+      align-items: stretch;
+      gap: 10px;
+      min-height: 46px;
+    }
+    .dn-addr {
+      font-size: 11px;
+      color: #64748b;
+      align-self: center;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .dn-block {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 7px 10px;
+      border: 1px solid #0f172a;
+      border-radius: 4px;
+      background: #ffffff;
+      position: relative;
+    }
+    .dn-block .dn-name {
+      font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+      font-weight: 600;
+      font-size: 12.5px;
+      line-height: 1.25;
+    }
+    .dn-block .dn-desc {
+      font-size: 10.5px;
+      color: #475569;
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+    .dn-size {
+      font-size: 10px;
+      color: #334155;
+      align-self: center;
+      white-space: nowrap;
+    }
+    .dn-mbr { background: #f1f5f9; border-color: #334155; }
+    .dn-hdr { background: #e2e8f0; border-color: #0f172a; }
+    .dn-tbl { background: #f8fafc; border-style: dashed; border-color: #475569; }
+    .dn-part { background: #0f172a; border-color: #0f172a; color: #f8fafc; }
+    .dn-part .dn-name { color: #f8fafc; }
+    .dn-part .dn-desc { color: #cbd5e1; }
+    .dn-bak { background: #e2e8f0; border-color: #0f172a; }
+    .dn-hatch {
+      background-image: repeating-linear-gradient(135deg, rgba(15,23,42,0.07) 0 6px, transparent 6px 12px);
+    }
+    .dn-connector {
+      position: absolute;
+      left: -8px;
+      top: 50%;
+      width: 6px;
+      height: 1px;
+      background: #0f172a;
+    }
+    .dn-legend {
+      margin-top: 14px;
+      border-top: 1px solid #cbd5e1;
+      padding-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 12px;
+      font-size: 10.5px;
+      color: #334155;
+    }
+    .dn-legend span { display: flex; align-items: center; gap: 6px; }
+    .dn-swatch {
+      width: 12px; height: 12px; border: 1px solid #0f172a; border-radius: 2px; flex-shrink: 0;
+    }
+    .dn-caption {
+      margin-top: 12px;
+      font-size: 10.5px;
+      color: #64748b;
+      line-height: 1.45;
+      font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+    }
+    .dn-svg-wrap { display: none; }
+    @media (min-width: 421px) {
+      .deepnote-figure-card { padding: 22px 22px 18px; }
+      .dn-row { grid-template-columns: 76px 1fr auto; min-height: 52px; }
+    }
+  </style>
+
+  <div class="dn-header">
+    <p class="dn-title">GPT Device Layout</p>
+    <span class="dn-tag">LBA · 512 B / block</span>
+  </div>
+
+  <div class="dn-body">
+    <div class="dn-row">
+      <div class="dn-addr">LBA 0</div>
+      <div class="dn-block dn-mbr">
+        <div class="dn-name">Protective Master Boot Record (MBR)</div>
+        <div class="dn-desc">Block 0 · Prevents legacy tools from misreading the disk</div>
+      </div>
+      <div class="dn-size">1 blk</div>
+    </div>
+
+    <div class="dn-row">
+      <div class="dn-addr">LBA 1</div>
+      <div class="dn-block dn-hdr">
+        <div class="dn-name">Primary GPT Header</div>
+        <div class="dn-desc">Block 1 · Primary header of the GUID Partition Table</div>
+      </div>
+      <div class="dn-size">1 blk</div>
+    </div>
+
+    <div class="dn-row">
+      <div class="dn-addr">LBA 2–X</div>
+      <div class="dn-block dn-tbl">
+        <div class="dn-name">Partition Labels / Tables</div>
+        <div class="dn-desc">Entries for 4 to 128 partitions, defining the device layout</div>
+      </div>
+      <div class="dn-size">X−1 blk</div>
+    </div>
+
+    <div class="dn-row">
+      <div class="dn-addr">LBA X+1</div>
+      <div class="dn-block dn-part dn-hatch">
+        <div class="dn-name">Main Device Area: Actual Partitions</div>
+        <div class="dn-desc">Largest region · dedicated to data partitions</div>
+      </div>
+      <div class="dn-size">bulk</div>
+    </div>
+
+    <div class="dn-row">
+      <div class="dn-addr">LBA last</div>
+      <div class="dn-block dn-bak">
+        <div class="dn-name">Last Block: Copy of Primary GPT Header</div>
+        <div class="dn-desc">Redundancy · backup used if the primary header is corrupted</div>
+      </div>
+      <div class="dn-size">1 blk</div>
+    </div>
+  </div>
+
+  <div class="dn-legend">
+    <span><i class="dn-swatch dn-mbr"></i>Protective MBR</span>
+    <span><i class="dn-swatch dn-hdr"></i>GPT Header</span>
+    <span><i class="dn-swatch dn-tbl"></i>Partition Table</span>
+    <span><i class="dn-swatch dn-part"></i>Actual Partitions</span>
+  </div>
+
+  <p class="dn-caption">
+    Assumed block size: 512 bytes. Storage device using GPT, as referenced in the UEFI booting lecture.
+  </p>
+</div>
+  </div>
+</body>
+</html>

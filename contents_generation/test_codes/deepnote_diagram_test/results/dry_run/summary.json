@@ -1,0 +1,70 @@
+[
+  {
+    "case_id": "case_1",
+    "title": "性差別的な模擬面接後の数学課題の成績",
+    "type": "bar_chart",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": null,
+    "elapsed_seconds": 0.05,
+    "cost_usd": 0.0001,
+    "usage": {
+      "prompt_tokens": 926,
+      "completion_tokens": 250,
+      "total_tokens": 1176
+    },
+    "html_path": "results/dry_run/case_1_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_2",
+    "title": "バースト性トラフィックと帯域幅利用",
+    "type": "graph",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": null,
+    "elapsed_seconds": 0.05,
+    "cost_usd": 0.0001,
+    "usage": {
+      "prompt_tokens": 947,
+      "completion_tokens": 250,
+      "total_tokens": 1197
+    },
+    "html_path": "results/dry_run/case_2_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_3",
+    "title": "初期通信時のブリッジの学習とフラッディング",
+    "type": "diagram",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": null,
+    "elapsed_seconds": 0.05,
+    "cost_usd": 0.0001,
+    "usage": {
+      "prompt_tokens": 1027,
+      "completion_tokens": 250,
+      "total_tokens": 1277
+    },
+    "html_path": "results/dry_run/case_3_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_4",
+    "title": "二分探索木への要素追加と構造共有",
+    "type": "diagram",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": null,
+    "elapsed_seconds": 0.05,
+    "cost_usd": 0.0001,
+    "usage": {
+      "prompt_tokens": 1045,
+      "completion_tokens": 250,
+      "total_tokens": 1295
+    },
+    "html_path": "results/dry_run/case_4_claude_haiku_5_5.html",
+    "error": null
+  }
+]

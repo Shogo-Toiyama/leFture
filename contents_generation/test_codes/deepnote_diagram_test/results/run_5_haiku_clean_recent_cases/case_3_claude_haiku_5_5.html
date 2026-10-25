@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初期通信時のブリッジの学習とフラッディング - Claude Haiku 5.5</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 12px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 520px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>初期通信時のブリッジの学習とフラッディング</strong> (diagram)</span>
+    <span>Claude Haiku 5.5 | 9.68s | 5234 tok ($0.00221)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+      padding: 16px;
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Helvetica Neue", Arial, sans-serif;
+      color: #0f172a;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .deepnote-figure-card .dn-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+    }
+    .deepnote-figure-card .dn-sub {
+      font-size: 13px;
+      color: #334155;
+      margin: 0 0 12px 0;
+    }
+    .deepnote-figure-card svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .deepnote-figure-card .dn-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .deepnote-figure-card .dn-pill {
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      line-height: 1.3;
+      border: 1px solid transparent;
+    }
+    .deepnote-figure-card .dn-pill.learn {
+      background: #ecfdf5;
+      color: #059669;
+      border-color: #a7f3d0;
+    }
+    .deepnote-figure-card .dn-pill.flood {
+      background: #fff7ed;
+      color: #d97706;
+      border-color: #fed7aa;
+    }
+    .deepnote-figure-card .dn-pill.dest {
+      background: #eef2ff;
+      color: #4f46e5;
+      border-color: #c7d2fe;
+    }
+    .deepnote-figure-card .dn-steps {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 0;
+      list-style: none;
+    }
+    .deepnote-figure-card .dn-steps li {
+      font-size: 13px;
+      color: #1e293b;
+      background: #f8fafc;
+      border-left: 3px solid #4f46e5;
+      border-radius: 6px;
+      padding: 8px 10px;
+      line-height: 1.5;
+    }
+  </style>
+
+  <p class="dn-title">初期通信時のブリッジの学習とフラッディング</p>
+  <p class="dn-sub">A → D のフレームが2つのブリッジを通過</p>
+
+  <svg viewBox="0 0 360 240" role="img" aria-label="AからDへのフレームがブリッジ1とブリッジ2を通過し、フラッディングされる図">
+    <defs>
+      <marker id="dnArrowIndigo" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+        <path d="M0,0 L8,4 L0,8 z" fill="#4f46e5"/>
+      </marker>
+      <marker id="dnArrowAmber" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+        <path d="M0,0 L8,4 L0,8 z" fill="#d97706"/>
+      </marker>
+    </defs>
+
+    <!-- Hosts -->
+    <rect x="8" y="98" width="52" height="34" rx="8" fill="#eef2ff" stroke="#4f46e5"/>
+    <text x="34" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">A</text>
+
+    <rect x="300" y="18" width="52" height="34" rx="8" fill="#eef2ff" stroke="#4f46e5"/>
+    <text x="326" y="40" text-anchor="middle" font-size="14" font-weight="700" fill="#1e293b">D</text>
+
+    <rect x="300" y="186" width="52" height="34" rx="8" fill="#f1f5f9" stroke="#94a3b8"/>
+    <text x="326" y="208" text-anchor="middle" font-size="14" font-weight="700" fill="#475569">C</text>
+
+    <!-- Bridge 1 -->
+    <rect x="110" y="88" width="80" height="54" rx="10" fill="#ffffff" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="150" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Bridge 1</text>
+
+    <!-- Bridge 2 -->
+    <rect x="236" y="88" width="80" height="54" rx="10" fill="#ffffff" stroke="#0f172a" stroke-width="1.5"/>
+    <text x="276" y="120" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">Bridge 2</text>
+
+    <!-- A to Bridge1 (lower port learn) -->
+    <line x1="60" y1="115" x2="110" y2="115" stroke="#059669" stroke-width="2.5" marker-end="url(#dnArrowIndigo)"/>
+    <text x="85" y="106" text-anchor="middle" font-size="11.5" font-weight="600" fill="#059669">①</text>
+
+    <!-- Bridge1 upper port -> Bridge2 upper port (flood) -->
+    <line x1="190" y1="104" x2="236" y2="104" stroke="#d97706" stroke-width="2.5" stroke-dasharray="5 4" marker-end="url(#dnArrowAmber)"/>
+    <text x="213" y="96" text-anchor="middle" font-size="11.5" font-weight="600" fill="#d97706">flood</text>
+
+    <!-- Bridge2 upper port -> D (flood) -->
+    <line x1="290" y1="88" x2="300" y2="52" stroke="#d97706" stroke-width="2.5" stroke-dasharray="5 4" marker-end="url(#dnArrowAmber)"/>
+
+    <!-- Bridge2 lower-right -> C (flood) -->
+    <line x1="300" y1="142" x2="300" y2="186" stroke="#d97706" stroke-width="2.5" stroke-dasharray="5 4" marker-end="url(#dnArrowAmber)"/>
+
+    <!-- Bridge2 lower-left -> Bridge1 lower side (flood to left) -->
+    <line x1="250" y1="142" x2="150" y2="200" stroke="#d97706" stroke-width="2.5" stroke-dasharray="5 4" marker-end="url(#dnArrowAmber)"/>
+
+    <!-- Port labels -->
+    <text x="150" y="82" text-anchor="middle" font-size="11.5" font-weight="600" fill="#334155">上側</text>
+    <text x="150" y="160" text-anchor="middle" font-size="11.5" font-weight="600" fill="#334155">下側</text>
+    <text x="276" y="82" text-anchor="middle" font-size="11.5" font-weight="600" fill="#334155">上側</text>
+    <text x="276" y="160" text-anchor="middle" font-size="11.5" font-weight="600" fill="#334155">左下・右下</text>
+
+    <!-- Destination reached marker -->
+    <circle cx="326" cy="70" r="0" fill="#e11d48"/>
+  </svg>
+
+  <div class="dn-legend">
+    <span class="dn-pill learn">学習 (Learn)</span>
+    <span class="dn-pill flood">フラッディング (Flood)</span>
+    <span class="dn-pill dest">宛先D: 到達 (Reached)</span>
+  </div>
+
+  <ol class="dn-steps">
+    <li><strong>ブリッジ1</strong>: Aを「下側ポート」で学習。Dは不明なので「上側ポート」へフラッディング。</li>
+    <li><strong>ブリッジ2</strong>: Aを「上側ポート」で学習。Dは不明なので「右下・左下ポート」へフラッディング。</li>
+    <li><strong>結果</strong>: フレームがDに到達。</li>
+  </ol>
+</div>
+  </div>
+</body>
+</html>

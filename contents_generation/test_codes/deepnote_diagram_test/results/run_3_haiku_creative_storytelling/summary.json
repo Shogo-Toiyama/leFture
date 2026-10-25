@@ -1,0 +1,70 @@
+[
+  {
+    "case_id": "case_1_Moore's_La",
+    "title": "Moore",
+    "type": "chart",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": "low",
+    "elapsed_seconds": 22.557730197906494,
+    "cost_usd": 0.0036489265699896963,
+    "usage": {
+      "prompt_tokens": 2067,
+      "completion_tokens": 5531,
+      "total_tokens": 7598
+    },
+    "html_path": "results/run_3_haiku_creative_storytelling/case_1_Moore's_La_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_2_GPT_Device",
+    "title": "GPT Device Layout",
+    "type": "diagram",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": "low",
+    "elapsed_seconds": 14.751343011856079,
+    "cost_usd": 0.0026243327999901497,
+    "usage": {
+      "prompt_tokens": 2663,
+      "completion_tokens": 3831,
+      "total_tokens": 6494
+    },
+    "html_path": "results/run_3_haiku_creative_storytelling/case_2_GPT_Device_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_3_lseek_Data",
+    "title": "lseek Data Access Flow",
+    "type": "diagram",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": "low",
+    "elapsed_seconds": 18.431166887283325,
+    "cost_usd": 0.003163821832501888,
+    "usage": {
+      "prompt_tokens": 1999,
+      "completion_tokens": 4822,
+      "total_tokens": 6821
+    },
+    "html_path": "results/run_3_haiku_creative_storytelling/case_3_lseek_Data_claude_haiku_5_5.html",
+    "error": null
+  },
+  {
+    "case_id": "case_4_活動電位のフェーズ",
+    "title": "活動電位のフェーズ",
+    "type": "chart",
+    "model_name": "Claude Haiku 5.5",
+    "model_id": "anthropic/claude-haiku-5-5",
+    "reasoning_effort": "low",
+    "elapsed_seconds": 27.39710807800293,
+    "cost_usd": 0.004230503422500473,
+    "usage": {
+      "prompt_tokens": 3166,
+      "completion_tokens": 6184,
+      "total_tokens": 9350
+    },
+    "html_path": "results/run_3_haiku_creative_storytelling/case_4_活動電位のフェーズ_claude_haiku_5_5.html",
+    "error": null
+  }
+]

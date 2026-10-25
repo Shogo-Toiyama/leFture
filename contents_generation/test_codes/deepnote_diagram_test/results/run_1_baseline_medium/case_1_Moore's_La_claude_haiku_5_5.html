@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moore - Claude Haiku 5.5</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 32px 16px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 600px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>Moore</strong> (chart)</span>
+    <span>Claude Haiku 5.5 | 29.53s | 9261 tok ($0.00479)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      max-width: 600px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+      padding: 18px 16px 14px;
+      color: #1e293b;
+      font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    .deepnote-figure-card .dnf-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .deepnote-figure-card .dnf-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #4f46e5;
+    }
+    .deepnote-figure-card .dnf-title {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.3;
+    }
+    .deepnote-figure-card .dnf-subtitle {
+      margin: 0;
+      font-size: 13px;
+      color: #334155;
+      line-height: 1.5;
+    }
+    .deepnote-figure-card .dnf-chart {
+      width: 100%;
+      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 6px 4px;
+      box-sizing: border-box;
+    }
+    .deepnote-figure-card svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    .deepnote-figure-card .dnf-badges {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .deepnote-figure-card .dnf-badge {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left-width: 4px;
+      border-radius: 8px;
+      padding: 8px 10px;
+      box-sizing: border-box;
+    }
+    .deepnote-figure-card .dnf-badge.start { border-left-color: #059669; }
+    .deepnote-figure-card .dnf-badge.end { border-left-color: #e11d48; }
+    .deepnote-figure-card .dnf-badge.rate { border-left-color: #4f46e5; }
+    .deepnote-figure-card .dnf-badge-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .deepnote-figure-card .dnf-badge-value {
+      display: block;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 2px;
+    }
+    .deepnote-figure-card .dnf-note {
+      margin: 10px 0 0;
+      font-size: 12px;
+      color: #475569;
+      line-height: 1.5;
+    }
+    .deepnote-figure-card .dnf-note strong {
+      color: #d97706;
+    }
+    @media (max-width: 420px) {
+      .deepnote-figure-card { padding: 14px 12px 12px; }
+      .deepnote-figure-card .dnf-title { font-size: 15px; }
+    }
+  </style>
+
+  <div class="dnf-header">
+    <span class="dnf-kicker">Figure · Moore's Law</span>
+    <h3 class="dnf-title">Transistors per Chip, 1970–2025 (log scale)</h3>
+    <p class="dnf-subtitle">On a logarithmic axis, exponential growth appears as a straight line. The gentle bend near the end shows the doubling rate slowing somewhat.</p>
+  </div>
+
+  <div class="dnf-chart">
+    <svg viewBox="0 0 600 370" role="img" aria-label="Logarithmic line graph of transistor count per chip from 1970 to 2025, rising from about 2 x 10^4 to 2 x 10^11 with slight flattening in recent years">
+      <defs>
+        <linearGradient id="dnfAreaFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="#4f46e5" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Horizontal decade gridlines and y-axis labels -->
+      <g stroke="#e2e8f0" stroke-width="1">
+        <line x1="70" y1="287.8" x2="580" y2="287.8"/>
+        <line x1="70" y1="255.6" x2="580" y2="255.6"/>
+        <line x1="70" y1="223.4" x2="580" y2="223.4"/>
+        <line x1="70" y1="191.2" x2="580" y2="191.2"/>
+        <line x1="70" y1="159.0" x2="580" y2="159.0"/>
+        <line x1="70" y1="126.8" x2="580" y2="126.8"/>
+        <line x1="70" y1="94.6" x2="580" y2="94.6"/>
+        <line x1="70" y1="62.4" x2="580" y2="62.4"/>
+        <line x1="70" y1="30.2" x2="580" y2="30.2"/>
+      </g>
+      <g font-size="13" fill="#334155" text-anchor="end">
+        <text x="62" y="292">10⁴</text>
+        <text x="62" y="260">10⁵</text>
+        <text x="62" y="228">10⁶</text>
+        <text x="62" y="196">10⁷</text>
+        <text x="62" y="164">10⁸</text>
+        <text x="62" y="131">10⁹</text>
+        <text x="62" y="99">10¹⁰</text>
+        <text x="62" y="67">10¹¹</text>
+        <text x="62" y="35">10¹²</text>
+      </g>
+
+      <!-- Axes -->
+      <line x1="70" y1="30" x2="70" y2="320" stroke="#334155" stroke-width="1.5"/>
+      <line x1="70" y1="320" x2="580" y2="320" stroke="#334155" stroke-width="1.5"/>
+
+      <!-- X-axis ticks and labels -->
+      <g stroke="#334155" stroke-width="1">
+        <line x1="70" y1="320" x2="70" y2="326"/>
+        <line x1="162.7" y1="320" x2="162.7" y2="326"/>
+        <line x1="255.4" y1="320" x2="255.4" y2="326"/>
+        <line x1="348" y1="320" x2="348" y2="326"/>
+        <line x1="440.7" y1="320" x2="440.7" y2="326"/>
+        <line x1="533.4" y1="320" x2="533.4" y2="326"/>
+        <line x1="580" y1="320" x2="580" y2="326"/>
+      </g>
+      <g font-size="13" fill="#334155" text-anchor="middle">
+        <text x="70" y="342">1970</text>
+        <text x="162.7" y="342">1980</text>
+        <text x="255.4" y="342">1990</text>
+        <text x="348" y="342">2000</text>
+        <text x="440.7" y="342">2010</text>
+        <text x="533.4" y="342">2020</text>
+        <text x="580" y="342">2025</text>
+      </g>
+      <text x="325" y="362" font-size="13" font-weight="600" fill="#0f172a" text-anchor="middle">Year</text>
+      <text transform="translate(16,175) rotate(-90)" font-size="13" font-weight="600" fill="#0f172a" text-anchor="middle">Transistors per chip (log scale)</text>
+
+      <!-- Area under curve -->
+      <path d="M70,278.1 L162.7,242.7 L255.4,200.9 L348,159 L440.7,118.8 L533.4,68.8 L580,52.7 L580,320 L70,320 Z"
+            fill="url(#dnfAreaFill)"/>
+
+      <!-- Main curve -->
+      <polyline points="70,278.1 162.7,242.7 255.4,200.9 348,159 440.7,118.8 533.4,68.8 580,52.7"
+                fill="none" stroke="#4f46e5" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+
+      <!-- Intermediate markers -->
+      <g fill="#ffffff" stroke="#4f46e5" stroke-width="2">
+        <circle cx="162.7" cy="242.7" r="3.5"/>
+        <circle cx="255.4" cy="200.9" r="3.5"/>
+        <circle cx="348" cy="159" r="3.5"/>
+        <circle cx="440.7" cy="118.8" r="3.5"/>
+        <circle cx="533.4" cy="68.8" r="3.5"/>
+      </g>
+
+      <!-- Flattening annotation -->
+      <path d="M470,150 L500,118" stroke="#d97706" stroke-width="1.5" stroke-dasharray="4 3" fill="none"/>
+      <text x="402" y="172" font-size="13" font-weight="600" fill="#d97706">Growth slows slightly</text>
+      <text x="402" y="188" font-size="12" fill="#92400e">in recent years</text>
+
+      <!-- Start point: 1970 -->
+      <circle cx="70" cy="278.1" r="7" fill="#059669" stroke="#ffffff" stroke-width="2"/>
+      <text x="84" y="268" font-size="13" font-weight="700" fill="#065f46">1970: ≈ 2 × 10⁴</text>
+      <text x="84" y="284" font-size="12" fill="#065f46">(e.g., early CPU)</text>
+
+      <!-- End point: 2025 -->
+      <circle cx="580" cy="52.7" r="7" fill="#e11d48" stroke="#ffffff" stroke-width="2"/>
+      <text x="566" y="40" font-size="13" font-weight="700" fill="#9f1239" text-anchor="end">2025: ≈ 2 × 10¹¹</text>
+      <text x="566" y="104" font-size="12" fill="#9f1239" text-anchor="end">(e.g., Apple M3 Ultra)</text>
+    </svg>
+  </div>
+
+  <div class="dnf-badges">
+    <div class="dnf-badge start">
+      <span class="dnf-badge-label">Start · 1970</span>
+      <span class="dnf-badge-value">≈ 20,000</span>
+    </div>
+    <div class="dnf-badge end">
+      <span class="dnf-badge-label">End · 2025</span>
+      <span class="dnf-badge-value">≈ 200 billion</span>
+    </div>
+    <div class="dnf-badge rate">
+      <span class="dnf-badge-label">Doubling period</span>
+      <span class="dnf-badge-value">≈ 18 months</span>
+    </div>
+  </div>
+
+  <p class="dnf-note">
+    <strong>Reading the graph:</strong> a constant slope on a log scale means a constant doubling rate. The overall trend keeps rising, but the slope is somewhat shallower after the 2010s.
+  </p>
+</div>
+  </div>
+</body>
+</html>

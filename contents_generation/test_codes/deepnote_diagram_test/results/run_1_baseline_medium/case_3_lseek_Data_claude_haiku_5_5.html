@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>lseek Data Access Flow - Claude Haiku 5.5</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 32px 16px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 600px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>lseek Data Access Flow</strong> (diagram)</span>
+    <span>Claude Haiku 5.5 | 24.03s | 8160 tok ($0.00411)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      --dnf-ink-900: #0f172a;
+      --dnf-ink-800: #1e293b;
+      --dnf-ink-700: #334155;
+      --dnf-ink-500: #64748b;
+      --dnf-line: #cbd5e1;
+      --dnf-indigo: #4f46e5;
+      --dnf-emerald: #059669;
+      --dnf-amber: #d97706;
+      --dnf-rose: #e11d48;
+      max-width: 600px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 14px rgba(15, 23, 42, 0.05);
+      padding: 18px 16px 20px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--dnf-ink-800);
+      line-height: 1.45;
+      position: relative;
+      overflow: hidden;
+    }
+    .deepnote-figure-card *, .deepnote-figure-card *::before, .deepnote-figure-card *::after {
+      box-sizing: border-box;
+    }
+    .dnf-header { text-align: center; margin-bottom: 14px; }
+    .dnf-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dnf-indigo);
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+    .dnf-title {
+      margin: 0;
+      font-size: 19px;
+      font-weight: 750;
+      color: var(--dnf-ink-900);
+      letter-spacing: -0.01em;
+    }
+    .dnf-subtitle {
+      margin: 6px auto 0;
+      font-size: 13px;
+      color: var(--dnf-ink-500);
+      max-width: 440px;
+    }
+    .dnf-node {
+      position: relative;
+      background: #ffffff;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      text-align: center;
+      margin: 0 auto;
+      max-width: 420px;
+    }
+    .dnf-node-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--dnf-ink-500);
+      margin-bottom: 4px;
+    }
+    .dnf-code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--dnf-ink-900);
+      background: #f1f5f9;
+      border-radius: 6px;
+      padding: 4px 8px;
+      display: inline-block;
+      word-break: break-word;
+    }
+    .dnf-start { border-color: var(--dnf-indigo); background: #f5f7ff; }
+    .dnf-start .dnf-node-label { color: var(--dnf-indigo); }
+    .dnf-calc { border-color: #94a3b8; }
+    .dnf-formula {
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--dnf-ink-700);
+    }
+    .dnf-formula b { color: var(--dnf-ink-900); }
+    .dnf-arrow {
+      display: block;
+      width: 2px;
+      height: 22px;
+      background: var(--dnf-line);
+      margin: 0 auto;
+      position: relative;
+    }
+    .dnf-arrow::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 7px solid var(--dnf-line);
+    }
+    .dnf-fork { display: none; width: 100%; height: 52px; margin: 0 auto; }
+    .dnf-branches {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin: 0;
+    }
+    .dnf-branch {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 12px 10px;
+      border-top: 4px solid var(--c);
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .dnf-branch-head {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .dnf-badge {
+      align-self: flex-start;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffffff;
+      background: var(--c);
+      border-radius: 999px;
+      padding: 3px 9px;
+      letter-spacing: 0.02em;
+    }
+    .dnf-size {
+      font-size: 12px;
+      color: var(--dnf-ink-500);
+    }
+    .dnf-steps {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      counter-reset: dnf;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .dnf-steps li {
+      counter-increment: dnf;
+      position: relative;
+      padding-left: 28px;
+      font-size: 13px;
+      color: var(--dnf-ink-700);
+      min-height: 22px;
+    }
+    .dnf-steps li::before {
+      content: counter(dnf);
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #f1f5f9;
+      border: 1px solid var(--c);
+      color: var(--c);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dnf-steps li.dnf-io::after {
+      content: "I/O";
+      display: inline-block;
+      margin-left: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--dnf-rose);
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      border-radius: 4px;
+      padding: 0 4px;
+      vertical-align: 1px;
+    }
+    .dnf-final {
+      border-color: var(--dnf-emerald);
+      background: #ecfdf5;
+    }
+    .dnf-final .dnf-node-label { color: var(--dnf-emerald); }
+    .dnf-footnote {
+      margin: 14px auto 0;
+      font-size: 12px;
+      color: var(--dnf-ink-500);
+      text-align: center;
+      max-width: 480px;
+    }
+    .dnf-footnote strong { color: var(--dnf-ink-700); }
+
+    @media (min-width: 560px) {
+      .deepnote-figure-card { padding: 22px 22px 24px; }
+      .dnf-title { font-size: 21px; }
+      .dnf-fork { display: block; }
+      .dnf-mobile-connector { display: none; }
+      .dnf-branches {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .dnf-branch { padding: 12px 10px 12px; }
+      .dnf-steps li { font-size: 12.5px; }
+    }
+    @media (max-width: 359px) {
+      .deepnote-figure-card { padding: 14px 12px 16px; }
+      .dnf-title { font-size: 17px; }
+      .dnf-code { font-size: 12.5px; }
+    }
+  </style>
+
+  <div class="dnf-header">
+    <span class="dnf-tag">Figure · Block Addressing</span>
+    <h3 class="dnf-title">lseek Data Access Flow</h3>
+    <p class="dnf-subtitle">Resolving a byte offset to a data block through direct, single indirect, and double indirect pointers</p>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="dnf-node dnf-start">
+    <div class="dnf-node-label">Step 1 · Position the file offset</div>
+    <span class="dnf-code">lseek(fd, offset, whence)</span>
+  </div>
+  <span class="dnf-arrow" aria-hidden="true"></span>
+
+  <!-- Step 2 -->
+  <div class="dnf-node dnf-calc">
+    <div class="dnf-node-label">Step 2 · Map byte to block</div>
+    <div>Calculate logical block number</div>
+    <div class="dnf-formula">logical block = <b>offset ÷ block size</b> (e.g., 8 KB)</div>
+  </div>
+
+  <!-- Branch connector: desktop fork -->
+  <svg class="dnf-fork" viewBox="0 0 600 52" preserveAspectRatio="none" aria-hidden="true">
+    <g fill="none" stroke="#94a3b8" stroke-width="2" vector-effect="non-scaling-stroke">
+      <path d="M300 0 V16" vector-effect="non-scaling-stroke"/>
+      <path d="M100 16 H500" vector-effect="non-scaling-stroke"/>
+      <path d="M100 16 V40" vector-effect="non-scaling-stroke"/>
+      <path d="M300 16 V40" vector-effect="non-scaling-stroke"/>
+      <path d="M500 16 V40" vector-effect="non-scaling-stroke"/>
+    </g>
+    <g fill="#94a3b8">
+      <polygon points="95,40 105,40 100,50"/>
+      <polygon points="295,40 305,40 300,50"/>
+      <polygon points="495,40 505,40 500,50"/>
+    </g>
+  </svg>
+
+  <!-- Mobile connector -->
+  <span class="dnf-arrow dnf-mobile-connector" aria-hidden="true"></span>
+
+  <!-- Step 3: Branches -->
+  <div class="dnf-branches">
+
+    <div class="dnf-branch" style="--c: #059669;">
+      <div class="dnf-branch-head">
+        <span class="dnf-badge">Small File (Direct Block)</span>
+        <span class="dnf-size">Block number stored directly in inode</span>
+      </div>
+      <ol class="dnf-steps">
+        <li class="dnf-io">Access inode</li>
+        <li>Get data block pointer</li>
+      </ol>
+    </div>
+
+    <div class="dnf-branch" style="--c: #d97706;">
+      <div class="dnf-branch-head">
+        <span class="dnf-badge">Medium File (Single Indirect)</span>
+        <span class="dnf-size">Pointer reached through one indirect block</span>
+      </div>
+      <ol class="dnf-steps">
+        <li class="dnf-io">Access inode</li>
+        <li>Get indirect block pointer</li>
+        <li class="dnf-io">Access indirect block</li>
+        <li>Get data block pointer</li>
+      </ol>
+    </div>
+
+    <div class="dnf-branch" style="--c: #e11d48;">
+      <div class="dnf-branch-head">
+        <span class="dnf-badge">Large File (Double Indirect)</span>
+        <span class="dnf-size">Pointer reached through two levels of indirection</span>
+      </div>
+      <ol class="dnf-steps">
+        <li class="dnf-io">Access inode</li>
+        <li>Get double indirect block pointer</li>
+        <li class="dnf-io">Access double indirect block</li>
+        <li>Get single indirect block pointer</li>
+        <li class="dnf-io">Access single indirect block</li>
+        <li>Get data block pointer</li>
+      </ol>
+    </div>
+
+  </div>
+
+  <!-- Converge: desktop fork -->
+  <svg class="dnf-fork" viewBox="0 0 600 52" preserveAspectRatio="none" aria-hidden="true" style="margin-top:4px;">
+    <g fill="none" stroke="#94a3b8" stroke-width="2" vector-effect="non-scaling-stroke">
+      <path d="M100 0 V12" vector-effect="non-scaling-stroke"/>
+      <path d="M300 0 V12" vector-effect="non-scaling-stroke"/>
+      <path d="M500 0 V12" vector-effect="non-scaling-stroke"/>
+      <path d="M100 12 H500" vector-effect="non-scaling-stroke"/>
+      <path d="M300 12 V40" vector-effect="non-scaling-stroke"/>
+    </g>
+    <polygon points="295,40 305,40 300,50" fill="#94a3b8"/>
+  </svg>
+  <span class="dnf-arrow dnf-mobile-connector" aria-hidden="true"></span>
+
+  <!-- Step 4 -->
+  <div class="dnf-node dnf-final">
+    <div class="dnf-node-label">Step 4 · Transfer</div>
+    <div><strong>Access Data Block</strong></div>
+  </div>
+
+  <p class="dnf-footnote">
+    <strong>Worst case:</strong> a byte in a large file requires the inode, the double indirect block, the single indirect block, and finally the data block itself.
+  </p>
+</div>
+  </div>
+</body>
+</html>

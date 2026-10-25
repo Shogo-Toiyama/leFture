@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>活動電位のフェーズ - GPT 6 Luna</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 32px 16px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 600px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>活動電位のフェーズ</strong> (chart)</span>
+    <span>GPT 6 Luna | 41.67s | 7583 tok ($0.00422)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --indigo: #4f46e5;
+      --rose: #e11d48;
+      --emerald: #059669;
+      --amber: #d97706;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 600px;
+      margin: 16px auto;
+      padding: 22px;
+      color: var(--ink);
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    .deepnote-figure-card *,
+    .deepnote-figure-card *::before,
+    .deepnote-figure-card *::after {
+      box-sizing: border-box;
+    }
+
+    .deepnote-figure-card .figure-eyebrow {
+      margin: 0 0 6px;
+      color: var(--indigo);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: 0.08em;
+    }
+
+    .deepnote-figure-card h2 {
+      margin: 0;
+      font-size: clamp(20px, 5vw, 25px);
+      line-height: 1.3;
+      letter-spacing: -0.025em;
+    }
+
+    .deepnote-figure-card .figure-subtitle {
+      margin: 7px 0 18px;
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .deepnote-figure-card .chart-wrap {
+      overflow: hidden;
+      padding: 8px 6px 0 0;
+      background: #fbfcff;
+      border: 1px solid #edf0f6;
+      border-radius: 10px;
+    }
+
+    .deepnote-figure-card .chart {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .deepnote-figure-card .chart text {
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    .deepnote-figure-card .chart-caption {
+      margin: 9px 12px 11px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .deepnote-figure-card .phase-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 15px;
+    }
+
+    .deepnote-figure-card .phase {
+      min-width: 0;
+      padding: 11px 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+    }
+
+    .deepnote-figure-card .phase-title {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0 0 5px;
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+
+    .deepnote-figure-card .phase-num {
+      display: inline-grid;
+      flex: 0 0 20px;
+      width: 20px;
+      height: 20px;
+      place-items: center;
+      color: #fff;
+      background: var(--indigo);
+      border-radius: 50%;
+      font-size: 11px;
+    }
+
+    .deepnote-figure-card .phase p {
+      margin: 0;
+      color: #475569;
+      font-size: 11.5px;
+      line-height: 1.5;
+    }
+
+    .deepnote-figure-card .channel-section {
+      margin-top: 20px;
+      padding-top: 17px;
+      border-top: 1px solid var(--line);
+    }
+
+    .deepnote-figure-card .channel-section h3 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      letter-spacing: -0.01em;
+    }
+
+    .deepnote-figure-card .channel-intro {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .deepnote-figure-card .channel-row {
+      display: grid;
+      grid-template-columns: 77px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      margin-top: 11px;
+    }
+
+    .deepnote-figure-card .channel-name {
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .deepnote-figure-card .track {
+      position: relative;
+      height: 14px;
+      overflow: hidden;
+      background: #f1f5f9;
+      border-radius: 999px;
+    }
+
+    .deepnote-figure-card .track span {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      border-radius: 999px;
+    }
+
+    .deepnote-figure-card .track .na-open {
+      left: 30%;
+      width: 13%;
+      background: var(--rose);
+    }
+
+    .deepnote-figure-card .track .na-inactive {
+      left: 43%;
+      width: 25%;
+      background: #fda4af;
+    }
+
+    .deepnote-figure-card .track .k-open {
+      left: 39%;
+      width: 43%;
+      background: var(--emerald);
+    }
+
+    .deepnote-figure-card .track-caption {
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      margin: 5px 0 0 87px;
+      color: #64748b;
+      font-size: 10px;
+    }
+
+    .deepnote-figure-card .channel-notes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 13px;
+    }
+
+    .deepnote-figure-card .channel-note {
+      padding: 10px 11px;
+      background: #f8fafc;
+      border-radius: 8px;
+      color: #475569;
+      font-size: 11.5px;
+      line-height: 1.5;
+    }
+
+    .deepnote-figure-card .channel-note strong {
+      color: var(--ink);
+    }
+
+    .deepnote-figure-card .note-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 5px;
+      border-radius: 50%;
+      vertical-align: 1px;
+    }
+
+    .deepnote-figure-card .na-dot { background: var(--rose); }
+    .deepnote-figure-card .k-dot { background: var(--emerald); }
+
+    @media (max-width: 430px) {
+      .deepnote-figure-card {
+        padding: 16px 13px;
+      }
+
+      .deepnote-figure-card .phase-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .deepnote-figure-card .phase {
+        padding: 9px 8px;
+      }
+
+      .deepnote-figure-card .channel-row {
+        grid-template-columns: 65px minmax(0, 1fr);
+        gap: 8px;
+      }
+
+      .deepnote-figure-card .track-caption {
+        margin-left: 73px;
+        font-size: 9px;
+      }
+
+      .deepnote-figure-card .channel-notes {
+        grid-template-columns: 1fr;
+        gap: 7px;
+      }
+    }
+  </style>
+
+  <p class="figure-eyebrow">神経生理学｜膜電位の変化</p>
+  <h2>活動電位のフェーズ</h2>
+  <p class="figure-subtitle">
+    電位依存性Na⁺チャネルは急速に開いて不活性化し、遅れて開くK⁺チャネルが再分極と過分極をもたらします。
+  </p>
+
+  <div class="chart-wrap">
+    <svg class="chart" viewBox="0 0 600 300" role="img" aria-labelledby="ap-title ap-desc">
+      <title id="ap-title">活動電位の膜電位変化</title>
+      <desc id="ap-desc">静止膜電位から閾値を越えて急速に脱分極し、ピーク後に再分極と過分極を経て静止膜電位へ戻る波形。</desc>
+      <defs>
+        <linearGradient id="ap-fill" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#6366f1" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#6366f1" stop-opacity="0.015"/>
+        </linearGradient>
+        <marker id="ap-arrow-rose" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#e11d48"/>
+        </marker>
+        <marker id="ap-arrow-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="#059669"/>
+        </marker>
+      </defs>
+
+      <!-- グラフ領域と目盛り -->
+      <g stroke="#e8edf4" stroke-width="1">
+        <line x1="68" y1="50" x2="570" y2="50"/>
+        <line x1="68" y1="97" x2="570" y2="97"/>
+        <line x1="68" y1="144" x2="570" y2="144"/>
+        <line x1="68" y1="191" x2="570" y2="191"/>
+        <line x1="68" y1="238" x2="570" y2="238"/>
+      </g>
+      <g stroke="#94a3b8" stroke-width="1.5">
+        <line x1="68" y1="42" x2="68" y2="239"/>
+        <line x1="68" y1="239" x2="573" y2="239"/>
+      </g>
+
+      <g fill="#64748b" font-size="12" text-anchor="end">
+        <text x="58" y="54">＋40</text>
+        <text x="58" y="101">＋20</text>
+        <text x="58" y="148">0</text>
+        <text x="58" y="195">−20</text>
+        <text x="58" y="242">−40</text>
+      </g>
+      <text x="16" y="149" fill="#475569" font-size="12" text-anchor="middle" transform="rotate(-90 16 149)">膜電位（mV）</text>
+      <text x="570" y="262" fill="#475569" font-size="12" text-anchor="end">時間</text>
+
+      <!-- 閾値・静止膜電位の基準線 -->
+      <line x1="68" y1="177" x2="570" y2="177" stroke="#d97706" stroke-width="1.5" stroke-dasharray="5 5"/>
+      <rect x="76" y="162" width="83" height="18" rx="5" fill="#fff7ed"/>
+      <text x="82" y="175" fill="#b45309" font-size="11" font-weight="700">閾値 −55 mV</text>
+      <line x1="68" y1="214" x2="570" y2="214" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 5"/>
+      <text x="76" y="210" fill="#64748b" font-size="10">静止膜電位 −70 mV</text>
+
+      <!-- 波形 -->
+      <path d="M72 214 L157 214 C174 214 184 207 193 177 C205 138 217 81 236 61 C247 49 261 49 274 56 C291 66 302 104 316 151 C328 190 343 214 367 226 C381 233 397 231 410 221 C425 210 437 212 452 214 L568 214 L568 239 L72 239 Z"
+            fill="url(#ap-fill)"/>
+      <path d="M72 214 L157 214 C174 214 184 207 193 177 C205 138 217 81 236 61 C247 49 261 49 274 56 C291 66 302 104 316 151 C328 190 343 214 367 226 C381 233 397 231 410 221 C425 210 437 212 452 214 L568 214"
+            fill="none" stroke="#4f46e5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- 代表点 -->
+      <circle cx="193" cy="177" r="4.5" fill="#d97706" stroke="#fff" stroke-width="2"/>
+      <circle cx="254" cy="52" r="5" fill="#4f46e5" stroke="#fff" stroke-width="2"/>
+      <circle cx="386" cy="231" r="4.5" fill="#4f46e5" stroke="#fff" stroke-width="2"/>
+
+      <!-- イオン流の注記 -->
+      <path d="M207 132 L226 95" fill="none" stroke="#e11d48" stroke-width="2" marker-end="url(#ap-arrow-rose)"/>
+      <text x="169" y="127" fill="#be123c" font-size="11" font-weight="700">Na⁺流入</text>
+      <path d="M320 131 L339 173" fill="none" stroke="#059669" stroke-width="2" marker-end="url(#ap-arrow-green)"/>
+      <text x="334" y="138" fill="#047857" font-size="11" font-weight="700">K⁺流出</text>
+
+      <text x="250" y="39" fill="#334155" font-size="11" text-anchor="middle">ピーク 約＋30 mV</text>
+      <text x="386" y="249" fill="#475569" font-size="10" text-anchor="middle">過分極</text>
+    </svg>
+    <p class="chart-caption">典型的な波形の模式図。膜電位・時間のスケールは概略で、実際の値は細胞によって異なります。</p>
+  </div>
+
+  <div class="phase-grid" aria-label="活動電位の各フェーズ">
+    <div class="phase">
+      <div class="phase-title"><span class="phase-num">1</span>静止</div>
+      <p>約−70 mV。電位依存性Na⁺・K⁺チャネルはおもに閉じています。</p>
+    </div>
+    <div class="phase">
+      <div class="phase-title"><span class="phase-num">2</span>脱分極</div>
+      <p>閾値到達後、Na⁺チャネルが急速に開き、Na⁺が流入します。</p>
+    </div>
+    <div class="phase">
+      <div class="phase-title"><span class="phase-num">3</span>ピーク</div>
+      <p>Na⁺チャネルが不活性化。遅れてK⁺チャネルが開き始めます。</p>
+    </div>
+    <div class="phase">
+      <div class="phase-title"><span class="phase-num">4</span>再分極</div>
+      <p>K⁺チャネルからK⁺が流出し、膜電位が負の方向へ戻ります。</p>
+    </div>
+    <div class="phase">
+      <div class="phase-title"><span class="phase-num">5</span>過分極</div>
+      <p>K⁺チャネルがゆっくり閉じるため、一時的に静止電位を下回ります。</p>
+    </div>
+    <div class="phase">
+      <div class="phase-title"><span class="phase-num">6</span>回復</div>
+      <p>K⁺チャネルが閉じ、漏洩電流などにより静止膜電位へ戻ります。</p>
+    </div>
+  </div>
+
+  <section class="channel-section" aria-label="チャネルの開閉タイミング">
+    <h3>チャネルの開閉タイミング</h3>
+    <p class="channel-intro">横方向は時間の進行を示す模式表示です。Na⁺チャネルの応答は速く、K⁺チャネルの開閉は遅れます。</p>
+
+    <div class="channel-row">
+      <div class="channel-name"><span class="note-dot na-dot"></span>Na⁺チャネル</div>
+      <div class="track" aria-label="閉鎖、急速に開口、続いて不活性化">
+        <span class="na-open"></span>
+        <span class="na-inactive"></span>
+      </div>
+    </div>
+    <div class="channel-row">
+      <div class="channel-name"><span class="note-dot k-dot"></span>K⁺チャネル</div>
+      <div class="track" aria-label="閉鎖後、遅れて開口し、ゆっくり閉鎖">
+        <span class="k-open"></span>
+      </div>
+    </div>
+    <div class="track-caption"><span>静止・閾値</span><span>ピーク</span><span>回復</span></div>
+
+    <div class="channel-notes">
+      <div class="channel-note"><strong><span class="note-dot na-dot"></span>Na⁺：</strong>急速に開口して脱分極を起こし、ピーク付近で不活性化します。</div>
+      <div class="channel-note"><strong><span class="note-dot k-dot"></span>K⁺：</strong>遅れて開口し、再分極を進めます。閉鎖の遅れが過分極につながります。</div>
+    </div>
+  </section>
+</div>
+  </div>
+</body>
+</html>

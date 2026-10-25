@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPT Device Layout - Claude Haiku 5.5</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 12px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 520px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>GPT Device Layout</strong> (diagram)</span>
+    <span>Claude Haiku 5.5 | 7.96s | 4855 tok ($0.00171)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+      padding: 16px;
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #0f172a;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .dn-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 2px 0;
+    }
+    .dn-subtitle {
+      font-size: 13px;
+      color: #334155;
+      margin: 0 0 12px 0;
+    }
+    .dn-diagram {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+    }
+    .dn-svg-wrap {
+      flex: 0 0 96px;
+      width: 96px;
+    }
+    .dn-svg-wrap svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .dn-legend {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .dn-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border-left: 4px solid #cbd5e1;
+      background: #f8fafc;
+    }
+    .dn-item-head {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .dn-badge {
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      color: #ffffff;
+      background: #475569;
+      white-space: nowrap;
+    }
+    .dn-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1e293b;
+      line-height: 1.3;
+    }
+    .dn-note {
+      font-size: 11.5px;
+      color: #334155;
+      line-height: 1.35;
+    }
+    .dn-item.protect { border-left-color: #e11d48; }
+    .dn-item.protect .dn-badge { background: #e11d48; }
+    .dn-item.header { border-left-color: #4f46e5; }
+    .dn-item.header .dn-badge { background: #4f46e5; }
+    .dn-item.table { border-left-color: #d97706; }
+    .dn-item.table .dn-badge { background: #d97706; }
+    .dn-item.data { border-left-color: #059669; }
+    .dn-item.data .dn-badge { background: #059669; }
+    .dn-item.backup { border-left-color: #4f46e5; }
+    .dn-item.backup .dn-badge { background: #4f46e5; }
+    .dn-caption {
+      font-size: 11.5px;
+      color: #475569;
+      margin: 10px 0 0 0;
+      line-height: 1.4;
+    }
+  </style>
+
+  <p class="dn-title">GPT Device Layout</p>
+  <p class="dn-subtitle">One disk, read top to bottom</p>
+
+  <div class="dn-diagram">
+    <div class="dn-svg-wrap">
+      <svg viewBox="0 0 96 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="GPT device block layout">
+        <!-- Block 0 -->
+        <rect x="4" y="4" width="88" height="30" rx="6" fill="#fff1f2" stroke="#e11d48" stroke-width="2"/>
+        <text x="48" y="23" text-anchor="middle" font-size="12" font-weight="700" fill="#e11d48">B0</text>
+        <!-- Block 1 -->
+        <rect x="4" y="40" width="88" height="30" rx="6" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+        <text x="48" y="59" text-anchor="middle" font-size="12" font-weight="700" fill="#4f46e5">B1</text>
+        <!-- Blocks 2..X -->
+        <rect x="4" y="76" width="88" height="46" rx="6" fill="#fffbeb" stroke="#d97706" stroke-width="2"/>
+        <text x="48" y="103" text-anchor="middle" font-size="12" font-weight="700" fill="#d97706">2…X</text>
+        <!-- Actual partitions -->
+        <rect x="4" y="128" width="88" height="106" rx="6" fill="#ecfdf5" stroke="#059669" stroke-width="2"/>
+        <text x="48" y="186" text-anchor="middle" font-size="12" font-weight="700" fill="#059669">Data</text>
+        <!-- Last block -->
+        <rect x="4" y="240" width="88" height="16" rx="6" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+        <text x="48" y="252" text-anchor="middle" font-size="10" font-weight="700" fill="#4f46e5">Last</text>
+      </svg>
+    </div>
+
+    <div class="dn-legend">
+      <div class="dn-item protect">
+        <div class="dn-item-head">
+          <span class="dn-badge">Block 0</span>
+          <span class="dn-name">Protective MBR</span>
+        </div>
+        <div class="dn-note">Tells old systems: "unknown disk, don't boot here"</div>
+      </div>
+      <div class="dn-item header">
+        <div class="dn-item-head">
+          <span class="dn-badge">Block 1</span>
+          <span class="dn-name">Primary GPT Header</span>
+        </div>
+        <div class="dn-note">Main index of the disk layout</div>
+      </div>
+      <div class="dn-item table">
+        <div class="dn-item-head">
+          <span class="dn-badge">Blocks 2–X</span>
+          <span class="dn-name">Partition Labels</span>
+        </div>
+        <div class="dn-note">4 to 128 entries describing each partition</div>
+      </div>
+      <div class="dn-item data">
+        <div class="dn-item-head">
+          <span class="dn-badge">Main Area</span>
+          <span class="dn-name">Actual Partitions</span>
+        </div>
+        <div class="dn-note">Largest part of the device holding data</div>
+      </div>
+      <div class="dn-item backup">
+        <div class="dn-item-head">
+          <span class="dn-badge">Last Block</span>
+          <span class="dn-name">Backup GPT Header</span>
+        </div>
+        <div class="dn-note">Redundant copy in case the primary is corrupted</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="dn-caption">Block size assumed: 512 bytes.</p>
+</div>
+  </div>
+</body>
+</html>

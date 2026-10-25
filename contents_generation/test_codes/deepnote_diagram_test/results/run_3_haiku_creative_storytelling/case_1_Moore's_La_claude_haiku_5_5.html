@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moore - Claude Haiku 5.5</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 24px 12px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 520px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>Moore</strong> (chart)</span>
+    <span>Claude Haiku 5.5 | 22.56s | 7598 tok ($0.00365)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      position: relative;
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      background: #fffdf5;
+      border: 1px solid #e8dcc0;
+      border-radius: 18px;
+      padding: 18px 16px 16px;
+      box-shadow: 0 6px 18px rgba(90, 70, 20, 0.12);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #2d2a24;
+      overflow: hidden;
+    }
+    .deepnote-figure-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(to bottom, transparent 0 27px, #e9e2cf 27px 28px);
+      opacity: 0.55;
+      pointer-events: none;
+    }
+    .deepnote-figure-card > * { position: relative; }
+    .dn-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .dn-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 0;
+      color: #1f3b63;
+    }
+    .dn-tag {
+      font-size: 11.5px;
+      font-weight: 700;
+      background: #ffe27a;
+      color: #5a4300;
+      padding: 3px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+      transform: rotate(-2deg);
+    }
+    .dn-hl {
+      background: linear-gradient(transparent 55%, #b9f3d0 55%);
+      padding: 0 2px;
+      font-weight: 600;
+    }
+    .dn-body {
+      font-size: 13.5px;
+      line-height: 1.6;
+      margin: 6px 0 4px;
+    }
+    .dn-svg-wrap {
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px dashed #cdbf9b;
+      border-radius: 12px;
+      padding: 6px 4px 2px;
+      margin: 8px 0 6px;
+    }
+    .dn-svg { width: 100%; height: auto; display: block; }
+    .dn-axis-label { font-size: 11.5px; fill: #5b5548; }
+    .dn-val { font-size: 11.5px; font-weight: 700; fill: #1f3b63; }
+    .dn-grid { stroke: #e6dfcc; stroke-width: 1; }
+    .dn-postit {
+      position: relative;
+      background: #fff28a;
+      color: #4a3b00;
+      font-size: 11.5px;
+      font-weight: 600;
+      line-height: 1.45;
+      padding: 9px 11px;
+      margin: 10px 4px 12px 10px;
+      transform: rotate(1.5deg);
+      box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.15);
+    }
+    .dn-postit::after {
+      content: "";
+      position: absolute;
+      right: -6px;
+      bottom: 0;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-bottom: 8px solid #e6d75a;
+    }
+    .dn-bottom {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #eef6ff;
+      border-left: 4px solid #3b7dd8;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .dn-bottom strong { color: #1f3b63; }
+    .dn-mascot { flex: 0 0 auto; width: 44px; height: 44px; }
+    .dn-circle { fill: none; stroke: #e0452b; stroke-width: 2.2; stroke-dasharray: 4 3; }
+    .dn-line { fill: none; stroke: #1f3b63; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .dn-dot { fill: #e0452b; stroke: #fff; stroke-width: 1.5; }
+    @media (max-width: 360px) {
+      .deepnote-figure-card { padding: 14px 12px; }
+      .dn-body { font-size: 13px; }
+    }
+  </style>
+
+  <div class="dn-head">
+    <h3 class="dn-title">📈 Moore's Law: Chip Complexity</h3>
+    <span class="dn-tag">Exam favorite ⭐</span>
+  </div>
+
+  <p class="dn-body">
+    The number of transistors on a chip <span class="dn-hl">roughly doubles every 18 months</span>.
+    Straight line on a log scale = <strong>exponential growth</strong>.
+  </p>
+
+  <div class="dn-svg-wrap">
+    <svg class="dn-svg" viewBox="0 0 480 280" role="img" aria-label="Log-scale line chart of transistors per chip from 1970 to 2025">
+      <!-- Decade gridlines (log scale: each gridline = ×10) -->
+      <line class="dn-grid" x1="60" y1="240" x2="455" y2="240"/>
+      <line class="dn-grid" x1="60" y1="187.5" x2="455" y2="187.5"/>
+      <line class="dn-grid" x1="60" y1="135" x2="455" y2="135"/>
+      <line class="dn-grid" x1="60" y1="82.5" x2="455" y2="82.5"/>
+      <line class="dn-grid" x1="60" y1="30" x2="455" y2="30"/>
+
+      <!-- Axes -->
+      <line x1="60" y1="30" x2="60" y2="240" stroke="#5b5548" stroke-width="1.4"/>
+      <line x1="60" y1="240" x2="455" y2="240" stroke="#5b5548" stroke-width="1.4"/>
+
+      <!-- Y-axis labels (log) -->
+      <text class="dn-axis-label" x="52" y="244" text-anchor="end">10⁴</text>
+      <text class="dn-axis-label" x="52" y="191" text-anchor="end">10⁶</text>
+      <text class="dn-axis-label" x="52" y="139" text-anchor="end">10⁸</text>
+      <text class="dn-axis-label" x="52" y="86" text-anchor="end">10¹⁰</text>
+      <text class="dn-axis-label" x="52" y="34" text-anchor="end">10¹²</text>
+
+      <!-- X-axis labels (linear) -->
+      <text class="dn-axis-label" x="60" y="256" text-anchor="middle">1970</text>
+      <text class="dn-axis-label" x="202" y="256" text-anchor="middle">1990</text>
+      <text class="dn-axis-label" x="344" y="256" text-anchor="middle">2010</text>
+      <text class="dn-axis-label" x="450" y="256" text-anchor="middle">2025</text>
+
+      <text class="dn-axis-label" x="250" y="274" text-anchor="middle">Year (linear)</text>
+      <text class="dn-axis-label" x="14" y="135" text-anchor="middle" transform="rotate(-90 14 135)">Transistors (log)</text>
+
+      <!-- Trend line (slight flattening near the end) -->
+      <path class="dn-line" d="M60,232 L131,199 L202,165 L273,132 L344,101 L414,70 L450,48"/>
+
+      <!-- Data points -->
+      <circle class="dn-dot" cx="60" cy="232" r="5"/>
+      <circle class="dn-dot" cx="450" cy="48" r="5"/>
+
+      <!-- Circled key numbers -->
+      <circle class="dn-circle" cx="60" cy="232" r="11"/>
+      <circle class="dn-circle" cx="450" cy="48" r="11"/>
+
+      <!-- Value callouts -->
+      <text class="dn-val" x="72" y="222">1970: ~2×10⁴</text>
+      <text class="dn-val" x="438" y="36" text-anchor="end">2025: ~2×10¹¹</text>
+
+      <!-- Doubling annotation -->
+      <text class="dn-axis-label" x="150" y="112" transform="rotate(-20 150 112)">≈ doubles every 18 months</text>
+
+      <!-- Slowdown highlight -->
+      <text class="dn-axis-label" x="318" y="62" fill="#b5462c" font-weight="700">slowed a bit ↘</text>
+    </svg>
+  </div>
+
+  <div class="dn-postit">
+    ⚠️ Exam trap: the y-axis is LOG scale. Each gridline is ×10, not +10 — a straight slope means exponential growth!
+  </div>
+
+  <div class="dn-bottom">
+    <svg class="dn-mascot" viewBox="0 0 44 44" aria-hidden="true">
+      <rect x="10" y="12" width="24" height="26" rx="6" fill="#3b7dd8"/>
+      <rect x="6" y="18" width="6" height="12" rx="3" fill="#1f3b63"/>
+      <rect x="32" y="18" width="6" height="12" rx="3" fill="#1f3b63"/>
+      <circle cx="18" cy="22" r="2.2" fill="#fff"/>
+      <circle cx="26" cy="22" r="2.2" fill="#fff"/>
+      <path d="M17,28 Q22,32 27,28" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M22,6 L19,12 L24,12 L21,18" stroke="#ffb400" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <strong>Bottom line!</strong> Chip complexity keeps growing exponentially, but switching speeds have not grown as dramatically, so OS design must manage this complexity.
+    </div>
+  </div>
+</div>
+  </div>
+</body>
+</html>

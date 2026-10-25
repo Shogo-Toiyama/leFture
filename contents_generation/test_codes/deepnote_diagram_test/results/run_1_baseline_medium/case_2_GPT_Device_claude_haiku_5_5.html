@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GPT Device Layout - Claude Haiku 5.5</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Orbit Paper World Background */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 32px 16px;
+    margin: 0;
+  }
+  .meta-bar {
+    max-width: 600px;
+    margin: 0 auto 16px auto;
+    font-size: 13px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+  }
+  .card-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+  <div class="meta-bar">
+    <span><strong>GPT Device Layout</strong> (diagram)</span>
+    <span>Claude Haiku 5.5 | 17.69s | 7532 tok ($0.00334)</span>
+  </div>
+  <div class="card-container">
+    <div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      --ink-900: #0f172a;
+      --ink-800: #1e293b;
+      --ink-700: #334155;
+      --ink-500: #64748b;
+      --line: #e2e8f0;
+      --indigo: #4f46e5;
+      --indigo-soft: #eef2ff;
+      --emerald: #059669;
+      --emerald-soft: #ecfdf5;
+      --amber: #d97706;
+      --amber-soft: #fffbeb;
+      --rose: #e11d48;
+      --rose-soft: #fff1f2;
+
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.06);
+      padding: 20px 18px 22px;
+      max-width: 600px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      color: var(--ink-800);
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    .deepnote-figure-card *,
+    .deepnote-figure-card *::before,
+    .deepnote-figure-card *::after {
+      box-sizing: border-box;
+    }
+
+    .deepnote-figure-card .gpt-header {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px dashed var(--line);
+    }
+
+    .deepnote-figure-card .gpt-eyebrow {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--indigo);
+    }
+
+    .deepnote-figure-card .gpt-title {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink-900);
+    }
+
+    .deepnote-figure-card .gpt-subtitle {
+      margin: 0;
+      font-size: 13px;
+      color: var(--ink-500);
+    }
+
+    .deepnote-figure-card .gpt-body {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .deepnote-figure-card .gpt-device {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .deepnote-figure-card .gpt-device-svg {
+      width: 100%;
+      max-width: 220px;
+      height: auto;
+      display: block;
+    }
+
+    .deepnote-figure-card .gpt-device-caption {
+      font-size: 12px;
+      color: var(--ink-500);
+      text-align: center;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px 12px;
+    }
+
+    .deepnote-figure-card .gpt-legend {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .deepnote-figure-card .gpt-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent, var(--indigo));
+      border-radius: 10px;
+      background: var(--tint, #ffffff);
+    }
+
+    .deepnote-figure-card .gpt-badge {
+      min-width: 56px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #ffffff;
+      background: var(--accent, var(--indigo));
+      border-radius: 6px;
+      padding: 3px 6px;
+      white-space: nowrap;
+      margin-top: 1px;
+    }
+
+    .deepnote-figure-card .gpt-item-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--ink-900);
+    }
+
+    .deepnote-figure-card .gpt-item-desc {
+      margin: 2px 0 0;
+      font-size: 13px;
+      color: var(--ink-700);
+    }
+
+    .deepnote-figure-card .gpt-item-desc code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      background: #f1f5f9;
+      color: var(--ink-800);
+      padding: 0 4px;
+      border-radius: 4px;
+    }
+
+    .deepnote-figure-card .gpt-item.is-mbr { --accent: var(--rose); --tint: var(--rose-soft); }
+    .deepnote-figure-card .gpt-item.is-header { --accent: var(--indigo); --tint: var(--indigo-soft); }
+    .deepnote-figure-card .gpt-item.is-labels { --accent: var(--amber); --tint: var(--amber-soft); }
+    .deepnote-figure-card .gpt-item.is-data { --accent: var(--emerald); --tint: var(--emerald-soft); }
+    .deepnote-figure-card .gpt-item.is-backup { --accent: var(--indigo); --tint: var(--indigo-soft); }
+
+    .deepnote-figure-card .gpt-footer {
+      margin: 14px 0 0;
+      font-size: 12px;
+      color: var(--ink-500);
+      text-align: center;
+    }
+
+    @media (min-width: 480px) {
+      .deepnote-figure-card .gpt-body {
+        grid-template-columns: minmax(170px, 210px) 1fr;
+        gap: 22px;
+      }
+      .deepnote-figure-card .gpt-device {
+        position: sticky;
+        top: 16px;
+      }
+    }
+
+    @media (max-width: 359px) {
+      .deepnote-figure-card {
+        padding: 16px 12px 18px;
+      }
+      .deepnote-figure-card .gpt-item {
+        grid-template-columns: 1fr;
+      }
+      .deepnote-figure-card .gpt-badge {
+        justify-self: start;
+      }
+    }
+  </style>
+
+  <div class="gpt-header">
+    <span class="gpt-eyebrow">UEFI · Storage Layout</span>
+    <h3 class="gpt-title">GPT Device Layout</h3>
+    <p class="gpt-subtitle">Block-by-block structure of a GUID Partition Table device (512-byte blocks)</p>
+  </div>
+
+  <div class="gpt-body">
+    <figure class="gpt-device" style="margin:0;">
+      <svg class="gpt-device-svg" viewBox="0 0 160 400" role="img" aria-label="Diagram of a GPT device: protective MBR, primary GPT header, partition labels, actual partitions, and backup GPT header">
+        <!-- Device outline -->
+        <rect x="26" y="14" width="108" height="372" rx="14" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+
+        <!-- Block 0: Protective MBR -->
+        <rect x="34" y="22" width="92" height="26" rx="4" fill="#e11d48"/>
+        <text x="80" y="39" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif">Block 0</text>
+
+        <!-- Block 1: Primary GPT Header -->
+        <rect x="34" y="50" width="92" height="26" rx="4" fill="#4f46e5"/>
+        <text x="80" y="67" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif">Block 1</text>
+
+        <!-- Blocks 2..X: Partition Labels -->
+        <rect x="34" y="78" width="92" height="56" rx="4" fill="#d97706"/>
+        <text x="80" y="104" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif">Blocks 2–X</text>
+        <text x="80" y="119" text-anchor="middle" font-size="9" fill="#fffbeb" font-family="Inter, Segoe UI, Arial, sans-serif">Partition Table</text>
+
+        <!-- Main Device Area: Actual Partitions -->
+        <rect x="34" y="138" width="92" height="206" rx="4" fill="#059669"/>
+        <g stroke="#ffffff" stroke-opacity="0.18" stroke-width="1">
+          <line x1="34" y1="172" x2="126" y2="172"/>
+          <line x1="34" y1="206" x2="126" y2="206"/>
+          <line x1="34" y1="240" x2="126" y2="240"/>
+          <line x1="34" y1="274" x2="126" y2="274"/>
+          <line x1="34" y1="308" x2="126" y2="308"/>
+        </g>
+        <text x="80" y="246" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif">Actual</text>
+        <text x="80" y="262" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif">Partitions</text>
+
+        <!-- Last Block: Backup GPT Header -->
+        <rect x="34" y="350" width="92" height="26" rx="4" fill="#4f46e5"/>
+        <text x="80" y="367" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif">Last Block</text>
+      </svg>
+      <figcaption class="gpt-device-caption">Not to scale · 512 B per block</figcaption>
+    </figure>
+
+    <ul class="gpt-legend">
+      <li class="gpt-item is-mbr">
+        <span class="gpt-badge">Block 0</span>
+        <div>
+          <p class="gpt-item-title">Protective Master Boot Record (MBR)</p>
+          <p class="gpt-item-desc">A protective measure. Older systems that read this sector see an unknown partition type and will not attempt to boot from the device.</p>
+        </div>
+      </li>
+
+      <li class="gpt-item is-header">
+        <span class="gpt-badge">Block 1</span>
+        <div>
+          <p class="gpt-item-title">Primary GPT Header</p>
+          <p class="gpt-item-desc">Contains the primary header of the GUID Partition Table.</p>
+        </div>
+      </li>
+
+      <li class="gpt-item is-labels">
+        <span class="gpt-badge">Blocks 2–X</span>
+        <div>
+          <p class="gpt-item-title">Partition Labels / Tables</p>
+          <p class="gpt-item-desc">Entries for 4 to 128 partitions, specifying the layout of the rest of the device.</p>
+        </div>
+      </li>
+
+      <li class="gpt-item is-data">
+        <span class="gpt-badge">Main Area</span>
+        <div>
+          <p class="gpt-item-title">Actual Partitions</p>
+          <p class="gpt-item-desc">The largest portion of the device, dedicated to the actual data partitions.</p>
+        </div>
+      </li>
+
+      <li class="gpt-item is-backup">
+        <span class="gpt-badge">Last Block</span>
+        <div>
+          <p class="gpt-item-title">Copy of Primary GPT Header</p>
+          <p class="gpt-item-desc">A redundant copy stored in the very last block. If the primary header is corrupted, this backup is available for recovery.</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <p class="gpt-footer">Assumes a block size of 512 bytes</p>
+</div>
+  </div>
+</body>
+</html>
