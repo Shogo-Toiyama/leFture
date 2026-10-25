@@ -15042,6 +15042,46 @@ body.is-resizing-chat iframe {
   padding-left: 1.3em;
 }
 
+.chat-markdown ul.contains-task-list {
+  list-style: none;
+  padding-left: 0.2em;
+}
+
+.chat-markdown li.task-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55em;
+  list-style: none;
+}
+
+.chat-markdown li.task-list-item:has(input:checked) {
+  color: var(--comet);
+  text-decoration: line-through;
+}
+
+.chat-markdown input.chat-task-checkbox,
+.chat-markdown li.task-list-item input[type="checkbox"] {
+  width: 1.15em !important;
+  height: 1.15em !important;
+  min-width: 1.15em !important;
+  max-width: 1.15em !important;
+  margin: 0.28em 0 0 !important;
+  padding: 0 !important;
+  border-radius: 4px !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  accent-color: var(--gold) !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  box-shadow: none !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.chat-markdown input.chat-task-checkbox:hover,
+.chat-markdown li.task-list-item input[type="checkbox"]:hover {
+  border-color: var(--gold) !important;
+}
+
 .chat-markdown li + li {
   margin-top: 0.2em;
 }
@@ -15084,15 +15124,21 @@ body.is-resizing-chat iframe {
 
 .chat-markdown pre {
   overflow-x: auto;
-  padding: 10px 12px;
+  padding: 10px 14px;
   border-radius: 10px;
   background: var(--void-deep);
   border: 1px solid var(--glass-border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  line-height: 1.5;
 }
 
 .chat-markdown pre code {
-  padding: 0;
-  background: none;
+  padding: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  font-size: inherit !important;
+  border-radius: 0 !important;
 }
 
 .chat-markdown blockquote {
@@ -16954,6 +17000,40 @@ body.is-resizing-chat iframe {
   background: #f4ede0;
   border: 1px solid #e4dcce;
   color: #2e231a;
+}
+
+.chat-fullscreen.is-paper .chat-markdown pre code,
+.chat-page.is-paper .chat-markdown pre code,
+.chat-panel.is-paper .chat-markdown pre code {
+  background: transparent !important;
+  color: inherit !important;
+}
+
+.chat-fullscreen.is-paper .chat-markdown input.chat-task-checkbox,
+.chat-page.is-paper .chat-markdown input.chat-task-checkbox,
+.chat-panel.is-paper .chat-markdown input.chat-task-checkbox,
+.chat-fullscreen.is-paper .chat-markdown li.task-list-item input[type="checkbox"],
+.chat-page.is-paper .chat-markdown li.task-list-item input[type="checkbox"],
+.chat-panel.is-paper .chat-markdown li.task-list-item input[type="checkbox"] {
+  border-color: rgba(62, 50, 40, 0.35) !important;
+  background: rgba(62, 50, 40, 0.05) !important;
+  accent-color: #b45309 !important;
+}
+
+.chat-fullscreen.is-paper .chat-markdown input.chat-task-checkbox:hover,
+.chat-page.is-paper .chat-markdown input.chat-task-checkbox:hover,
+.chat-panel.is-paper .chat-markdown input.chat-task-checkbox:hover,
+.chat-fullscreen.is-paper .chat-markdown li.task-list-item input[type="checkbox"]:hover,
+.chat-page.is-paper .chat-markdown li.task-list-item input[type="checkbox"]:hover,
+.chat-panel.is-paper .chat-markdown li.task-list-item input[type="checkbox"]:hover {
+  border-color: #b45309 !important;
+}
+
+.chat-fullscreen.is-paper .chat-markdown li.task-list-item:has(input:checked),
+.chat-page.is-paper .chat-markdown li.task-list-item:has(input:checked),
+.chat-panel.is-paper .chat-markdown li.task-list-item:has(input:checked) {
+  color: #8c7b6e !important;
+  text-decoration: line-through;
 }
 
 .chat-fullscreen.is-paper .chat-markdown blockquote,

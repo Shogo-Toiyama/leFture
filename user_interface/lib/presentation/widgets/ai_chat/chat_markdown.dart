@@ -43,6 +43,19 @@ class ChatMarkdown extends StatelessWidget {
     return MarkdownBody(
       data: prepared,
       styleSheet: chatMarkdownStyleSheet(colors, fontSize),
+      syntaxHighlighter: _PlainCodeSyntaxHighlighter(
+        style: TextStyle(
+          color: colors.codeText,
+          fontSize: fontSize * .86,
+          fontFamily: 'Menlo',
+          fontFamilyFallback: const ['Roboto Mono', 'Courier'],
+          height: 1.5,
+        ),
+      ),
+      checkboxBuilder: (value) => _InteractiveCheckbox(
+        initialValue: value,
+        colors: colors,
+      ),
       extensionSet: md.ExtensionSet.gitHubFlavored,
       inlineSyntaxes: [...cjkSafeInlineSyntaxes, ChatMathInlineSyntax()],
       blockSyntaxes: const [ChatMathBlockSyntax()],
@@ -327,3 +340,76 @@ class ChatCiteMarker extends StatelessWidget {
     );
   }
 }
+
+/// コードブロック(pre)のテキスト用ハイライター。
+/// インラインcodeと違って背景色を付けず、余計な行ハイライトのないすっきりした等幅ボックスにする。
+class _PlainCodeSyntaxHighlighter extends SyntaxHighlighter {
+  _PlainCodeSyntaxHighlighter({required this.style});
+  final TextStyle style;
+
+  @override
+  TextSpan format(String source) => TextSpan(
+        style: style.copyWith(backgroundColor: Colors.transparent),
+        text: source,
+      );
+}
+
+/// タップでチェックの切り替えができるチェックボックス。
+/// 宇宙(ダーク)・紙(ペーパー)どちらでも見やすい輪郭線とアクセントカラーを持つ。
+class _InteractiveCheckbox extends StatefulWidget {
+  const _InteractiveCheckbox({
+    required this.initialValue,
+    required this.colors,
+  });
+
+  final bool initialValue;
+  final ChatColors colors;
+
+  @override
+  State<_InteractiveCheckbox> createState() => _InteractiveCheckboxState();
+}
+
+class _InteractiveCheckboxState extends State<_InteractiveCheckbox> {
+  late bool _checked = widget.initialValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.colors;
+    final isDark = c.sheet.computeLuminance() < 0.5;
+    final borderColor = _checked
+        ? c.link
+        : (isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0x663E3228));
+    final bgColor = _checked
+        ? c.link
+        : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0x143E3228));
+
+    return GestureDetector(
+      onTap: () => setState(() => _checked = !_checked),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 6, top: 2, bottom: 2),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 17,
+          height: 17,
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: borderColor,
+              width: 1.6,
+            ),
+          ),
+          child: _checked
+              ? Icon(
+                  Icons.check,
+                  size: 13,
+                  color: isDark ? const Color(0xFF121628) : Colors.white,
+                )
+              : null,
+        ),
+      ),
+    );
+  }
+}
+

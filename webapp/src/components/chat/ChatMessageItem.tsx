@@ -387,6 +387,25 @@ const StoppedAttachmentsNotice: React.FC<{
   );
 };
 
+const InteractiveCheckbox: React.FC<React.InputHTMLAttributes<HTMLInputElement>> = ({
+  checked: initialChecked,
+  defaultChecked,
+  disabled: _disabled,
+  className,
+  ...rest
+}) => {
+  const [checked, setChecked] = useState(Boolean(initialChecked ?? defaultChecked));
+  return (
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(e) => setChecked(e.target.checked)}
+      className={`chat-task-checkbox ${className ?? ''}`}
+      {...rest}
+    />
+  );
+};
+
 const AssistantMessage: React.FC<{
   message: LocalChatMessage;
   world?: ChatWorld;
@@ -498,7 +517,7 @@ const AssistantMessage: React.FC<{
   }
 
   const markdownBody = (
-        <div className={`chat-markdown ${isGenerating ? 'is-streaming' : ''}`}>
+    <div className={`chat-markdown ${isGenerating ? 'is-streaming' : ''}`}>
       <ReactMarkdown
         remarkPlugins={MARKDOWN_REMARK_PLUGINS}
         rehypePlugins={MARKDOWN_REHYPE_PLUGINS}
@@ -526,6 +545,12 @@ const AssistantMessage: React.FC<{
                 {children}
               </a>
             );
+          },
+          input: ({ node, ...props }) => {
+            if (props.type === 'checkbox') {
+              return <InteractiveCheckbox {...props} />;
+            }
+            return <input {...props} />;
           },
         }}
       >
