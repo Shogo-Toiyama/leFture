@@ -1440,6 +1440,7 @@ async def _gather_materials(
     # Webは講義・チャットがまだ無い人にも使えるので、探索役は常に呼ぶ
     if has_lectures or has_chats or NAVIGATOR_CAPABILITIES["CAN_WEB"]:
         admin_client = get_supabase_client()
+        chat_source = DbChatThreadSource(admin_client, turn.user_id)
         tz = resolve_timezone(turn.timezone_name)
         now = datetime.now(tz)
         current_time_str = now.strftime("%Y-%m-%d (%a) %H:%M")
