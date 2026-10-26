@@ -908,6 +908,7 @@
   "pipelineTaskFunFactSearch": "関連トリビアを検索中",
   "pipelineTaskFunFactsGeneration": "関連トリビアを執筆中",
   "pipelineTaskDetailContentsGeneration": "詳細ノート（Deep Notes）を執筆中",
+  "pipelineTaskFigureGeneration": "図解を生成中",
   "pipelineTaskFinalizeJob": "解析結果の最終処理中",
   "homeTutorialCalloutMessage": "このアプリについての講義を見てみよう!",
   "lectureViewerTutorialReviewCardsCallout": "復習カードを見てみよう!",

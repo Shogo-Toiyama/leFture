@@ -2982,6 +2982,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get pipelineTaskDetailContentsGeneration => '詳細ノート（Deep Notes）を執筆中';
 
   @override
+  String get pipelineTaskFigureGeneration => '図解を生成中';
+
+  @override
   String get pipelineTaskFinalizeJob => '解析結果の最終処理中';
 
   @override

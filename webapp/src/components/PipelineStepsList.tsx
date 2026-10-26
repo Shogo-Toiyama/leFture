@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { apiFetch } from '../lib/api';
 import { PROCESSING_TASK_ORDER, taskLabel } from '../lib/pipelineSteps';
+import { useLanguage } from '../i18n/LanguageContext';
 import type { ProcessingTask } from '../types/lecture';
 
 interface PipelineStepsListProps {
@@ -38,6 +39,7 @@ const RetryButton: React.FC<{ taskId: string; onRetried: () => void }> = ({ task
 };
 
 export const PipelineStepsList: React.FC<PipelineStepsListProps> = ({ tasks, onRetried }) => {
+  const { language } = useLanguage();
   const ordered = [...tasks].sort(
     (a, b) => PROCESSING_TASK_ORDER.indexOf(a.task_type) - PROCESSING_TASK_ORDER.indexOf(b.task_type)
   );
@@ -53,7 +55,7 @@ export const PipelineStepsList: React.FC<PipelineStepsListProps> = ({ tasks, onR
             <span className="pipeline-step-glyph" aria-hidden="true">
               {statusGlyph(task.status, isCurrent)}
             </span>
-            <span className="pipeline-step-label">{taskLabel(task.task_type)}</span>
+            <span className="pipeline-step-label">{taskLabel(task.task_type, language)}</span>
             {(task.status === 'FAILED' || task.status === 'ERROR') && (
               <RetryButton taskId={task.id} onRetried={onRetried} />
             )}

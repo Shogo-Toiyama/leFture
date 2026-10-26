@@ -48,6 +48,17 @@ final RegExp _figurePlaceholderPattern = RegExp(
 String stripFigurePlaceholders(String markdownSource) =>
     markdownSource.replaceAll(_figurePlaceholderPattern, '');
 
+/// `<!-- FIGURE: ... -->` を順番に Markdown 画像記法 `![figure](figure:<index>)` へ置換する。
+/// flutter_markdown のカスタムビルダーで DeepNoteFigureCard へマッピングするために使用する。
+String replaceFigurePlaceholders(String markdownSource) {
+  var index = 0;
+  return markdownSource.replaceAllMapped(_figurePlaceholderPattern, (match) {
+    final replacement = '\n\n![figure](figure:$index)\n\n';
+    index += 1;
+    return replacement;
+  });
+}
+
 /// Parses [markdownSource] the same way flutter_markdown does and
 /// concatenates every text leaf in document order (headings, paragraphs,
 /// list items, bold/italic runs, ...), with no separators added between

@@ -11,7 +11,8 @@ import { getLecture } from '../../lib/lectures';
 import { updateDeepNoteReaction } from '../../lib/content';
 import { readAnnotations, toggleSaved } from '../../lib/annotations';
 import { readableAccent } from '../../lib/reviewCardTheme';
-import { stripFigurePlaceholders, stripSidCitations } from '../../lib/sidCitation';
+import { replaceFigurePlaceholders, stripFigurePlaceholders, stripSidCitations } from '../../lib/sidCitation';
+import { useDeepNoteFigures } from '../../hooks/useDeepNoteFigures';
 import type { ContentMetadata } from '../../types/content';
 import type { Lecture } from '../../types/lecture';
 import { AnnotatedMarkdown } from '../../components/annotations/AnnotatedMarkdown';
@@ -40,6 +41,7 @@ export const DeepNotesDetailPage: React.FC = () => {
 
   const { topics } = useLectureTopics(lectureId);
   const { notes, loading, error, setNotes } = useDeepNotes(lectureId);
+  const { figures } = useDeepNoteFigures(lectureId);
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const { course } = useCourse(lecture?.course_id);
   // 一覧は常に本文へ覆いかぶさるオーバーレイ(モーダル)。出典シートとは違い、
@@ -167,7 +169,18 @@ export const DeepNotesDetailPage: React.FC = () => {
   const { topic, note } = current;
   const heroUrl = topic.image_path ? imageUrls[topic.image_path] ?? null : null;
   const isLocked = note.note_contents === DEEP_NOTES_SKIPPED_PLAN_LIMIT;
-  const cleaned = stripSidCitations(stripFigurePlaceholders(note.note_contents));
+
+  const currentFigures = useMemo(
+    () => figures.filter((f) => f.topic_number === topic.index),
+    [figures, topic.index]
+  );
+
+  const cleaned = useMemo(() => {
+    if (currentFigures.length > 0) {
+      return stripSidCitations(replaceFigurePlaceholders(note.note_contents));
+    }
+    return stripSidCitations(stripFigurePlaceholders(note.note_contents));
+  }, [note.note_contents, currentFigures.length]);
 
   const handleReaction = async (reaction: 'like' | 'dislike') => {
     const value = note.metadata?.reaction === reaction ? null : reaction;
@@ -282,6 +295,7 @@ export const DeepNotesDetailPage: React.FC = () => {
                 rawMarkdown={note.note_contents}
                 annotations={readAnnotations(note.metadata)}
                 blockIdx={null}
+                figures={currentFigures}
               />
             </AnnotationLayer>
           )}

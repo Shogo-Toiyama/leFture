@@ -73,6 +73,7 @@ const List<String> processingTaskOrder = [
   'FUN_FACT_SEARCH',
   'FUN_FACTS_GENERATION',
   'DETAIL_CONTENTS_GENERATION',
+  'FIGURE_GENERATION',
   'FINALIZE_JOB',
 ];
 
@@ -90,6 +91,7 @@ const Map<String, String> processingTaskLabels = {
   'FUN_FACT_SEARCH': 'Searching fun facts',
   'FUN_FACTS_GENERATION': 'Writing fun facts',
   'DETAIL_CONTENTS_GENERATION': 'Writing deep notes',
+  'FIGURE_GENERATION': 'Generating diagrams',
   'FINALIZE_JOB': 'Finalizing',
 };
 
@@ -125,6 +127,8 @@ String localizedProcessingTaskLabel(dynamic l10n, String taskType) {
         return l10n.pipelineTaskFunFactsGeneration as String;
       case 'DETAIL_CONTENTS_GENERATION':
         return l10n.pipelineTaskDetailContentsGeneration as String;
+      case 'FIGURE_GENERATION':
+        return l10n.pipelineTaskFigureGeneration as String;
       case 'FINALIZE_JOB':
         return l10n.pipelineTaskFinalizeJob as String;
       default:
@@ -152,11 +156,12 @@ const Map<String, List<String>> processingTaskDependencies = {
   'FUN_FACT_SEARCH': ['FUN_FACT_BRAINSTORMING'],
   'FUN_FACTS_GENERATION': ['REVIEW_CARD_GENERATION', 'FUN_FACT_SEARCH'],
   'DETAIL_CONTENTS_GENERATION': ['REVIEW_CARD_GENERATION'],
+  'FIGURE_GENERATION': ['DETAIL_CONTENTS_GENERATION'],
   'FINALIZE_JOB': [
     'ANNOUNCEMENT_GENERATION',
     'IMAGE_RENDERING',
     'FUN_FACTS_GENERATION',
-    'DETAIL_CONTENTS_GENERATION',
+    'FIGURE_GENERATION',
   ],
 };
 

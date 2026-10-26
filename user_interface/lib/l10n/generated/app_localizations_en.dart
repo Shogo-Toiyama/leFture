@@ -3117,6 +3117,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pipelineTaskDetailContentsGeneration => 'Writing deep notes';
 
   @override
+  String get pipelineTaskFigureGeneration => 'Generating diagrams';
+
+  @override
   String get pipelineTaskFinalizeJob => 'Finalizing';
 
   @override

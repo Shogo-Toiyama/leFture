@@ -4,9 +4,11 @@ import remarkGfm from 'remark-gfm';
 import { rehypeAnnotations } from '../../lib/markdownAnnotations';
 import { useAnnotationLayer } from './AnnotationContext';
 import type { Annotation } from '../../types/annotation';
+import type { DeepNoteFigure } from '../../types/content';
+import { DeepNoteFigureCard } from '../deepNotes/DeepNoteFigureCard';
 
 interface AnnotatedMarkdownProps {
-  /** SID引用・FIGUREプレースホルダーを除去済みのMarkdown。 */
+  /** SID引用・FIGUREプレースホルダーを除去または変換済みのMarkdown。 */
   markdown: string;
   /** 引用マーカーを含む生Markdown ("Source"アクション用)。 */
   rawMarkdown: string;
@@ -14,6 +16,7 @@ interface AnnotatedMarkdownProps {
   /** ReviewCardのブロックindex。DeepNotesはnull。 */
   blockIdx: number | null;
   className?: string;
+  figures?: DeepNoteFigure[];
 }
 
 export const AnnotatedMarkdown: React.FC<AnnotatedMarkdownProps> = ({
@@ -22,6 +25,7 @@ export const AnnotatedMarkdown: React.FC<AnnotatedMarkdownProps> = ({
   annotations,
   blockIdx,
   className,
+  figures,
 }) => {
   const layer = useAnnotationLayer();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -36,6 +40,23 @@ export const AnnotatedMarkdown: React.FC<AnnotatedMarkdownProps> = ({
 
   const rehypePlugins = useMemo(() => [rehypeAnnotations(annotations)], [annotations]);
 
+  const components = useMemo(
+    () => ({
+      img: ({ src, alt, ...props }: React.ComponentPropsWithoutRef<'img'>) => {
+        if (src?.startsWith('figure:')) {
+          const idx = Number(src.replace('figure:', ''));
+          const fig = figures?.find((f) => f.figure_index === idx);
+          if (fig) {
+            return <DeepNoteFigureCard figure={fig} />;
+          }
+          return null;
+        }
+        return <img src={src} alt={alt} {...props} />;
+      },
+    }),
+    [figures]
+  );
+
   const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (!layer) return;
     const target = (event.target as HTMLElement).closest('[data-annotation-id]');
@@ -48,9 +69,10 @@ export const AnnotatedMarkdown: React.FC<AnnotatedMarkdownProps> = ({
 
   return (
     <div ref={containerRef} className={className} onClick={handleClick}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={rehypePlugins}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={rehypePlugins} components={components}>
         {markdown}
       </ReactMarkdown>
     </div>
   );
 };
+

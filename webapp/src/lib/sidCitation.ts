@@ -225,8 +225,21 @@ export function buildRawToStrippedMap(rawText: string): number[] {
 /**
  * deep_notesの本文に埋め込まれる
  * `<!-- FIGURE: type="..." title="..." description="..." -->`
- * プレースホルダーを除去する。画像としては描画しない(モバイル版と同じ扱い)。
+ * プレースホルダーを除去する。
  */
 export function stripFigurePlaceholders(text: string): string {
   return text.replace(/<!--\s*FIGURE:[^>]*-->/g, '').trim();
+}
+
+/**
+ * `<!-- FIGURE: ... -->` を順番に Markdown 画像記法 `![figure](figure:<index>)` へ置換する。
+ * ReactMarkdown のカスタムレンダラーで DeepNoteFigureCard へマッピングするために使用する。
+ */
+export function replaceFigurePlaceholders(text: string): string {
+  let index = 0;
+  return text.replace(/<!--\s*FIGURE:[^>]*-->/g, () => {
+    const replacement = `\n\n![figure](figure:${index})\n\n`;
+    index += 1;
+    return replacement;
+  });
 }

@@ -4081,6 +4081,10 @@
   "@pipelineTaskDetailContentsGeneration": {
     "description": "Pipeline task label: Writing deep notes."
   },
+  "pipelineTaskFigureGeneration": "Generating diagrams",
+  "@pipelineTaskFigureGeneration": {
+    "description": "Pipeline task label: Generating diagrams."
+  },
   "pipelineTaskFinalizeJob": "Finalizing",
   "@pipelineTaskFinalizeJob": {
     "description": "Pipeline task label: Finalizing."

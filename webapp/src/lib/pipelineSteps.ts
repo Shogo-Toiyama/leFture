@@ -18,6 +18,7 @@ export const PROCESSING_TASK_ORDER: string[] = [
   'FUN_FACT_SEARCH',
   'FUN_FACTS_GENERATION',
   'DETAIL_CONTENTS_GENERATION',
+  'FIGURE_GENERATION',
   'FINALIZE_JOB',
 ];
 
@@ -35,9 +36,29 @@ export const PROCESSING_TASK_LABELS: Record<string, string> = {
   FUN_FACT_SEARCH: 'Researching fun facts',
   FUN_FACTS_GENERATION: 'Writing fun facts',
   DETAIL_CONTENTS_GENERATION: 'Writing deep notes',
+  FIGURE_GENERATION: 'Generating diagrams',
   FINALIZE_JOB: 'Finalizing',
 };
 
-export function taskLabel(taskType: string): string {
-  return PROCESSING_TASK_LABELS[taskType] ?? taskType;
+export const PROCESSING_TASK_LABELS_JA: Record<string, string> = {
+  TRANSCRIBE_MASTER: '音声を文字起こし中',
+  CHECK_AND_ASSEMBLE: '文字起こしデータを準備中',
+  CORE_EXTRACTION: '重要トピックを抽出中',
+  ROLE_CLASSIFICATION: '話者ロールを分類中',
+  ANNOUNCEMENT_GENERATION: 'お知らせ・要連絡事項を抽出中',
+  TOPIC_MAPPING: 'トピックマップを生成中',
+  REVIEW_CARD_GENERATION: '復習カードを生成中',
+  IMAGE_PROMPT_GENERATION: 'トピックアートをデザイン中',
+  IMAGE_RENDERING: 'トピックアートをレンダリング中',
+  FUN_FACT_BRAINSTORMING: '関連トリビアの構想中',
+  FUN_FACT_SEARCH: '関連トリビアを検索中',
+  FUN_FACTS_GENERATION: '関連トリビアを執筆中',
+  DETAIL_CONTENTS_GENERATION: '詳細ノート（Deep Notes）を執筆中',
+  FIGURE_GENERATION: '図解を生成中',
+  FINALIZE_JOB: '解析結果の最終処理中',
+};
+
+export function taskLabel(taskType: string, lang: 'ja' | 'en' = 'en'): string {
+  const dict = lang === 'ja' ? PROCESSING_TASK_LABELS_JA : PROCESSING_TASK_LABELS;
+  return dict[taskType] ?? PROCESSING_TASK_LABELS[taskType] ?? taskType;
 }

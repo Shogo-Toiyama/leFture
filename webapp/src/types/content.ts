@@ -49,6 +49,19 @@ export interface DeepNote {
   deleted_at: string | null;
 }
 
+export interface DeepNoteFigure {
+  id: string;
+  lecture_id: string;
+  topic_number: number;
+  figure_index: number;
+  figure_type: 'diagram' | 'chart';
+  title: string;
+  description: string;
+  html_content: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface FunFact {
   id: string;
   lecture_id: string;

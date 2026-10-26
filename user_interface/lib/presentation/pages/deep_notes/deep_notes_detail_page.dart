@@ -14,13 +14,16 @@ import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.
 import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/domain/entities/lecture_topic.dart';
 import 'package:lefture/domain/entities/deep_note.dart';
+import 'package:lefture/domain/entities/deep_note_figure.dart';
 import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/infrastructure/local_db/repositories/deep_note_repository_drift.dart';
+import 'package:lefture/infrastructure/supabase/repositories/deep_note_figure_repository_supabase.dart';
 import 'package:lefture/core/utils/annotation_text_utils.dart';
 import 'package:lefture/core/utils/chat_selection.dart';
 import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/core/utils/markdown_bold_syntax.dart';
 import 'package:lefture/core/utils/sid_citation.dart';
+import 'package:lefture/presentation/widgets/deep_notes/deep_note_figure_card.dart';
 import 'package:lefture/presentation/pages/course/widgets/course_style_helper.dart';
 import 'package:lefture/presentation/pages/profile/widgets/plan_theme.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
@@ -70,6 +73,8 @@ class DeepNotesDetailPage extends HookConsumerWidget {
     final notesAsync = hasPassedTopics
         ? null
         : ref.watch(deepNotesProvider(lectureId));
+    final figuresAsync = ref.watch(deepNoteFiguresProvider(lectureId));
+    final figures = figuresAsync.asData?.value ?? const <DeepNoteFigure>[];
     // Fetch lecture and parent course to get theme colors
     final lectureAsync = ref.watch(lectureProvider(lectureId));
     final lecture = lectureAsync.asData?.value;
@@ -680,6 +685,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                       topic: topic,
                       topicIndex: currentIndex.value,
                       totalTopics: totalTopics,
+                      figures: figures,
                       prevImagePath: currentIndex.value > 0
                           ? resolvedTopics[currentIndex.value - 1].imagePath
                           : null,
@@ -1229,6 +1235,7 @@ class _NoteDetailContent extends HookWidget {
     required this.onPrev,
     required this.textThemeColor,
     required this.onSelectionChanged,
+    this.figures = const [],
     this.selectionMenuBuilder,
     this.prevImagePath,
     this.prevTitle,
@@ -1249,6 +1256,7 @@ class _NoteDetailContent extends HookWidget {
   final bool Function() onPrev;
   final Color textThemeColor;
   final ValueChanged<String?> onSelectionChanged;
+  final List<DeepNoteFigure> figures;
   // 文章を選んだときに選択範囲のそばへ浮かべるメニュー
   final Widget Function(BuildContext, SelectableRegionState)?
   selectionMenuBuilder;
@@ -1332,6 +1340,11 @@ class _NoteDetailContent extends HookWidget {
       [annotationsCacheKeyValue, codeStyle],
     );
     useEffect(() => annotationBuilder.dispose, [annotationBuilder]);
+
+    final currentFigures = useMemoized(
+      () => figures.where((f) => f.topicNumber == topic.index).toList(),
+      [figures, topic.index],
+    );
 
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
@@ -1649,15 +1662,20 @@ class _NoteDetailContent extends HookWidget {
                     selectionListenerNotifier,
                     MarkdownBody(
                       key: ValueKey(annotationsCacheKeyValue),
-                    data: topic.content.isNotEmpty
-                        ? stripSidCitations(stripFigurePlaceholders(topic.content))
-                        : AppLocalizations.of(context).deepNotesDetailContentGeneratingPlaceholder,
-                    selectable: false,
-                    inlineSyntaxes: cjkSafeInlineSyntaxes,
-                    builders: topic.content.isNotEmpty
-                        ? annotationMarkdownBuilders(annotationBuilder)
-                        : const {},
-                    bulletBuilder: annotationBulletBuilder(
+                      data: topic.content.isNotEmpty
+                          ? (currentFigures.isNotEmpty
+                              ? stripSidCitations(replaceFigurePlaceholders(topic.content))
+                              : stripSidCitations(stripFigurePlaceholders(topic.content)))
+                          : AppLocalizations.of(context).deepNotesDetailContentGeneratingPlaceholder,
+                      selectable: false,
+                      inlineSyntaxes: cjkSafeInlineSyntaxes,
+                      builders: {
+                        if (topic.content.isNotEmpty)
+                          ...annotationMarkdownBuilders(annotationBuilder),
+                        if (currentFigures.isNotEmpty)
+                          'img': DeepNoteFigureElementBuilder(figures: currentFigures),
+                      },
+                      bulletBuilder: annotationBulletBuilder(
                       TextStyle(color: textThemeColor, fontSize: 16),
                     ),
                     styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context))

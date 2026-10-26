@@ -5480,6 +5480,12 @@ abstract class AppLocalizations {
   /// **'Writing deep notes'**
   String get pipelineTaskDetailContentsGeneration;
 
+  /// Pipeline task label: Generating diagrams.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating diagrams'**
+  String get pipelineTaskFigureGeneration;
+
   /// Pipeline task label: Finalizing.
   ///
   /// In en, this message translates to:

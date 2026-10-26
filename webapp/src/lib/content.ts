@@ -4,6 +4,7 @@ import type {
   AnnouncementType,
   ContentMetadata,
   DeepNote,
+  DeepNoteFigure,
   FunFact,
   Keyword,
   LectureTopic,
@@ -66,6 +67,17 @@ export async function listDeepNotes(lectureId: string): Promise<DeepNote[]> {
     .is('deleted_at', null);
   if (error) throw error;
   return data as DeepNote[];
+}
+
+export async function listDeepNoteFigures(lectureId: string): Promise<DeepNoteFigure[]> {
+  const { data, error } = await supabase
+    .from('deep_note_figures')
+    .select('*')
+    .eq('lecture_id', lectureId)
+    .order('topic_number', { ascending: true })
+    .order('figure_index', { ascending: true });
+  if (error) throw error;
+  return data as DeepNoteFigure[];
 }
 
 export async function listFunFacts(lectureId: string): Promise<FunFact[]> {
