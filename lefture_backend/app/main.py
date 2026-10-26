@@ -119,6 +119,7 @@ from app.services.task_runners import (
     run_fun_fact_search_task,
     run_fun_facts_task,
     run_detail_contents_task,
+    run_figure_generation_task,
     run_image_prompt_generation_task,
     run_image_rendering_task,
     run_finalize_job_task,
@@ -773,12 +774,15 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
         # Phase 6-C: Detail Contents
         {"task_type": "DETAIL_CONTENTS_GENERATION", "dependencies": ["REVIEW_CARD_GENERATION"]},
         
+        # Phase 6-D: Figure Generation
+        {"task_type": "FIGURE_GENERATION", "dependencies": ["DETAIL_CONTENTS_GENERATION"]},
+
         # Phase 7: 最後の集計係 (主要な成果物が全て出揃うのを待つ)
         {"task_type": "FINALIZE_JOB", "dependencies": [
             "ANNOUNCEMENT_GENERATION", 
             "IMAGE_RENDERING", 
             "FUN_FACTS_GENERATION", 
-            "DETAIL_CONTENTS_GENERATION"
+            "FIGURE_GENERATION"
         ]}
     ]
 
@@ -3236,6 +3240,7 @@ TASK_ROUTES = {
     "FUN_FACT_SEARCH": "/worker/fun-fact-search",
     "FUN_FACTS_GENERATION": "/worker/fun-facts-generation",
     "DETAIL_CONTENTS_GENERATION": "/worker/detail-contents",
+    "FIGURE_GENERATION": "/worker/figure-generation",
     "FINALIZE_JOB": "/worker/finalize-job"
 }
 
@@ -3590,6 +3595,10 @@ async def worker_fun_facts_generation(payload: WorkerPayload, request: Request):
 @app.post("/worker/detail-contents", dependencies=[Depends(require_internal_caller)])
 async def worker_detail_contents(payload: WorkerPayload, request: Request):
     return await _run_worker_task(request, payload, run_detail_contents_task)
+
+@app.post("/worker/figure-generation", dependencies=[Depends(require_internal_caller)])
+async def worker_figure_generation(payload: WorkerPayload, request: Request):
+    return await _run_worker_task(request, payload, run_figure_generation_task)
 
 @app.post("/worker/finalize-job", dependencies=[Depends(require_internal_caller)])
 async def worker_finalize_job(payload: WorkerPayload, request: Request):

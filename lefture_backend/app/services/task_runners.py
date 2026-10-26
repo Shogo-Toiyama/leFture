@@ -44,6 +44,7 @@ from app.services.logic.web_search import WebSearchService
 from app.services.logic.fun_fact_brainstorming import FunFactBrainstormingService
 from app.services.logic.fun_fact_generation import FunFactGenerationService
 from app.services.logic.topic_details_generation import TopicDetailGenerationService
+from app.services.logic.figure_generation import FigureGenerationService
 
 # CHECK_AND_ASSEMBLEが「チャンクが揃うまで待つ」際に、PROCESSING/TRANSCRIBINGのまま
 # これ以上(分)動きが無いチャンクを「詰まっている」とみなして再enqueueする閾値。
@@ -2658,6 +2659,90 @@ async def run_detail_contents_task(job_id: str, task_id: str):
         await _update_task_status(task_id, "FAILED", error_msg=str(e))
         logger.save_to_r2(storage_service)
         raise e
+
+
+# ---------------------------------------------------------
+# Phase 6-D: FIGURE_GENERATION (DeepNotes図解生成)
+# ---------------------------------------------------------
+async def run_figure_generation_task(job_id: str, task_id: str):
+    job_ctx = await _get_job_context(job_id)
+    uid, lecture_id = job_ctx["user_id"], job_ctx["lecture_id"]
+
+    logger = TaskLogger(uid, lecture_id, "FIGURE_GENERATION")
+    logger.log(f"▶️ Starting FIGURE_GENERATION (Task: {task_id})")
+
+    if not await _claim_task(task_id):
+        logger.log(f"⏭️ Task {task_id} is not in QUEUED state (already running/completed elsewhere). Skipping duplicate execution.")
+        return
+
+    billing = BillingEngine(task_type="FIGURE_GENERATION")
+    supabase = get_supabase_client()
+
+    try:
+        # 1. 講義の deep_notes を取得 (スキップされたプレースホルダー行は除外)
+        res = await asyncio.to_thread(
+            lambda: supabase.table("deep_notes")
+            .select("topic_number, note_contents")
+            .eq("lecture_id", lecture_id)
+            .neq("note_contents", DEEP_NOTES_SKIPPED_PLAN_LIMIT)
+            .order("topic_number")
+            .execute()
+        )
+        notes = res.data or []
+        if not notes:
+            logger.log("   [Figure] No deep notes found for lecture. Completing task.")
+            await _update_task_status(task_id, "COMPLETED", payload={"figure_count": 0, "billing_records": []}, user_id=uid, job_id=job_id)
+            logger.save_to_r2(storage_service)
+            return
+
+        # 2. FigureGenerationService を呼び出し
+        llm = UnifiedLLM(billing)
+        service = FigureGenerationService(llm, logger)
+        figures = await service.run_for_notes(notes)
+
+        # 3. DB (deep_note_figures) に UPSERT 保存 (冪等性)
+        def _save_figures_sync():
+            # 既存の図を削除して入れ替える（リトライ・再実行時の冪等性）
+            supabase.table("deep_note_figures").delete().eq("lecture_id", lecture_id).execute()
+            if figures:
+                rows = [
+                    {
+                        "user_id": uid,
+                        "lecture_id": lecture_id,
+                        "topic_number": f["topic_number"],
+                        "figure_index": f["figure_index"],
+                        "figure_type": f["figure_type"],
+                        "title": f["title"],
+                        "description": f["description"],
+                        "html_content": f["html_content"],
+                    }
+                    for f in figures
+                ]
+                supabase.table("deep_note_figures").insert(rows).execute()
+
+        await asyncio.to_thread(_save_figures_sync)
+
+        # 4. R2 ログ保存
+        r2_path = await asyncio.to_thread(
+            storage_service.save_json_log, uid, lecture_id, "figure_generation", figures
+        )
+
+        await _update_task_status(
+            task_id,
+            "COMPLETED",
+            payload={"figure_count": len(figures), "r2_path": r2_path, "billing_records": [vars(r) for r in billing.records]},
+            user_id=uid,
+            job_id=job_id,
+        )
+        logger.log(billing.report())
+        logger.save_to_r2(storage_service)
+    except Exception as e:
+        error_msg = f"{str(e)}\n{traceback.format_exc()}"
+        logger.log(f"❌ FIGURE_GENERATION Failed: {error_msg}")
+        await _update_task_status(task_id, "FAILED", error_msg=error_msg)
+        logger.save_to_r2(storage_service)
+        raise e
+
 
 # ---------------------------------------------------------
 # Phase 7: FINALIZE_JOB (全タスクのコスト集計とジョブ完了)

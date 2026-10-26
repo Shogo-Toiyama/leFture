@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepNotes Illustration Test (Flux 2 Klein)</title>
+<style>
+  body {
+    background-color: #FAF5E9; /* Paper World */
+    color: #1e293b;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 32px 16px;
+    margin: 0;
+  }
+  header {
+    max-width: 640px;
+    margin: 0 auto 32px auto;
+  }
+  h1 { margin: 0 0 8px 0; font-size: 22px; color: #0f172a; }
+  .figure-card {
+    max-width: 640px;
+    margin: 0 auto 32px auto;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 16px 20px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .card-header h3 { margin: 0 0 4px 0; font-size: 16px; }
+  .badge {
+    font-size: 11px;
+    background: #8b5cf6;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-left: 8px;
+    font-weight: 600;
+  }
+  .meta { margin: 0; color: #64748b; font-size: 12px; }
+  .img-wrap {
+    background: #f8fafc;
+    padding: 16px;
+    display: flex;
+    justify-content: center;
+  }
+  .img-wrap img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .prompt-box {
+    padding: 16px 20px;
+    font-size: 12px;
+    color: #475569;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    line-height: 1.5;
+  }
+  code {
+    font-family: monospace;
+    color: #0f172a;
+    background: #f1f5f9;
+    padding: 2px 4px;
+    border-radius: 4px;
+    display: block;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>🎨 DeepNotes Illustration Test (Flux 2 Klein)</h1>
+    <p style="margin: 0; color: #64748b; font-size: 14px;">Cloudflare Workers AI @cf/black-forest-labs/flux-2-klein-4b</p>
+  </header>
+  
+        <div class="figure-card">
+          <div class="card-header">
+            <h3>掘り棒の使用例 <span class="badge">illustration (Flux 2 Klein)</span></h3>
+            <p class="meta">考古学 / 縄文の道具・集落と社会 | 23.36s | ~$0.00029</p>
+          </div>
+          <div class="img-wrap">
+            <img src="case_1_digging_stick.jpg" alt="掘り棒の使用例" />
+          </div>
+          <div class="prompt-box">
+            <strong>Original Description:</strong><br>
+            <span>一端が尖り、もう一端がヘラ状になった木製の棒を人が地面に突き刺し、土を掘り起こしている様子。もう一人の人がヘラ状の部分で土を掻き出している様子も描く。</span>
+            <hr style="margin: 8px 0; border: none; border-top: 1px dashed #e2e8f0;">
+            <strong>Flux Prompt (English):</strong><br>
+            <code>Clean educational textbook illustration of two prehistoric Jomon period artisans using wooden digging tools in a natural landscape, one piercing the earth with a pointed stick while the other scoops soft soil with a flat wooden spatula, warm sunlight, gentle academic color palette, minimal clear composition, isolated on clean off-white background, high clarity, no text</code>
+          </div>
+        </div>
+        
+        <div class="figure-card">
+          <div class="card-header">
+            <h3>粘土紐による土器の成形 <span class="badge">illustration (Flux 2 Klein)</span></h3>
+            <p class="meta">考古学 / 縄文の生業と土器の技術・造形 | 10.70s | ~$0.00029</p>
+          </div>
+          <div class="img-wrap">
+            <img src="case_2_pottery_coiling.jpg" alt="粘土紐による土器の成形" />
+          </div>
+          <div class="prompt-box">
+            <strong>Original Description:</strong><br>
+            <span>粘土の紐を螺旋状に積み重ねて土器の形を作り、表面をならしていく様子。特に、口縁部が大きく開いた器形では、粘土が柔らかいと自重で崩れるため、乾燥させながら慎重に作業を進める必要があることを示す。</span>
+            <hr style="margin: 8px 0; border: none; border-top: 1px dashed #e2e8f0;">
+            <strong>Flux Prompt (English):</strong><br>
+            <code>Pedagogical textbook illustration showing an ancient craftsman hand-building a pottery vessel by spiraling coils of wet clay, carefully smoothing the ceramic surface with fingertips, step-by-step cross-section visible, warm terracotta and earthy tones, clean educational aesthetic, isolated on pure white background, no text</code>
+          </div>
+        </div>
+        
+</body>
+</html>

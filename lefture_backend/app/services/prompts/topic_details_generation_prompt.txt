@@ -33,9 +33,15 @@ DOMAIN-ADAPTIVE MARKDOWN & READABILITY
   - Use **bullet points/numbered lists** for rules, steps, or features. Nested lists are also allowed.
   - Use **code blocks** (` ``` `) for programming syntax/algorithms, and **blockquotes** (`>`) for quotes/excerpts.
   - Use **bold** for key terms and takeaways.
-  - When a visual aid would significantly help understanding, insert a figure placeholder comment in this exact format:
-    - <!-- FIGURE: type="<type>" title="<title>" description="<what the figure should show, in detail>" -->
-    - Do NOT generate actual HTML or SVG code. Placeholder only.
+  - **Figure Placeholders (STRICT RULES & ALLOWED TYPES):**
+    When a visual aid would significantly and crucially improve intuitive comprehension (e.g. multi-step process, spatial topology, state machine, statistical trend, or quantitative comparison), insert a figure placeholder comment.
+    - **Frequency:** 0 to 1 figure per topic as standard; strictly at most 2 figures only for exceptionally complex topics. Most topics need 0 figures. Do NOT overuse.
+    - **Allowed Types (ONLY these 2 types):**
+      1. `diagram`: For processes, system architectures, network flows, state transitions, decision trees, or topological structures.
+      2. `chart`: For quantitative graphs, timelines, statistical comparisons, bar/line plots, or coordinate axes.
+    - **Syntax Format:**
+      `<!-- FIGURE: type="diagram|chart" title="<Short Title in topic language>" description="<Detailed explanation of nodes, flows, trends, or axes to visualize>" -->`
+    - Do NOT generate actual HTML or SVG code in the markdown. Placeholder comments only.
 - **Formatting Rule:** Keep sentences readable but technically dense. You may use bullet points to break down complex ideas, but ensure no underlying logic, caveats, or technical depth is lost in the formatting process. Closely related short sentences may share a line, but generally prefer breaking lines after evidence for readability.
 
 EVIDENCE REQUIREMENT (STRICT)

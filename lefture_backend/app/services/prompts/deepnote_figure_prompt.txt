@@ -1,0 +1,41 @@
+You are an expert technical illustrator and mobile UI designer.
+
+GOAL
+Create a clean, bite-sized, mobile-first visual component (HTML/CSS, leveraging inline SVG where beneficial) for a university lecture study guide.
+The visual must be instantly understandable in 5 seconds on a smartphone screen (width 360px–400px), focusing purely on the core intuition without cognitive overload.
+
+INPUTS
+- Target Visual: ${TITLE} (${FIGURE_TYPE})
+- Description: ${DESCRIPTION}
+- Surrounding Lecture Context:
+${SECTION_CONTEXT}
+
+CORE DESIGN & MOBILE-FIRST RULES
+1. Focused Simplicity & Glanceability (CRITICAL):
+   - Do NOT try to capture every tiny detail, nuance, or formula.
+   - Focus strictly on the 3 to 5 core stages, nodes, or key trends that deliver the "aha!" moment.
+   - Avoid long paragraphs inside the figure. Use concise keywords, pill badges, and short punchy labels (under 10 words per item).
+
+2. Mobile Readability & Typography:
+   - Must be designed primarily for a smartphone screen (360px to 420px width) in a vertical study feed.
+   - Maintain excellent font legibility: Primary text 13px–15px, badges/secondary labels minimum 11.5px. Never use tiny unreadable text.
+   - Max-width: 520px; width: 100%; margin: 16px auto; box-sizing: border-box;
+
+3. Paper-Themed Styling:
+   - Output a single `<div class="deepnote-figure-card">...</div>` container with scoped `<style>`.
+   - Use a crisp white card background (`background: #ffffff;`), subtle border (`border: 1px solid #e2e8f0;`), soft shadow, and rounded corners (`border-radius: 12px;`).
+   - High-contrast typography: Dark slate ink (`#0f172a`, `#1e293b`, `#334155`).
+   - Clear, harmonious accents (e.g. indigo `#4f46e5`, emerald `#059669`, amber `#d97706`, rose `#e11d48`).
+   - Do NOT use external libraries (No Mermaid, No Chart.js, No Tailwind). Standard HTML/CSS and inline `<svg>` only.
+
+4. Hybrid HTML + Inline SVG:
+   - Use HTML (Flexbox / simple Grid) for cards, badges, and text blocks so labels wrap naturally.
+   - Use inline `<svg viewBox="0 0 ... ...">` for curves, axes, connectors, and arrows.
+
+5. Strict Language Matching:
+   - Carefully detect the primary language of the "Surrounding Lecture Context" (e.g., if the context is in English, write all labels in English; if in Japanese, in Japanese).
+   - All text, labels, annotations, subtitles, and axis titles MUST strictly match that detected language.
+
+OUTPUT FORMAT
+- Return the HTML snippet enclosed inside a single ```html ... ``` markdown code block.
+- Do NOT output any conversational text or explanation outside the code block.

@@ -72,11 +72,12 @@ try:
         {"task_type": "FUN_FACT_SEARCH", "dependencies": ["CORE_EXTRACTION"]},
         {"task_type": "FUN_FACTS_GENERATION", "dependencies": ["REVIEW_CARD_GENERATION", "FUN_FACT_SEARCH"]},
         {"task_type": "DETAIL_CONTENTS_GENERATION", "dependencies": ["REVIEW_CARD_GENERATION"]},
+        {"task_type": "FIGURE_GENERATION", "dependencies": ["DETAIL_CONTENTS_GENERATION"]},
         {"task_type": "FINALIZE_JOB", "dependencies": [
             "ANNOUNCEMENT_GENERATION", 
             "IMAGE_RENDERING", 
             "FUN_FACTS_GENERATION", 
-            "DETAIL_CONTENTS_GENERATION"
+            "FIGURE_GENERATION"
         ]}
     ]
 

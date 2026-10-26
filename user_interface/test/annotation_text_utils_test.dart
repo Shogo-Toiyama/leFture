@@ -53,4 +53,55 @@ void main() {
       }
     });
   });
+
+  group('stripFigurePlaceholders (Figureプレースホルダー除去テスト)', () {
+    test('diagramおよびchartのFigureタグが完全に除去される', () {
+      const source = '''
+# Topic Header
+
+First paragraph text.
+
+<!-- FIGURE: type="diagram" title="Memory Hierarchy" description="Visualizes registers to disk" -->
+
+Second paragraph text.
+
+<!-- FIGURE: type="chart" title="Access Latency" description="Bar chart showing nanosecond latencies" -->
+
+Final paragraph text.
+''';
+
+      final stripped = stripFigurePlaceholders(source);
+      expect(stripped.contains('<!-- FIGURE:'), isFalse);
+      expect(stripped.contains('Memory Hierarchy'), isFalse);
+      expect(stripped.contains('Access Latency'), isFalse);
+      expect(stripped.contains('First paragraph text.'), isTrue);
+      expect(stripped.contains('Second paragraph text.'), isTrue);
+      expect(stripped.contains('Final paragraph text.'), isTrue);
+    });
+
+    test('複数行にわたるタグや特殊な空白でも正常に除去される', () {
+      const source = '''
+Paragraph A.
+<!--   FIGURE: 
+  type='diagram'
+  title="Multiline Diagram"
+  description='Some long description'
+-->
+Paragraph B.
+''';
+
+      final stripped = stripFigurePlaceholders(source);
+      expect(stripped.contains('<!--'), isFalse);
+      expect(stripped.contains('Multiline Diagram'), isFalse);
+      expect(stripped.contains('Paragraph A.'), isTrue);
+      expect(stripped.contains('Paragraph B.'), isTrue);
+    });
+
+    test('Figureタグが存在しないテキストはそのまま保持される', () {
+      const source = 'This is simple text without figures.\nAnother line.';
+      final stripped = stripFigurePlaceholders(source);
+      expect(stripped, equals(source));
+    });
+  });
 }
+

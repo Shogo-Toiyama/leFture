@@ -1,0 +1,24 @@
+[
+  {
+    "case_id": "case_1_digging_stick",
+    "title": "掘り棒の使用例",
+    "course": "考古学",
+    "lecture": "縄文の道具・集落と社会",
+    "prompt": "Clean educational textbook illustration of two prehistoric Jomon period artisans using wooden digging tools in a natural landscape, one piercing the earth with a pointed stick while the other scoops soft soil with a flat wooden spatula, warm sunlight, gentle academic color palette, minimal clear composition, isolated on clean off-white background, high clarity, no text",
+    "original_description": "一端が尖り、もう一端がヘラ状になった木製の棒を人が地面に突き刺し、土を掘り起こしている様子。もう一人の人がヘラ状の部分で土を掻き出している様子も描く。",
+    "elapsed_seconds": 23.364310026168823,
+    "cost_usd": 0.000287,
+    "image_path": "case_1_digging_stick.jpg"
+  },
+  {
+    "case_id": "case_2_pottery_coiling",
+    "title": "粘土紐による土器の成形",
+    "course": "考古学",
+    "lecture": "縄文の生業と土器の技術・造形",
+    "prompt": "Pedagogical textbook illustration showing an ancient craftsman hand-building a pottery vessel by spiraling coils of wet clay, carefully smoothing the ceramic surface with fingertips, step-by-step cross-section visible, warm terracotta and earthy tones, clean educational aesthetic, isolated on pure white background, no text",
+    "original_description": "粘土の紐を螺旋状に積み重ねて土器の形を作り、表面をならしていく様子。特に、口縁部が大きく開いた器形では、粘土が柔らかいと自重で崩れるため、乾燥させながら慎重に作業を進める必要があることを示す。",
+    "elapsed_seconds": 10.698797941207886,
+    "cost_usd": 0.000287,
+    "image_path": "case_2_pottery_coiling.jpg"
+  }
+]
