@@ -1,6 +1,11 @@
 import React, { useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { prepareMath } from '../lib/markdownText';
 import { AnnotatedMarkdown } from './annotations/AnnotatedMarkdown';
 import { AskOnlyRegion } from './annotations/AskOnlyRegion';
 import { blockMarkdownSource, blockRawMarkdownSource, isAnnotatableBlock } from '../lib/reviewCardBlocks';
@@ -28,7 +33,11 @@ export const ReviewCardBlockView: React.FC<ReviewCardBlockViewProps> = ({
 }) => {
   if (block.type === 'code') {
     const explanation = block.explanation && (
-      <p className="rc-code-explanation">{stripSidCitations(block.explanation)}</p>
+      <div className="rc-code-explanation rcv-code-explanation">
+        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+          {prepareMath(stripSidCitations(block.explanation))}
+        </ReactMarkdown>
+      </div>
     );
     // 数式(KaTeXの出力)はtextContentにMathMLの複製が混ざり、選択の文字列が崩れるので選択の対象にしない。
     // 注釈(ハイライト等)は結べないので、コードと説明文は「Ask」「Copy」だけの領域にする。

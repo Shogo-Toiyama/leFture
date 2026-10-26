@@ -6106,6 +6106,10 @@ button.glass-row:hover,
   color: var(--pencil);
 }
 
+.rcv-code-explanation p {
+  margin: 0;
+}
+
 /* ── カード下端のタイプ表示 (Hook / Next Action …) ─────────────────── */
 
 .rcv-foot {
