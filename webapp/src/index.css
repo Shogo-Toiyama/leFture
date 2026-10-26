@@ -18565,6 +18565,19 @@ button.ai-settings-scrim:hover:not(:disabled) { filter: none; }
 .ai-settings-link:hover { background: var(--glass-low); text-decoration: none; }
 .ai-settings-link svg { flex: none; color: var(--comet); }
 
+/* チャット内メモ(この会話限定のStanding notes) */
+.chat-note-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.chat-note-item { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.55rem 0.75rem; border-radius: 10px; background: var(--glass-low); }
+.chat-note-meta { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.chat-note-badge { display: inline-flex; align-items: center; padding: 0.15rem 0.45rem; border-radius: 6px; font-size: 0.7rem; font-weight: 600; line-height: 1.2; }
+.chat-note-badge.is-purpose { background: rgba(79, 140, 255, 0.16); color: #79aeff; }
+.chat-note-badge.is-style { background: rgba(255, 179, 0, 0.16); color: #ffca4d; }
+.chat-note-badge.is-context { background: rgba(168, 85, 247, 0.18); color: #d8b4fe; }
+.chat-note-badge.is-unresolved { background: rgba(239, 68, 68, 0.16); color: #fca5a5; }
+.chat-note-turn { font-size: 0.7rem; color: var(--comet); }
+.chat-note-text { font-size: 0.88rem; line-height: 1.5; color: var(--starlight); }
+
+
 /* AIチャット設定のページ(/account/ai-memory) */
 .ai-page-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 0.5rem 0.75rem 1rem; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
 .ai-page-row:last-child { border-bottom: none; }

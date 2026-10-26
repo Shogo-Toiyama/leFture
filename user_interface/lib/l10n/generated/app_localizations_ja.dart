@@ -4337,6 +4337,30 @@ class AppLocalizationsJa extends AppLocalizations {
   String get accountAiSettingsSub => '話し方の覚え書き・AIのメモ';
 
   @override
+  String get chatNotesSection => 'チャット内メモ';
+
+  @override
+  String get chatNotesSectionSub => 'この会話の中で整理された目的や前提';
+
+  @override
+  String get chatNotesCategoryStyle => '回答スタイル';
+
+  @override
+  String get chatNotesCategoryContext => '前提・状況';
+
+  @override
+  String get chatNotesCategoryPurpose => '目的';
+
+  @override
+  String get chatNotesCategoryUnresolved => '残論点';
+
+  @override
+  String get chatNotesEmpty => 'まだチャット内メモはありません（会話が長くなると要約がここに残ります）';
+
+  @override
+  String get chatNotesNoThread => '会話が始まるとここにメモが表示されます';
+
+  @override
   String get selfPortraitCoverBio => '自己紹介';
 
   @override

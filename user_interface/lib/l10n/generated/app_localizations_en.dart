@@ -4539,6 +4539,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountAiSettingsSub => 'Explanation notes · AI notes';
 
   @override
+  String get chatNotesSection => 'In this chat';
+
+  @override
+  String get chatNotesSectionSub =>
+      'Goals, context, and style agreed on in this conversation';
+
+  @override
+  String get chatNotesCategoryStyle => 'Response style';
+
+  @override
+  String get chatNotesCategoryContext => 'Context';
+
+  @override
+  String get chatNotesCategoryPurpose => 'Purpose';
+
+  @override
+  String get chatNotesCategoryUnresolved => 'Unresolved';
+
+  @override
+  String get chatNotesEmpty =>
+      'No notes yet (summarized notes will appear here as the conversation grows).';
+
+  @override
+  String get chatNotesNoThread =>
+      'Notes will appear here once the conversation begins.';
+
+  @override
   String get selfPortraitCoverBio => 'ABOUT YOU';
 
   @override

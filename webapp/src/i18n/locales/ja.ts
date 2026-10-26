@@ -1085,4 +1085,13 @@ export const ja: Record<keyof typeof en, string> = {
   aiMemoryForgetAllNote: "自分像と話し方の覚え書きは消えません。それぞれの画面で個別に消せます。",
   aiMemoryForgetConfirmMessage: "{count}件のメモを消します。元に戻せません。",
   accountAiSettingsSub: "話し方の覚え書き・AIのメモ",
+  chatNotesSection: "チャット内メモ",
+  chatNotesSectionSub: "この会話の中で整理された目的や前提",
+  chatNotesCategoryStyle: "回答スタイル",
+  chatNotesCategoryContext: "前提・状況",
+  chatNotesCategoryPurpose: "目的",
+  chatNotesCategoryUnresolved: "残論点",
+  chatNotesEmpty: "まだチャット内メモはありません（会話が長くなると要約がここに残ります）",
+  chatNotesNoThread: "会話が始まるとここにメモが表示されます",
+  aiMemoSectionGeneral: "全チャット共通の覚え書き",
 };

@@ -449,6 +449,30 @@ def fetch_active_blocks(admin_client, thread_id: str, level: int = 1) -> list[di
     return res.data or []
 
 
+def get_thread_notes(admin_client, thread_id: str) -> dict[str, list[dict]]:
+    """
+    スレッドの最新のactive要約ブロックから header (会話内メモ) を取得する。
+    ブロックが無い場合は各カテゴリ空リストの辞書を返す。
+    """
+    blocks = fetch_active_blocks(admin_client, thread_id, level=1)
+    if not blocks:
+        return {k: [] for k in HEADER_CATEGORIES}
+    last_header = blocks[-1].get("header") or {}
+    return {
+        k: [
+            {
+                "text": it.get("text", ""),
+                "source_turn": it.get("source_turn") or it.get("source_round"),
+                "needs_source": bool(it.get("needs_source", False)),
+            }
+            for it in (last_header.get(k) or [])
+            if it.get("text")
+        ]
+        for k in HEADER_CATEGORIES
+    }
+
+
+
 def _fetch_rows_after(admin_client, thread_id: str, after_created_at: Optional[str]) -> list[dict]:
     q = admin_client.table("chat_messages").select("id, role, content, status, router, created_at") \
         .eq("thread_id", thread_id).is_("deleted_at", "null")

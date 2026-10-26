@@ -234,7 +234,13 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
           onAttachmentListClose={() => setAttachmentListOpen(false)}
         />
       </main>
-      <AiSettingsSheet open={aiSettingsOpen} onClose={() => setAiSettingsOpen(false)} onNavigate={() => setAiSettingsOpen(false)} fixed />
+      <AiSettingsSheet
+        open={aiSettingsOpen}
+        onClose={() => setAiSettingsOpen(false)}
+        onNavigate={() => setAiSettingsOpen(false)}
+        threadId={threadId}
+        fixed
+      />
     </div>
   );
 };

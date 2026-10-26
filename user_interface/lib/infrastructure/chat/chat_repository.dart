@@ -127,6 +127,17 @@ class ChatRepository {
     _ensureOk(await _http.delete(_uri('/chat/threads/$threadId')));
   }
 
+  /// スレッドの会話内メモ(Standing notes / Header)を取得する。
+  Future<ChatThreadNotes> fetchThreadNotes(String threadId) async {
+    final response = await _http.get(_uri('/chat/threads/$threadId/notes'));
+    final body = _ensureOk(response);
+    if (body is Map && body['notes'] is Map) {
+      return ChatThreadNotes.fromMap(Map<String, dynamic>.from(body['notes'] as Map));
+    }
+    return const ChatThreadNotes();
+  }
+
+
   /// ゴミ箱のスレッド(削除が新しい順)の生の行。ゴミ箱の画面用で、端末のキャッシュには入れない。
   Future<List<Map<String, dynamic>>> fetchTrashedThreadRows() async {
     final rows = await _supabase

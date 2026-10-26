@@ -331,3 +331,17 @@ export const CHAT_MAX_FILE_BYTES: Record<ChatFileKind, number> = {
   pptx: 30 * 1024 * 1024,
   image: 30 * 1024 * 1024,
 };
+
+export interface ChatThreadNoteItem {
+  text: string;
+  source_turn?: number | null;
+  needs_source?: boolean;
+}
+
+export interface ChatThreadNotes {
+  style_preferences: ChatThreadNoteItem[];
+  context: ChatThreadNoteItem[];
+  purpose: ChatThreadNoteItem[];
+  unresolved: ChatThreadNoteItem[];
+}
+

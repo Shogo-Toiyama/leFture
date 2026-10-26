@@ -92,7 +92,7 @@ from app.services.chat_attachments import MAX_ATTACHMENT_CHARS, MAX_SELECTED_TOK
 from app.services import chat_files
 from app.services.chat_screen import SCREEN_KINDS, ScreenRef
 from app.services.chat_stop import request_local_stop
-from app.services.chat_summary import run_fold as run_chat_summary_fold
+from app.services.chat_summary import run_fold as run_chat_summary_fold, get_thread_notes
 from app.services import profile_store
 
 # チュートリアル講義のトピック画像(固定4枚)。ユーザーごとに/seed-tutorialが
@@ -6125,6 +6125,17 @@ async def update_chat_thread(thread_id: str, payload: ChatThreadUpdateRequest, r
         lambda: admin_client.table("chat_threads").update({"title": title}).eq("id", thread_id).execute()
     )
     return {"success": True}
+
+
+@app.get("/chat/threads/{thread_id}/notes")
+async def get_chat_thread_notes_endpoint(thread_id: str, request: Request):
+    """スレッドの会話内メモ(Standing notes / Header)を取得する。"""
+    uid = await _get_authenticated_user_id(request)
+    thread_id = _parse_uuid_or_422(thread_id, "thread_id")
+    admin_client = get_supabase_client()
+    await _require_own_chat_thread(admin_client, thread_id, uid)
+    notes = await asyncio.to_thread(get_thread_notes, admin_client, thread_id)
+    return {"thread_id": thread_id, "notes": notes}
 
 
 @app.delete("/chat/threads/{thread_id}")

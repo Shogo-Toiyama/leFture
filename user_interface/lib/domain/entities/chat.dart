@@ -865,3 +865,58 @@ class ChatFileLink {
     contentType: (map['content_type'] as String?) ?? '',
   );
 }
+
+class ChatThreadNoteItem {
+  const ChatThreadNoteItem({
+    required this.text,
+    this.sourceTurn,
+    this.needsSource = false,
+  });
+
+  final String text;
+  final int? sourceTurn;
+  final bool needsSource;
+
+  factory ChatThreadNoteItem.fromMap(Map<String, dynamic> map) => ChatThreadNoteItem(
+    text: (map['text'] as String?) ?? '',
+    sourceTurn: (map['source_turn'] as num?)?.toInt(),
+    needsSource: (map['needs_source'] as bool?) ?? false,
+  );
+}
+
+class ChatThreadNotes {
+  const ChatThreadNotes({
+    this.stylePreferences = const [],
+    this.context = const [],
+    this.purpose = const [],
+    this.unresolved = const [],
+  });
+
+  final List<ChatThreadNoteItem> stylePreferences;
+  final List<ChatThreadNoteItem> context;
+  final List<ChatThreadNoteItem> purpose;
+  final List<ChatThreadNoteItem> unresolved;
+
+  bool get isEmpty =>
+      stylePreferences.isEmpty &&
+      context.isEmpty &&
+      purpose.isEmpty &&
+      unresolved.isEmpty;
+
+  factory ChatThreadNotes.fromMap(Map<String, dynamic> map) {
+    List<ChatThreadNoteItem> parseList(dynamic list) {
+      if (list is! List) return const [];
+      return list
+          .map((item) => ChatThreadNoteItem.fromMap(Map<String, dynamic>.from(item as Map)))
+          .toList();
+    }
+
+    return ChatThreadNotes(
+      stylePreferences: parseList(map['style_preferences']),
+      context: parseList(map['context']),
+      purpose: parseList(map['purpose']),
+      unresolved: parseList(map['unresolved']),
+    );
+  }
+}
+

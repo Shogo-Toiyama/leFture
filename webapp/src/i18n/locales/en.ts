@@ -1087,4 +1087,13 @@ export const en = {
   aiMemoryForgetAllNote: "Your self-portrait and explanation notes stay. You can remove those individually on their own screens.",
   aiMemoryForgetConfirmMessage: "This removes {count} notes. It can't be undone.",
   accountAiSettingsSub: "Explanation notes · AI notes",
+  chatNotesSection: "In this chat",
+  chatNotesSectionSub: "Goals, context, and style agreed on in this conversation",
+  chatNotesCategoryStyle: "Response style",
+  chatNotesCategoryContext: "Context",
+  chatNotesCategoryPurpose: "Purpose",
+  chatNotesCategoryUnresolved: "Unresolved",
+  chatNotesEmpty: "No notes yet (summarized notes will appear here as the conversation grows).",
+  chatNotesNoThread: "Notes will appear here once the conversation begins.",
+  aiMemoSectionGeneral: "Across all chats",
 };

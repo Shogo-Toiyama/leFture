@@ -6036,6 +6036,38 @@
   "@accountAiSettingsSub": {
     "description": "AI self-portrait / AI memory. Ported from the web app string \"accountAiSettingsSub\"."
   },
+  "chatNotesSection": "In this chat",
+  "@chatNotesSection": {
+    "description": "AI chat settings. Section for standing notes in the current conversation."
+  },
+  "chatNotesSectionSub": "Goals, context, and style agreed on in this conversation",
+  "@chatNotesSectionSub": {
+    "description": "AI chat settings. Subtitle for notes in the current conversation."
+  },
+  "chatNotesCategoryStyle": "Response style",
+  "@chatNotesCategoryStyle": {
+    "description": "Category badge for style preferences in chat notes."
+  },
+  "chatNotesCategoryContext": "Context",
+  "@chatNotesCategoryContext": {
+    "description": "Category badge for context in chat notes."
+  },
+  "chatNotesCategoryPurpose": "Purpose",
+  "@chatNotesCategoryPurpose": {
+    "description": "Category badge for purpose in chat notes."
+  },
+  "chatNotesCategoryUnresolved": "Unresolved",
+  "@chatNotesCategoryUnresolved": {
+    "description": "Category badge for unresolved items in chat notes."
+  },
+  "chatNotesEmpty": "No notes yet (summarized notes will appear here as the conversation grows).",
+  "@chatNotesEmpty": {
+    "description": "Empty state when thread has no notes yet."
+  },
+  "chatNotesNoThread": "Notes will appear here once the conversation begins.",
+  "@chatNotesNoThread": {
+    "description": "Empty state when no thread is active yet."
+  },
   "selfPortraitCoverBio": "ABOUT YOU",
   "@selfPortraitCoverBio": {
     "description": "AI self-portrait / AI memory. Ported from the web app string \"aboutYouSection\"."

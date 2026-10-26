@@ -5,33 +5,45 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/self_portrait/self_portrait_controller.dart';
 import 'package:lefture/core/utils/self_portrait_format.dart';
+import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/domain/entities/self_portrait.dart';
+import 'package:lefture/infrastructure/chat/chat_repository.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_colors.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_draft_sheets.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 
 /// AIチャット設定(チャットのヘッダーのボタンから開くシート。webappの AiSettingsSheet)。
-/// 話し方の覚え書きと今の状況を見て消せる。AIのメモと自分像のページへの入口を置く。
+/// チャット内メモ(この会話限定)と話し方の覚え書き・今の状況(全体共通)を見て消せる。
 /// 入口を押したら、このシートを閉じて[onOpenPage]を呼ぶ(呼び出し側がチャットも閉じてページを開く)。
 Future<void> showAiSettingsSheet(
   BuildContext context, {
   required ChatWorld world,
   required void Function(String route) onOpenPage,
+  String? threadId,
 }) {
   final colors = ChatColors.of(world);
   return showChatSheet<void>(
     context,
     colors,
-    (_) => _AiSettingsSheet(colors: colors, onOpenPage: onOpenPage),
+    (_) => _AiSettingsSheet(
+      colors: colors,
+      onOpenPage: onOpenPage,
+      threadId: threadId,
+    ),
   );
 }
 
 class _AiSettingsSheet extends HookConsumerWidget {
-  const _AiSettingsSheet({required this.colors, required this.onOpenPage});
+  const _AiSettingsSheet({
+    required this.colors,
+    required this.onOpenPage,
+    this.threadId,
+  });
 
   final ChatColors colors;
   final void Function(String route) onOpenPage;
+  final String? threadId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,6 +53,31 @@ class _AiSettingsSheet extends HookConsumerWidget {
     final async = ref.watch(aiMemoryControllerProvider);
     final memory = async.asData?.value;
     final failed = useState(false);
+
+    final threadNotes = useState<ChatThreadNotes?>(null);
+    final loadingNotes = useState(false);
+
+    useEffect(() {
+      final tid = threadId;
+      if (tid == null) {
+        threadNotes.value = null;
+        return null;
+      }
+      var cancelled = false;
+      loadingNotes.value = true;
+      ref.read(chatRepositoryProvider).fetchThreadNotes(tid).then((notes) {
+        if (!cancelled) {
+          threadNotes.value = notes;
+          loadingNotes.value = false;
+        }
+      }).catchError((_) {
+        if (!cancelled) {
+          threadNotes.value = null;
+          loadingNotes.value = false;
+        }
+      });
+      return () => cancelled = true;
+    }, [threadId]);
 
     Future<void> removeMemo(String id) async {
       try {
@@ -122,6 +159,114 @@ class _AiSettingsSheet extends HookConsumerWidget {
       ),
     );
 
+    final notes = threadNotes.value;
+    final allChatNotes = <({String category, String label, Color badgeBg, Color badgeFg, ChatThreadNoteItem item})>[
+      if (notes != null) ...[
+        for (final it in notes.purpose)
+          (
+            category: 'purpose',
+            label: l.chatNotesCategoryPurpose,
+            badgeBg: const Color(0x284F8CFF),
+            badgeFg: const Color(0xFF79AEFF),
+            item: it,
+          ),
+        for (final it in notes.stylePreferences)
+          (
+            category: 'style',
+            label: l.chatNotesCategoryStyle,
+            badgeBg: const Color(0x28FFB300),
+            badgeFg: const Color(0xFFFFCA4D),
+            item: it,
+          ),
+        for (final it in notes.context)
+          (
+            category: 'context',
+            label: l.chatNotesCategoryContext,
+            badgeBg: const Color(0x2EA855F7),
+            badgeFg: const Color(0xFFD8B4FE),
+            item: it,
+          ),
+        for (final it in notes.unresolved)
+          (
+            category: 'unresolved',
+            label: l.chatNotesCategoryUnresolved,
+            badgeBg: const Color(0x28EF4444),
+            badgeFg: const Color(0xFFFCA5A5),
+            item: it,
+          ),
+      ],
+    ];
+
+    Widget chatNotesSectionWidget() {
+      if (allChatNotes.isEmpty) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 2, 20, 6),
+          child: Text(
+            loadingNotes.value
+                ? '…'
+                : (threadId != null ? l.chatNotesEmpty : l.chatNotesNoThread),
+            style: TextStyle(color: c.stageText, fontSize: 13),
+          ),
+        );
+      }
+      return Column(
+        children: [
+          for (final n in allChatNotes)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 3, 20, 3),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: c.bubbleBackground,
+                  border: Border.all(color: c.bubbleBorder),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: n.badgeBg,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            n.label,
+                            style: TextStyle(
+                              color: n.badgeFg,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if (n.item.sourceTurn != null)
+                          Text(
+                            'turn ${n.item.sourceTurn}',
+                            style: TextStyle(color: c.stageText, fontSize: 11),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      n.item.text,
+                      style: TextStyle(
+                        color: c.text,
+                        fontSize: 13.5,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
     Widget link(String title, String sub, String route) => InkWell(
       onTap: () {
         Navigator.of(context).pop();
@@ -195,6 +340,8 @@ class _AiSettingsSheet extends HookConsumerWidget {
                       style: TextStyle(color: c.danger, fontSize: 13),
                     ),
                   ),
+                section(l.chatNotesSection),
+                chatNotesSectionWidget(),
                 section(l.aiMemoStyleSection),
                 memoRows(memory?.styles ?? const []),
                 section(l.aiMemoSituationSection),
@@ -227,5 +374,6 @@ class _AiSettingsSheet extends HookConsumerWidget {
         ],
       ),
     );
+
   }
 }

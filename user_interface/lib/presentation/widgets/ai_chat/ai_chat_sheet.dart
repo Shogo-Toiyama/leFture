@@ -398,6 +398,7 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
         context,
         world: _world,
         onOpenPage: _goTo,
+        threadId: ref.read(chatConversationProvider).threadId,
       ),
     );
   }

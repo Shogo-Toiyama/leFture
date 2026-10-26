@@ -3,20 +3,31 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, X } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { selfPortraitApi, shortDate, type AiMemory } from '../../lib/selfPortrait';
+import { getChatThreadNotes } from '../../lib/chat';
+import type { ChatThreadNotes } from '../../types/chat';
 
 /**
  * AIチャット設定(チャットパネル右上のボタンから開くシート)。
- * 話し方の覚え書きと今の状況を見て消せる。AIのメモ(観察)と自分像のページへの入口を置く。
+ * チャット内メモ(この会話限定の合意・前提)と、話し方の覚え書き・今の状況(全会話共通)を見て消せる。
  * fixed=false ならパネルの中(position: absolute)、true なら画面全体(全画面のチャット)に重ねる。
  */
-export const AiSettingsSheet: React.FC<{ open: boolean; onClose: () => void; fixed?: boolean; onNavigate?: () => void }> = ({
+export const AiSettingsSheet: React.FC<{
+  open: boolean;
+  onClose: () => void;
+  fixed?: boolean;
+  onNavigate?: () => void;
+  threadId?: string | null;
+}> = ({
   open,
   onClose,
   fixed = false,
   onNavigate,
+  threadId,
 }) => {
   const { t, locale } = useLanguage();
   const [memory, setMemory] = useState<AiMemory | null>(null);
+  const [threadNotes, setThreadNotes] = useState<ChatThreadNotes | null>(null);
+  const [loadingNotes, setLoadingNotes] = useState(false);
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -28,6 +39,26 @@ export const AiSettingsSheet: React.FC<{ open: boolean; onClose: () => void; fix
       .catch(() => { if (!cancelled) setError(true); });
     return () => { cancelled = true; };
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !threadId) {
+      setThreadNotes(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingNotes(true);
+    getChatThreadNotes(threadId)
+      .then((notes) => {
+        if (!cancelled) setThreadNotes(notes);
+      })
+      .catch(() => {
+        if (!cancelled) setThreadNotes(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingNotes(false);
+      });
+    return () => { cancelled = true; };
+  }, [open, threadId]);
 
   useEffect(() => {
     if (!open) return;
@@ -51,6 +82,27 @@ export const AiSettingsSheet: React.FC<{ open: boolean; onClose: () => void; fix
   const styles = memory?.memos.filter((m) => m.kind === 'answer_style') ?? [];
   const situations = memory?.memos.filter((m) => m.kind === 'situation') ?? [];
 
+  // チャット内メモの各カテゴリの平坦化
+  const allChatNotes = [
+    ...(threadNotes?.purpose.map((it) => ({ ...it, category: 'purpose' as const })) ?? []),
+    ...(threadNotes?.style_preferences.map((it) => ({ ...it, category: 'style' as const })) ?? []),
+    ...(threadNotes?.context.map((it) => ({ ...it, category: 'context' as const })) ?? []),
+    ...(threadNotes?.unresolved.map((it) => ({ ...it, category: 'unresolved' as const })) ?? []),
+  ];
+
+  const getCategoryLabel = (cat: 'purpose' | 'style' | 'context' | 'unresolved') => {
+    switch (cat) {
+      case 'purpose':
+        return t('chatNotesCategoryPurpose');
+      case 'style':
+        return t('chatNotesCategoryStyle');
+      case 'context':
+        return t('chatNotesCategoryContext');
+      case 'unresolved':
+        return t('chatNotesCategoryUnresolved');
+    }
+  };
+
   return (
     <div className={`ai-settings ${fixed ? 'is-fixed' : ''}`}>
       <button type="button" className="ai-settings-scrim" onClick={onClose} aria-label={t('close')} />
@@ -63,6 +115,35 @@ export const AiSettingsSheet: React.FC<{ open: boolean; onClose: () => void; fix
         </div>
         {error && <p className="auth-error">{t('spLoadError')}</p>}
 
+        {/* 1. チャット内メモ (この会話のみ) */}
+        <div className="ai-settings-section">{t('chatNotesSection')}</div>
+        {allChatNotes.length > 0 ? (
+          <div className="chat-note-group">
+            {allChatNotes.map((it, idx) => (
+              <div key={`${it.category}-${idx}`} className="chat-note-item">
+                <div className="chat-note-meta">
+                  <span className={`chat-note-badge is-${it.category}`}>
+                    {getCategoryLabel(it.category)}
+                  </span>
+                  {it.source_turn && (
+                    <span className="chat-note-turn">turn {it.source_turn}</span>
+                  )}
+                </div>
+                <div className="chat-note-text">{it.text}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="ai-memo-empty">
+            {loadingNotes
+              ? '…'
+              : threadId
+              ? t('chatNotesEmpty')
+              : t('chatNotesNoThread')}
+          </p>
+        )}
+
+        {/* 2. 全会話共通の覚え書き */}
         <div className="ai-settings-section">{t('aiMemoStyleSection')}</div>
         {styles.length ? styles.map((m) => (
           <div key={m.id} className="ai-memo-row">
@@ -106,3 +187,4 @@ export const AiSettingsSheet: React.FC<{ open: boolean; onClose: () => void; fix
     </div>
   );
 };
+

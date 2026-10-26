@@ -7850,6 +7850,54 @@ abstract class AppLocalizations {
   /// **'Explanation notes · AI notes'**
   String get accountAiSettingsSub;
 
+  /// AI chat settings. Section for standing notes in the current conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'In this chat'**
+  String get chatNotesSection;
+
+  /// AI chat settings. Subtitle for notes in the current conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Goals, context, and style agreed on in this conversation'**
+  String get chatNotesSectionSub;
+
+  /// Category badge for style preferences in chat notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Response style'**
+  String get chatNotesCategoryStyle;
+
+  /// Category badge for context in chat notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Context'**
+  String get chatNotesCategoryContext;
+
+  /// Category badge for purpose in chat notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Purpose'**
+  String get chatNotesCategoryPurpose;
+
+  /// Category badge for unresolved items in chat notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Unresolved'**
+  String get chatNotesCategoryUnresolved;
+
+  /// Empty state when thread has no notes yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No notes yet (summarized notes will appear here as the conversation grows).'**
+  String get chatNotesEmpty;
+
+  /// Empty state when no thread is active yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes will appear here once the conversation begins.'**
+  String get chatNotesNoThread;
+
   /// AI self-portrait / AI memory. Ported from the web app string "aboutYouSection".
   ///
   /// In en, this message translates to:

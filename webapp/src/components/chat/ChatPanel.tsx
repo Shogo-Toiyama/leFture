@@ -217,6 +217,7 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
         <AiSettingsSheet
           open={aiSettingsOpen}
           onClose={() => setAiSettingsOpen(false)}
+          threadId={panel.threadId}
           onNavigate={() => {
             setAiSettingsOpen(false);
             if (stacked) panel.close();
