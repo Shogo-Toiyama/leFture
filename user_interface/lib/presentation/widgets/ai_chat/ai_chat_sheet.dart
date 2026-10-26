@@ -621,9 +621,27 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(kSheetRadius),
                     ),
-                    border: Border.all(color: colors.menuBorder),
-                    boxShadow: const [
-                      BoxShadow(color: Color(0x66000000), blurRadius: 30),
+                    border: Border.all(
+                      color: colors.accent.withValues(
+                        alpha: _world == ChatWorld.paper ? .28 : .35,
+                      ),
+                    ),
+                    boxShadow: [
+                      // 背景との境目を持ち上げるドロップシャドウ
+                      const BoxShadow(
+                        color: Color(0x66000000),
+                        blurRadius: 32,
+                        offset: Offset(0, -6),
+                      ),
+                      // 浮いて見えるゴールドのぼんやりした光(グロー)
+                      BoxShadow(
+                        color: colors.accent.withValues(
+                          alpha: _world == ChatWorld.paper ? .18 : .24,
+                        ),
+                        blurRadius: 28,
+                        spreadRadius: 1,
+                        offset: const Offset(0, -2),
+                      ),
                     ],
                   ),
                   child: ClipRRect(
@@ -733,10 +751,23 @@ class _Header extends StatelessWidget {
         actions.add(button(Icons.tune_rounded, l.aiSettingsButton, onSettings));
       }
     } else {
-      if (isWide && onSettings != null) {
-        actions.add(button(Icons.tune_rounded, l.aiSettingsButton, onSettings));
+      if (isWide) {
+        if (onSettings != null) {
+          actions.add(button(Icons.tune_rounded, l.aiSettingsButton, onSettings));
+        }
+        actions.add(button(Icons.add_comment_rounded, l.aiChatNewConversation, onNew));
+      } else {
+        actions.add(
+          _HeaderMoreMenu(
+            colors: c,
+            onNew: onNew,
+            onSettings: onSettings,
+            newLabel: l.aiChatNewConversation,
+            settingsLabel: l.aiSettingsButton,
+            tooltip: l.aiChatActionMore,
+          ),
+        );
       }
-      actions.add(button(Icons.edit_square, l.aiChatNewConversation, onNew));
     }
 
     actions.add(button(Icons.close_rounded, l.aiChatClose, onClose));
@@ -766,6 +797,99 @@ class _Header extends StatelessWidget {
             ),
           ),
           ...actions,
+        ],
+      ),
+    );
+  }
+}
+
+enum _HeaderMoreChoice {
+  newConversation,
+  settings,
+}
+
+class _HeaderMoreMenu extends StatelessWidget {
+  const _HeaderMoreMenu({
+    required this.colors,
+    required this.onNew,
+    required this.onSettings,
+    required this.newLabel,
+    required this.settingsLabel,
+    required this.tooltip,
+  });
+
+  final ChatColors colors;
+  final VoidCallback onNew;
+  final VoidCallback? onSettings;
+  final String newLabel;
+  final String settingsLabel;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = colors;
+    final itemStyle = TextStyle(
+      color: c.actionForegroundStrong,
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+    );
+
+    return SizedBox(
+      width: _buttonSize,
+      height: _buttonSize,
+      child: PopupMenuButton<_HeaderMoreChoice>(
+        tooltip: tooltip,
+        padding: EdgeInsets.zero,
+        icon: Icon(
+          Icons.more_horiz_rounded,
+          size: 24,
+          color: c.actionForeground,
+        ),
+        color: c.menuBackground,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: c.menuBorder),
+        ),
+        constraints: const BoxConstraints(minWidth: 170),
+        onSelected: (choice) {
+          switch (choice) {
+            case _HeaderMoreChoice.newConversation:
+              onNew();
+            case _HeaderMoreChoice.settings:
+              onSettings?.call();
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: _HeaderMoreChoice.newConversation,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.add_comment_rounded,
+                  size: 18,
+                  color: c.actionForeground,
+                ),
+                const SizedBox(width: 10),
+                Text(newLabel, style: itemStyle),
+              ],
+            ),
+          ),
+          if (onSettings != null)
+            PopupMenuItem(
+              value: _HeaderMoreChoice.settings,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.tune_rounded,
+                    size: 18,
+                    color: c.actionForeground,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(settingsLabel, style: itemStyle),
+                ],
+              ),
+            ),
         ],
       ),
     );

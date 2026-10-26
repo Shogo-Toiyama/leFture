@@ -49,15 +49,50 @@ export async function getChatThread(threadId: string): Promise<ChatThread | null
   return (data as ChatThread | null) ?? null;
 }
 
-export async function listChatMessages(threadId: string): Promise<ChatMessage[]> {
-  const { data, error } = await supabase
+export interface ListChatMessagesOptions {
+  limit?: number;
+  before?: string;
+}
+
+export interface ListChatMessagesResult {
+  messages: ChatMessage[];
+  hasMore: boolean;
+}
+
+export async function listChatMessages(
+  threadId: string,
+  options: ListChatMessagesOptions = {}
+): Promise<ListChatMessagesResult> {
+  let query = supabase
     .from('chat_messages')
     .select(MESSAGE_COLUMNS)
     .eq('thread_id', threadId)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: true });
+    .is('deleted_at', null);
+
+  if (options.before) {
+    query = query.lt('created_at', options.before);
+  }
+
+  if (options.limit != null) {
+    query = query.order('created_at', { ascending: false }).limit(options.limit);
+    const { data, error } = await query;
+    if (error) throw error;
+    const rawList = (data ?? []).map(normalizeMessage);
+    const hasMore = rawList.length === options.limit;
+    const kept = hasMore && options.limit > 1 ? rawList.slice(0, options.limit - 1) : rawList;
+    return {
+      messages: kept.reverse(),
+      hasMore,
+    };
+  }
+
+  query = query.order('created_at', { ascending: true });
+  const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []).map(normalizeMessage);
+  return {
+    messages: (data ?? []).map(normalizeMessage),
+    hasMore: false,
+  };
 }
 
 /**

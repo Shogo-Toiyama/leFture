@@ -506,4 +506,75 @@ void main() {
     // 別のユーザーの行は読まない
     expect(await cache.getMessages('someone-else', 'T1'), isEmpty);
   });
+
+  group('ページネーション(過去ログの読み込み)', () {
+    test('20件を超える会話を開いたときは、最新の20件だけを読み込んで hasMore が true になる', () async {
+      final rows = [
+        for (var i = 1; i <= 35; i++)
+          chatRow(
+            'M$i',
+            i.isOdd ? 'user' : 'assistant',
+            'Message $i',
+            createdAt: '2026-10-18T00:${i.toString().padLeft(2, '0')}:00Z',
+          ),
+      ];
+      repo.serverRows['T1'] = rows;
+
+      await notifier().openThread('T1');
+      final s = read();
+
+      expect(s.messages.length, 20);
+      expect(s.hasMore, isTrue);
+      expect(s.loadingOlder, isFalse);
+      // 最新の20件: M16 から M35
+      expect(s.messages.first.id, 'M16');
+      expect(s.messages.last.id, 'M35');
+    });
+
+    test('loadOlderMessages で過去のメッセージが先頭に追加され、最上部に達したら hasMore が false になる', () async {
+      final rows = [
+        for (var i = 1; i <= 25; i++)
+          chatRow(
+            'M$i',
+            i.isOdd ? 'user' : 'assistant',
+            'Message $i',
+            createdAt: '2026-10-18T00:${i.toString().padLeft(2, '0')}:00Z',
+          ),
+      ];
+      repo.serverRows['T1'] = rows;
+
+      await notifier().openThread('T1');
+      var s = read();
+      expect(s.messages.length, 20);
+      expect(s.hasMore, isTrue);
+      expect(s.messages.first.id, 'M6');
+      expect(s.messages.last.id, 'M25');
+
+      // 過去メッセージを取得
+      await notifier().loadOlderMessages();
+      s = read();
+      expect(s.messages.length, 25);
+      expect(s.hasMore, isFalse);
+      expect(s.messages.first.id, 'M1');
+      expect(s.messages.last.id, 'M25');
+    });
+
+    test('20件以下の会話では最初から hasMore が false になる', () async {
+      final rows = [
+        for (var i = 1; i <= 10; i++)
+          chatRow(
+            'M$i',
+            'user',
+            'Message $i',
+            createdAt: '2026-10-18T00:${i.toString().padLeft(2, '0')}:00Z',
+          ),
+      ];
+      repo.serverRows['T1'] = rows;
+
+      await notifier().openThread('T1');
+      final s = read();
+      expect(s.messages.length, 10);
+      expect(s.hasMore, isFalse);
+    });
+  });
 }

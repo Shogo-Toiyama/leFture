@@ -122,6 +122,9 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     loading,
     loadError,
     sending,
+    hasMore,
+    loadingOlder,
+    loadOlder,
     send,
     stop,
     stopping,
@@ -139,6 +142,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   }, [onAttachmentListClose]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
+  const scrollSnapshotRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
 
   const location = useLocation();
   // 親に .is-paper があるか、もしくは world prop で paper/universe を判定
@@ -248,11 +252,34 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     const el = scrollRef.current;
     if (!el) return;
     stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_TO_BOTTOM_PX;
+    if (el.scrollTop <= 150 && hasMore && !loadingOlder && !loading) {
+      void loadOlder(() => {
+        if (scrollRef.current) {
+          scrollSnapshotRef.current = {
+            scrollHeight: scrollRef.current.scrollHeight,
+            scrollTop: scrollRef.current.scrollTop,
+          };
+        }
+      });
+    }
   };
 
   useLayoutEffect(() => {
     const el = scrollRef.current;
-    if (el && stickToBottomRef.current) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    if (scrollSnapshotRef.current) {
+      const { scrollHeight: prevHeight, scrollTop: prevTop } = scrollSnapshotRef.current;
+      const newHeight = el.scrollHeight;
+      const delta = newHeight - prevHeight;
+      if (delta > 0) {
+        el.scrollTop = prevTop + delta;
+      }
+      scrollSnapshotRef.current = null;
+      return;
+    }
+    if (stickToBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [messages]);
 
   // 会話の中のAIの回答を選んで「返信」したときの引用。パネルの「Ask」(selection)とは別に持ち、
@@ -508,8 +535,14 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
                 </button>
               </div>
             ) : (
-              messages.map((message, index) => (
-                <React.Fragment key={message.id}>
+              <>
+                {loadingOlder && (
+                  <div className="chat-older-loading" aria-live="polite">
+                    <span className="chat-older-spinner" />
+                  </div>
+                )}
+                {messages.map((message, index) => (
+                  <React.Fragment key={message.id}>
                   <ChatMessageItem
                     message={message}
                     world={resolvedWorld}
@@ -536,8 +569,9 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
                   />
                   {renderFailure(message)}
                 </React.Fragment>
-              ))
-            )}
+              ))}
+            </>
+          )}
           </div>
         )}
       </div>

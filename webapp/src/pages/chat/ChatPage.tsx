@@ -1,14 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, Minimize2, SlidersHorizontal, SquarePen } from 'lucide-react';
+import { ChevronLeft, MessageSquarePlus, Minimize2, SlidersHorizontal } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useAiConsent } from '../../context/AiConsentContext';
 import { useChatThreads } from '../../hooks/useChatThreads';
+import { useMediaQuery, STACKED_PANELS_QUERY } from '../../hooks/useMediaQuery';
 import { getChatThread } from '../../lib/chat';
 import { ChatConversation } from '../../components/chat/ChatConversation';
 import { ChatThreadList } from '../../components/chat/ChatThreadList';
 import { ChatPlanNotice } from '../../components/chat/ChatPlanNotice';
 import { AiSettingsSheet } from '../../components/chat/AiSettingsSheet';
+import { ChatHeaderMenu } from '../../components/chat/ChatHeaderMenu';
 
 /**
  * 会話の置き場(専用ページ)。
@@ -164,6 +166,8 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
   }, [threadId]);
   useEffect(refreshTitle, [refreshTitle]);
 
+  const isNarrow = useMediaQuery(STACKED_PANELS_QUERY);
+
   const handleMinimize = useCallback(() => {
     sessionStorage.setItem('open_chat_panel', threadId ?? 'null');
     navigateOutOfChat(navigate);
@@ -186,26 +190,47 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
         </div>
 
         <div className="chat-fullscreen-topbar-right">
-          {threadId && (
-            <Link
-              to="/chat/new"
-              className="chat-icon-btn"
-              aria-label={t('chatNewConversation')}
-              title={t('chatNewConversation')}
+          {threadId ? (
+            isNarrow ? (
+              <ChatHeaderMenu
+                onNewConversation={() => navigate('/chat/new')}
+                onOpenSettings={() => setAiSettingsOpen(true)}
+                iconSize={18}
+              />
+            ) : (
+              <>
+                <Link
+                  to="/chat/new"
+                  className="chat-icon-btn"
+                  aria-label={t('chatNewConversation')}
+                  title={t('chatNewConversation')}
+                >
+                  <MessageSquarePlus size={18} />
+                </Link>
+                <button
+                  type="button"
+                  className={`chat-icon-btn ${aiSettingsOpen ? 'is-active' : ''}`}
+                  onClick={() => setAiSettingsOpen((v) => !v)}
+                  aria-label={t('aiSettingsButton')}
+                  aria-expanded={aiSettingsOpen}
+                  title={t('aiSettingsButton')}
+                >
+                  <SlidersHorizontal size={18} />
+                </button>
+              </>
+            )
+          ) : (
+            <button
+              type="button"
+              className={`chat-icon-btn ${aiSettingsOpen ? 'is-active' : ''}`}
+              onClick={() => setAiSettingsOpen((v) => !v)}
+              aria-label={t('aiSettingsButton')}
+              aria-expanded={aiSettingsOpen}
+              title={t('aiSettingsButton')}
             >
-              <SquarePen size={18} />
-            </Link>
+              <SlidersHorizontal size={18} />
+            </button>
           )}
-          <button
-            type="button"
-            className={`chat-icon-btn ${aiSettingsOpen ? 'is-active' : ''}`}
-            onClick={() => setAiSettingsOpen((v) => !v)}
-            aria-label={t('aiSettingsButton')}
-            aria-expanded={aiSettingsOpen}
-            title={t('aiSettingsButton')}
-          >
-            <SlidersHorizontal size={18} />
-          </button>
           <button
             type="button"
             className="chat-icon-btn"

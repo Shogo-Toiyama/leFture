@@ -539,7 +539,8 @@ void main() {
         matching: find.byType(Scrollable),
       ),
     );
-    expect(list.position.pixels, closeTo(list.position.maxScrollExtent, 1));
+    // reverse: true では最下部(最新の発言)は pixels: 0.0
+    expect(list.position.pixels, closeTo(0.0, 1));
 
     // シートを引き上げても、下端(最新の発言)のまま
     final g = await tester.startGesture(holder(tester));
@@ -550,7 +551,7 @@ void main() {
     await g.up();
     await settle(tester, 400);
     expect(find.text('message number 29'), findsOneWidget);
-    expect(list.position.pixels, closeTo(list.position.maxScrollExtent, 1));
+    expect(list.position.pixels, closeTo(0.0, 1));
   });
 
   testWidgets('履歴で名前を変えて、削除できる', (tester) async {
@@ -590,8 +591,10 @@ void main() {
       () => Future<void>.delayed(const Duration(milliseconds: 100)),
     );
     await settle(tester);
-    expect(find.text('A heap is a tree.'), findsOneWidget);
-    await tester.tap(find.byTooltip(l10n.aiChatNewConversation));
+    // 画面幅が狭い(430px)ため、ヘッダーの「…」メニューを開いてから「新しい会話」を選ぶ
+    await tester.tap(find.byTooltip(l10n.aiChatActionMore).first);
+    await settle(tester);
+    await tester.tap(find.text(l10n.aiChatNewConversation));
     await settle(tester);
     expect(find.text('A heap is a tree.'), findsNothing);
     expect(container.read(chatConversationProvider).threadId, isNull);
@@ -640,6 +643,20 @@ void main() {
   testWidgets('AIの設定のボタンを押すと、入口が呼ばれる', (tester) async {
     await openSheet(tester, withSettings: true);
     await tester.tap(find.byTooltip(l10n.aiSettingsButton));
+    expect(settingsOpened, 1);
+  });
+
+  testWidgets('会話中は、モバイル画面で「…」メニューからAI設定を開ける', (tester) async {
+    repo.serverRows['T1'] = conversation;
+    await openSheet(tester, threadId: 'T1', withSettings: true);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await settle(tester);
+    await tester.tap(find.byTooltip(l10n.aiChatActionMore).first);
+    await settle(tester);
+    await tester.tap(find.text(l10n.aiSettingsButton));
+    await settle(tester);
     expect(settingsOpened, 1);
   });
 

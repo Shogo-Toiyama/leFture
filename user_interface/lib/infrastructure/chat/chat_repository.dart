@@ -74,13 +74,30 @@ class ChatRepository {
   }
 
   /// スレッドのメッセージ(古い順)の生の行。
-  Future<List<Map<String, dynamic>>> fetchMessageRows(String threadId) async {
-    final rows = await _supabase
+  /// [limit]を指定した場合は最新(または[beforeCreatedAt]より前)の[limit]件を古い順で返す。
+  Future<List<Map<String, dynamic>>> fetchMessageRows(
+    String threadId, {
+    int? limit,
+    String? beforeCreatedAt,
+  }) async {
+    var query = _supabase
         .from('chat_messages')
         .select(ChatMessage.columns)
         .eq('thread_id', threadId)
-        .isFilter('deleted_at', null)
-        .order('created_at', ascending: true);
+        .isFilter('deleted_at', null);
+
+    if (beforeCreatedAt != null) {
+      query = query.lt('created_at', beforeCreatedAt);
+    }
+
+    if (limit != null) {
+      final rows = await query
+          .order('created_at', ascending: false)
+          .limit(limit);
+      return [for (final r in rows.reversed) Map<String, dynamic>.from(r)];
+    }
+
+    final rows = await query.order('created_at', ascending: true);
     return [for (final r in rows) Map<String, dynamic>.from(r)];
   }
 

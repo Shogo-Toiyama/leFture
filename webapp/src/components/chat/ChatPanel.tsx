@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { matchPath, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Maximize2, MessagesSquare, SlidersHorizontal, SquarePen, X } from 'lucide-react';
+import { ChevronLeft, Maximize2, MessagesSquare, MessageSquarePlus, SlidersHorizontal, X } from 'lucide-react';
 import { useChatPanel } from '../../context/ChatPanelContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useChatThreads } from '../../hooks/useChatThreads';
@@ -8,6 +8,7 @@ import { getChatThread } from '../../lib/chat';
 import { getLecture } from '../../lib/lectures';
 import { lectureDisplayTitle } from '../../types/lecture';
 import { AiSettingsSheet } from './AiSettingsSheet';
+import { ChatHeaderMenu } from './ChatHeaderMenu';
 import { ChatConversation } from './ChatConversation';
 import { ChatPlanNotice } from './ChatPlanNotice';
 import { ChatThreadList } from './ChatThreadList';
@@ -152,27 +153,34 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
             </>
           ) : (
             <>
-              {isWide && (
-                <button
-                  type="button"
-                  className={`chat-icon-btn ${aiSettingsOpen ? 'is-active' : ''}`}
-                  onClick={() => setAiSettingsOpen((v) => !v)}
-                  aria-label={t('aiSettingsButton')}
-                  aria-expanded={aiSettingsOpen}
-                  title={t('aiSettingsButton')}
-                >
-                  <SlidersHorizontal size={16} />
-                </button>
+              {isWide ? (
+                <>
+                  <button
+                    type="button"
+                    className={`chat-icon-btn ${aiSettingsOpen ? 'is-active' : ''}`}
+                    onClick={() => setAiSettingsOpen((v) => !v)}
+                    aria-label={t('aiSettingsButton')}
+                    aria-expanded={aiSettingsOpen}
+                    title={t('aiSettingsButton')}
+                  >
+                    <SlidersHorizontal size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="chat-icon-btn"
+                    onClick={() => panel.showConversation(null)}
+                    aria-label={t('chatNewConversation')}
+                    title={t('chatNewConversation')}
+                  >
+                    <MessageSquarePlus size={16} />
+                  </button>
+                </>
+              ) : (
+                <ChatHeaderMenu
+                  onNewConversation={() => panel.showConversation(null)}
+                  onOpenSettings={() => setAiSettingsOpen(true)}
+                />
               )}
-              <button
-                type="button"
-                className="chat-icon-btn"
-                onClick={() => panel.showConversation(null)}
-                aria-label={t('chatNewConversation')}
-                title={t('chatNewConversation')}
-              >
-                <SquarePen size={16} />
-              </button>
               <button
                 type="button"
                 className="chat-icon-btn"

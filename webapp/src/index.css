@@ -14847,11 +14847,16 @@ body.is-resizing-chat iframe {
   width: auto;
   height: min(88vh, 88dvh);
   border-left: none;
-  border-top: 1px solid var(--glass-border);
+  border-top: 1px solid rgba(255, 179, 0, 0.42);
   border-radius: 20px 20px 0 0;
-  box-shadow: 0 -18px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 -6px 28px rgba(255, 179, 0, 0.22), 0 -18px 44px rgba(0, 0, 0, 0.55);
   overflow: hidden;
   animation: chat-sheet-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chat-panel.is-sheet.is-paper {
+  border-top: 1px solid rgba(180, 83, 9, 0.36);
+  box-shadow: 0 -6px 26px rgba(212, 154, 36, 0.18), 0 -16px 40px rgba(62, 50, 40, 0.18);
 }
 
 .chat-sheet-scrim {
@@ -15246,6 +15251,25 @@ body.is-resizing-chat iframe {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+.chat-older-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0 12px;
+  width: 100%;
+}
+
+.chat-older-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--chat-act-fg, rgba(255, 255, 255, 0.2));
+  border-top-color: var(--gold, #ffb300);
+  border-radius: 50%;
+  animation: chat-spin 0.8s linear infinite;
+}
+
+@keyframes chat-spin {
+  to { transform: rotate(360deg); }
 }
 
 .chat-msg-meta {
@@ -15360,6 +15384,73 @@ body.is-resizing-chat iframe {
 
 .chat-act-menu button:hover {
   background: var(--chat-act-bg-hover);
+}
+
+.chat-header-menu {
+  position: absolute;
+  z-index: 50;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 170px;
+  padding: 6px;
+  background: var(--chat-act-menu-bg, #171b2b);
+  border: 1px solid var(--chat-act-menu-line, rgba(255, 255, 255, 0.14));
+  border-radius: 12px;
+  box-shadow: var(--chat-act-menu-shadow, 0 14px 36px rgba(0, 0, 0, 0.5));
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-panel.is-paper .chat-header-menu,
+.chat-fullscreen.is-paper .chat-header-menu {
+  background: #ffffff;
+  border-color: #dfd5c2;
+  box-shadow: 0 12px 30px rgba(62, 50, 40, 0.18);
+}
+
+.chat-header-menu button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--chat-act-fg-hover, #e8eaee);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.chat-panel.is-paper .chat-header-menu button,
+.chat-fullscreen.is-paper .chat-header-menu button {
+  color: #3e3228;
+}
+
+.chat-header-menu button svg {
+  color: var(--chat-act-fg, #8e99a6);
+  flex-shrink: 0;
+}
+
+.chat-panel.is-paper .chat-header-menu button svg,
+.chat-fullscreen.is-paper .chat-header-menu button svg {
+  color: #8c7a6b;
+}
+
+.chat-header-menu button:hover {
+  background: var(--chat-act-bg-hover, rgba(255, 255, 255, 0.09));
+}
+
+.chat-panel.is-paper .chat-header-menu button:hover,
+.chat-fullscreen.is-paper .chat-header-menu button:hover {
+  background: rgba(62, 50, 40, 0.08);
 }
 
 /* 回答の詳細 */

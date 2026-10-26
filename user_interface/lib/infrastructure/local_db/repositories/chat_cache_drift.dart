@@ -88,7 +88,28 @@ class ChatCacheDrift {
   // ---- メッセージ ----
 
   /// スレッドのメッセージ(古い順)。キャッシュが無ければ空。
-  Future<List<ChatMessage>> getMessages(String userId, String threadId) async {
+  /// [limit]を指定した場合は最新の[limit]件を古い順で返す。
+  Future<List<ChatMessage>> getMessages(
+    String userId,
+    String threadId, {
+    int? limit,
+  }) async {
+    if (limit != null) {
+      final rows =
+          await (_db.select(_db.localChatMessages)
+                ..where(
+                  (t) => t.userId.equals(userId) & t.threadId.equals(threadId),
+                )
+                ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+                ..limit(limit))
+              .get();
+      return [
+        for (final r in rows.reversed)
+          ChatMessage.fromMap(
+            Map<String, dynamic>.from(jsonDecode(r.rowJson) as Map),
+          ),
+      ];
+    }
     final rows =
         await (_db.select(_db.localChatMessages)
               ..where(
@@ -102,6 +123,26 @@ class ChatCacheDrift {
           Map<String, dynamic>.from(jsonDecode(r.rowJson) as Map),
         ),
     ];
+  }
+
+  /// スレッドにメッセージ行を追加保存する。
+  Future<void> saveMessages(
+    String userId,
+    String threadId,
+    List<Map<String, dynamic>> rows,
+  ) {
+    return _db.batch((b) {
+      b.insertAll(_db.localChatMessages, [
+        for (final row in rows)
+          LocalChatMessagesCompanion.insert(
+            id: row['id'] as String,
+            userId: userId,
+            threadId: threadId,
+            createdAt: DateTime.parse(row['created_at'] as String),
+            rowJson: jsonEncode(row),
+          ),
+      ], mode: InsertMode.insertOrReplace);
+    });
   }
 
   /// スレッドのメッセージを、サーバーの行で丸ごと置き換える。

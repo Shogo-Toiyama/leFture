@@ -442,7 +442,7 @@ void main() {
       ]);
 
       // 最初の質問を編集する(後ろに1往復ある)
-      await tester.tap(find.bySemanticsLabel(l10n.aiChatActionEdit).first);
+      await tester.tap(find.bySemanticsLabel(l10n.aiChatActionEdit).last);
       await settle(tester);
       expect(find.text(l10n.aiChatEditing('1')), findsOneWidget);
       final field = tester.widget<TextField>(find.byType(TextField));
@@ -894,6 +894,96 @@ void main() {
       expect(request.references.single.mode, ChatAttachmentMode.full);
       await repo.controller.close();
       await settle(tester);
+    });
+  });
+
+  group('過去ログの読み込みとスクロール維持', () {
+    testWidgets('過去ログ読み込み時に表示中メッセージの画面位置が完全に維持される(0pxズレ)', (tester) async {
+      final rows = [
+        for (var i = 1; i <= 30; i++)
+          chatRow(
+            'M$i',
+            i.isOdd ? 'user' : 'assistant',
+            'Message item $i',
+            createdAt: '2026-10-18T00:${i.toString().padLeft(2, '0')}:00Z',
+          ),
+      ];
+      await pumpView(tester);
+      await openThread(tester, rows);
+
+      // 初期状態: 最新20件(M11..M30)のみ取得され、古いM1は未ロード
+      final state1 = container.read(chatConversationProvider);
+      expect(state1.messages.length, 20);
+      expect(state1.hasMore, isTrue);
+      expect(find.text('Message item 1'), findsNothing);
+
+      final list = tester.state<ScrollableState>(
+        find.descendant(
+          of: find.byType(ListView),
+          matching: find.byType(Scrollable),
+        ),
+      );
+
+      // 少し上(過去側)へスクロールして M26 が見える状態にする(トリガー閾値には届かない位置)
+      await tester.drag(find.byType(ListView), const Offset(0, 200));
+      await tester.pump();
+      expect(list.position.pixels, closeTo(200, 1.0));
+
+      final m26Finder = find.text('Message item 26');
+      expect(m26Finder, findsOneWidget);
+      final m26Before = tester.getTopLeft(m26Finder);
+
+      // 過去ログを読み込む
+      await tester.runAsync(
+        () => container.read(chatConversationProvider.notifier).loadOlderMessages(),
+      );
+      await tester.pump();
+
+      // 全30件になり、hasMoreがfalseになる
+      final state2 = container.read(chatConversationProvider);
+      expect(state2.messages.length, 30);
+      expect(state2.hasMore, isFalse);
+
+      // 過去ログ読み込み後も、見ていた M26 のY座標が 0.0px (完全に不変) であることを検証！
+      final m26After = tester.getTopLeft(m26Finder);
+      expect(m26After.dy, equals(m26Before.dy));
+      // scroll position の pixels も全く変わらない
+      expect(list.position.pixels, closeTo(200, 1.0));
+    });
+
+    testWidgets('最上部付近へスクロールすると自動で過去ログが読み込まれる', (tester) async {
+      final rows = [
+        for (var i = 1; i <= 30; i++)
+          chatRow(
+            'M$i',
+            i.isOdd ? 'user' : 'assistant',
+            'Message item $i',
+            createdAt: '2026-10-18T00:${i.toString().padLeft(2, '0')}:00Z',
+          ),
+      ];
+      await pumpView(tester);
+      await openThread(tester, rows);
+
+      final list = tester.state<ScrollableState>(
+        find.descendant(
+          of: find.byType(ListView),
+          matching: find.byType(Scrollable),
+        ),
+      );
+
+      // 最上部(maxScrollExtent - 50)へスクロールして150px閾値に入る
+      final targetOffset = list.position.maxScrollExtent - 50;
+      await tester.drag(find.byType(ListView), Offset(0, targetOffset));
+      await tester.pump();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await settle(tester, 300);
+
+      // 自動で全30件が読み込まれたことを確認
+      final state = container.read(chatConversationProvider);
+      expect(state.messages.length, 30);
+      expect(state.hasMore, isFalse);
     });
   });
 }

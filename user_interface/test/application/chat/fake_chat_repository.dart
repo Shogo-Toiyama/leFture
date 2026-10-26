@@ -80,10 +80,26 @@ class FakeChatRepository extends Fake implements ChatRepository {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> fetchMessageRows(String threadId) async {
+  Future<List<Map<String, dynamic>>> fetchMessageRows(
+    String threadId, {
+    int? limit,
+    String? beforeCreatedAt,
+  }) async {
     final rows = serverRows[threadId];
     if (rows == null) throw const ChatRequestException('NETWORK', 'offline');
-    return rows;
+    var list = [...rows];
+    if (beforeCreatedAt != null) {
+      final beforeDt = DateTime.parse(beforeCreatedAt);
+      list = list
+          .where(
+            (r) => DateTime.parse(r['created_at'] as String).isBefore(beforeDt),
+          )
+          .toList();
+    }
+    if (limit != null && list.length > limit) {
+      list = list.sublist(list.length - limit);
+    }
+    return list;
   }
 
   /// listAttachmentsが返す資料。

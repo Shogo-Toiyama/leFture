@@ -74,6 +74,8 @@ interface Options {
 const RECONNECT_POLL_INTERVAL_MS = 3000;
 const RECONNECT_POLL_MAX_ATTEMPTS = 40;
 
+const CHAT_PAGE_SIZE = 20;
+
 /**
  * 1つの会話(スレッド)の表示と送信。threadIdがnullなら新しい会話として始め、
  * 最初の送信でサーバーがスレッドを作る。
@@ -83,6 +85,8 @@ export function useChatConversation(threadId: string | null, options: Options = 
   const [loading, setLoading] = useState(Boolean(threadId));
   const [loadError, setLoadError] = useState<unknown>(null);
   const [sending, setSending] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   /** 停止を押してから、止まった行が返るまで */
   const [stopping, setStopping] = useState(false);
   /** このスレッドの資料(外したものを除く、添付順)。 */
@@ -201,9 +205,10 @@ export function useChatConversation(threadId: string | null, options: Options = 
       setLoadError(null);
       void refreshAttachments(id);
       try {
-        const rows = await listChatMessages(id);
+        const { messages: rows, hasMore: more } = await listChatMessages(id, { limit: CHAT_PAGE_SIZE + 1 });
         if (!mountedRef.current) return;
         setMessages(rows);
+        setHasMore(more);
         // 生成中にページを再読み込みした等: まだstreamingの返答は完了を待つ
         rows
           .filter((m) => m.role === 'assistant' && m.status === 'streaming')
@@ -215,6 +220,32 @@ export function useChatConversation(threadId: string | null, options: Options = 
       }
     },
     [waitForServerCompletion, refreshAttachments]
+  );
+
+  const loadOlder = useCallback(
+    async (onBeforePrepend?: () => void) => {
+      const id = activeThreadIdRef.current;
+      if (!id || !hasMore || loadingOlder || loading) return;
+      const oldest = messages.find((m) => !m.id.startsWith('local-'));
+      if (!oldest) return;
+
+      setLoadingOlder(true);
+      try {
+        const { messages: rows, hasMore: more } = await listChatMessages(id, {
+          limit: CHAT_PAGE_SIZE + 1,
+          before: oldest.created_at,
+        });
+        if (!mountedRef.current) return;
+        onBeforePrepend?.();
+        setMessages((prev) => [...rows, ...prev]);
+        setHasMore(more);
+      } catch {
+        // 再試行できるよう状態のみ戻す
+      } finally {
+        if (mountedRef.current) setLoadingOlder(false);
+      }
+    },
+    [hasMore, loadingOlder, loading, messages]
   );
 
   useEffect(() => {
@@ -234,6 +265,8 @@ export function useChatConversation(threadId: string | null, options: Options = 
     } else {
       setMessages([]);
       setAttachments([]);
+      setHasMore(false);
+      setLoadingOlder(false);
       setLoading(false);
       setLoadError(null);
     }
@@ -498,6 +531,9 @@ export function useChatConversation(threadId: string | null, options: Options = 
     loading,
     loadError,
     sending,
+    hasMore,
+    loadingOlder,
+    loadOlder,
     send,
     stop,
     stopping,

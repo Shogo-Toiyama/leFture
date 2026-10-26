@@ -2,7 +2,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/chat/chat_conversation.dart';
 import 'package:lefture/domain/entities/chat.dart';
@@ -82,17 +81,6 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   final _scroll = ScrollController();
   bool _stickToBottom = true;
 
-  /// 前のフレームで一覧を出していたか。
-  bool _listShown = false;
-
-  /// 一覧を出したばかりで、下端へ合わせている間(合わせ終わるまで見せない。会話を開いたときに、
-  /// 一番上が一瞬見えてから下へ飛ぶのを避ける)。
-  bool _revealing = false;
-
-  /// 下端へ合わせている回数(フレーム数)。合わせていなければ-1。
-  int _settleFrames = -1;
-  double? _settleLastMax;
-
   /// 入力欄の中身を変える依頼。
   ChatPrefill? _prefill;
 
@@ -144,37 +132,23 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   void _onScroll() {
     if (!_scroll.hasClients) return;
     final p = _scroll.position;
-    _stickToBottom = p.maxScrollExtent - p.pixels < _stickToBottomPx;
+    _stickToBottom = p.pixels < _stickToBottomPx;
+
+    // 最上部(過去メッセージ側)に近づいたら過去ログを読み込む
+    if (p.maxScrollExtent - p.pixels <= 150) {
+      final state = ref.read(chatConversationProvider);
+      if (state.hasMore && !state.loadingOlder && !state.loading) {
+        unawaited(_notifier.loadOlderMessages());
+      }
+    }
   }
 
-  /// 下端へ合わせる。一覧は見えている分しか組まないので、下端の位置は組み直すたびに正しくなって
-  /// いく。下端の位置が落ち着くまで、毎フレーム合わせ直す(長くても数フレーム)。
+  /// 最下部(最新の発言)へ合わせる(reverse: true では 0 が最下部)。
   void _scrollToBottomSoon() {
-    final running = _settleFrames >= 0;
-    _settleFrames = 0;
-    _settleLastMax = null;
-    if (!running) _settleStep();
-  }
-
-  void _settleStep() {
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      var done = false;
-      if (_scroll.hasClients) {
-        final p = _scroll.position;
-        final max = p.maxScrollExtent;
-        if ((max - p.pixels).abs() > .5) p.jumpTo(max);
-        done = _settleLastMax != null && (max - _settleLastMax!).abs() < .5;
-        _settleLastMax = max;
-      }
-      if (done || ++_settleFrames > 12) {
-        _settleFrames = -1;
-        if (_revealing) setState(() => _revealing = false);
-        return;
-      }
-      _settleStep();
-    });
-    SchedulerBinding.instance.scheduleFrame();
+    if (!_scroll.hasClients) return;
+    if (_scroll.position.pixels > 0.5) {
+      _scroll.jumpTo(0);
+    }
   }
 
   ChatConversation get _notifier => ref.read(chatConversationProvider.notifier);
@@ -487,10 +461,18 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
     final colors = ChatColors.of(widget.world);
     final state = ref.watch(chatConversationProvider);
 
-    // 新しい文字・メッセージが来たら、下端にいるときだけ追従する
+    // 新しい文字・メッセージが来たら、下端にいるときだけ追従する(過去ログ読み込み時は飛ばさない)
     ref.listen(chatConversationProvider, (previous, next) {
-      if (_stickToBottom && previous?.messages != next.messages) {
-        _scrollToBottomSoon();
+      if (previous == null) return;
+      final prevMsgs = previous.messages;
+      final nextMsgs = next.messages;
+      if (_stickToBottom && prevMsgs != nextMsgs) {
+        final isPrepend = prevMsgs.isNotEmpty &&
+            nextMsgs.isNotEmpty &&
+            nextMsgs.first.id != prevMsgs.first.id;
+        if (!isPrepend) {
+          _scrollToBottomSoon();
+        }
       }
     });
 
@@ -509,14 +491,6 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
         !state.loading && !state.loadFailed && state.messages.isEmpty;
     // 前回の内容(端末のキャッシュ)があれば、読み込み中もそれを見せる
     final showSkeleton = state.loading && state.messages.isEmpty;
-    final showList = !showSkeleton && !state.loadFailed && !showGate;
-    // 会話を開いて一覧が出たら、見せる前に下端(最新の発言)へ合わせる。送った直後(ゲートから
-    // 最初の発言が出たとき)は、もともと下端なので隠さない
-    if (showList && !_listShown && !state.sending) {
-      _revealing = true;
-      _scrollToBottomSoon();
-    }
-    _listShown = showList;
 
     return Column(
       children: [
@@ -539,17 +513,14 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
                         suggestions: _suggestions(l10n, selectedText != null),
                         onPick: _setPrefill,
                       )
-                    : Opacity(
-                        opacity: _revealing ? 0 : 1,
-                        child: _MessageList(
-                          controller: _scroll,
-                          children: _buildMessages(
-                            state,
-                            colors,
-                            attachmentsById,
-                            attachmentsByMessage,
-                            editInfo,
-                          ),
+                    : _MessageList(
+                        controller: _scroll,
+                        children: _buildMessages(
+                          state,
+                          colors,
+                          attachmentsById,
+                          attachmentsByMessage,
+                          editInfo,
                         ),
                       ),
               ),
@@ -681,6 +652,9 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   ) {
     final l10n = AppLocalizations.of(context);
     final out = <Widget>[];
+    if (state.loadingOlder) {
+      out.add(_OlderLoadingIndicator(colors: colors));
+    }
     for (var i = 0; i < state.messages.length; i++) {
       final message = state.messages[i];
       final editState = message.id == _editingId
@@ -775,7 +749,8 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   }
 }
 
-/// メッセージの一覧。メッセージの間は18px、画面の左右は16px。
+/// メッセージの一覧。reverse: true で最新メッセージが最下部(pixels: 0)に配置される。
+/// 過去ログ読み込み時は上部(末尾)に追加されるため、既存メッセージの画面位置は 0.0px 完全不変。
 class _MessageList extends StatelessWidget {
   const _MessageList({required this.controller, required this.children});
 
@@ -786,7 +761,10 @@ class _MessageList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView.separated(
       controller: controller,
-      physics: const _StickToBottomPhysics(),
+      reverse: true,
+      physics: const _StickToBottomPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
       itemCount: children.length,
       separatorBuilder: (_, _) => const SizedBox(height: 18),
@@ -795,16 +773,15 @@ class _MessageList extends StatelessWidget {
         // 広い画面(タブレット)でも読みやすい幅にする
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
-          child: children[i],
+          child: children[children.length - 1 - i],
         ),
       ),
     );
   }
 }
 
-/// 下端にいるときは、中身や見えている高さが変わっても下端に留まる(返答の文字が増えても、シートの
-/// 高さを変えても、最新の発言が見えたまま)。上へ戻って読んでいるときは、その位置を動かさない。
-/// 組み直しの中で位置を決めるので、1フレーム遅れて飛ぶことがない。
+/// 最下部(最新の発言)にいるときは、文字が増えても最下部に留まる。
+/// reverse: true では 0.0 が最下部。
 class _StickToBottomPhysics extends ScrollPhysics {
   const _StickToBottomPhysics({super.parent});
 
@@ -819,16 +796,39 @@ class _StickToBottomPhysics extends ScrollPhysics {
     required bool isScrolling,
     required double velocity,
   }) {
-    // 全部が収まっていた(スクロールできなかった)ときも下端扱い: はみ出したら最新に付いていく
-    final wasAtBottom = oldPosition.pixels >= oldPosition.maxScrollExtent - 1;
+    final wasAtBottom = oldPosition.pixels <= 1.0;
     if (!isScrolling && velocity == 0 && wasAtBottom) {
-      return newPosition.maxScrollExtent;
+      return 0.0;
     }
     return super.adjustPositionForNewDimensions(
       oldPosition: oldPosition,
       newPosition: newPosition,
       isScrolling: isScrolling,
       velocity: velocity,
+    );
+  }
+}
+
+/// 過去メッセージ読み込み中に最上部に表示するインジケーター。
+class _OlderLoadingIndicator extends StatelessWidget {
+  const _OlderLoadingIndicator({required this.colors});
+
+  final ChatColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Center(
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(colors.hintText),
+          ),
+        ),
+      ),
     );
   }
 }

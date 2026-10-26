@@ -125,6 +125,8 @@ class ChatConversationState {
     this.loadFailed = false,
     this.sending = false,
     this.stopping = false,
+    this.hasMore = false,
+    this.loadingOlder = false,
   });
 
   /// nullなら新しい会話(最初の送信でサーバーがスレッドを作る)。
@@ -142,6 +144,12 @@ class ChatConversationState {
   /// 停止を押してから、止まった行が返るまで。
   final bool stopping;
 
+  /// まだ読み込める過去のメッセージがあるか。
+  final bool hasMore;
+
+  /// 過去のメッセージを読み込み中か。
+  final bool loadingOlder;
+
   ChatConversationState copyWith({
     String? Function()? threadId,
     List<LocalChatMessage>? messages,
@@ -150,6 +158,8 @@ class ChatConversationState {
     bool? loadFailed,
     bool? sending,
     bool? stopping,
+    bool? hasMore,
+    bool? loadingOlder,
   }) => ChatConversationState(
     threadId: threadId != null ? threadId() : this.threadId,
     messages: messages ?? this.messages,
@@ -158,6 +168,8 @@ class ChatConversationState {
     loadFailed: loadFailed ?? this.loadFailed,
     sending: sending ?? this.sending,
     stopping: stopping ?? this.stopping,
+    hasMore: hasMore ?? this.hasMore,
+    loadingOlder: loadingOlder ?? this.loadingOlder,
   );
 }
 
@@ -174,6 +186,8 @@ int chatReconnectPollMaxAttempts = 40;
 /// サーバー側で最後まで走り切るので、戻ってきたとき([onAppResumed])にDBから読み直す。
 @Riverpod(keepAlive: true)
 class ChatConversation extends _$ChatConversation {
+  static const _pageSize = 20;
+
   /// 今受信している返答。返答のIDはmetaイベントで届くので、それより前に停止を押したら
   /// stopRequestedを立てておき、metaが届いた瞬間に止める。
   _ActiveStream? _stream;
@@ -216,12 +230,13 @@ class ChatConversation extends _$ChatConversation {
     final uid = _uid;
     final cached = uid == null
         ? <ChatMessage>[]
-        : await _cache.getMessages(uid, threadId);
+        : await _cache.getMessages(uid, threadId, limit: _pageSize);
     if (generation != _generation) return;
     state = ChatConversationState(
       threadId: threadId,
       messages: [for (final m in cached) LocalChatMessage(message: m)],
       loading: true,
+      hasMore: false,
     );
     unawaited(_refreshAttachments(threadId));
     await _load(threadId, generation, hadCache: cached.isNotEmpty);
@@ -241,17 +256,23 @@ class ChatConversation extends _$ChatConversation {
     required bool hadCache,
   }) async {
     try {
-      final rows = await _repo.fetchMessageRows(threadId);
+      final rows = await _repo.fetchMessageRows(
+        threadId,
+        limit: _pageSize + 1,
+      );
       if (generation != _generation) return;
-      final messages = [for (final r in rows) ChatMessage.fromMap(r)];
+      final hasMore = rows.length > _pageSize;
+      final keptRows = hasMore ? rows.sublist(rows.length - _pageSize) : rows;
+      final messages = [for (final r in keptRows) ChatMessage.fromMap(r)];
       state = state.copyWith(
         messages: [for (final m in messages) LocalChatMessage(message: m)],
         loading: false,
         loadFailed: false,
+        hasMore: hasMore,
       );
       final uid = _uid;
       if (uid != null) {
-        _inBackground(_cache.replaceMessages(uid, threadId, rows));
+        _inBackground(_cache.replaceMessages(uid, threadId, keptRows));
       }
       // 生成中にアプリを閉じた等: まだstreamingの返答は完了を待つ
       for (final m in messages) {
@@ -264,6 +285,54 @@ class ChatConversation extends _$ChatConversation {
       if (generation != _generation) return;
       // キャッシュを出せているなら、そのまま見せる(オフラインでも前回の内容は読める)
       state = state.copyWith(loading: false, loadFailed: !hadCache);
+    }
+  }
+
+  /// 過去のメッセージを読み込む(上へスクロールしたとき)。
+  Future<void> loadOlderMessages() async {
+    final threadId = state.threadId;
+    if (threadId == null ||
+        !state.hasMore ||
+        state.loadingOlder ||
+        state.loading ||
+        state.messages.isEmpty) {
+      return;
+    }
+    final oldest = state.messages.first;
+    final beforeCreatedAt = oldest.message.createdAt.toUtc().toIso8601String();
+    state = state.copyWith(loadingOlder: true);
+    final generation = _generation;
+
+    try {
+      final rows = await _repo.fetchMessageRows(
+        threadId,
+        limit: _pageSize + 1,
+        beforeCreatedAt: beforeCreatedAt,
+      );
+      if (generation != _generation) return;
+      final hasMore = rows.length > _pageSize;
+      final keptRows = hasMore ? rows.sublist(rows.length - _pageSize) : rows;
+      final olderMessages = [for (final r in keptRows) ChatMessage.fromMap(r)];
+
+      final existingIds = {for (final m in state.messages) m.id};
+      final uniqueOlder = [
+        for (final m in olderMessages)
+          if (!existingIds.contains(m.id)) LocalChatMessage(message: m),
+      ];
+
+      state = state.copyWith(
+        messages: [...uniqueOlder, ...state.messages],
+        loadingOlder: false,
+        hasMore: hasMore,
+      );
+
+      final uid = _uid;
+      if (uid != null && keptRows.isNotEmpty) {
+        _inBackground(_cache.saveMessages(uid, threadId, keptRows));
+      }
+    } catch (_) {
+      if (generation != _generation) return;
+      state = state.copyWith(loadingOlder: false);
     }
   }
 
