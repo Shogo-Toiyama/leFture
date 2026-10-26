@@ -30,11 +30,13 @@ import { DEEP_NOTES_SKIPPED_PLAN_LIMIT, TIER_LITE } from '../../lib/planFeatures
 import { tierAccent } from '../../lib/planTheme';
 import { useChatScreen } from '../../context/ChatPanelContext';
 
+import { ErrorBoundary } from '../../components/ErrorBoundary';
+
 /**
  * 詳細ノートビューア。deep_notes_detail_page.dart と同じ紙面(ライトテーマ)の
  * 全画面ビューアで、ヘッダーと一覧ドロワーは復習カードと同じ .pv-* を共有する。
  */
-export const DeepNotesDetailPage: React.FC = () => {
+const DeepNotesDetailPageContent: React.FC = () => {
   const { lectureId, topicIndex } = useParams<{ lectureId: string; topicIndex?: string }>();
   const navigate = useNavigate();
   const { t } = useLanguage();
@@ -143,6 +145,19 @@ export const DeepNotesDetailPage: React.FC = () => {
     isLocked: entry.note.note_contents === DEEP_NOTES_SKIPPED_PLAN_LIMIT,
   }));
 
+  const currentFigures = useMemo(
+    () => (current ? figures.filter((f) => f.topic_number === current.topic.index) : []),
+    [figures, current]
+  );
+
+  const cleaned = useMemo(() => {
+    if (!current?.note.note_contents) return '';
+    if (currentFigures.length > 0) {
+      return stripSidCitations(replaceFigurePlaceholders(current.note.note_contents));
+    }
+    return stripSidCitations(stripFigurePlaceholders(current.note.note_contents));
+  }, [current?.note.note_contents, currentFigures.length]);
+
   const rootStyle = { ['--pv-accent' as string]: accent } as React.CSSProperties;
 
   if (loading) {
@@ -169,18 +184,6 @@ export const DeepNotesDetailPage: React.FC = () => {
   const { topic, note } = current;
   const heroUrl = topic.image_path ? imageUrls[topic.image_path] ?? null : null;
   const isLocked = note.note_contents === DEEP_NOTES_SKIPPED_PLAN_LIMIT;
-
-  const currentFigures = useMemo(
-    () => figures.filter((f) => f.topic_number === topic.index),
-    [figures, topic.index]
-  );
-
-  const cleaned = useMemo(() => {
-    if (currentFigures.length > 0) {
-      return stripSidCitations(replaceFigurePlaceholders(note.note_contents));
-    }
-    return stripSidCitations(stripFigurePlaceholders(note.note_contents));
-  }, [note.note_contents, currentFigures.length]);
 
   const handleReaction = async (reaction: 'like' | 'dislike') => {
     const value = note.metadata?.reaction === reaction ? null : reaction;
@@ -364,3 +367,10 @@ export const DeepNotesDetailPage: React.FC = () => {
     </div>
   );
 };
+
+export const DeepNotesDetailPage: React.FC = () => (
+  <ErrorBoundary fallbackTitle="DeepNotes Detail Page Error">
+    <DeepNotesDetailPageContent />
+  </ErrorBoundary>
+);
+

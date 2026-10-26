@@ -1,0 +1,180 @@
+<div class="deepnote-figure-card">
+  <style>
+    .deepnote-figure-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Segoe UI", sans-serif;
+      color: #1e293b;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .dn-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+    }
+    .dn-subtitle {
+      font-size: 13px;
+      color: #334155;
+      margin: 0 0 12px 0;
+      line-height: 1.5;
+    }
+    .dn-table {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .dn-row {
+      display: grid;
+      grid-template-columns: 1fr 28px 1fr;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      transition: none;
+    }
+    .dn-row.dn-hit {
+      background: #ecfdf5;
+      border-color: #059669;
+    }
+    .dn-row.dn-miss {
+      opacity: 0.55;
+    }
+    .dn-prefix {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      padding: 4px 10px;
+      justify-self: start;
+      word-break: break-all;
+    }
+    .dn-arrow {
+      width: 28px;
+      height: 16px;
+    }
+    .dn-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffffff;
+      background: #4f46e5;
+      border-radius: 999px;
+      padding: 4px 12px;
+      justify-self: end;
+      white-space: nowrap;
+    }
+    .dn-row.dn-hit .dn-link { background: #059669; }
+    .dn-row.dn-miss .dn-link { background: #94a3b8; }
+    .dn-tag {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #ffffff;
+      background: #d97706;
+      border-radius: 999px;
+      padding: 2px 8px;
+      margin-left: 2px;
+    }
+    .dn-footer {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #fff7ed;
+      border-left: 4px solid #d97706;
+      font-size: 13px;
+      color: #334155;
+      line-height: 1.5;
+    }
+    .dn-footer strong { color: #0f172a; }
+    .dn-caption {
+      font-size: 11.5px;
+      color: #64748b;
+      margin-top: 10px;
+      text-align: center;
+    }
+    .dn-badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .dn-badge {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #334155;
+      background: #e0e7ff;
+      border-radius: 999px;
+      padding: 3px 9px;
+    }
+  </style>
+
+  <p class="dn-title">簡略化された転送表</p>
+  <p class="dn-subtitle">宛先プレフィックス → 出力リンク</p>
+
+  <div class="dn-table">
+    <div class="dn-row dn-miss">
+      <span class="dn-prefix">0</span>
+      <svg class="dn-arrow" viewBox="0 0 28 16" aria-hidden="true">
+        <line x1="2" y1="8" x2="22" y2="8" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+        <polygon points="22,4 27,8 22,12" fill="#94a3b8"/>
+      </svg>
+      <span class="dn-link">リンク 3</span>
+    </div>
+
+    <div class="dn-row dn-hit">
+      <span class="dn-prefix">1*</span>
+      <svg class="dn-arrow" viewBox="0 0 28 16" aria-hidden="true">
+        <line x1="2" y1="8" x2="22" y2="8" stroke="#059669" stroke-width="2" stroke-linecap="round"/>
+        <polygon points="22,4 27,8 22,12" fill="#059669"/>
+      </svg>
+      <span class="dn-link">リンク 2</span>
+    </div>
+
+    <div class="dn-row dn-hit">
+      <span class="dn-prefix">100</span>
+      <svg class="dn-arrow" viewBox="0 0 28 16" aria-hidden="true">
+        <line x1="2" y1="8" x2="22" y2="8" stroke="#059669" stroke-width="2" stroke-linecap="round"/>
+        <polygon points="22,4 27,8 22,12" fill="#059669"/>
+      </svg>
+      <span class="dn-link">リンク 6</span>
+    </div>
+
+    <div class="dn-row dn-miss">
+      <span class="dn-prefix">10010</span>
+      <svg class="dn-arrow" viewBox="0 0 28 16" aria-hidden="true">
+        <line x1="2" y1="8" x2="22" y2="8" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+        <polygon points="22,4 27,8 22,12" fill="#94a3b8"/>
+      </svg>
+      <span class="dn-link">リンク 4</span>
+    </div>
+  </div>
+
+  <div class="dn-badge-row">
+    <span class="dn-badge">宛先: 10010…</span>
+    <span class="dn-badge">一致: 1*, 100</span>
+  </div>
+
+  <div class="dn-footer">
+    <strong>最長一致</strong>を選ぶ → <span class="dn-tag">100 → リンク 6</span>
+    <br>より具体的なプレフィックスを優先します。
+  </div>
+
+  <p class="dn-caption">緑 = 宛先アドレスに一致 / 灰 = 不一致</p>
+</div>

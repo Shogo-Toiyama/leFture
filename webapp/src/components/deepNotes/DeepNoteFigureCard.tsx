@@ -10,29 +10,29 @@ interface DeepNoteFigureCardProps {
  * DeepNote用の図解（HTML+SVG）カードコンポーネント。
  * Shadow DOM (attachShadow) を利用して、Claude Haikuが出力した<style>とHTML/SVGを
  * 完全カプセル化して注入する。
- * これにより:
- * 1. 外部CSSとの干渉を100%防止
- * 2. 親要素のRange.toString()やtextContentから除外され、テキストアノテーションの文字座標が狂わない
+ * ルート要素には `span (display: block)` を採用し、ReactMarkdown の `<p>` 内に
+ * レンダリングされても HTML 仕様のネスト違反 (p > div) によるクラッシュを防止する。
  */
 export const DeepNoteFigureCard: React.FC<DeepNoteFigureCardProps> = ({ figure, className }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const host = containerRef.current;
     if (!host) return;
 
-    // Attach shadow root if not already attached
-    let shadow = host.shadowRoot;
-    if (!shadow) {
-      shadow = host.attachShadow({ mode: 'open' });
+    try {
+      let shadow = host.shadowRoot;
+      if (!shadow) {
+        shadow = host.attachShadow({ mode: 'open' });
+      }
+      shadow.innerHTML = figure.html_content;
+    } catch (e) {
+      console.error('[DeepNoteFigureCard] Shadow DOM injection failed:', e);
     }
-
-    // Set complete HTML content
-    shadow.innerHTML = figure.html_content;
   }, [figure.html_content]);
 
   return (
-    <div
+    <span
       ref={containerRef}
       className={`dn-figure-host ${className ?? ''}`}
       style={{

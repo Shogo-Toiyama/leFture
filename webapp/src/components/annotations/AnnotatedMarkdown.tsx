@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useMemo, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { rehypeAnnotations } from '../../lib/markdownAnnotations';
 import { useAnnotationLayer } from './AnnotationContext';
@@ -40,6 +40,11 @@ export const AnnotatedMarkdown: React.FC<AnnotatedMarkdownProps> = ({
 
   const rehypePlugins = useMemo(() => [rehypeAnnotations(annotations)], [annotations]);
 
+  const urlTransform = useMemo(
+    () => (url: string) => (url.startsWith('figure:') ? url : defaultUrlTransform(url)),
+    []
+  );
+
   const components = useMemo(
     () => ({
       img: ({ src, alt, ...props }: React.ComponentPropsWithoutRef<'img'>) => {
@@ -69,7 +74,12 @@ export const AnnotatedMarkdown: React.FC<AnnotatedMarkdownProps> = ({
 
   return (
     <div ref={containerRef} className={className} onClick={handleClick}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={rehypePlugins} components={components}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={rehypePlugins}
+        components={components}
+        urlTransform={urlTransform}
+      >
         {markdown}
       </ReactMarkdown>
     </div>

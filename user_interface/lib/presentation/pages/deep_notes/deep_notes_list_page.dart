@@ -32,6 +32,7 @@ class DeepNoteTopic {
     required this.title,
     required this.summary,
     required this.content,
+    this.topicNumber,
     this.noteId,
     this.reaction,
     this.saved = false,
@@ -40,6 +41,7 @@ class DeepNoteTopic {
   });
 
   final int index;
+  final int? topicNumber;
   final String title;
   final String summary;
   final String content;
@@ -53,6 +55,7 @@ class DeepNoteTopic {
 
   bool get isSkippedByPlanLimit => content == plan_features.deepNotesSkippedPlanLimit;
 }
+
 
 // ---------------------------------------------------------------------------
 // List Page
@@ -92,6 +95,7 @@ class DeepNotesListPage extends HookConsumerWidget {
         final note = noteMap[t.index];
         return DeepNoteTopic(
           index: i,
+          topicNumber: t.index,
           title: t.displayTitle,
           summary: t.summary ?? '',
           content: note?.noteContents ?? '',

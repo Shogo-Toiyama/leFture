@@ -6,7 +6,15 @@ from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
 from app.services.helpers.helpers import _load_prompt, TaskLogger
 
 FIGURE_TAG_REGEX = re.compile(r'<!--\s*FIGURE:\s*(.*?)\s*-->', re.IGNORECASE | re.DOTALL)
-ATTR_REGEX = re.compile(r'(\w+)=["\'](.*?)["\']', re.DOTALL)
+ATTR_REGEX = re.compile(r'(\w+)=(?:"([^"]*)"|\'([^\']*)\')', re.DOTALL)
+
+def parse_figure_attrs(tag_content: str) -> Dict[str, str]:
+    attrs = {}
+    for m in ATTR_REGEX.finditer(tag_content):
+        key = m.group(1)
+        val = m.group(2) if m.group(2) is not None else m.group(3)
+        attrs[key] = val
+    return attrs
 
 def extract_html(raw_response: str) -> str:
     """Robustly extract HTML code block from Markdown response"""
@@ -39,7 +47,7 @@ class FigureGenerationService:
         figures = []
         for match_idx, m in enumerate(FIGURE_TAG_REGEX.finditer(note_contents)):
             tag_content = m.group(1).strip()
-            attrs = dict(ATTR_REGEX.findall(tag_content))
+            attrs = parse_figure_attrs(tag_content)
             
             raw_type = attrs.get("type", "diagram").lower().strip()
             # Explicit binary classification: 'chart' if explicitly specified, otherwise default to 'diagram'

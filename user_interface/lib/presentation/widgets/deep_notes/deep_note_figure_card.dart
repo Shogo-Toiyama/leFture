@@ -1,54 +1,48 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:lefture/domain/entities/deep_note_figure.dart';
-import 'package:lefture/presentation/themes/app_colors.dart';
 
-enum FigureRenderMode {
-  both,
-  webViewOnly,
-  htmlWidgetOnly,
-}
+/// 図解のHTMLをWebKitで事前に読み込み、正確な高さを測定して保持するプリローダー。
+class DeepNoteFigurePreloader {
+  DeepNoteFigurePreloader._();
+  static final DeepNoteFigurePreloader instance = DeepNoteFigurePreloader._();
 
-/// DeepNotesの図解（HTML/SVG）を表示するカードウィジェット。
-///
-/// 検証・比較のため、[flutter_widget_from_html] と [webview_flutter] の2方式を
-/// 上下に並べて表示し、トグルで切り替えることも可能。
-/// 本文テキストの選択・アノテーション座標系を壊さないよう、全体が
-/// [SelectionContainer.disabled] で完全に保護されている。
-class DeepNoteFigureCard extends StatefulWidget {
-  const DeepNoteFigureCard({
-    super.key,
-    required this.figure,
-    this.initialMode = FigureRenderMode.both,
-  });
+  final Map<String, WebViewController> _controllers = {};
+  final Map<String, double> _cachedHeights = {};
+  final Map<String, ValueNotifier<double>> _heightNotifiers = {};
+  final Set<String> _loadingIds = {};
 
-  final DeepNoteFigure figure;
-  final FigureRenderMode initialMode;
-
-  @override
-  State<DeepNoteFigureCard> createState() => _DeepNoteFigureCardState();
-}
-
-class _DeepNoteFigureCardState extends State<DeepNoteFigureCard> {
-  late FigureRenderMode _mode;
-  WebViewController? _webViewController;
-  double _webViewHeight = 220;
-  bool _isWebViewReady = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _mode = widget.initialMode;
-    _initWebView();
+  ValueNotifier<double> getHeightNotifier(String figureId, double initialHeight) {
+    return _heightNotifiers.putIfAbsent(
+      figureId,
+      () => ValueNotifier<double>(_cachedHeights[figureId] ?? initialHeight),
+    );
   }
 
-  void _initWebView() {
-    // Web環境や一部テスト環境ではwebview_flutterが未対応の場合があるため保護
+  double? getCachedHeight(String figureId) => _cachedHeights[figureId];
+
+  WebViewController? getController(String figureId) => _controllers[figureId];
+
+  /// 図解リストを一括プリロードする
+  void preloadAll(List<DeepNoteFigure> figures) {
     if (kIsWeb) return;
+    for (final figure in figures) {
+      preload(figure);
+    }
+  }
+
+  /// 単一の図解を事前読み込み
+  void preload(DeepNoteFigure figure) {
+    if (kIsWeb) return;
+    if (_controllers.containsKey(figure.id) || _loadingIds.contains(figure.id)) {
+      return;
+    }
+
+    _loadingIds.add(figure.id);
 
     try {
       final controller = WebViewController()
@@ -58,54 +52,62 @@ class _DeepNoteFigureCardState extends State<DeepNoteFigureCard> {
           'HeightReporter',
           onMessageReceived: (JavaScriptMessage message) {
             final h = double.tryParse(message.message);
-            if (h != null && h > 30 && mounted) {
-              setState(() {
-                _webViewHeight = h + 16;
-                _isWebViewReady = true;
-              });
+            // 異常値(画面全体のviewport巨大値など)を防止し、妥当な高さのみ採用
+            if (h != null && h > 30 && h < 3000) {
+              final finalHeight = h;
+              _cachedHeights[figure.id] = finalHeight;
+              if (_heightNotifiers.containsKey(figure.id)) {
+                _heightNotifiers[figure.id]!.value = finalHeight;
+              }
             }
           },
         )
         ..setNavigationDelegate(
           NavigationDelegate(
             onPageFinished: (String url) {
-              _reportHeight();
+              measureHeight(figure.id);
             },
           ),
         );
 
-      final fullHtml = _wrapHtml(widget.figure.htmlContent);
+      final fullHtml = wrapHtml(figure.htmlContent);
       controller.loadHtmlString(fullHtml);
-      _webViewController = controller;
+      _controllers[figure.id] = controller;
     } catch (_) {
-      // WebView初期化不可環境ではHtmlWidgetフォールバック
+      _loadingIds.remove(figure.id);
     }
   }
 
-  void _reportHeight() {
-    _webViewController?.runJavaScript('''
+  /// カード要素（.deepnote-figure-card）の真の高さを測定してFlutterへ通知
+  void measureHeight(String figureId) {
+    final controller = _controllers[figureId];
+    controller?.runJavaScript('''
       (function() {
         function send() {
-          var h = Math.max(
-            document.body.scrollHeight,
-            document.documentElement.scrollHeight,
-            document.body.offsetHeight
-          );
-          if (window.HeightReporter) {
+          // documentElementではなく、カード本体の要素から正確な高さを取得
+          var el = document.querySelector('.deepnote-figure-card') || 
+                   document.body.firstElementChild || 
+                   document.body;
+          if (!el) return;
+          var rect = el.getBoundingClientRect();
+          var h = Math.ceil(rect.height || el.offsetHeight || 0);
+          if (h > 30 && window.HeightReporter) {
             window.HeightReporter.postMessage(h.toString());
           }
         }
         send();
+        setTimeout(send, 100);
         setTimeout(send, 300);
-        setTimeout(send, 800);
+        setTimeout(send, 700);
         if (window.ResizeObserver) {
-          new ResizeObserver(send).observe(document.body);
+          var target = document.querySelector('.deepnote-figure-card') || document.body;
+          new ResizeObserver(send).observe(target);
         }
       })();
     ''');
   }
 
-  String _wrapHtml(String rawHtml) {
+  static String wrapHtml(String rawHtml) {
     return '''<!DOCTYPE html>
 <html>
 <head>
@@ -119,7 +121,12 @@ class _DeepNoteFigureCardState extends State<DeepNoteFigureCard> {
       background: transparent;
       width: 100%;
       overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .deepnote-figure-card {
+      margin: 0 auto !important; /* 余計な外側縦マージンによる白い余白を排除 */
     }
     svg {
       max-width: 100%;
@@ -135,232 +142,76 @@ class _DeepNoteFigureCardState extends State<DeepNoteFigureCard> {
 </html>''';
   }
 
+  /// 講義を閉じた際などにキャッシュをクリア
+  void clear() {
+    _controllers.clear();
+    _cachedHeights.clear();
+    _heightNotifiers.clear();
+    _loadingIds.clear();
+  }
+}
+
+/// DeepNotesの図解（HTML/SVG）を表示するカードウィジェット。
+///
+/// 外側の余計な二重枠線や「図解1」などのチップ・タイトルを完全撤廃し、
+/// 生成された図解そのものを余白なく美しくレンダリングする。
+class DeepNoteFigureCard extends StatefulWidget {
+  const DeepNoteFigureCard({
+    super.key,
+    required this.figure,
+  });
+
+  final DeepNoteFigure figure;
+
+  @override
+  State<DeepNoteFigureCard> createState() => _DeepNoteFigureCardState();
+}
+
+class _DeepNoteFigureCardState extends State<DeepNoteFigureCard> {
+  late final ValueNotifier<double> _heightNotifier;
+  WebViewController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    final preloader = DeepNoteFigurePreloader.instance;
+    preloader.preload(widget.figure);
+    // 初期値は控えめにして白い巨大な余白の発生を防止
+    _heightNotifier = preloader.getHeightNotifier(widget.figure.id, 200);
+    _controller = preloader.getController(widget.figure.id);
+
+    // 画面にウィジェットがマウントされた直後、実画面幅で再度正確に高さを測定
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        preloader.measureHeight(widget.figure.id);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (kIsWeb || _controller == null) {
+      return const SizedBox.shrink();
+    }
+
     // アノテーション（文字ハイライト/メモ）の文字座標系に一切干渉させない
     return SelectionContainer.disabled(
       child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFAFAFA),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE5E7EB), width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
+        margin: const EdgeInsets.symmetric(vertical: 16),
+        width: double.infinity,
+        child: ValueListenableBuilder<double>(
+          valueListenable: _heightNotifier,
+          builder: (context, height, _) {
+            return SizedBox(
+              height: height,
+              child: WebViewWidget(
+                controller: _controller!,
+                // スクロールジェスチャーを親のScrollViewへ100%透過させ、スクロールの重さ・引っかかりを排除
+                gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
+              ),
+            );
+          },
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ヘッダー: タイトル & 比較トグル
-            _buildHeader(context),
-
-            // レンダリング部
-            if (_mode == FigureRenderMode.both) ...[
-              _buildSection(
-                title: 'A. flutter_widget_from_html',
-                subtitle: 'ネイティブFlutterウィジェット描画（CSS/SVG marker一部制限）',
-                badgeColor: Colors.amber.shade700,
-                child: _buildHtmlWidget(),
-              ),
-              const Divider(height: 1, thickness: 1.5, color: Color(0xFFE5E7EB)),
-              _buildSection(
-                title: 'B. webview_flutter',
-                subtitle: '内蔵WebKitブラウザ完全描画（CSS/SVG marker 100%忠実再現）',
-                badgeColor: Colors.blue.shade700,
-                child: _buildWebView(),
-              ),
-            ] else if (_mode == FigureRenderMode.htmlWidgetOnly) ...[
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: _buildHtmlWidget(),
-              ),
-            ] else if (_mode == FigureRenderMode.webViewOnly) ...[
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: _buildWebView(),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: const BoxDecoration(
-        color: Color(0xFFF3F4F6),
-        border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.starGold.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '図解 #${widget.figure.figureIndex + 1}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFB48A26),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  widget.figure.title.isNotEmpty ? widget.figure.title : '図解',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1F2937),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // 比較表示モード切替タブ
-          Row(
-            children: [
-              _buildModeChip('上下比較', FigureRenderMode.both),
-              const SizedBox(width: 6),
-              _buildModeChip('WebViewのみ', FigureRenderMode.webViewOnly),
-              const SizedBox(width: 6),
-              _buildModeChip('HtmlWidgetのみ', FigureRenderMode.htmlWidgetOnly),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModeChip(String label, FigureRenderMode mode) {
-    final isSelected = _mode == mode;
-    return GestureDetector(
-      onTap: () => setState(() => _mode = mode),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF111827) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF111827) : const Color(0xFFD1D5DB),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.white : const Color(0xFF4B5563),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSection({
-    required String title,
-    required String subtitle,
-    required Color badgeColor,
-    required Widget child,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: badgeColor,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: badgeColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 10,
-              color: Color(0xFF6B7280),
-            ),
-          ),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHtmlWidget() {
-    return HtmlWidget(
-      widget.figure.htmlContent,
-      renderMode: RenderMode.column,
-      textStyle: const TextStyle(fontSize: 14),
-    );
-  }
-
-  Widget _buildWebView() {
-    if (_webViewController == null) {
-      return Container(
-        height: 120,
-        alignment: Alignment.center,
-        color: const Color(0xFFF9FAFB),
-        child: const Text(
-          'WebViewはモバイル実機(iOS/Android)で動作します',
-          style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: _webViewHeight,
-      child: Stack(
-        children: [
-          WebViewWidget(controller: _webViewController!),
-          if (!_isWebViewReady)
-            Container(
-              color: Colors.white.withValues(alpha: 0.6),
-              alignment: Alignment.center,
-              child: const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-        ],
       ),
     );
   }
@@ -371,11 +222,9 @@ class _DeepNoteFigureCardState extends State<DeepNoteFigureCard> {
 class DeepNoteFigureElementBuilder extends MarkdownElementBuilder {
   DeepNoteFigureElementBuilder({
     required this.figures,
-    this.initialMode = FigureRenderMode.both,
   });
 
   final List<DeepNoteFigure> figures;
-  final FigureRenderMode initialMode;
 
   @override
   Widget? visitElementAfterWithContext(
@@ -395,7 +244,6 @@ class DeepNoteFigureElementBuilder extends MarkdownElementBuilder {
         return DeepNoteFigureCard(
           key: ValueKey('figure_${figure.id}'),
           figure: figure,
-          initialMode: initialMode,
         );
       }
       return const SizedBox.shrink();
@@ -403,4 +251,3 @@ class DeepNoteFigureElementBuilder extends MarkdownElementBuilder {
     return null;
   }
 }
-

@@ -75,6 +75,16 @@ class DeepNotesDetailPage extends HookConsumerWidget {
         : ref.watch(deepNotesProvider(lectureId));
     final figuresAsync = ref.watch(deepNoteFiguresProvider(lectureId));
     final figures = figuresAsync.asData?.value ?? const <DeepNoteFigure>[];
+
+    // ページを開いた瞬間に裏で全図解のWebKitロードとAuto Height計測を実行し、
+    // スクロール中のレイアウトシフトとスクロール位置ズレを完全に排除する
+    useEffect(() {
+      if (figures.isNotEmpty) {
+        DeepNoteFigurePreloader.instance.preloadAll(figures);
+      }
+      return null;
+    }, [figures]);
+
     // Fetch lecture and parent course to get theme colors
     final lectureAsync = ref.watch(lectureProvider(lectureId));
     final lecture = lectureAsync.asData?.value;
@@ -125,6 +135,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
         final note = noteMap[t.index];
         return DeepNoteTopic(
           index: i,
+          topicNumber: t.index,
           title: t.displayTitle,
           summary: t.summary ?? '',
           content: note?.noteContents ?? '',
@@ -1341,9 +1352,10 @@ class _NoteDetailContent extends HookWidget {
     );
     useEffect(() => annotationBuilder.dispose, [annotationBuilder]);
 
+    final effectiveTopicNumber = topic.topicNumber ?? (topic.index + 1);
     final currentFigures = useMemoized(
-      () => figures.where((f) => f.topicNumber == topic.index).toList(),
-      [figures, topic.index],
+      () => figures.where((f) => f.topicNumber == effectiveTopicNumber).toList(),
+      [figures, effectiveTopicNumber],
     );
 
     return NotificationListener<ScrollNotification>(
@@ -1661,7 +1673,7 @@ class _NoteDetailContent extends HookWidget {
                   child: _maybeWrapWithSelectionListener(
                     selectionListenerNotifier,
                     MarkdownBody(
-                      key: ValueKey(annotationsCacheKeyValue),
+                      key: ValueKey('${annotationsCacheKeyValue}_fig_${currentFigures.map((f) => f.id).join("_")}'),
                       data: topic.content.isNotEmpty
                           ? (currentFigures.isNotEmpty
                               ? stripSidCitations(replaceFigurePlaceholders(topic.content))

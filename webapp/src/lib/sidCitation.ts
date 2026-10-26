@@ -222,13 +222,16 @@ export function buildRawToStrippedMap(rawText: string): number[] {
   return map;
 }
 
+const FIGURE_PLACEHOLDER_PATTERN = /<!--\s*FIGURE:[\s\S]*?-->/g;
+
 /**
  * deep_notesの本文に埋め込まれる
  * `<!-- FIGURE: type="..." title="..." description="..." -->`
- * プレースホルダーを除去する。
+ * プレースホルダーを除去する。モバイル版(annotation_text_utils.dart)と同一の座標系を保つため
+ * 全体のtrim等は行わない。
  */
 export function stripFigurePlaceholders(text: string): string {
-  return text.replace(/<!--\s*FIGURE:[^>]*-->/g, '').trim();
+  return text.replace(FIGURE_PLACEHOLDER_PATTERN, '');
 }
 
 /**
@@ -237,9 +240,10 @@ export function stripFigurePlaceholders(text: string): string {
  */
 export function replaceFigurePlaceholders(text: string): string {
   let index = 0;
-  return text.replace(/<!--\s*FIGURE:[^>]*-->/g, () => {
+  return text.replace(FIGURE_PLACEHOLDER_PATTERN, () => {
     const replacement = `\n\n![figure](figure:${index})\n\n`;
     index += 1;
     return replacement;
   });
 }
+
