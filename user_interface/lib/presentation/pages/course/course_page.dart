@@ -563,32 +563,6 @@ class _CourseLectureListView extends ConsumerWidget {
     final courses =
         ref.watch(courseListProvider).asData?.value ?? const <Course>[];
     final course = _findCourse(courses);
-    final topicMapAsync = ref.watch(topicMapForCourseProvider(courseId));
-    // Whether there's an actual map to show/open -- false while loading, on
-    // error, before the pipeline has generated one, before this course
-    // has any lecture_num for a map to even cover (e.g. zero lectures yet),
-    // or while it's stale (a deleted/moved lecture hasn't been reconciled
-    // yet -- see topic_map_reconstruct_controller.dart).
-    final isTopicMapStale = topicMapAsync.maybeWhen(
-      data: (topicMap) => topicMap?.isStale ?? false,
-      orElse: () => false,
-    );
-    final canOpenTopicMap = topicMapAsync.maybeWhen(
-      data: (topicMap) =>
-          topicMap != null && topicMap.totalLecturesCovered > 0 && !topicMap.isStale,
-      orElse: () => false,
-    );
-    // Topic MapはLiteプラン以上の機能。バックエンド側で下位プランの講義には
-    // topic_mappings行自体が作られないため、canOpenTopicMapが既にfalseの状態と
-    // 「プランでロックされている」状態は今のままでは見分けがつかない。
-    // canOpenTopicMapが既にtrue(=データが実在する。過去にLite以上だった名残など)
-    // なら、現在のプランに関わらずそのまま見せる。
-    final hasTopicMapFeature = ref.watch(hasFeatureProvider(plan_features.featureTopicMap));
-    final isTopicMapLocked = !hasTopicMapFeature && !canOpenTopicMap;
-    final topicMapLockColor = planThemeColor(plan_features.tierLite);
-    final isReconstructingTopicMap = ref
-        .watch(topicMapReconstructControllerProvider(courseId))
-        .isLoading;
 
     // 講義日時（lecture_datetime）が新しい順にリストを表示する
     final lectures =
@@ -880,193 +854,7 @@ class _CourseLectureListView extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: isTopicMapStale
-                          ? (isReconstructingTopicMap
-                              ? null
-                              : () => _confirmRecreateTopicMap(
-                                  context,
-                                  ref,
-                                  courseId,
-                                ))
-                          : (isTopicMapLocked
-                              ? () => showUpgradeRequiredDialog(
-                                  context: context,
-                                  requiredTierColor: topicMapLockColor,
-                                  targetTierLevel: plan_features.tierLite,
-                                  title: l10n.topicMapLockedDialogTitle,
-                                  message: l10n.topicMapLockedDialogMessage,
-                                  viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
-                                  cancelLabel: l10n.recordingCancelButton,
-                                )
-                              : (canOpenTopicMap
-                                  ? () => context.push(
-                                      '${AppRoutes.coursesRootPath}/c/$courseId/${AppRoutes.topicMap}',
-                                    )
-                                  : null)),
-                      child: Container(
-                        height: 220,
-                        decoration: BoxDecoration(
-                          color: AppColors.universe.glassWhiteLow,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isTopicMapLocked
-                                ? topicMapLockColor.withValues(alpha: 0.4)
-                                : AppColors.universe.glassBorder,
-                          ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Stack(
-                              children: [
-                                // Map Preview: the latest lecture's Lecture
-                                // View, non-interactive (tapping the whole
-                                // card opens the real TopicMapPage). Falls
-                                // back to the decorative painter while
-                                // loading, on error, before the pipeline has
-                                // generated a map yet, or while stale
-                                // (treated the same as "not generated yet" --
-                                // opening the map is disabled either way).
-                                Positioned.fill(
-                                  child: isTopicMapStale
-                                      ? CustomPaint(
-                                          painter: _TopicMapPainter(),
-                                        )
-                                      : topicMapAsync.maybeWhen(
-                                          data: (topicMap) {
-                                            if (topicMap == null ||
-                                                topicMap.totalLecturesCovered <=
-                                                    0) {
-                                              return CustomPaint(
-                                                painter: _TopicMapPainter(),
-                                              );
-                                            }
-                                            return ClusterMapView(
-                                              data: topicMap,
-                                              courseId: courseId,
-                                              initialSelection:
-                                                  ClusterSelection.lecture(
-                                                    topicMap
-                                                        .totalLecturesCovered,
-                                                  ),
-                                              interactive: false,
-                                            );
-                                          },
-                                          orElse: () => CustomPaint(
-                                            painter: _TopicMapPainter(),
-                                          ),
-                                        ),
-                                ),
-                                if (isTopicMapStale)
-                                  // Stale: replace the whole preview with a
-                                  // prominent call to action instead of the
-                                  // small bottom-left hint used below --
-                                  // opening the (possibly wrong) map is
-                                  // disabled until the user explicitly
-                                  // recreates it.
-                                  Positioned.fill(
-                                    child: Container(
-                                      color: AppColors.universe.voidBackground
-                                          .withValues(alpha: 0.55),
-                                      alignment: Alignment.center,
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (isReconstructingTopicMap)
-                                            const SizedBox(
-                                              width: 22,
-                                              height: 22,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                color: AppColors.starGold,
-                                              ),
-                                            )
-                                          else
-                                            const Icon(
-                                              Icons.refresh,
-                                              color: AppColors.starGold,
-                                              size: 28,
-                                            ),
-                                          const SizedBox(height: 10),
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 24,
-                                            ),
-                                            child: Text(
-                                              isReconstructingTopicMap
-                                                  ? l10n.coursePageTopicMapRecreatingLabel
-                                                  : l10n.coursePageTopicMapRecreateLabel,
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: AppColors
-                                                    .universe
-                                                    .textStarlight,
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                else
-                                  // Overlay Hint
-                                  Positioned(
-                                    bottom: 16,
-                                    left: 16,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.universe.voidBackground
-                                            .withValues(alpha: 0.8),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            isTopicMapLocked
-                                                ? l10n.coursePageTopicMapLockedLabel
-                                                : (canOpenTopicMap
-                                                    ? l10n.coursePageTopicMapOpenLabel
-                                                    : l10n.coursePageTopicMapNotGeneratedLabel),
-                                            style: TextStyle(
-                                              color: isTopicMapLocked
-                                                  ? topicMapLockColor
-                                                  : AppColors.universe.textComet,
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          if (isTopicMapLocked) ...[
-                                            const SizedBox(width: 4),
-                                            Icon(
-                                              Icons.lock_outline_rounded,
-                                              color: topicMapLockColor,
-                                              size: 13,
-                                            ),
-                                          ] else if (canOpenTopicMap) ...[
-                                            const SizedBox(width: 4),
-                                            Icon(
-                                              Icons.arrow_forward,
-                                              color:
-                                                  AppColors.universe.textComet,
-                                              size: 14,
-                                            ),
-                                          ],
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                        ),
-                      ),
-                    ),
+                    _TopicMapPreviewCard(courseId: courseId),
                     const SizedBox(height: 20),
 
                     // Row 5: Lectures Section
@@ -1223,6 +1011,211 @@ class _CourseLectureListView extends ConsumerWidget {
       builder: (_) => CourseDetailsSheet(course: course),
     );
   }
+}
+
+class _TopicMapPreviewCard extends ConsumerStatefulWidget {
+  const _TopicMapPreviewCard({required this.courseId});
+
+  final String courseId;
+
+  @override
+  ConsumerState<_TopicMapPreviewCard> createState() =>
+      _TopicMapPreviewCardState();
+}
+
+class _TopicMapPreviewCardState extends ConsumerState<_TopicMapPreviewCard>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    final l10n = AppLocalizations.of(context);
+    final courseId = widget.courseId;
+    final topicMapAsync = ref.watch(topicMapForCourseProvider(courseId));
+    final isTopicMapStale = topicMapAsync.maybeWhen(
+      data: (topicMap) => topicMap?.isStale ?? false,
+      orElse: () => false,
+    );
+    final canOpenTopicMap = topicMapAsync.maybeWhen(
+      data: (topicMap) =>
+          topicMap != null &&
+          topicMap.totalLecturesCovered > 0 &&
+          !topicMap.isStale,
+      orElse: () => false,
+    );
+    final hasTopicMapFeature =
+        ref.watch(hasFeatureProvider(plan_features.featureTopicMap));
+    final isTopicMapLocked = !hasTopicMapFeature && !canOpenTopicMap;
+    final topicMapLockColor = planThemeColor(plan_features.tierLite);
+    final isReconstructingTopicMap = ref
+        .watch(topicMapReconstructControllerProvider(courseId))
+        .isLoading;
+    final topicMapLayoutAsync = ref.watch(topicMapLayoutProvider(courseId));
+    final settledSimulation = topicMapLayoutAsync.value;
+
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: isTopicMapStale
+            ? (isReconstructingTopicMap
+                ? null
+                : () => _confirmRecreateTopicMap(context, ref, courseId))
+            : (isTopicMapLocked
+                ? () => showUpgradeRequiredDialog(
+                    context: context,
+                    requiredTierColor: topicMapLockColor,
+                    targetTierLevel: plan_features.tierLite,
+                    title: l10n.topicMapLockedDialogTitle,
+                    message: l10n.topicMapLockedDialogMessage,
+                    viewPlansLabel: l10n.upgradeRequiredViewPlansButton,
+                    cancelLabel: l10n.recordingCancelButton,
+                  )
+                : (canOpenTopicMap
+                    ? () => context.push(
+                        '${AppRoutes.coursesRootPath}/c/$courseId/${AppRoutes.topicMap}',
+                      )
+                    : null)),
+        child: Container(
+          height: 220,
+          decoration: BoxDecoration(
+            color: AppColors.universe.glassWhiteLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isTopicMapLocked
+                  ? topicMapLockColor.withValues(alpha: 0.4)
+                  : AppColors.universe.glassBorder,
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: (isTopicMapStale || settledSimulation == null)
+                      ? CustomPaint(painter: _TopicMapPainter())
+                      : topicMapAsync.maybeWhen(
+                          data: (topicMap) {
+                            if (topicMap == null ||
+                                topicMap.totalLecturesCovered <= 0) {
+                              return CustomPaint(painter: _TopicMapPainter());
+                            }
+                            return ClusterMapView(
+                              data: topicMap,
+                              courseId: courseId,
+                              initialSelection: ClusterSelection.lecture(
+                                topicMap.totalLecturesCovered,
+                              ),
+                              interactive: false,
+                              settledSimulation: settledSimulation,
+                            );
+                          },
+                          orElse: () =>
+                              CustomPaint(painter: _TopicMapPainter()),
+                        ),
+                ),
+                if (isTopicMapStale)
+                  Positioned.fill(
+                    child: Container(
+                      color: AppColors.universe.voidBackground
+                          .withValues(alpha: 0.55),
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (isReconstructingTopicMap)
+                            const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.starGold,
+                              ),
+                            )
+                          else
+                            const Icon(
+                              Icons.refresh,
+                              color: AppColors.starGold,
+                              size: 28,
+                            ),
+                          const SizedBox(height: 10),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                            ),
+                            child: Text(
+                              isReconstructingTopicMap
+                                  ? l10n.coursePageTopicMapRecreatingLabel
+                                  : l10n.coursePageTopicMapRecreateLabel,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppColors.universe.textStarlight,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  Positioned(
+                    bottom: 16,
+                    left: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.universe.voidBackground
+                            .withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            isTopicMapLocked
+                                ? l10n.coursePageTopicMapLockedLabel
+                                : (canOpenTopicMap
+                                    ? l10n.coursePageTopicMapOpenLabel
+                                    : l10n.coursePageTopicMapNotGeneratedLabel),
+                            style: TextStyle(
+                              color: isTopicMapLocked
+                                  ? topicMapLockColor
+                                  : AppColors.universe.textComet,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (isTopicMapLocked) ...[
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.lock_outline_rounded,
+                              color: topicMapLockColor,
+                              size: 13,
+                            ),
+                          ] else if (canOpenTopicMap) ...[
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward,
+                              color: AppColors.universe.textComet,
+                              size: 14,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Future<void> _confirmRecreateTopicMap(
     BuildContext context,
@@ -1261,6 +1254,7 @@ class _CourseLectureListView extends ConsumerWidget {
     }
   }
 }
+
 
 
 

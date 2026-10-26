@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/domain/entities/course.dart';
 import 'package:lefture/infrastructure/local_db/repositories/topic_map_repository_drift.dart';
+import 'package:lefture/presentation/widgets/topic_map/cluster_view/cluster_geometry.dart';
+import 'package:lefture/presentation/widgets/topic_map/force_layout/graph_force_simulation.dart';
 import 'package:lefture/presentation/widgets/topic_map/topic_map_models.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -65,3 +69,22 @@ Stream<TopicMapData?> topicMapForCourse(Ref ref, String courseId) async* {
     );
   }
 }
+
+/// CoursePage専用のトピックマップ力学計算Provider。
+/// autoDisposeにより、CoursePageを表示している間のみメモリにキャッシュを保持し、
+/// 他のページへ遷移した（CoursePageを閉じた）瞬間に完全に破棄される。
+/// また、compute()により重い力学シミュレーション（約190ステップループ）を
+/// バックグラウンドIsolateで実行するため、メインUIスレッド（スクロール）を一切ブロックしない。
+final topicMapLayoutProvider =
+    FutureProvider.autoDispose.family<GraphForceSimulation?, String>((ref, courseId) async {
+  final topicMapAsync = ref.watch(topicMapForCourseProvider(courseId));
+  final topicMap = topicMapAsync.value;
+  if (topicMap == null || topicMap.totalLecturesCovered <= 0 || topicMap.isStale) {
+    return null;
+  }
+  return await compute<TopicMapData, GraphForceSimulation>(
+    settleTopicMapSimulation,
+    topicMap,
+  );
+});
+

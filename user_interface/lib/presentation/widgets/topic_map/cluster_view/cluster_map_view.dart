@@ -83,9 +83,16 @@ class ClusterMapView extends ConsumerStatefulWidget {
     required this.courseId,
     this.initialSelection,
     this.interactive = true,
+    this.settledSimulation,
   });
 
   final TopicMapData data;
+
+  /// Optional pre-computed / settled simulation (e.g. calculated via compute()
+  /// on a background Isolate). When provided, bypasses the synchronous
+  /// 190-step force simulation in initState completely.
+  final GraphForceSimulation? settledSimulation;
+
 
   /// Needed to look up the real Lecture (title/summary/id) behind a
   /// lecture_num when showing the Lecture/Topic View detail sheet -- see
@@ -112,7 +119,10 @@ const Duration _kLectureFitAnimationDuration = Duration(milliseconds: 450);
 const Curve _kLectureFitAnimationCurve = Curves.easeInOutCubic;
 
 class _ClusterMapViewState extends ConsumerState<ClusterMapView>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   /// Only shapes the initial radial seeding -- see the file-level comment.
   static const Size _simulationSeedBounds = Size(1100, 1400);
 
@@ -183,24 +193,47 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
         if (g.derivedFromTopicId != null) MapEntry(g.derivedFromTopicId!, g.id),
     ];
 
-    _simulation = GraphForceSimulation(
-      nodeIds: nodeIds,
-      clusterIdByNodeId: _clusterIdByNodeId,
-      edgePairs: edgePairs,
-      clusterOrder: [for (final c in data.clusters) c.id],
-      bounds: _simulationSeedBounds,
-    );
+    if (widget.settledSimulation != null) {
+      _simulation = widget.settledSimulation!;
+      _renderCanvasSize = _computeSettledCanvasSize();
+    } else {
+      _simulation = GraphForceSimulation(
+        nodeIds: nodeIds,
+        clusterIdByNodeId: _clusterIdByNodeId,
+        edgePairs: edgePairs,
+        clusterOrder: [for (final c in data.clusters) c.id],
+        bounds: _simulationSeedBounds,
+      );
 
-    // Run to full convergence before the first frame instead of animating
-    // step-by-step on screen -- at this node count it settles in a few
-    // milliseconds, so there's nothing to gain from watching it happen and
-    // it removes the initial "wobble" entirely.
-    while (_simulation.isRunning) {
-      _simulation.step();
+      // Run to full convergence before the first frame instead of animating
+      // step-by-step on screen -- at this node count it settles in a few
+      // milliseconds, so there's nothing to gain from watching it happen and
+      // it removes the initial "wobble" entirely.
+      while (_simulation.isRunning) {
+        _simulation.step();
+      }
+      _renderCanvasSize = _normalizeSettledPositions();
     }
-    _renderCanvasSize = _normalizeSettledPositions();
 
     _transformController.addListener(_onTransformChanged);
+  }
+
+  Size _computeSettledCanvasSize() {
+    final positions = _simulation.nodes.values.map((n) => n.position);
+    if (positions.isEmpty) return _simulationSeedBounds;
+
+    var minX = double.infinity, minY = double.infinity;
+    var maxX = -double.infinity, maxY = -double.infinity;
+    for (final p in positions) {
+      if (p.dx < minX) minX = p.dx;
+      if (p.dy < minY) minY = p.dy;
+      if (p.dx > maxX) maxX = p.dx;
+      if (p.dy > maxY) maxY = p.dy;
+    }
+    return Size(
+      maxX - minX + _kContentPadding * 2,
+      maxY - minY + _kContentPadding * 2,
+    );
   }
 
   /// Shifts every settled node position so the content's own bounding box
@@ -743,6 +776,7 @@ class _ClusterMapViewState extends ConsumerState<ClusterMapView>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         // Local layout size, not MediaQuery.sizeOf(context) -- this widget

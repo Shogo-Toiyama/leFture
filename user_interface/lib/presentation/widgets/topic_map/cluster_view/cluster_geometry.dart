@@ -94,3 +94,49 @@ bool clusterBlobContains(ClusterBlobShape shape, Offset point) {
   }
   return false;
 }
+
+const double kTopicMapContentPadding = 160;
+const Size kTopicMapSimulationSeedBounds = Size(1100, 1400);
+
+/// Runs the force layout simulation to full convergence in a pure top-level function.
+/// Can be executed inside compute() on a background Isolate to prevent UI jank.
+GraphForceSimulation settleTopicMapSimulation(TopicMapData data) {
+  final clusterIdByNodeId = buildClusterIdByNodeId(data);
+  final nodeIds = [
+    for (final n in data.nodes) n.id,
+    for (final g in data.ghostNodes) g.id,
+  ];
+  final edgePairs = [
+    for (final e in data.edges) MapEntry(e.sourceId, e.targetId),
+    for (final g in data.ghostNodes)
+      if (g.derivedFromTopicId != null) MapEntry(g.derivedFromTopicId!, g.id),
+  ];
+
+  final simulation = GraphForceSimulation(
+    nodeIds: nodeIds,
+    clusterIdByNodeId: clusterIdByNodeId,
+    edgePairs: edgePairs,
+    clusterOrder: [for (final c in data.clusters) c.id],
+    bounds: kTopicMapSimulationSeedBounds,
+  );
+
+  while (simulation.isRunning) {
+    simulation.step();
+  }
+
+  final positions = simulation.nodes.values.map((n) => n.position);
+  if (positions.isNotEmpty) {
+    var minX = double.infinity, minY = double.infinity;
+    for (final p in positions) {
+      if (p.dx < minX) minX = p.dx;
+      if (p.dy < minY) minY = p.dy;
+    }
+    final shift = Offset(-minX + kTopicMapContentPadding, -minY + kTopicMapContentPadding);
+    for (final node in simulation.nodes.values) {
+      node.position += shift;
+    }
+  }
+
+  return simulation;
+}
+
