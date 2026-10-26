@@ -93,7 +93,9 @@ You will generate a strictly sequenced set of 4 cards that capture the **Primary
   - `core_why` & `gotcha`: You MUST append evidence to every text/block using `⟦sXXXXXX⟧` or `⟦sXXXXXX-sYYYYYY⟧`.
   - `hook` & `next_action`: Citations are optional. Only append them if a block directly references a specific, concrete statement from the transcript (e.g., the items inside the self-study list).
 - **Formatting:** Use inline Markdown `**bold**` to highlight the most critical 1-2 phrases per text block if applicable. 
-- **Code/Math:** If the professor speaks pseudo-code or math, you MUST format it into clean, syntactically correct code blocks or LaTeX.
+- **Code/Math:** 
+  - For inline math/variables within sentences, use LaTeX delimiters `\( ... \)`. Never use raw dollar signs (`$`).
+  - For standalone equations or algorithms, use a `code` block. For LaTeX formulas, set `"language": "latex"` and write the formula in `code_string` (without outer delimiters). For programming code, set `"language": "<python|cpp|etc>"`.
 
 ### BLOCK TYPES ALLOWED (`content_blocks`)
 Use these specific block types to make the UI rich and engaging. To explain deep concepts without creating a wall of text, stack multiple short blocks sequentially. You MUST strictly adhere to the required JSON fields for each type.
@@ -107,7 +109,7 @@ Use these specific block types to make the UI rich and engaging. To explain deep
   - Required fields: `"type": "callout"`, `"alert_type": "<info|warning|error>"`, `"text": "<string>"`
 - `code`: Syntactically correct code or math.
   - Required fields: `"type": "code"`, `"code_string": "<string>"`
-  - Optional field: `"explanation": "<string>"`
+  - Optional fields: `"language": "<language_name or 'latex'>"`, `"explanation": "<string>"`
 - `list`: Bullet points. Perfect for breaking down multi-step processes or algorithms chronologically.
   - Required fields: `"type": "list"`, `"items": ["<string>", "<string>"]` (Array of strings)
 
@@ -192,6 +194,7 @@ EXAMPLE JSON STRUCTURE (typical case — mid-lecture topic with a real next topi
         },
         {
           "type": "code",
+          "language": "cpp",
           "code_string": "PC = BTB.get_predicted_target(); // Go fast, ask questions later!",
           "explanation": "We literally force the PC to our best guess and keep fetching. ⟦s000309⟧"
         }

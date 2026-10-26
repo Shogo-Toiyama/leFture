@@ -40,9 +40,12 @@ import 'package:lefture/presentation/widgets/markdown_annotation_builder.dart';
 import 'package:lefture/presentation/widgets/note_sub_toolbar.dart';
 import 'package:lefture/presentation/widgets/broad_selection_sheet.dart';
 import 'package:lefture/presentation/widgets/transcript_modal.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:lefture/core/utils/chat_markdown_text.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/domain/entities/lecture_data.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/markdown_math_builder.dart';
 
 // ---------------------------------------------------------------------------
 // Data classes
@@ -2640,7 +2643,15 @@ class _ReviewCardBlockView extends HookWidget {
       [cacheKey, codeStyle],
     );
     useEffect(() => annotationBuilder.dispose, [annotationBuilder]);
-    final builders = annotationMarkdownBuilders(annotationBuilder);
+    final builders = {
+      ...annotationMarkdownBuilders(annotationBuilder),
+      ...markdownMathBuilders(defaultColor: _styleSheet(context).p?.color),
+    };
+    final inlineSyntaxes = [
+      ...cjkSafeInlineSyntaxes,
+      MarkdownMathInlineSyntax(),
+    ];
+    const blockSyntaxes = [MarkdownMathBlockSyntax()];
     final annotationsKey = ValueKey(cacheKey);
     switch (block.type) {
       case 'quote':
@@ -2651,9 +2662,10 @@ class _ReviewCardBlockView extends HookWidget {
           ),
           child: MarkdownBody(
             key: annotationsKey,
-            data: stripSidCitations(block.text ?? ''),
+            data: prepareMath(stripSidCitations(block.text ?? '')),
             builders: builders,
-            inlineSyntaxes: cjkSafeInlineSyntaxes,
+            inlineSyntaxes: inlineSyntaxes,
+            blockSyntaxes: blockSyntaxes,
             styleSheet: _styleSheet(
               context,
               italic: true,
@@ -2667,9 +2679,10 @@ class _ReviewCardBlockView extends HookWidget {
             .join('\n');
         return MarkdownBody(
           key: annotationsKey,
-          data: markdown,
+          data: prepareMath(markdown),
           builders: builders,
-          inlineSyntaxes: cjkSafeInlineSyntaxes,
+          inlineSyntaxes: inlineSyntaxes,
+          blockSyntaxes: blockSyntaxes,
           bulletBuilder: annotationBulletBuilder(
             _styleSheet(context).listBullet,
           ),
@@ -2695,9 +2708,10 @@ class _ReviewCardBlockView extends HookWidget {
               Expanded(
                 child: MarkdownBody(
                   key: annotationsKey,
-                  data: stripSidCitations(block.text ?? ''),
+                  data: prepareMath(stripSidCitations(block.text ?? '')),
                   builders: builders,
-                  inlineSyntaxes: cjkSafeInlineSyntaxes,
+                  inlineSyntaxes: inlineSyntaxes,
+                  blockSyntaxes: blockSyntaxes,
                   styleSheet: _styleSheet(
                     context,
                   ).copyWith(textAlign: WrapAlignment.start),
@@ -2708,6 +2722,7 @@ class _ReviewCardBlockView extends HookWidget {
         );
       case 'code':
         final baseStyle = _styleSheet(context);
+        final isLatex = block.language?.toLowerCase() == 'latex';
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.all(14),
@@ -2724,17 +2739,28 @@ class _ReviewCardBlockView extends HookWidget {
               // 先にポインタを受け取る)。専用のガードは不要。
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: Text(
-                  block.codeString ?? '',
-                  style: (codeStyle ?? const TextStyle()).copyWith(height: 1.5),
-                ),
+                child: isLatex
+                    ? Math.tex(
+                        block.codeString ?? '',
+                        mathStyle: MathStyle.display,
+                        textStyle: (codeStyle ?? const TextStyle()).copyWith(height: 1.5),
+                        onErrorFallback: (_) => Text(
+                          block.codeString ?? '',
+                          style: (codeStyle ?? const TextStyle()).copyWith(height: 1.5),
+                        ),
+                      )
+                    : Text(
+                        block.codeString ?? '',
+                        style: (codeStyle ?? const TextStyle()).copyWith(height: 1.5),
+                      ),
               ),
               if ((block.explanation ?? '').isNotEmpty) ...[
                 const SizedBox(height: 10),
                 MarkdownBody(
-                  data: stripSidCitations(block.explanation!),
+                  data: prepareMath(stripSidCitations(block.explanation!)),
                   builders: builders,
-                  inlineSyntaxes: cjkSafeInlineSyntaxes,
+                  inlineSyntaxes: inlineSyntaxes,
+                  blockSyntaxes: blockSyntaxes,
                   styleSheet: baseStyle.copyWith(
                     textAlign: WrapAlignment.start,
                     p: baseStyle.p?.copyWith(fontStyle: FontStyle.italic) ??
@@ -2749,9 +2775,10 @@ class _ReviewCardBlockView extends HookWidget {
       default:
         return MarkdownBody(
           key: annotationsKey,
-          data: stripSidCitations(block.text ?? ''),
+          data: prepareMath(stripSidCitations(block.text ?? '')),
           builders: builders,
-          inlineSyntaxes: cjkSafeInlineSyntaxes,
+          inlineSyntaxes: inlineSyntaxes,
+          blockSyntaxes: blockSyntaxes,
           styleSheet: _styleSheet(context),
         );
     }

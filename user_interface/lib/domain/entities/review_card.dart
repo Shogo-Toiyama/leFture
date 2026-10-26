@@ -9,6 +9,7 @@ class ReviewCardBlock {
     this.items,
     this.alertType,
     this.codeString,
+    this.language,
     this.explanation,
   });
 
@@ -17,6 +18,7 @@ class ReviewCardBlock {
   final List<String>? items;
   final String? alertType; // callout: "info" | "warning" | "error"
   final String? codeString; // code
+  final String? language; // code: "latex" | "python" etc.
   final String? explanation; // code (optional)
 
   factory ReviewCardBlock.fromMap(Map<String, dynamic> map) {
@@ -26,6 +28,7 @@ class ReviewCardBlock {
       items: (map['items'] as List<dynamic>?)?.map((e) => e.toString()).toList(),
       alertType: map['alert_type'] as String?,
       codeString: map['code_string'] as String?,
+      language: map['language'] as String?,
       explanation: map['explanation'] as String?,
     );
   }

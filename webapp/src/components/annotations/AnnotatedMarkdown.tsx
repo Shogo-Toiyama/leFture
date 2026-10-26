@@ -1,6 +1,10 @@
 import React, { useEffect, useId, useMemo, useRef } from 'react';
 import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
+import { prepareMath } from '../../lib/markdownText';
 import { rehypeAnnotations } from '../../lib/markdownAnnotations';
 import { useAnnotationLayer } from './AnnotationContext';
 import type { Annotation } from '../../types/annotation';
@@ -38,7 +42,9 @@ export const AnnotatedMarkdown: React.FC<AnnotatedMarkdownProps> = ({
     return () => layer.unregisterBlock(key);
   }, [layer, key, blockIdx, rawMarkdown]);
 
-  const rehypePlugins = useMemo(() => [rehypeAnnotations(annotations)], [annotations]);
+  const preparedMarkdown = useMemo(() => prepareMath(markdown), [markdown]);
+  const remarkPlugins = useMemo(() => [remarkGfm, remarkMath], []);
+  const rehypePlugins = useMemo(() => [rehypeAnnotations(annotations), rehypeKatex], [annotations]);
 
   const urlTransform = useMemo(
     () => (url: string) => (url.startsWith('figure:') ? url : defaultUrlTransform(url)),
@@ -75,12 +81,12 @@ export const AnnotatedMarkdown: React.FC<AnnotatedMarkdownProps> = ({
   return (
     <div ref={containerRef} className={className} onClick={handleClick}>
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={remarkPlugins}
         rehypePlugins={rehypePlugins}
         components={components}
         urlTransform={urlTransform}
       >
-        {markdown}
+        {preparedMarkdown}
       </ReactMarkdown>
     </div>
   );

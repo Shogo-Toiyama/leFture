@@ -43,7 +43,9 @@ import 'package:lefture/presentation/widgets/upgrade_required_dialog.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/domain/entities/lecture_data.dart';
 import 'package:lefture/domain/entities/annotation.dart';
+import 'package:lefture/core/utils/chat_markdown_text.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
+import 'package:lefture/presentation/widgets/markdown_math_builder.dart';
 import 'deep_notes_list_page.dart';
 
 // ---------------------------------------------------------------------------
@@ -1550,9 +1552,16 @@ class _NoteDetailContent extends HookWidget {
                   const SizedBox(height: 16),
                   SelectionContainer.disabled(
                     child: MarkdownBody(
-                      data: stripSidCitations(topic.summary),
+                      data: prepareMath(stripSidCitations(topic.summary)),
                       selectable: false,
-                      inlineSyntaxes: cjkSafeInlineSyntaxes,
+                      inlineSyntaxes: [
+                        ...cjkSafeInlineSyntaxes,
+                        MarkdownMathInlineSyntax(),
+                      ],
+                      blockSyntaxes: const [MarkdownMathBlockSyntax()],
+                      builders: markdownMathBuilders(
+                        defaultColor: AppColors.paper.textPencil,
+                      ),
                       styleSheet:
                           MarkdownStyleSheet.fromTheme(
                             Theme.of(context),
@@ -1676,16 +1685,21 @@ class _NoteDetailContent extends HookWidget {
                       key: ValueKey('${annotationsCacheKeyValue}_fig_${currentFigures.map((f) => f.id).join("_")}'),
                       data: topic.content.isNotEmpty
                           ? (currentFigures.isNotEmpty
-                              ? stripSidCitations(replaceFigurePlaceholders(topic.content))
-                              : stripSidCitations(stripFigurePlaceholders(topic.content)))
+                              ? prepareMath(stripSidCitations(replaceFigurePlaceholders(topic.content)))
+                              : prepareMath(stripSidCitations(stripFigurePlaceholders(topic.content))))
                           : AppLocalizations.of(context).deepNotesDetailContentGeneratingPlaceholder,
                       selectable: false,
-                      inlineSyntaxes: cjkSafeInlineSyntaxes,
+                      inlineSyntaxes: [
+                        ...cjkSafeInlineSyntaxes,
+                        MarkdownMathInlineSyntax(),
+                      ],
+                      blockSyntaxes: const [MarkdownMathBlockSyntax()],
                       builders: {
                         if (topic.content.isNotEmpty)
                           ...annotationMarkdownBuilders(annotationBuilder),
                         if (currentFigures.isNotEmpty)
                           'img': DeepNoteFigureElementBuilder(figures: currentFigures),
+                        ...markdownMathBuilders(defaultColor: AppColors.paper.textInk),
                       },
                       bulletBuilder: annotationBulletBuilder(
                       TextStyle(color: textThemeColor, fontSize: 16),
