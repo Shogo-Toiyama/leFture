@@ -69,21 +69,52 @@ class MarkdownMathElementBuilder extends MarkdownElementBuilder {
     final style = (parentStyle ?? preferredStyle ?? TextStyle(color: fallbackColor))
         .copyWith(fontSize: fontSize ?? parentStyle?.fontSize ?? preferredStyle?.fontSize);
 
+    final plainMath = block ? '\n\\[$tex\\]\n' : '\\($tex\\)';
     final math = Math.tex(
       tex,
       mathStyle: block ? MathStyle.display : MathStyle.text,
       textStyle: style.copyWith(backgroundColor: Colors.transparent),
       // 読めない式はそのまま文字で見せる(生成途中や記述ミス等)
-      onErrorFallback: (_) =>
-          Text(block ? '\$\$$tex\$\$' : '\$$tex\$', style: style),
+      onErrorFallback: (_) => Text(plainMath, style: style),
+    );
+
+    // 数式自体の描画サイズを100%基準にし、余計な空白を完全に排除する。
+    // 1. Math.tex 内部の文字たちが SelectionArea に二重登録されてドラッグ選択を阻害しないよう、
+    //    SelectionContainer.disabled で包む。
+    // 2. 文字を透明(color: Colors.transparent)にしつつ、前後の文章と同じフォントサイズ・行高を
+    //    維持したまま ClipRect + OverflowBox で重ねることで、余分な空白を出さずに
+    //    選択ハイライト(selectionColor)だけを前後のテキストと同じ自然な太さで背面に描画させる。
+    final selectableMath = Stack(
+      alignment: block ? Alignment.center : Alignment.centerLeft,
+      children: [
+        Positioned.fill(
+          child: ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.centerLeft,
+              maxWidth: double.infinity,
+              maxHeight: double.infinity,
+              child: Text(
+                plainMath,
+                style: style.copyWith(color: Colors.transparent),
+              ),
+            ),
+          ),
+        ),
+        SelectionContainer.disabled(
+          child: IgnorePointer(child: math),
+        ),
+      ],
     );
 
     if (block) {
+      // SingleChildScrollView(horizontal) を挟むと縦方向のドラッグ選択がScrollable境界で
+      // 停止してしまうため、FittedBox(scaleDown)で画面内に収めつつスムーズな縦ドラッグ選択を維持する。
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: math,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.center,
+          child: selectableMath,
         ),
       );
     }
@@ -93,7 +124,7 @@ class MarkdownMathElementBuilder extends MarkdownElementBuilder {
       WidgetSpan(
         alignment: PlaceholderAlignment.baseline,
         baseline: TextBaseline.alphabetic,
-        child: math,
+        child: selectableMath,
       ),
     );
   }

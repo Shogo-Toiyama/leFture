@@ -39,14 +39,13 @@ export const ReviewCardBlockView: React.FC<ReviewCardBlockViewProps> = ({
         </ReactMarkdown>
       </div>
     );
-    // 数式(KaTeXの出力)はtextContentにMathMLの複製が混ざり、選択の文字列が崩れるので選択の対象にしない。
-    // 注釈(ハイライト等)は結べないので、コードと説明文は「Ask」「Copy」だけの領域にする。
+    // 数式ブロックおよび説明文は「Ask」「Copy」の対象領域として登録する
     if (block.language?.toLowerCase() === 'latex') {
       return (
-        <div className="rc-block rc-block-code">
+        <AskOnlyRegion className="rc-block rc-block-code">
           <LatexBlock source={block.code_string ?? ''} />
-          {explanation && <AskOnlyRegion>{explanation}</AskOnlyRegion>}
-        </div>
+          {explanation}
+        </AskOnlyRegion>
       );
     }
     return (

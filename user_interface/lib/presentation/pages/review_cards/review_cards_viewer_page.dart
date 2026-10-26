@@ -2740,14 +2740,37 @@ class _ReviewCardBlockView extends HookWidget {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: isLatex
-                    ? Math.tex(
-                        block.codeString ?? '',
-                        mathStyle: MathStyle.display,
-                        textStyle: (codeStyle ?? const TextStyle()).copyWith(height: 1.5),
-                        onErrorFallback: (_) => Text(
-                          block.codeString ?? '',
-                          style: (codeStyle ?? const TextStyle()).copyWith(height: 1.5),
-                        ),
+                    ? Stack(
+                        alignment: Alignment.centerLeft,
+                        children: [
+                          Positioned.fill(
+                            child: ClipRect(
+                              child: OverflowBox(
+                                alignment: Alignment.centerLeft,
+                                maxWidth: double.infinity,
+                                maxHeight: double.infinity,
+                                child: Text(
+                                  '\\[${block.codeString ?? ''}\\]',
+                                  style: (codeStyle ?? const TextStyle())
+                                      .copyWith(color: Colors.transparent, height: 1.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SelectionContainer.disabled(
+                            child: IgnorePointer(
+                              child: Math.tex(
+                                block.codeString ?? '',
+                                mathStyle: MathStyle.display,
+                                textStyle: (codeStyle ?? const TextStyle()).copyWith(height: 1.5),
+                                onErrorFallback: (_) => Text(
+                                  '\\[${block.codeString ?? ''}\\]',
+                                  style: (codeStyle ?? const TextStyle()).copyWith(height: 1.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       )
                     : Text(
                         block.codeString ?? '',

@@ -80,6 +80,54 @@ export function readSelectionOffsets(
   return offsetsFromRange(container, clipped, range);
 }
 
+/**
+ * 範囲内のテキストを取得する。KaTeXの数式要素が含まれる場合は、
+ * 内部の <annotation> (TeXソース) をインライン \( ... \) または ディスプレイ \[ ... \]
+ * で囲った形に変換して取得する。
+ */
+export function extractTextFromRangeWithLatex(range: Range): string {
+  try {
+    const fragment = range.cloneContents();
+
+    // 1. MathMLの直後にある表示用の .katex-html を削除
+    const katexHtml = fragment.querySelectorAll('.katex-mathml + .katex-html');
+    for (let i = 0; i < katexHtml.length; i++) {
+      katexHtml[i].remove();
+    }
+
+    // 2. .katex-mathml 要素をその子孫である <annotation> (LaTeX文字列) に置き換える
+    const katexMathml = fragment.querySelectorAll('.katex-mathml');
+    for (let i = 0; i < katexMathml.length; i++) {
+      const el = katexMathml[i];
+      const annotation = el.querySelector('annotation');
+      if (annotation) {
+        const tex = annotation.textContent ?? '';
+        const isDisplay = Boolean(el.closest('.katex-display'));
+        const textNode = document.createTextNode(
+          isDisplay ? `\n\\[${tex}\\]\n` : `\\(${tex}\\)`
+        );
+        el.replaceWith(textNode);
+      }
+    }
+
+    // 3. 境界部分などで残った .katex 要素もクリーンアップ
+    const leftoverKatex = fragment.querySelectorAll('.katex');
+    for (let i = 0; i < leftoverKatex.length; i++) {
+      const k = leftoverKatex[i];
+      const ann = k.querySelector('annotation');
+      if (ann) {
+        const tex = ann.textContent ?? '';
+        const isDisplay = Boolean(k.closest('.katex-display') || k.classList.contains('katex-display'));
+        k.replaceWith(document.createTextNode(isDisplay ? `\n\\[${tex}\\]\n` : `\\(${tex}\\)`));
+      }
+    }
+
+    return fragment.textContent ?? range.toString();
+  } catch {
+    return range.toString();
+  }
+}
+
 function offsetsFromRange(
   container: HTMLElement,
   range: Range,
@@ -89,7 +137,7 @@ function offsetsFromRange(
   const endIdx = offsetWithin(container, range.endContainer, range.endOffset);
   if (startIdx === endIdx) return null;
 
-  const text = range.toString();
+  const text = extractTextFromRangeWithLatex(range);
   if (!text.trim()) return null;
 
   return {

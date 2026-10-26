@@ -6110,6 +6110,11 @@ button.glass-row:hover,
   margin: 0;
 }
 
+/* 数式を1文字・ひとかたまりの不可分なオブジェクトとして選択できるようにする */
+.katex {
+  user-select: all;
+}
+
 /* ── カード下端のタイプ表示 (Hook / Next Action …) ─────────────────── */
 
 .rcv-foot {
@@ -15255,6 +15260,8 @@ body.is-resizing-chat iframe {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
 .chat-older-loading {
   display: flex;
   justify-content: center;
