@@ -115,32 +115,32 @@ export const AiSettingsSheet: React.FC<{
         </div>
         {error && <p className="auth-error">{t('spLoadError')}</p>}
 
-        {/* 1. チャット内メモ (この会話のみ) */}
-        <div className="ai-settings-section">{t('chatNotesSection')}</div>
-        {allChatNotes.length > 0 ? (
-          <div className="chat-note-group">
-            {allChatNotes.map((it, idx) => (
-              <div key={`${it.category}-${idx}`} className="chat-note-item">
-                <div className="chat-note-meta">
-                  <span className={`chat-note-badge is-${it.category}`}>
-                    {getCategoryLabel(it.category)}
-                  </span>
-                  {it.source_turn && (
-                    <span className="chat-note-turn">turn {it.source_turn}</span>
-                  )}
-                </div>
-                <div className="chat-note-text">{it.text}</div>
+        {/* 1. チャット内メモ (この会話を開いている時のみ表示) */}
+        {Boolean(threadId) && (
+          <>
+            <div className="ai-settings-section">{t('chatNotesSection')}</div>
+            {allChatNotes.length > 0 ? (
+              <div className="chat-note-group">
+                {allChatNotes.map((it, idx) => (
+                  <div key={`${it.category}-${idx}`} className="chat-note-item">
+                    <div className="chat-note-meta">
+                      <span className={`chat-note-badge is-${it.category}`}>
+                        {getCategoryLabel(it.category)}
+                      </span>
+                      {it.source_turn && (
+                        <span className="chat-note-turn">turn {it.source_turn}</span>
+                      )}
+                    </div>
+                    <div className="chat-note-text">{it.text}</div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="ai-memo-empty">
-            {loadingNotes
-              ? '…'
-              : threadId
-              ? t('chatNotesEmpty')
-              : t('chatNotesNoThread')}
-          </p>
+            ) : (
+              <p className="ai-memo-empty">
+                {loadingNotes ? '…' : t('chatNotesEmpty')}
+              </p>
+            )}
+          </>
         )}
 
         {/* 2. 全会話共通の覚え書き */}

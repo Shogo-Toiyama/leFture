@@ -202,9 +202,7 @@ class _AiSettingsSheet extends HookConsumerWidget {
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 2, 20, 6),
           child: Text(
-            loadingNotes.value
-                ? '…'
-                : (threadId != null ? l.chatNotesEmpty : l.chatNotesNoThread),
+            loadingNotes.value ? '…' : l.chatNotesEmpty,
             style: TextStyle(color: c.stageText, fontSize: 13),
           ),
         );
@@ -340,8 +338,10 @@ class _AiSettingsSheet extends HookConsumerWidget {
                       style: TextStyle(color: c.danger, fontSize: 13),
                     ),
                   ),
-                section(l.chatNotesSection),
-                chatNotesSectionWidget(),
+                if (threadId != null) ...[
+                  section(l.chatNotesSection),
+                  chatNotesSectionWidget(),
+                ],
                 section(l.aiMemoStyleSection),
                 memoRows(memory?.styles ?? const []),
                 section(l.aiMemoSituationSection),
