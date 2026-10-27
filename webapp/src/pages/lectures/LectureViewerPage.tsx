@@ -26,6 +26,9 @@ import { ReactionBar } from '../../components/ReactionBar';
 import { PageState } from '../../components/PageState';
 import { LectureHeroView } from '../../components/lectures/LectureHeroView';
 import { LectureViewerSkeleton } from '../../components/lectures/LectureViewerSkeleton';
+import { Sparkles, AlertCircle, StopCircle, RotateCcw } from 'lucide-react';
+import { apiFetch } from '../../lib/api';
+import { ConfirmModal } from '../../components/modals/ConfirmModal';
 import { AnnouncementsModal } from '../../components/modals/AnnouncementsModal';
 import { KeywordsModal } from '../../components/modals/KeywordsModal';
 import { TopicsModal } from '../../components/modals/TopicsModal';
@@ -60,6 +63,8 @@ export const LectureViewerPage: React.FC = () => {
 
   const [activeModal, setActiveModal] = useState<'announcements' | 'keywords' | 'topics' | 'edit' | null>(null);
   const [starting, setStarting] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [showStopConfirm, setShowStopConfirm] = useState(false);
   const [startError, setStartError] = useState<string | null>(blockedReason ?? null);
   const [lockDialog, setLockDialog] = useState<LockDialogInfo | null>(null);
   const [creditRateOpen, setCreditRateOpen] = useState(false);
@@ -94,6 +99,20 @@ export const LectureViewerPage: React.FC = () => {
       setStartError(err instanceof InsufficientCreditsError ? err.message : t('failedToStartAnalysis'));
     } finally {
       setStarting(false);
+    }
+  };
+
+  const handleStopAnalysis = async () => {
+    if (!lectureId) return;
+    setStopping(true);
+    setShowStopConfirm(false);
+    try {
+      await apiFetch(`/lectures/${lectureId}/cancel-jobs`, { method: 'POST' });
+      await refetch();
+    } catch (e) {
+      console.error('Failed to cancel analysis jobs', e);
+    } finally {
+      setStopping(false);
     }
   };
 
@@ -156,10 +175,40 @@ export const LectureViewerPage: React.FC = () => {
         {showOverlay ? (
           <div className="lecture-overlay-backdrop">
             <div className={`lecture-overlay-card ${failed ? 'is-error' : ''}`}>
-              <div className="lecture-overlay-icon">{failed ? '!' : job ? '◐' : '✦'}</div>
+              {/* Circular Progress Ring + Center Icon */}
+              <div className="lecture-overlay-progress-circle">
+                <svg className="progress-ring-svg" width="72" height="72" viewBox="0 0 72 72">
+                  <circle
+                    className="progress-ring-bg"
+                    cx="36"
+                    cy="36"
+                    r="33"
+                    strokeWidth="3"
+                    fill="none"
+                  />
+                  <circle
+                    className={`progress-ring-meter ${failed ? 'is-failed' : ''}`}
+                    cx="36"
+                    cy="36"
+                    r="33"
+                    strokeWidth="3"
+                    fill="none"
+                    strokeDasharray={207.35}
+                    strokeDashoffset={207.35 * (1 - (tasks.length > 0 ? completedTasks / tasks.length : 0))}
+                  />
+                </svg>
+                <div className="progress-ring-center-icon">
+                  {failed ? (
+                    <AlertCircle size={26} className="overlay-icon-alert" />
+                  ) : (
+                    <Sparkles size={26} className="overlay-icon-sparkle" />
+                  )}
+                </div>
+              </div>
+
               {!job && (
                 <>
-                  <h2>{t('readyToAnalyse')}</h2>
+                  <h2 className="lecture-overlay-title">{t('readyToAnalyse')}</h2>
                   <p className="muted">{t('notAnalysedYet')}</p>
                   <button type="button" className="auth-submit-btn" onClick={() => handleStart(false)} disabled={starting}>
                     {starting ? t('starting') : t('startAnalysis')}
@@ -168,21 +217,42 @@ export const LectureViewerPage: React.FC = () => {
               )}
               {job && !failed && (
                 <>
-                  <h2>{t('analysingLecture')}</h2>
-                  <p className="muted">
-                    {t('stepsCompleted', { completed: String(completedTasks), total: String(tasks.length) })}
+                  <h2 className="lecture-overlay-title">{t('processingViewAnalyzingTitle')}</h2>
+                  <p className="lecture-overlay-steps-badge">
+                    {t('processingViewStepsCompletedLabel', { completed: String(completedTasks), total: String(tasks.length || 14) })}
                   </p>
-                  <PipelineStepsList tasks={tasks} onRetried={refetch} />
+                  <PipelineStepsList tasks={tasks} jobFailed={failed} onRetried={refetch} />
+                  <div className="lecture-overlay-actions">
+                    <button
+                      type="button"
+                      className="lecture-overlay-stop-btn"
+                      onClick={() => setShowStopConfirm(true)}
+                      disabled={stopping}
+                    >
+                      <StopCircle size={15} />
+                      <span>{stopping ? t('processingViewStoppingLabel') : t('processingViewStopButton')}</span>
+                    </button>
+                  </div>
                 </>
               )}
               {failed && (
                 <>
-                  <h2>{t('analysisStopped')}</h2>
-                  <p className="muted">{t('retryOrStartOver')}</p>
-                  <PipelineStepsList tasks={tasks} onRetried={refetch} />
-                  <button type="button" className="auth-submit-btn" onClick={() => handleStart(true)} disabled={starting}>
-                    {starting ? t('starting') : t('startOver')}
-                  </button>
+                  <h2 className="lecture-overlay-title is-failed">{t('processingViewFailedTitle')}</h2>
+                  <p className="lecture-overlay-steps-badge is-failed">
+                    {t('processingViewStepsCompletedLabel', { completed: String(completedTasks), total: String(tasks.length || 14) })}
+                  </p>
+                  <PipelineStepsList tasks={tasks} jobFailed={failed} onRetried={refetch} />
+                  <div className="lecture-overlay-actions">
+                    <button
+                      type="button"
+                      className="auth-submit-btn lecture-overlay-retry-btn"
+                      onClick={() => handleStart(true)}
+                      disabled={starting}
+                    >
+                      <RotateCcw size={15} />
+                      <span>{starting ? t('starting') : t('processingViewStartOverFromScratchButton')}</span>
+                    </button>
+                  </div>
                 </>
               )}
             </div>
@@ -191,9 +261,9 @@ export const LectureViewerPage: React.FC = () => {
           <div className="lecture-content-flow">
             {!ready && (
               <div className="pipeline-progress-banner">
-                <span>{failed ? t('analysisStopped') : t('analysingLecture')}</span>
+                <span>{failed ? t('processingViewFailedTitle') : t('processingViewAnalyzingTitle')}</span>
                 <span className="muted">
-                  {completedTasks}/{tasks.length}
+                  {completedTasks}/{tasks.length || 14}
                 </span>
               </div>
             )}
@@ -416,6 +486,16 @@ export const LectureViewerPage: React.FC = () => {
       )}
 
       {creditRateOpen && <CreditRateTableDialog onClose={() => setCreditRateOpen(false)} />}
+
+      <ConfirmModal
+        open={showStopConfirm}
+        onClose={() => setShowStopConfirm(false)}
+        onConfirm={handleStopAnalysis}
+        title={t('processingViewStopDialogTitle')}
+        message={t('processingViewStopDialogMessage')}
+        confirmLabel={t('processingViewStopButton')}
+        isDanger
+      />
     </div>
   );
 };

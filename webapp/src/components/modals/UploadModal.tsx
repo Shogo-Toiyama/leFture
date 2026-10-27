@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Upload, ChevronRight, Mic, BookOpen, AlertCircle } from 'lucide-react';
+import { X, Upload, ChevronRight, Mic, BookOpen, AlertCircle, Calendar } from 'lucide-react';
 import { createDraftLecture } from '../../lib/lectures';
 import { getCreditSummary } from '../../lib/billing';
 import { toDisplayCredits } from '../../types/billing';
@@ -19,6 +19,11 @@ const ACCEPTED_EXTENSIONS = '.mp3,.m4a,.wav,.aac,.aiff,.caf,.flac,.ogg';
 function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDatetimeLocal(d: Date = new Date()): string {
+  const offset = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - offset).toISOString().slice(0, 16);
 }
 
 interface LanguageOption {
@@ -62,6 +67,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
   const [title, setTitle] = useState('');
+  const [lectureDatetime, setLectureDatetime] = useState<string>(() => formatDatetimeLocal());
   const [recordingLanguage, setRecordingLanguage] = useState('ja');
   const [progress, setProgress] = useState<UploadProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +82,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       setSelectedCourseId(initialCourseId ?? null);
       setFile(null);
       setTitle('');
+      setLectureDatetime(formatDatetimeLocal());
       setProgress(null);
       setError(null);
       setSubmitting(false);
@@ -122,9 +129,6 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
   const pickFile = (next: File | null) => {
     setFile(next);
-    if (next && !title) {
-      setTitle(next.name.replace(/\.[^.]+$/, ''));
-    }
   };
 
   const handleDrop = (event: React.DragEvent) => {
@@ -170,10 +174,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         return;
       }
       const displayLang = profile?.metadata?.display_language || language;
+      const isoDatetime = lectureDatetime ? new Date(lectureDatetime).toISOString() : new Date().toISOString();
       const lecture = await createDraftLecture({
         courseId: selectedCourseId,
         title,
-        lectureDatetime: new Date().toISOString(),
+        lectureDatetime: isoDatetime,
         recordingLanguage,
         displayLanguage: displayLang,
       });
@@ -345,7 +350,23 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 </div>
               </div>
 
-              {/* 3. Title Input */}
+              {/* 3. Lecture Date & Time */}
+              <div className="upload-form-group">
+                <label className="upload-field-label">
+                  <Calendar size={14} className="upload-field-label-icon" />
+                  <span>{t('uploadLectureDateTime')}</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  className="upload-text-input upload-datetime-input"
+                  value={lectureDatetime}
+                  onChange={(e) => setLectureDatetime(e.target.value)}
+                  disabled={submitting}
+                  required
+                />
+              </div>
+
+              {/* 4. Title Input */}
               <div className="upload-form-group">
                 <input
                   type="text"

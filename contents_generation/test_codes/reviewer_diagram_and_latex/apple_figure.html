@@ -1,0 +1,306 @@
+<div class="deepnote-figure-card" id="dnSLFL" data-mode="forward">
+  <style>
+    .deepnote-figure-card {
+      max-width: 520px;
+      width: 100%;
+      margin: 16px auto;
+      box-sizing: border-box;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+      padding: 16px;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: #1e293b;
+      line-height: 1.4;
+    }
+    .deepnote-figure-card * { box-sizing: border-box; }
+    .deepnote-figure-card .dn-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .deepnote-figure-card .dn-subtitle {
+      margin: 2px 0 12px;
+      font-size: 13px;
+      color: #334155;
+    }
+    .deepnote-figure-card .dn-toggle {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .deepnote-figure-card .dn-btn {
+      flex: 1 1 140px;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      cursor: pointer;
+    }
+    .deepnote-figure-card .dn-btn[aria-pressed="true"] {
+      background: #4f46e5;
+      border-color: #4f46e5;
+      color: #ffffff;
+    }
+    .deepnote-figure-card .dn-btn:focus-visible,
+    .deepnote-figure-card .dn-node:focus-visible {
+      outline: 2px solid #4f46e5;
+      outline-offset: 2px;
+    }
+    .deepnote-figure-card svg.dn-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .deepnote-figure-card .dn-node { cursor: pointer; }
+    .deepnote-figure-card .dn-node rect,
+    .deepnote-figure-card .dn-node path {
+      fill: #ffffff;
+      stroke: #94a3b8;
+      stroke-width: 1.5;
+      transition: stroke .2s, stroke-width .2s, fill .2s;
+    }
+    .deepnote-figure-card .dn-node .dn-name {
+      font-size: 13px;
+      font-weight: 700;
+      fill: #0f172a;
+      text-anchor: middle;
+    }
+    .deepnote-figure-card .dn-node .dn-sub {
+      font-size: 11.5px;
+      fill: #475569;
+      text-anchor: middle;
+    }
+    .deepnote-figure-card .dn-node.is-selected rect,
+    .deepnote-figure-card .dn-node.is-selected path {
+      stroke: #4f46e5;
+      stroke-width: 2.5;
+      fill: #eef2ff;
+    }
+    .deepnote-figure-card .dn-arrow {
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      transition: opacity .3s;
+    }
+    .deepnote-figure-card .dn-fwd { stroke: #4f46e5; }
+    .deepnote-figure-card .dn-bwd { stroke: #e11d48; }
+    .deepnote-figure-card .dn-flow {
+      stroke-dasharray: 6 6;
+      animation: dnFlow 0.9s linear infinite;
+    }
+    @keyframes dnFlow { to { stroke-dashoffset: -24; } }
+
+    /* Mode: forward */
+    .deepnote-figure-card[data-mode="forward"] .dn-fwd { opacity: 1; }
+    .deepnote-figure-card[data-mode="forward"] .dn-fwd.dn-flow { }
+    .deepnote-figure-card[data-mode="forward"] .dn-bwd { opacity: 0.15; animation: none; }
+    .deepnote-figure-card[data-mode="forward"] .dn-node.is-live rect,
+    .deepnote-figure-card[data-mode="forward"] .dn-node.is-live path {
+      stroke: #4f46e5;
+      stroke-width: 2;
+    }
+
+    /* Mode: backprop */
+    .deepnote-figure-card[data-mode="backward"] .dn-fwd { opacity: 0.15; animation: none; }
+    .deepnote-figure-card[data-mode="backward"] .dn-bwd { opacity: 1; }
+    .deepnote-figure-card[data-mode="backward"] .dn-node.is-live rect,
+    .deepnote-figure-card[data-mode="backward"] .dn-node.is-live path {
+      stroke: #e11d48;
+      stroke-width: 2;
+    }
+
+    .deepnote-figure-card .dn-detail {
+      margin-top: 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .deepnote-figure-card .dn-detail-title {
+      margin: 0 0 6px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .deepnote-figure-card .dn-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .deepnote-figure-card .dn-badge {
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #4338ca;
+    }
+    .deepnote-figure-card .dn-badge.dn-amber {
+      background: #fef3c7;
+      color: #b45309;
+    }
+    .deepnote-figure-card .dn-desc {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: #334155;
+    }
+    .deepnote-figure-card .dn-eq {
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      color: #065f46;
+      background: #ecfdf5;
+      border-radius: 8px;
+      padding: 8px 10px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .deepnote-figure-card .dn-legend {
+      margin-top: 10px;
+      font-size: 11.5px;
+      color: #475569;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .deepnote-figure-card .dn-legend span::before {
+      content: "";
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      margin-right: 5px;
+      vertical-align: -1px;
+    }
+    .deepnote-figure-card .dn-legend .lg-f::before { background: #4f46e5; }
+    .deepnote-figure-card .dn-legend .lg-b::before { background: #e11d48; }
+    .deepnote-figure-card .dn-legend .lg-s::before { background: #059669; }
+  </style>
+
+  <h3 class="dn-title">Supervised Learning Feedback Loop</h3>
+  <p class="dn-subtitle">Predict → Measure error → Update weights</p>
+
+  <div class="dn-toggle" role="group" aria-label="Animation mode">
+    <button class="dn-btn" type="button" data-set-mode="forward" aria-pressed="true">Forward Pass</button>
+    <button class="dn-btn" type="button" data-set-mode="backward" aria-pressed="false">Backprop</button>
+  </div>
+
+  <svg class="dn-svg" viewBox="0 0 340 470" role="img" aria-label="Supervised learning pipeline: inputs X and labels Y feed model f, which produces prediction y-hat, compared to Y by MSE loss, then weights W and bias b are updated by backprop.">
+    <defs>
+      <marker id="dnArrF" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#4f46e5"/>
+      </marker>
+      <marker id="dnArrB" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#e11d48"/>
+      </marker>
+    </defs>
+
+    <!-- Forward arrows -->
+    <path class="dn-arrow dn-fwd dn-flow" d="M82 84 V128" marker-end="url(#dnArrF)"/>
+    <path class="dn-arrow dn-fwd dn-flow" d="M170 194 V228" marker-end="url(#dnArrF)"/>
+    <path class="dn-arrow dn-fwd dn-flow" d="M170 274 V308" marker-end="url(#dnArrF)"/>
+    <path class="dn-arrow dn-fwd dn-flow" d="M258 84 V110 H320 V338 H302" marker-end="url(#dnArrF)"/>
+    <path class="dn-arrow dn-fwd dn-flow" d="M170 366 V398" marker-end="url(#dnArrF)"/>
+
+    <!-- Backward arrow loop -->
+    <path class="dn-arrow dn-bwd dn-flow" d="M40 426 H22 V162 H38" marker-end="url(#dnArrB)"/>
+    <text x="10" y="300" font-size="11.5" fill="#e11d48" font-weight="600" transform="rotate(-90 12 300)" text-anchor="middle">∇L flows back</text>
+
+    <!-- Node: X -->
+    <g class="dn-node" data-node="x" tabindex="0" role="button" aria-label="Input features X">
+      <rect x="10" y="20" width="145" height="64" rx="10"/>
+      <text class="dn-name" x="82.5" y="46">Features X</text>
+      <text class="dn-sub" x="82.5" y="66">Input samples</text>
+    </g>
+
+    <!-- Node: Y -->
+    <g class="dn-node" data-node="y" tabindex="0" role="button" aria-label="Target labels Y">
+      <rect x="185" y="20" width="145" height="64" rx="10"/>
+      <text class="dn-name" x="257.5" y="46">Labels Y</text>
+      <text class="dn-sub" x="257.5" y="66">Ground truth</text>
+    </g>
+
+    <!-- Node: Model -->
+    <g class="dn-node" data-node="model" tabindex="0" role="button" aria-label="Model f(X; W)">
+      <rect x="40" y="128" width="260" height="66" rx="10"/>
+      <text class="dn-name" x="170" y="156">Model f(X; W)</text>
+      <text class="dn-sub" x="170" y="178">Linear: wᵀx + b</text>
+    </g>
+
+    <!-- Node: Prediction -->
+    <g class="dn-node" data-node="yhat" tabindex="0" role="button" aria-label="Prediction y-hat">
+      <rect x="105" y="228" width="130" height="46" rx="23"/>
+      <text class="dn-name" x="170" y="256">Prediction ŷ</text>
+    </g>
+
+    <!-- Node: Loss -->
+    <g class="dn-node" data-node="loss" tabindex="0" role="button" aria-label="MSE loss">
+      <rect x="40" y="308" width="260" height="58" rx="10"/>
+      <text class="dn-name" x="170" y="334">Loss · MSE</text>
+      <text class="dn-sub" x="170" y="354">Compare ŷ against Y</text>
+    </g>
+
+    <!-- Node: Update -->
+    <g class="dn-node" data-node="update" tabindex="0" role="button" aria-label="Update weights W and bias b">
+      <rect x="40" y="398" width="260" height="56" rx="10"/>
+      <text class="dn-name" x="170" y="422">Update W, b</text>
+      <text class="dn-sub" x="170" y="442">Gradient descent step</text>
+    </g>
+  </svg>
+
+  <div class="dn-detail" aria-live="polite">
+    <p class="dn-detail-title" id="dnDetailTitle">Model f(X; W)</p>
+    <div class="dn-badges" id="dnDetailBadges"></div>
+    <p class="dn-desc" id="dnDetailDesc"></p>
+    <pre class="dn-eq" id="dnDetailEq"></pre>
+  </div>
+
+  <div class="dn-legend">
+    <span class="lg-f">Forward</span>
+    <span class="lg-b">Backward</span>
+    <span class="lg-s">Tap nodes for shapes</span>
+  </div>
+
+  <script>
+    (function () {
+      var card = document.getElementById("dnSLFL");
+      if (!card) return;
+
+      var data = {
+        x: {
+          title: "Features X",
+          badges: ["Shape: N × d", "Input"],
+          desc: "Each row is one labeled sample xᵢ.",
+          eq: "X ∈ ℝ^(N×d)"
+        },
+        y: {
+          title: "Labels Y",
+          badges: ["Shape: N × 1", "Target"],
+          desc: "Ground-truth outputs the model learns to match.",
+          eq: "Y ∈ ℝ^(N×1)"
+        },
+        model: {
+          title: "Model f(X; W)",
+          badges: ["W: d × 1", "b: scalar"],
+          desc: "Forward propagation maps inputs to predictions.",
+          eq: "ŷ = f(X; W) = wᵀx + b"
+        },
+        yhat: {
+          title: "Prediction ŷ",
+          badges: ["Shape: N × 1", "Estimate"],
+          desc: "The model's current guess for each sample.",
+          eq: "ŷᵢ = wᵀxᵢ + b"
+        },
+        loss: {
+          title: "Loss · MSE",
+          badges: ["Scalar", "Error signal"],
+          desc: "Measures how far predictions are from labels

@@ -182,6 +182,23 @@ export const ja: Record<keyof typeof en, string> = {
   retryOrStartOver: '失敗したステップを再試行するか、最初からやり直してください。',
   startOver: '最初からやり直す',
 
+  // Processing View (Flutterと統一)
+  processingViewAnalyzingTitle: '講義を解析しています...',
+  processingViewFailedTitle: '解析に失敗しました',
+  processingViewStepsCompletedLabel: '{completed} / {total} ステップ完了',
+  processingViewStopButton: '停止',
+  processingViewStoppingLabel: '停止しています...',
+  processingViewStopDialogTitle: '解析を停止しますか？',
+  processingViewStopDialogMessage: '現在の解析を停止します。既に完了しているステップはそのまま残り、いつでも手動で再開できます。',
+  processingViewStartOverFromScratchButton: '最初からやり直す',
+  pipelineStepsInProgressLabel: '処理中',
+  pipelineStepsCancelledLabel: 'キャンセル済み',
+  pipelineStepsRetryingAutomaticallyLabel: '自動的に再試行しています…',
+  pipelineStepsRetryingLabel: '再試行しています...',
+  pipelineStepsRetryThisStepButton: 'このステップを再試行',
+  pipelineStepsRetryConfirmButton: '再試行',
+  pipelineStepsRetryFailedSnackbar: '再試行に失敗しました: {error}',
+
   // Account & Plans
   account: 'アカウント',
   creditsTitle: 'クレジット',
@@ -440,6 +457,7 @@ export const ja: Record<keyof typeof en, string> = {
   uploadDropAudioHere: 'ここに音声ファイルをドロップ',
   uploadDropFormats: 'またはクリックして選択 · mp3, m4a, wav, aac, flac, ogg',
   uploadTitlePlaceholder: '講義タイトル（未入力の場合は自動生成）',
+  uploadLectureDateTime: '講義日時',
   recordingLanguage: '録音言語',
   uploadCourseRequired: '先にコースを選択または作成してください',
   uploadAudioRequired: '音声ファイルを選択してください',

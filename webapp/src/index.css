@@ -1992,6 +1992,7 @@ button.glass-row:hover,
   height: 100%;
   z-index: 1;
   overflow: hidden;
+  pointer-events: none;
 }
 
 /* Slit Panorama Collage */
@@ -2006,7 +2007,6 @@ button.glass-row:hover,
   height: 100%;
   position: relative;
   overflow: hidden;
-  transition: flex 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s ease;
   border-right: 1px solid rgba(255, 255, 255, 0.15);
 }
 
@@ -2014,48 +2014,15 @@ button.glass-row:hover,
   border-right: none;
 }
 
-.hero-slit-item:hover {
-  flex: 1.5;
-}
-
 .hero-slit-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   filter: brightness(0.82) contrast(1.08);
-  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
-}
-
-.hero-slit-item:hover .hero-slit-img {
-  transform: scale(1.08);
-  filter: brightness(0.95) contrast(1.05);
 }
 
 .hero-slit-topic-tag {
-  position: absolute;
-  bottom: 5.5rem;
-  left: 1rem;
-  right: 1rem;
-  padding: 0.5rem 0.9rem;
-  background: rgba(17, 20, 34, 0.82);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #ffffff;
-  opacity: 0;
-  transform: translateY(12px);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  text-align: center;
-  pointer-events: none;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.hero-slit-item:hover .hero-slit-topic-tag {
-  opacity: 1;
-  transform: translateY(0);
+  display: none;
 }
 
 .hero-slit-skeleton-item {
@@ -2398,6 +2365,154 @@ button.glass-row:hover,
   }
   50% {
     transform: translateY(4px);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Lecture Hero & Body Responsive Adjustments (2-Column Mosaic Grid)
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  /* 1. Background Grid: 横並びスリットから2列モザイクグリッドへ切り替え */
+  .hero-slit-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 1fr;
+    height: 100%;
+  }
+
+  .hero-slit-item {
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  /* 偶数列の右ボーダーを消す */
+  .hero-slit-item:nth-child(2n) {
+    border-right: none;
+  }
+
+  /* 奇数枚で最後の1枚が余る場合（3枚や5枚など）、全幅2列スパンにして綺麗に収める */
+  .hero-slit-item:last-child:nth-child(odd) {
+    grid-column: span 2;
+    border-right: none;
+  }
+
+  /* 2. ヒーロー全体の高さとパディング（下部固定の維持） */
+  .lecture-hero-viewport {
+    height: calc(100vh - 56px);
+    min-height: 580px;
+  }
+
+  .lecture-hero-content {
+    height: 100%;
+    padding: 1.5rem 1.5rem 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .lecture-hero-main-info {
+    margin-top: auto;
+  }
+
+  /* 3. 上部ナビゲーションバー（戻る、クレジット、編集）のコンパクト化＆見切れ防止 */
+  .lecture-hero-nav {
+    gap: 0.6rem;
+  }
+
+  .lecture-hero-back-link {
+    font-size: 0.92rem;
+    padding: 0.45rem 0.85rem;
+    gap: 0.4rem;
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  .hero-back-course-name {
+    max-width: 160px;
+  }
+
+  .lecture-hero-nav-actions {
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .lecture-hero-edit-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .hero-edit-svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .lecture-credits-chip {
+    padding: 4px 9px;
+  }
+
+  .lecture-credits-value {
+    font-size: 12px;
+  }
+
+  /* 4. タイポグラフィと下部コンテンツ */
+  .lecture-hero-title {
+    font-size: clamp(1.8rem, 5.5vw, 2.5rem);
+  }
+
+  .lecture-hero-summary {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .lecture-body-container {
+    padding: 2.25rem 1.5rem 4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  /* スマホ特化の微調整 */
+  .lecture-hero-content {
+    padding: 1.25rem 1.1rem 2rem;
+  }
+
+  .lecture-hero-nav {
+    gap: 0.4rem;
+  }
+
+  .lecture-hero-back-link {
+    font-size: 0.88rem;
+    padding: 0.4rem 0.75rem;
+  }
+
+  .hero-back-course-name {
+    max-width: 120px;
+  }
+
+  .lecture-hero-title {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    letter-spacing: -0.015em;
+  }
+
+  .lecture-hero-summary {
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  .hero-datetime {
+    font-size: 0.82rem;
+    padding: 0.3rem 0.65rem;
+  }
+
+  .lecture-body-container {
+    padding: 1.75rem 1.1rem 4rem;
+  }
+}
+
+@media (max-width: 360px) {
+  /* 超狭小幅（360px以下） */
+  .hero-back-course-name {
+    max-width: 85px;
   }
 }
 
@@ -5352,11 +5467,13 @@ button.glass-row:hover,
 .lecture-overlay-card {
   width: 100%;
   max-width: 420px;
-  padding: 1.75rem;
-  border-radius: var(--radius-lg);
+  padding: 2rem 1.75rem;
+  border-radius: 28px;
   background: rgba(17, 20, 34, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-float);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
   text-align: center;
 }
 
@@ -5364,26 +5481,112 @@ button.glass-row:hover,
   border-color: rgba(229, 57, 53, 0.4);
 }
 
-.lecture-overlay-icon {
+.lecture-overlay-progress-circle {
   width: 72px;
   height: 72px;
-  margin: 0 auto 1rem;
-  border-radius: 50%;
-  background: rgba(255, 179, 0, 0.16);
-  color: var(--gold);
+  margin: 0 auto 1.25rem;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
 }
 
-.lecture-overlay-card.is-error .lecture-overlay-icon {
-  background: rgba(229, 57, 53, 0.16);
+.progress-ring-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.progress-ring-bg {
+  stroke: rgba(255, 255, 255, 0.08);
+}
+
+.progress-ring-meter {
+  stroke: var(--gold);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.4s ease;
+}
+
+.progress-ring-meter.is-failed {
+  stroke: #ff8b85;
+}
+
+.progress-ring-center-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.overlay-icon-sparkle {
+  color: var(--gold);
+}
+
+.overlay-icon-alert {
   color: #ff8b85;
 }
 
-.lecture-overlay-card button {
+.lecture-overlay-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--starlight);
+  margin: 0 0 0.5rem;
+}
+
+.lecture-overlay-title.is-failed {
+  color: #ff8b85;
+}
+
+.lecture-overlay-steps-badge {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--gold);
+  margin: 0 0 1.5rem;
+}
+
+.lecture-overlay-steps-badge.is-failed {
+  color: #ff8b85;
+}
+
+.lecture-overlay-actions {
   margin-top: 1.25rem;
+  display: flex;
+  justify-content: center;
+}
+
+.lecture-overlay-stop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: transparent;
+  border: none;
+  color: var(--comet);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lecture-overlay-stop-btn:hover:not(:disabled) {
+  color: var(--starlight);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lecture-overlay-stop-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lecture-overlay-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
 }
 
 .pipeline-progress-banner {
@@ -5398,94 +5601,131 @@ button.glass-row:hover,
 }
 
 /* --------------------------------------------------------------------------
-   Pipeline
+   Pipeline Steps List (Flutter-aligned)
    -------------------------------------------------------------------------- */
 
-.progress-ring-track {
-  fill: none;
-  stroke: var(--glass-high);
+.pipeline-steps-container {
+  text-align: left;
+  width: 100%;
 }
 
-.progress-ring-fill {
-  fill: none;
-  stroke: var(--gold);
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.4s ease;
-}
-
-.progress-ring-text {
-  fill: var(--starlight);
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.pipeline-steps {
+.pipeline-steps-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.65rem;
 }
 
-.pipeline-step {
+.pipeline-step-item {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  font-size: 0.9rem;
-  color: var(--comet);
-  padding: 0.15rem 0;
+  gap: 0.75rem;
+  min-height: 24px;
 }
 
-.pipeline-step-glyph {
-  width: 1.1rem;
-  text-align: center;
-  font-size: 0.85rem;
+.pipeline-step-icon-wrap {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.pipeline-step.is-completed {
-  color: var(--starlight);
+.pipeline-step-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 179, 0, 0.2);
+  border-top-color: var(--gold);
+  animation: spin 0.8s linear infinite;
 }
 
-.pipeline-step.is-completed .pipeline-step-glyph {
-  color: var(--green);
+.pipeline-step-icon.is-completed {
+  color: #00C853;
 }
 
-.pipeline-step.is-current {
-  color: var(--starlight);
-  font-weight: 600;
+.pipeline-step-icon.is-pending {
+  color: rgba(160, 165, 185, 0.35);
 }
 
-.pipeline-step.is-current .pipeline-step-glyph {
-  color: var(--gold);
-  animation: pulse 1.4s ease-in-out infinite;
+.pipeline-step-icon.is-cancelled {
+  color: rgba(160, 165, 185, 0.4);
 }
 
-.pipeline-step.is-failed,
-.pipeline-step.is-error {
+.pipeline-step-icon.is-retrying {
+  color: #f59e0b;
+}
+
+.pipeline-step-icon.is-failed {
   color: #ff8b85;
 }
 
-.pipeline-step.is-cancelled {
+.pipeline-step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.pipeline-step-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--starlight);
+  line-height: 1.3;
+}
+
+.pipeline-step-label.is-pending {
+  color: rgba(160, 165, 185, 0.55);
+  font-weight: 500;
+}
+
+.pipeline-step-label.is-cancelled {
   text-decoration: line-through;
   opacity: 0.6;
 }
 
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
+.pipeline-step-label.is-failed {
+  color: #ff8b85;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .pipeline-step.is-current .pipeline-step-glyph {
-    animation: none;
-  }
+.pipeline-step-subtitle {
+  font-size: 0.75rem;
+  color: var(--comet);
+  line-height: 1.2;
+}
+
+.pipeline-step-subtitle.is-retrying {
+  color: #f59e0b;
+}
+
+.pipeline-step-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  background: rgba(229, 57, 53, 0.15);
+  border: 1px solid rgba(229, 57, 53, 0.3);
+  color: #ff8b85;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  width: fit-content;
+  transition: all 0.2s ease;
+}
+
+.pipeline-step-retry-btn:hover:not(:disabled) {
+  background: rgba(229, 57, 53, 0.25);
+  border-color: rgba(229, 57, 53, 0.5);
+}
+
+.pipeline-step-retry-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* --------------------------------------------------------------------------
@@ -14435,7 +14675,22 @@ a.lecture-tile-card:hover {
   text-decoration: underline;
 }
 
-/* Text Input */
+.upload-field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--comet);
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.02em;
+}
+
+.upload-field-label-icon {
+  color: var(--gold);
+}
+
+/* Text & Datetime Input */
 .upload-text-input {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -14443,6 +14698,7 @@ a.lecture-tile-card:hover {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #ffffff;
+  color-scheme: dark;
   font-size: 0.92rem;
   transition: all 0.2s ease;
   outline: none;

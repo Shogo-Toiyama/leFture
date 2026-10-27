@@ -180,6 +180,23 @@ export const en = {
   retryOrStartOver: 'Retry the failed step, or start over.',
   startOver: 'Start over',
 
+  // Processing View (aligned with Flutter)
+  processingViewAnalyzingTitle: 'Analyzing lecture...',
+  processingViewFailedTitle: 'Analysis failed',
+  processingViewStepsCompletedLabel: '{completed} / {total} steps completed',
+  processingViewStopButton: 'Stop',
+  processingViewStoppingLabel: 'Stopping...',
+  processingViewStopDialogTitle: 'Stop analysis?',
+  processingViewStopDialogMessage: 'Stop the current analysis? Completed steps will be preserved and can be resumed at any time.',
+  processingViewStartOverFromScratchButton: 'Start over from scratch',
+  pipelineStepsInProgressLabel: 'In progress',
+  pipelineStepsCancelledLabel: 'Cancelled',
+  pipelineStepsRetryingAutomaticallyLabel: 'Retrying automatically…',
+  pipelineStepsRetryingLabel: 'Retrying...',
+  pipelineStepsRetryThisStepButton: 'Retry this step',
+  pipelineStepsRetryConfirmButton: 'Retry',
+  pipelineStepsRetryFailedSnackbar: 'Retry failed: {error}',
+
   // Account & Plans
   account: 'Account',
   creditsTitle: 'Credits',
@@ -440,6 +457,7 @@ export const en = {
   uploadDropAudioHere: 'Drop your recording here',
   uploadDropFormats: 'or click to browse · mp3, m4a, wav, aac, flac, ogg',
   uploadTitlePlaceholder: "Lecture Title (Left blank, we'll name it for you)",
+  uploadLectureDateTime: 'Date & Time',
   recordingLanguage: 'Recording Language',
   uploadCourseRequired: 'Please select or create a course first',
   uploadAudioRequired: 'Please select an audio file',

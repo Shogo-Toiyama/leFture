@@ -1,67 +1,204 @@
 import React, { useState } from 'react';
+import { CheckCircle2, Circle, AlertCircle, Ban, RefreshCw, RotateCw } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { PROCESSING_TASK_ORDER, taskLabel } from '../lib/pipelineSteps';
 import { useLanguage } from '../i18n/LanguageContext';
+import { LOCALE_MAP } from '../i18n/translations';
 import type { ProcessingTask } from '../types/lecture';
 
 interface PipelineStepsListProps {
   tasks: ProcessingTask[];
+  jobFailed?: boolean;
   onRetried: () => void;
 }
 
-const TERMINAL = new Set(['COMPLETED', 'FAILED', 'ERROR', 'CANCELLED']);
-
-function statusGlyph(status: ProcessingTask['status'], isCurrent: boolean): string {
-  if (status === 'COMPLETED') return '✓';
-  if (status === 'CANCELLED') return '⊘';
-  if (status === 'FAILED' || status === 'ERROR') return '!';
-  return isCurrent ? '◆' : '○';
+function isStaleFailed(task: ProcessingTask): boolean {
+  if (task.status !== 'FAILED' && task.status !== 'ERROR') return false;
+  const updatedMs = new Date(task.updated_at).getTime();
+  return Date.now() - updatedMs > 5 * 60 * 1000;
 }
 
-const RetryButton: React.FC<{ taskId: string; onRetried: () => void }> = ({ taskId, onRetried }) => {
-  const [retrying, setRetrying] = useState(false);
+export const PipelineStepsList: React.FC<PipelineStepsListProps> = ({ tasks, jobFailed = false, onRetried }) => {
+  const { language, t } = useLanguage();
+  const [retryingId, setRetryingId] = useState<string | null>(null);
 
-  const handleRetry = async () => {
-    setRetrying(true);
+  const byType = new Map<string, ProcessingTask>();
+  tasks.forEach((t) => byType.set(t.task_type, t));
+
+  // TRANSCRIBE_MASTER と CHECK_AND_ASSEMBLE は排他
+  const visibleTaskOrder = tasks.length === 0
+    ? PROCESSING_TASK_ORDER
+    : PROCESSING_TASK_ORDER.filter((type) => {
+        if (type === 'TRANSCRIBE_MASTER' || type === 'CHECK_AND_ASSEMBLE') {
+          return byType.has(type);
+        }
+        return true;
+      });
+
+  // 順番的に最初の未完了ステップを実行中として扱う
+  let currentType: string | undefined;
+  for (const type of visibleTaskOrder) {
+    const task = byType.get(type);
+    if (!task || (task.status !== 'COMPLETED' && task.status !== 'CANCELLED')) {
+      currentType = type;
+      break;
+    }
+  }
+
+  const handleRetry = async (taskId: string) => {
+    setRetryingId(taskId);
     try {
       await apiFetch('/retry-task', { method: 'POST', body: JSON.stringify({ task_id: taskId }) });
       onRetried();
+    } catch (e) {
+      console.error('Task retry failed', e);
     } finally {
-      setRetrying(false);
+      setRetryingId(null);
+    }
+  };
+
+  const formatTaskTime = (updatedAtStr: string) => {
+    try {
+      const d = new Date(updatedAtStr);
+      const locale = LOCALE_MAP[language] || 'en-US';
+      return d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+    } catch {
+      return '';
     }
   };
 
   return (
-    <button type="button" className="link-button" onClick={handleRetry} disabled={retrying}>
-      {retrying ? 'Retrying…' : 'Retry'}
-    </button>
-  );
-};
+    <div className="pipeline-steps-container">
+      <ol className="pipeline-steps-list">
+        {visibleTaskOrder.map((taskType) => {
+          const task = byType.get(taskType);
+          const isCurrent = taskType === currentType;
+          const label = taskLabel(taskType, language);
 
-export const PipelineStepsList: React.FC<PipelineStepsListProps> = ({ tasks, onRetried }) => {
-  const { language } = useLanguage();
-  const ordered = [...tasks].sort(
-    (a, b) => PROCESSING_TASK_ORDER.indexOf(a.task_type) - PROCESSING_TASK_ORDER.indexOf(b.task_type)
-  );
-  // 進行中のステップ = 順序上いちばん手前の未終了タスク(pipeline_steps_list.dartと同じ判定)。
-  const currentId = ordered.find((task) => !TERMINAL.has(task.status))?.id;
+          if (!task) {
+            // タスク未到着時
+            if (isCurrent) {
+              return (
+                <li key={taskType} className="pipeline-step-item is-current">
+                  <div className="pipeline-step-icon-wrap">
+                    <div className="pipeline-step-spinner" />
+                  </div>
+                  <div className="pipeline-step-content">
+                    <span className="pipeline-step-label">{label}</span>
+                    <span className="pipeline-step-subtitle">{t('pipelineStepsInProgressLabel')}</span>
+                  </div>
+                </li>
+              );
+            }
+            return (
+              <li key={taskType} className="pipeline-step-item is-pending">
+                <div className="pipeline-step-icon-wrap">
+                  <Circle size={18} className="pipeline-step-icon is-pending" />
+                </div>
+                <div className="pipeline-step-content">
+                  <span className="pipeline-step-label is-pending">{label}</span>
+                </div>
+              </li>
+            );
+          }
 
-  return (
-    <ol className="pipeline-steps">
-      {ordered.map((task) => {
-        const isCurrent = task.id === currentId;
-        return (
-          <li key={task.id} className={`pipeline-step is-${task.status.toLowerCase()} ${isCurrent ? 'is-current' : ''}`}>
-            <span className="pipeline-step-glyph" aria-hidden="true">
-              {statusGlyph(task.status, isCurrent)}
-            </span>
-            <span className="pipeline-step-label">{taskLabel(task.task_type, language)}</span>
-            {(task.status === 'FAILED' || task.status === 'ERROR') && (
-              <RetryButton taskId={task.id} onRetried={onRetried} />
-            )}
-          </li>
-        );
-      })}
-    </ol>
+          if (task.status === 'CANCELLED') {
+            return (
+              <li key={task.id} className="pipeline-step-item is-cancelled">
+                <div className="pipeline-step-icon-wrap">
+                  <Ban size={18} className="pipeline-step-icon is-cancelled" />
+                </div>
+                <div className="pipeline-step-content">
+                  <span className="pipeline-step-label is-cancelled">{label}</span>
+                  <span className="pipeline-step-subtitle">{t('pipelineStepsCancelledLabel')}</span>
+                </div>
+              </li>
+            );
+          }
+
+          if (task.status === 'COMPLETED') {
+            const timeStr = formatTaskTime(task.updated_at);
+            return (
+              <li key={task.id} className="pipeline-step-item is-completed">
+                <div className="pipeline-step-icon-wrap">
+                  <CheckCircle2 size={18} className="pipeline-step-icon is-completed" />
+                </div>
+                <div className="pipeline-step-content">
+                  <span className="pipeline-step-label">{label}</span>
+                  {timeStr && <span className="pipeline-step-subtitle">{timeStr}</span>}
+                </div>
+              </li>
+            );
+          }
+
+          const isFailed = task.status === 'FAILED' || task.status === 'ERROR';
+          if (isFailed) {
+            const isStuck = jobFailed || isStaleFailed(task);
+            if (!isStuck) {
+              return (
+                <li key={task.id} className="pipeline-step-item is-retrying">
+                  <div className="pipeline-step-icon-wrap">
+                    <RotateCw size={18} className="pipeline-step-icon is-retrying animate-spin" />
+                  </div>
+                  <div className="pipeline-step-content">
+                    <span className="pipeline-step-label">{label}</span>
+                    <span className="pipeline-step-subtitle is-retrying">
+                      {t('pipelineStepsRetryingAutomaticallyLabel')}
+                    </span>
+                  </div>
+                </li>
+              );
+            }
+
+            const isRetrying = retryingId === task.id;
+            return (
+              <li key={task.id} className="pipeline-step-item is-failed">
+                <div className="pipeline-step-icon-wrap">
+                  <AlertCircle size={18} className="pipeline-step-icon is-failed" />
+                </div>
+                <div className="pipeline-step-content">
+                  <span className="pipeline-step-label is-failed">{label}</span>
+                  <button
+                    type="button"
+                    className="pipeline-step-retry-btn"
+                    onClick={() => handleRetry(task.id)}
+                    disabled={isRetrying}
+                  >
+                    <RefreshCw size={12} className={isRetrying ? 'animate-spin' : ''} />
+                    <span>{isRetrying ? t('pipelineStepsRetryingLabel') : t('pipelineStepsRetryConfirmButton')}</span>
+                  </button>
+                </div>
+              </li>
+            );
+          }
+
+          if (isCurrent) {
+            return (
+              <li key={task.id} className="pipeline-step-item is-current">
+                <div className="pipeline-step-icon-wrap">
+                  <div className="pipeline-step-spinner" />
+                </div>
+                <div className="pipeline-step-content">
+                  <span className="pipeline-step-label">{label}</span>
+                  <span className="pipeline-step-subtitle">{t('pipelineStepsInProgressLabel')}</span>
+                </div>
+              </li>
+            );
+          }
+
+          // PENDING
+          return (
+            <li key={task.id} className="pipeline-step-item is-pending">
+              <div className="pipeline-step-icon-wrap">
+                <Circle size={18} className="pipeline-step-icon is-pending" />
+              </div>
+              <div className="pipeline-step-content">
+                <span className="pipeline-step-label is-pending">{label}</span>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 };
