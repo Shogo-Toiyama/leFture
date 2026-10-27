@@ -1,0 +1,318 @@
+{
+  "none": [
+    {
+      "case_id": "outline_heap_insert",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "none",
+      "elapsed_sec": 1.728,
+      "pass": true,
+      "score_details": {
+        "done": false,
+        "n_ops": 1,
+        "pass": true,
+        "matched_alt": 0,
+        "detour": false,
+        "grounds_agree": false
+      },
+      "reasoning": "Student asks to re-explain heap insertion covered in class (CS 161 Data Structures likely). This is an explicit reference to what the class covered, so fetch from class. Search lecture.concept within C1 in English.",
+      "status": "need_more",
+      "operations": [
+        {
+          "op": "find",
+          "target": "lecture.concept",
+          "query": "heap insertion sift up",
+          "within": "C1"
+        }
+      ],
+      "cost_info": {
+        "cost_usd": 5.1836146255955104e-05,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    },
+    {
+      "case_id": "outline_known_lecture",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "none",
+      "elapsed_sec": 1.393,
+      "pass": true,
+      "score_details": {
+        "done": false,
+        "n_ops": 1,
+        "pass": true,
+        "matched_alt": 0,
+        "detour": false,
+        "grounds_agree": false
+      },
+      "reasoning": "Student asks about a specific lecture (CS161 lecture 6) on AVL rotations, LR vs RL. That is implied need; open C1/L6 for the lecture's rotation content.",
+      "status": "need_more",
+      "operations": [
+        {
+          "op": "open",
+          "handle": "C1/L6"
+        }
+      ],
+      "cost_info": {
+        "cost_usd": 4.177718999795616e-05,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    },
+    {
+      "case_id": "outline_on_screen",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "none",
+      "elapsed_sec": 2.3,
+      "pass": true,
+      "score_details": {
+        "done": false,
+        "n_ops": 1,
+        "pass": true,
+        "matched_alt": 0,
+        "detour": false,
+        "grounds_agree": false
+      },
+      "reasoning": "Student wants more detail on \"here\" — the currently viewed C2/L4 page (price elasticity of demand). The screen shows only the lecture title, but the answerer may not see the full page text. \"ここの内容\" points to the open lecture's content beyond what is visible in the screen summary, so fetch the lecture's detail via the lecture handle.",
+      "status": "need_more",
+      "operations": [
+        {
+          "op": "open",
+          "handle": "C2/L4"
+        }
+      ],
+      "cost_info": {
+        "cost_usd": 6.898154000518844e-05,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    },
+    {
+      "case_id": "outline_selected_text_enough",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "none",
+      "elapsed_sec": 2.387,
+      "pass": true,
+      "score_details": {
+        "done": true,
+        "n_ops": 0,
+        "pass": true,
+        "matched_alt": 0,
+        "detour": false,
+        "grounds_agree": true
+      },
+      "reasoning": "Student asks whether the selected definition (balance factor = height(right) − height(left)) is reversed from the textbook convention. Selection is visible; the question compares to textbook knowledge, which is stable general knowledge (textbooks usually define balance factor as height(left) − height(right)). Course-specific detail isn't needed; the answerer can explain the convention difference from general knowledge.",
+      "status": "nothing_needed",
+      "operations": [],
+      "cost_info": {
+        "cost_usd": 7.158572373446078e-05,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    },
+    {
+      "case_id": "outline_cross_course",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "none",
+      "elapsed_sec": 3.895,
+      "pass": true,
+      "score_details": {
+        "done": false,
+        "n_ops": 2,
+        "pass": true,
+        "matched_alt": 1,
+        "detour": false,
+        "grounds_agree": false
+      },
+      "reasoning": "Student asks whether eigenvalues from Linear Algebra (C4) relate to Robotics Seminar (C5) control. This points to specific parts of their classes, so explicit/implied fetch. Search both courses' notes in English for eigenvalue concepts, and the robotics course for control/eigenvalue references.",
+      "status": "need_more",
+      "operations": [
+        {
+          "op": "find",
+          "target": "lecture.concept",
+          "query": "eigenvalues eigenvectors",
+          "within": "C4"
+        },
+        {
+          "op": "find",
+          "target": "lecture.concept",
+          "query": "eigenvalue stability control system",
+          "within": "C5"
+        }
+      ],
+      "cost_info": {
+        "cost_usd": 0.0001168384537473321,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    }
+  ],
+  "low": [
+    {
+      "case_id": "outline_heap_insert",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "low",
+      "elapsed_sec": 2.628,
+      "pass": true,
+      "score_details": {
+        "done": false,
+        "n_ops": 1,
+        "pass": true,
+        "matched_alt": 0,
+        "detour": false,
+        "grounds_agree": false
+      },
+      "reasoning": "The student asks to re-explain heap insertion that was covered in class, which points to CS 161 Data Structures (C1), with notes in English. One concept search within C1 should surface the lecture material.",
+      "status": "need_more",
+      "operations": [
+        {
+          "op": "find",
+          "target": "lecture.concept",
+          "query": "heap insertion sift up",
+          "within": "C1"
+        }
+      ],
+      "cost_info": {
+        "cost_usd": 7.881512873573229e-05,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    },
+    {
+      "case_id": "outline_known_lecture",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "low",
+      "elapsed_sec": 3.134,
+      "pass": true,
+      "score_details": {
+        "done": false,
+        "n_ops": 1,
+        "pass": true,
+        "matched_alt": 0,
+        "detour": false,
+        "grounds_agree": false
+      },
+      "reasoning": "The student points to CS 161 lecture 6 (AVL rotations) and is unsure about LR vs RL. That is a specific lecture, so the answer depends on what was covered there. Opening C1/L6 should give its summary, topics, and review cards.",
+      "status": "need_more",
+      "operations": [
+        {
+          "op": "open",
+          "handle": "C1/L6"
+        }
+      ],
+      "cost_info": {
+        "cost_usd": 9.399783500935883e-05,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    },
+    {
+      "case_id": "outline_on_screen",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "low",
+      "elapsed_sec": 3.656,
+      "pass": false,
+      "score_details": {
+        "done": true,
+        "n_ops": 0,
+        "pass": false,
+        "error": "stopped_too_early"
+      },
+      "reasoning": "Student asks for more detail on the content currently open (C2/L4, price elasticity of demand). The answerer already sees the screen's full page text, and the topic is stable textbook economics, so no class or web fetch is needed. Answer by expanding on the on-screen content with general explanation.",
+      "status": "nothing_needed",
+      "operations": [],
+      "cost_info": {
+        "cost_usd": 0.00010964851001976059,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    },
+    {
+      "case_id": "outline_selected_text_enough",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "low",
+      "elapsed_sec": 4.209,
+      "pass": true,
+      "score_details": {
+        "done": true,
+        "n_ops": 0,
+        "pass": true,
+        "matched_alt": 0,
+        "detour": false,
+        "grounds_agree": true
+      },
+      "reasoning": "The student asks whether the selected definition (balance factor = height(right) − height(left)) is the reverse of the usual textbook convention. This is a question about the selected text and stable textbook knowledge, so no fetch is needed. The answerer can explain that conventions vary: many AVL treatments define balance factor as height(left) − height(right), while this lecture uses right minus left. The sign only changes which rotation cases are checked, so the answer should note that the rotation logic must match the chosen convention.",
+      "status": "nothing_needed",
+      "operations": [],
+      "cost_info": {
+        "cost_usd": 0.00012624588750069962,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    },
+    {
+      "case_id": "outline_cross_course",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "low",
+      "elapsed_sec": 2.936,
+      "pass": true,
+      "score_details": {
+        "done": false,
+        "n_ops": 2,
+        "pass": true,
+        "matched_alt": 1,
+        "detour": false,
+        "grounds_agree": false
+      },
+      "reasoning": "The student asks whether eigenvalues from their Linear Algebra class (C4) relate to the Robotics Seminar (C5). This needs their class materials. One search across all courses in English (both notes are English) should surface eigenvalue content in C4 and any control-related content in C5.",
+      "status": "need_more",
+      "operations": [
+        {
+          "op": "find",
+          "target": "lecture.concept",
+          "query": "eigenvalues eigenvectors stability control system dynamics",
+          "within": "C4"
+        },
+        {
+          "op": "find",
+          "target": "lecture.concept",
+          "query": "eigenvalues stability linear system control robot"
+        }
+      ],
+      "cost_info": {
+        "cost_usd": 8.804479625774548e-05,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,196 @@
+{
+  "none": [
+    {
+      "case_id": "outline_heap_insert",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "none",
+      "dry_run": true,
+      "sys_prompt_chars": 13520,
+      "user_prompt_chars": 1969,
+      "schema_properties": [
+        "reasoning",
+        "need",
+        "fetch_from",
+        "status",
+        "missing",
+        "operations",
+        "goal"
+      ],
+      "status": "dry_run_success"
+    },
+    {
+      "case_id": "outline_known_lecture",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "none",
+      "dry_run": true,
+      "sys_prompt_chars": 13520,
+      "user_prompt_chars": 2015,
+      "schema_properties": [
+        "reasoning",
+        "need",
+        "fetch_from",
+        "status",
+        "missing",
+        "operations",
+        "goal"
+      ],
+      "status": "dry_run_success"
+    },
+    {
+      "case_id": "outline_on_screen",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "none",
+      "dry_run": true,
+      "sys_prompt_chars": 13520,
+      "user_prompt_chars": 2079,
+      "schema_properties": [
+        "reasoning",
+        "need",
+        "fetch_from",
+        "status",
+        "missing",
+        "operations",
+        "goal"
+      ],
+      "status": "dry_run_success"
+    },
+    {
+      "case_id": "outline_selected_text_enough",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "none",
+      "dry_run": true,
+      "sys_prompt_chars": 13520,
+      "user_prompt_chars": 2123,
+      "schema_properties": [
+        "reasoning",
+        "need",
+        "fetch_from",
+        "status",
+        "missing",
+        "operations",
+        "goal"
+      ],
+      "status": "dry_run_success"
+    },
+    {
+      "case_id": "outline_cross_course",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "none",
+      "dry_run": true,
+      "sys_prompt_chars": 13520,
+      "user_prompt_chars": 1972,
+      "schema_properties": [
+        "reasoning",
+        "need",
+        "fetch_from",
+        "status",
+        "missing",
+        "operations",
+        "goal"
+      ],
+      "status": "dry_run_success"
+    }
+  ],
+  "low": [
+    {
+      "case_id": "outline_heap_insert",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "low",
+      "dry_run": true,
+      "sys_prompt_chars": 13520,
+      "user_prompt_chars": 1969,
+      "schema_properties": [
+        "reasoning",
+        "need",
+        "fetch_from",
+        "status",
+        "missing",
+        "operations",
+        "goal"
+      ],
+      "status": "dry_run_success"
+    },
+    {
+      "case_id": "outline_known_lecture",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "low",
+      "dry_run": true,
+      "sys_prompt_chars": 13520,
+      "user_prompt_chars": 2015,
+      "schema_properties": [
+        "reasoning",
+        "need",
+        "fetch_from",
+        "status",
+        "missing",
+        "operations",
+        "goal"
+      ],
+      "status": "dry_run_success"
+    },
+    {
+      "case_id": "outline_on_screen",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "low",
+      "dry_run": true,
+      "sys_prompt_chars": 13520,
+      "user_prompt_chars": 2079,
+      "schema_properties": [
+        "reasoning",
+        "need",
+        "fetch_from",
+        "status",
+        "missing",
+        "operations",
+        "goal"
+      ],
+      "status": "dry_run_success"
+    },
+    {
+      "case_id": "outline_selected_text_enough",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "low",
+      "dry_run": true,
+      "sys_prompt_chars": 13520,
+      "user_prompt_chars": 2123,
+      "schema_properties": [
+        "reasoning",
+        "need",
+        "fetch_from",
+        "status",
+        "missing",
+        "operations",
+        "goal"
+      ],
+      "status": "dry_run_success"
+    },
+    {
+      "case_id": "outline_cross_course",
+      "category": "lecture.outline",
+      "model": "anthropic/claude-haiku-5-5",
+      "effort": "low",
+      "dry_run": true,
+      "sys_prompt_chars": 13520,
+      "user_prompt_chars": 1972,
+      "schema_properties": [
+        "reasoning",
+        "need",
+        "fetch_from",
+        "status",
+        "missing",
+        "operations",
+        "goal"
+      ],
+      "status": "dry_run_success"
+    }
+  ]
+}

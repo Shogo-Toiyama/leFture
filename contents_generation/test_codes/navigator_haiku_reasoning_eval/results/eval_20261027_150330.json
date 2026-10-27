@@ -1,0 +1,167 @@
+{
+  "none": [
+    {
+      "case_id": "outline_heap_insert",
+      "category": "lecture.outline",
+      "model": "gpt-6-luna",
+      "effort": "none",
+      "elapsed_sec": 4.292,
+      "pass": true,
+      "score_details": {
+        "done": false,
+        "n_ops": 1,
+        "pass": true,
+        "matched_alt": 0,
+        "detour": false,
+        "grounds_agree": false
+      },
+      "reasoning": "「授業でやった」ヒープへの挿入方法を尋ねているため、CS 161の授業資料から説明を確認します。",
+      "status": "need_more",
+      "operations": [
+        {
+          "op": "find",
+          "target": "lecture.concept",
+          "query": "inserting an element into a heap; sift-up, bubble-up, heap property",
+          "within": "C1",
+          "layer": "all"
+        }
+      ],
+      "cost_info": {
+        "cost_usd": 0.00012873572499258443,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    },
+    {
+      "case_id": "outline_known_lecture",
+      "category": "lecture.outline",
+      "model": "gpt-6-luna",
+      "effort": "none",
+      "elapsed_sec": 2.862,
+      "pass": true,
+      "score_details": {
+        "done": false,
+        "n_ops": 1,
+        "pass": true,
+        "matched_alt": 0,
+        "detour": false,
+        "grounds_agree": false
+      },
+      "reasoning": "The student is asking about AVL rotations from a specific CS 161 lecture; the lecture materials can clarify how that class presented LR versus RL.",
+      "status": "need_more",
+      "operations": [
+        {
+          "op": "open",
+          "handle": "C1/L6"
+        }
+      ],
+      "cost_info": {
+        "cost_usd": 8.584783749422059e-05,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    },
+    {
+      "case_id": "outline_on_screen",
+      "category": "lecture.outline",
+      "model": "gpt-6-luna",
+      "effort": "none",
+      "elapsed_sec": 1.966,
+      "pass": true,
+      "score_details": {
+        "done": false,
+        "n_ops": 1,
+        "pass": true,
+        "matched_alt": 0,
+        "detour": false,
+        "grounds_agree": false
+      },
+      "reasoning": "「ここの内容」は画面に表示中の価格弾力性の講義を指していますが、見えているのは講義名だけなので、詳しく説明するため講義内容を確認します。",
+      "status": "need_more",
+      "operations": [
+        {
+          "op": "open",
+          "handle": "C2/L4"
+        }
+      ],
+      "cost_info": {
+        "cost_usd": 5.893206126289442e-05,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    },
+    {
+      "case_id": "outline_selected_text_enough",
+      "category": "lecture.outline",
+      "model": "gpt-6-luna",
+      "effort": "none",
+      "elapsed_sec": 4.116,
+      "pass": true,
+      "score_details": {
+        "done": true,
+        "n_ops": 0,
+        "pass": true,
+        "matched_alt": 0,
+        "detour": false,
+        "grounds_agree": true
+      },
+      "reasoning": "選択中の定義は見えており、平衡係数の符号は教科書や実装で左右どちらを引くかが異なるという一般知識で答えられます。",
+      "status": "nothing_needed",
+      "operations": [],
+      "cost_info": {
+        "cost_usd": 0.000123456738749519,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    },
+    {
+      "case_id": "outline_cross_course",
+      "category": "lecture.outline",
+      "model": "gpt-6-luna",
+      "effort": "none",
+      "elapsed_sec": 5.106,
+      "pass": true,
+      "score_details": {
+        "done": false,
+        "n_ops": 2,
+        "pass": true,
+        "matched_alt": 1,
+        "detour": false,
+        "grounds_agree": false
+      },
+      "reasoning": "固有値を線形代数でどう扱い、ロボティクスの授業で制御と結びつけているかを確認する必要があります。",
+      "status": "need_more",
+      "operations": [
+        {
+          "op": "find",
+          "target": "lecture.concept",
+          "query": "eigenvalues and eigenvectors; applications to linear systems, stability, and control",
+          "within": "C4",
+          "layer": "all"
+        },
+        {
+          "op": "find",
+          "target": "lecture.concept",
+          "query": "robot control, state-space models, system stability, eigenvalues",
+          "within": "C5",
+          "layer": "all"
+        }
+      ],
+      "cost_info": {
+        "cost_usd": 0.00015312757875071838,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read": 0,
+        "cache_write": 0
+      }
+    }
+  ]
+}

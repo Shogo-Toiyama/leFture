@@ -54,7 +54,7 @@ from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
 # ⚙️ 設定
 # =========================================================
 
-NAVIGATOR_MODEL = "gpt-6-luna"
+NAVIGATOR_MODEL = "anthropic/claude-haiku-5-5"
 NAVIGATOR_REASONING_EFFORT = "none"
 NAVIGATOR_MAX_COMPLETION_TOKENS = 1500
 
@@ -1018,9 +1018,9 @@ def validate_operations(
 
 def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> str:
     m = nav_input.student_map
-    cur_time = nav_input.current_time_str or nav_input.today.isoformat()
-    parts = [f"<today>{nav_input.today.isoformat()}</today>", f"<current_time>{cur_time}</current_time>"]
+    parts = []
 
+    # 1. 地図 (静的・不変: Courses, ChatMap, Attachments, Links)
     if lap == 1:
         map_text = "Courses:\n" + m.render_courses()
         if CAPABILITIES["CAN_CHAT"] and nav_input.chat_map is not None and nav_input.chat_map.has_anything:
@@ -1031,13 +1031,8 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
         if nav_input.link_handles():
             map_text += "\n\n" + render_links_for_navigator(nav_input.links)
         parts.append(f"<map>\n{map_text}\n</map>")
-        if state.previous_turn_text and CAPABILITIES["CAN_OPEN"]:
-            parts.append(f"<previous_turn_opened>\n{state.previous_turn_text}\n</previous_turn_opened>")
-        if nav_input.user_goal:
-            parts.append(f"<user_goal>\n{nav_input.user_goal}\n</user_goal>")
-        if nav_input.referenced_sources:
-            parts.append(f"<referenced_sources>\n{nav_input.referenced_sources}\n</referenced_sources>")
 
+    # 2. 直近の会話 (累積型: 過去ログは完全一致し末尾に追記されるためプレフィックスキャッシュが持続)
     if nav_input.recent_conversation:
         conv = "\n".join(
             f"{'student' if msg.role == 'user' else 'assistant'}: {msg.content[:RECENT_CONVERSATION_MAX_CHARS]}"
@@ -1047,6 +1042,7 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
     else:
         parts.append("<recent_conversation>(This is the first message of a new conversation.)</recent_conversation>")
 
+    # 3. 画面情報 (動的: 画面・トピック・選択テキスト)
     screen = []
     screen_handle = m.lecture_handle(nav_input.screen_lecture_id)
     if screen_handle:
@@ -1063,6 +1059,20 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
     if screen:
         parts.append("<screen>\n" + "\n".join(screen) + "\n</screen>")
 
+    # 4. 直前ターンで開いたもの & 目的 (動的)
+    if lap == 1:
+        if state.previous_turn_text and CAPABILITIES["CAN_OPEN"]:
+            parts.append(f"<previous_turn_opened>\n{state.previous_turn_text}\n</previous_turn_opened>")
+        if nav_input.user_goal:
+            parts.append(f"<user_goal>\n{nav_input.user_goal}\n</user_goal>")
+        if nav_input.referenced_sources:
+            parts.append(f"<referenced_sources>\n{nav_input.referenced_sources}\n</referenced_sources>")
+
+    # 5. 現在時刻 (todayはcurrent_timeに含まれるためtodayタグは省略)
+    cur_time = nav_input.current_time_str or nav_input.today.isoformat()
+    parts.append(f"<current_time>{cur_time}</current_time>")
+
+    # 6. 最新の学生メッセージ
     parts.append(f"<student_message>\n{nav_input.message}\n</student_message>")
     mentioned = nav_input.mentioned_unseen_handles()
     if lap == 1 and mentioned:
@@ -1926,10 +1936,11 @@ async def decide_lap(
         max_completion_tokens=NAVIGATOR_MAX_COMPLETION_TOKENS,
         reasoning_effort=NAVIGATOR_REASONING_EFFORT,
     )
-    messages = [
-        Message(role="system", content=build_system_prompt(nav_input.can_transcript)),
-        Message(role="user", content=build_user_message(nav_input, state, lap)),
-    ]
+    sys_msg = Message(role="system", content=build_system_prompt(nav_input.can_transcript))
+    user_msg = Message(role="user", content=build_user_message(nav_input, state, lap))
+    if NAVIGATOR_MODEL.startswith("anthropic/"):
+        sys_msg.cache_control = {"type": "ephemeral", "ttl": "1h"}
+    messages = [sys_msg, user_msg]
     last_error = None
     for _attempt in range(2):
         if metrics is not None:

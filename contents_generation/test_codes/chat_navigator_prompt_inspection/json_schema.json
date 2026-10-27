@@ -1,0 +1,362 @@
+{
+  "type": "object",
+  "properties": {
+    "reasoning": {
+      "type": "string"
+    },
+    "need": {
+      "type": "string",
+      "enum": [
+        "explicit",
+        "implied",
+        "maybe",
+        "none"
+      ]
+    },
+    "fetch_from": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "class",
+          "web",
+          "past_chat",
+          "attachment",
+          "link"
+        ]
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "nothing_needed",
+        "enough_now",
+        "need_more"
+      ]
+    },
+    "missing": {
+      "type": "string"
+    },
+    "operations": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "find"
+                ]
+              },
+              "target": {
+                "type": "string",
+                "enum": [
+                  "lecture.concept",
+                  "chat.all",
+                  "chat.thread",
+                  "web.search"
+                ]
+              },
+              "query": {
+                "type": "string"
+              },
+              "layer": {
+                "type": "string",
+                "enum": [
+                  "summaries",
+                  "notes",
+                  "transcript",
+                  "all"
+                ]
+              },
+              "within": {
+                "type": "string",
+                "enum": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C4",
+                  "C5",
+                  "C6",
+                  "C1/L1",
+                  "C2/L1",
+                  "C2/L2",
+                  "C2/L3",
+                  "C2/L4",
+                  "C4/L1",
+                  "C4/L2",
+                  "C4/L3",
+                  "C4/L4",
+                  "C4/L5",
+                  "C4/L6",
+                  "C4/L7",
+                  "C4/L8",
+                  "C4/L9",
+                  "C5/L1",
+                  "C5/L2",
+                  "C5/L3",
+                  "C5/L4",
+                  "C5/L5",
+                  "C5/L6",
+                  "C5/L7",
+                  "C5/L8",
+                  "C5/L9",
+                  "C5/L10",
+                  "C5/L11",
+                  "C5/L12",
+                  "C5/L13",
+                  "C6/L1",
+                  "C6/L2"
+                ]
+              }
+            },
+            "required": [
+              "op",
+              "target",
+              "query"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "open"
+                ]
+              },
+              "handle": {
+                "type": "string",
+                "enum": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C4",
+                  "C5",
+                  "C6",
+                  "C1/L1",
+                  "C2/L1",
+                  "C2/L2",
+                  "C2/L3",
+                  "C2/L4",
+                  "C4/L1",
+                  "C4/L2",
+                  "C4/L3",
+                  "C4/L4",
+                  "C4/L5",
+                  "C4/L6",
+                  "C4/L7",
+                  "C4/L8",
+                  "C4/L9",
+                  "C5/L1",
+                  "C5/L2",
+                  "C5/L3",
+                  "C5/L4",
+                  "C5/L5",
+                  "C5/L6",
+                  "C5/L7",
+                  "C5/L8",
+                  "C5/L9",
+                  "C5/L10",
+                  "C5/L11",
+                  "C5/L12",
+                  "C5/L13",
+                  "C6/L1",
+                  "C6/L2",
+                  "C1/topics",
+                  "C1/keywords",
+                  "C1/announcements",
+                  "C1/L1/announcements",
+                  "C1/L1/cards",
+                  "C2/topics",
+                  "C2/keywords",
+                  "C2/announcements",
+                  "C2/L1-4/cards",
+                  "C2/L1/announcements",
+                  "C2/L1/cards",
+                  "C2/L2/announcements",
+                  "C2/L2/cards",
+                  "C2/L3/announcements",
+                  "C2/L3/cards",
+                  "C2/L4/announcements",
+                  "C2/L4/cards",
+                  "C3/topics",
+                  "C3/keywords",
+                  "C3/announcements",
+                  "C4/topics",
+                  "C4/keywords",
+                  "C4/announcements",
+                  "C4/L1-9/cards",
+                  "C4/L1/announcements",
+                  "C4/L1/cards",
+                  "C4/L2/announcements",
+                  "C4/L2/cards",
+                  "C4/L3/announcements",
+                  "C4/L3/cards",
+                  "C4/L4/announcements",
+                  "C4/L4/cards",
+                  "C4/L5/announcements",
+                  "C4/L5/cards",
+                  "C4/L6/announcements",
+                  "C4/L6/cards",
+                  "C4/L7/announcements",
+                  "C4/L7/cards",
+                  "C4/L8/announcements",
+                  "C4/L8/cards",
+                  "C4/L9/announcements",
+                  "C4/L9/cards",
+                  "C5/topics",
+                  "C5/keywords",
+                  "C5/announcements",
+                  "C5/L1-13/cards",
+                  "C5/L1/announcements",
+                  "C5/L1/cards",
+                  "C5/L2/announcements",
+                  "C5/L2/cards",
+                  "C5/L3/announcements",
+                  "C5/L3/cards",
+                  "C5/L4/announcements",
+                  "C5/L4/cards",
+                  "C5/L5/announcements",
+                  "C5/L5/cards",
+                  "C5/L6/announcements",
+                  "C5/L6/cards",
+                  "C5/L7/announcements",
+                  "C5/L7/cards",
+                  "C5/L8/announcements",
+                  "C5/L8/cards",
+                  "C5/L9/announcements",
+                  "C5/L9/cards",
+                  "C5/L10/announcements",
+                  "C5/L10/cards",
+                  "C5/L11/announcements",
+                  "C5/L11/cards",
+                  "C5/L12/announcements",
+                  "C5/L12/cards",
+                  "C5/L13/announcements",
+                  "C5/L13/cards",
+                  "C6/topics",
+                  "C6/keywords",
+                  "C6/announcements",
+                  "C6/L1-2/cards",
+                  "C6/L1/announcements",
+                  "C6/L1/cards",
+                  "C6/L2/announcements",
+                  "C6/L2/cards",
+                  "P1",
+                  "P2",
+                  "P3",
+                  "P4",
+                  "P5",
+                  "P6",
+                  "P7",
+                  "P8",
+                  "P9",
+                  "P10",
+                  "P11",
+                  "P12",
+                  "P13",
+                  "P14",
+                  "P15",
+                  "P16",
+                  "P17",
+                  "P18",
+                  "P19",
+                  "P20",
+                  "C4/L9/T1",
+                  "C4/L9/T2",
+                  "C4/L9/T3",
+                  "C4/L9/T4",
+                  "C4/L9/T5"
+                ]
+              }
+            },
+            "required": [
+              "op",
+              "handle"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "by_date"
+                ]
+              },
+              "date_from": {
+                "type": "string"
+              },
+              "date_to": {
+                "type": "string"
+              },
+              "within": {
+                "type": "string",
+                "enum": [
+                  "C1",
+                  "C2",
+                  "C3",
+                  "C4",
+                  "C5",
+                  "C6",
+                  "C1/L1",
+                  "C2/L1",
+                  "C2/L2",
+                  "C2/L3",
+                  "C2/L4",
+                  "C4/L1",
+                  "C4/L2",
+                  "C4/L3",
+                  "C4/L4",
+                  "C4/L5",
+                  "C4/L6",
+                  "C4/L7",
+                  "C4/L8",
+                  "C4/L9",
+                  "C5/L1",
+                  "C5/L2",
+                  "C5/L3",
+                  "C5/L4",
+                  "C5/L5",
+                  "C5/L6",
+                  "C5/L7",
+                  "C5/L8",
+                  "C5/L9",
+                  "C5/L10",
+                  "C5/L11",
+                  "C5/L12",
+                  "C5/L13",
+                  "C6/L1",
+                  "C6/L2"
+                ]
+              }
+            },
+            "required": [
+              "op",
+              "date_from",
+              "date_to"
+            ]
+          }
+        ]
+      }
+    },
+    "goal": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "reasoning",
+    "need",
+    "fetch_from",
+    "status",
+    "missing",
+    "operations",
+    "goal"
+  ]
+}
