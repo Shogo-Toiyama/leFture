@@ -683,44 +683,136 @@ def _get_previous_lecture_topics(lecture_id: str) -> list[dict]:
     return res.data or []
 
 
+def _extract_keyword_for_recording_language(raw_keyword: str | None, recording_language: str | None) -> str | None:
+    """
+    keywords テーブルに格納されている '表示名 (原語)' や '原語（表示名）' などの
+    バイリンガル表記から、講義の recording_language（発話言語）に該当する用語のみを
+    抽出し、カッコや異言語文字を排除する。
+    """
+    if not raw_keyword or not isinstance(raw_keyword, str):
+        return None
+
+    kw = raw_keyword.strip()
+    if not kw:
+        return None
+
+    # 言語コードの正規化 (例: 'en-US' -> 'en', 大文字小文字の吸収)
+    rec_lang = (recording_language or "").lower().split("-")[0].strip()
+    is_latin_target = rec_lang in ("en", "fr", "es", "de", "it", "pt") or not rec_lang or rec_lang == _UNKNOWN_RECORDING_LANGUAGE_LABEL
+
+    def _clean(text: str) -> str:
+        # 残存するカッコ（全角・半角）を完全に除去し、余分な空白をトリム
+        return re.sub(r'[()（）]', '', text).strip()
+
+    # CJK（日中韓）文字を含むか判定
+    def _has_cjk(text: str) -> bool:
+        return bool(re.search(r'[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]', text))
+
+    result = None
+
+    # カッコ（全角・半角）で分割: 例 "入れ子ブロック（nested blocks）" -> "入れ子ブロック", "nested blocks"
+    bracket_match = re.match(r'^(.*?)\s*[\(（]+(.*?)[\)）]+\s*$', kw)
+    if bracket_match:
+        part1 = _clean(bracket_match.group(1))
+        part2 = _clean(bracket_match.group(2))
+        p1_cjk = _has_cjk(part1)
+        p2_cjk = _has_cjk(part2)
+
+        if is_latin_target:
+            # 両方ラテン文字なら、略語ではなく完全な用語(長い方)を優先
+            if not p1_cjk and not p2_cjk:
+                result = part1 if len(part1) >= len(part2) else part2
+            elif not p1_cjk and p2_cjk:
+                result = part1
+            elif p1_cjk and not p2_cjk:
+                result = part2
+            else:
+                result = None  # 両方ともCJKの場合はラテン系講義のコンテキストとしてはスキップ
+        elif rec_lang == "ja":
+            # 日本語講義の場合: CJK側を優先
+            if p1_cjk and not p2_cjk:
+                result = part1
+            elif not p1_cjk and p2_cjk:
+                result = part2
+            elif p1_cjk and p2_cjk:
+                result = part1 if len(part1) >= len(part2) else part2
+            else:
+                result = part1
+        else:
+            result = part1 or part2
+    else:
+        # カッコなしの場合
+        if is_latin_target:
+            # ラテン系言語なのにCJKが含まれていれば除外
+            if not _has_cjk(kw):
+                result = kw
+        else:
+            result = kw
+
+    if result:
+        cleaned_result = _clean(result)
+        return cleaned_result if cleaned_result else None
+    return None
+
+
 def _get_sentence_review_context(lecture_id: str) -> tuple[str, str, str]:
     """
     Sentence Review タスク用に、コースタイトル・直前講義のキーワード一覧・
     録音言語(プロンプト埋め込み用に解決済みの文字列)を取得します。
+    万が一DB問い合わせが一部失敗しても呼び出し元パイプラインを停止させないよう、
+    フォールバック付きで極めて安全に取得します。
     """
-    supabase = get_supabase_client()
-
-    # 1. 今回の講義の course_id と created_at と recording_language を取得
-    lec_res = supabase.table("lectures").select("course_id, created_at, recording_language").eq("id", lecture_id).single().execute()
-    if not lec_res.data:
-        return "University Lecture", "", _UNKNOWN_RECORDING_LANGUAGE_LABEL
-
-    course_id = lec_res.data.get("course_id")
-    created_at = lec_res.data.get("created_at")
-    # 未設定(Whisperの自動言語判定に任せた講義)ならプロンプトにそのまま埋め込める
-    # フォールバック文言にしておく(nullをそのままformatに渡せないため)。
-    recording_language = lec_res.data.get("recording_language") or _UNKNOWN_RECORDING_LANGUAGE_LABEL
-
-    # 2. courses から course_title を取得
     course_title = "University Lecture"
-    if course_id:
-        course_res = supabase.table("courses").select("course_title").eq("id", course_id).single().execute()
-        if course_res.data and course_res.data.get("course_title"):
-            course_title = course_res.data["course_title"]
-
-    # 3. 直前の講義（同じ course_id 内で今回の講義より古く、最新のもの）の ID を取得
-    prev_lecture_id = _find_previous_lecture_id_sync(supabase, course_id, created_at)
-
-    # 4. 直前講義のキーワード一覧を取得
     keywords_list = ""
-    if prev_lecture_id:
-        kw_res = supabase.table("keywords")\
-            .select("keyword")\
-            .eq("lecture_id", prev_lecture_id)\
-            .execute()
-        if kw_res.data:
-            keywords = [item["keyword"] for item in kw_res.data if item.get("keyword")]
-            keywords_list = ", ".join(keywords)
+    recording_language = _UNKNOWN_RECORDING_LANGUAGE_LABEL
+
+    try:
+        supabase = get_supabase_client()
+
+        # 1. 今回の講義の course_id と created_at と recording_language を取得
+        lec_res = supabase.table("lectures").select("course_id, created_at, recording_language").eq("id", lecture_id).single().execute()
+        if not (lec_res and lec_res.data):
+            return course_title, keywords_list, recording_language
+
+        course_id = lec_res.data.get("course_id")
+        created_at = lec_res.data.get("created_at")
+        recording_language = lec_res.data.get("recording_language") or _UNKNOWN_RECORDING_LANGUAGE_LABEL
+
+        # 2. courses から course_title を取得
+        if course_id:
+            try:
+                course_res = supabase.table("courses").select("course_title").eq("id", course_id).single().execute()
+                if course_res.data and course_res.data.get("course_title"):
+                    course_title = course_res.data["course_title"]
+            except Exception:
+                pass
+
+        # 3. 直前の講義（同じ course_id 内で今回の講義より古く、最新のもの）の ID を取得
+        try:
+            prev_lecture_id = _find_previous_lecture_id_sync(supabase, course_id, created_at)
+            # 4. 直前講義のキーワード一覧を取得し、録音言語に合致する単語のみを抽出
+            if prev_lecture_id:
+                kw_res = supabase.table("keywords")\
+                    .select("keyword")\
+                    .eq("lecture_id", prev_lecture_id)\
+                    .execute()
+                if kw_res and kw_res.data:
+                    clean_keywords = []
+                    seen = set()
+                    for item in kw_res.data:
+                        raw_kw = item.get("keyword")
+                        extracted = _extract_keyword_for_recording_language(raw_kw, recording_language)
+                        if extracted and extracted.lower() not in seen:
+                            seen.add(extracted.lower())
+                            clean_keywords.append(extracted)
+                    if clean_keywords:
+                        # Sentence Review のコンテキストが肥大化しないよう最大25件に制限
+                        keywords_list = ", ".join(clean_keywords[:25])
+        except Exception:
+            pass
+
+    except Exception:
+        pass
 
     return course_title, keywords_list, recording_language
 

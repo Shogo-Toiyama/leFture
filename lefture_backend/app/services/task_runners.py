@@ -637,7 +637,7 @@ async def process_transcribe_chunk(lecture_id: str, chunk_index: int, start_time
         result = await transcriber.run_in_memory(
             audio_bytes=audio_bytes,
             chunk_index=chunk_index,
-            prompt_keywords=whisper_context,
+            prompt_keywords="",  # Whisper context disabled to prevent hallucinations & language contamination
         )
 
         # 3. DBを更新し、真実のテキストを書き込む（R2への保存は受付側で完了済み）

@@ -110,58 +110,16 @@ double _calculatePcmAudioLevel(Uint8List data) {
   return boosted.clamp(0.0, 1.0);
 }
 
-/// コースとキーワードから Groq Whisper 用コンテキスト文字列を生成する
+/// コースとキーワードから Whisper 用コンテキスト文字列を生成する関数。
+/// ★ 廃止: display_language のキーワードやフォーマット（"Course:", "Keywords:"）を
+/// Whisper の initial_prompt に注入すると、無音区間でのハルシネーション（幻聴）や
+/// 記号混入、リピートループを引き起こすため、常に空文字を返すように無効化。
+/// 専門用語の表記揺れや誤認識の補正は後段の Sentence Review (LLM) が専任で行う。
 Future<String> _buildWhisperContext({
   required String uid,
   required String courseId,
 }) async {
-  final parts = <String>[];
-
-  try {
-    // 1. コースタイトルを取得
-    final courseRow = await supabase
-        .from('courses')
-        .select('course_title, course_code')
-        .eq('id', courseId)
-        .eq('user_id', uid)
-        .maybeSingle();
-
-    if (courseRow != null) {
-      final title = courseRow['course_title'] as String? ??
-          courseRow['course_code'] as String?;
-      if (title != null && title.isNotEmpty) {
-        parts.add('Course: $title');
-      }
-    }
-
-    // 2. 同コースの過去講義キーワードを取得（最新20件）
-    final lectureRows = await supabase
-        .from('lectures')
-        .select('id')
-        .eq('course_id', courseId)
-        .eq('user_id', uid)
-        .limit(10);
-
-    final lectureIds = lectureRows.map((r) => r['id'] as String).toList();
-
-    if (lectureIds.isNotEmpty) {
-      final kwRows = await supabase
-          .from('keywords')
-          .select('keyword')
-          .inFilter('lecture_id', lectureIds)
-          .limit(20);
-
-      final keywords =
-          kwRows.map((r) => r['keyword'] as String).toSet().toList();
-      if (keywords.isNotEmpty) {
-        parts.add('Keywords: ${keywords.join(', ')}');
-      }
-    }
-  } catch (e) {
-    DevLog.add('[WhisperContext] Failed to fetch context: $e');
-  }
-
-  return parts.join('\n');
+  return '';
 }
 
 // dependencies: [] を明示することで、このproviderがdev_tools/のTestタブから

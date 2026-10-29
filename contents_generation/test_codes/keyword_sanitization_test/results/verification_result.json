@@ -1,0 +1,229 @@
+{
+  "edge_tests": [
+    {
+      "input": "None",
+      "lang": "en",
+      "expected": null,
+      "actual": null,
+      "passed": true
+    },
+    {
+      "input": "",
+      "lang": "en",
+      "expected": null,
+      "actual": null,
+      "passed": true
+    },
+    {
+      "input": "   ",
+      "lang": "en",
+      "expected": null,
+      "actual": null,
+      "passed": true
+    },
+    {
+      "input": "12345",
+      "lang": "en",
+      "expected": null,
+      "actual": null,
+      "passed": true
+    },
+    {
+      "input": "{}",
+      "lang": "en",
+      "expected": null,
+      "actual": null,
+      "passed": true
+    },
+    {
+      "input": "[]",
+      "lang": "en",
+      "expected": null,
+      "actual": null,
+      "passed": true
+    },
+    {
+      "input": "Nested ((double))",
+      "lang": "en",
+      "expected": "Nested",
+      "actual": "Nested",
+      "passed": true
+    },
+    {
+      "input": "入れ子ブロック（nested blocks）",
+      "lang": "en",
+      "expected": "nested blocks",
+      "actual": "nested blocks",
+      "passed": true
+    },
+    {
+      "input": "入れ子ブロック（nested blocks）",
+      "lang": "ja",
+      "expected": "入れ子ブロック",
+      "actual": "入れ子ブロック",
+      "passed": true
+    },
+    {
+      "input": "Translation (平行移動)",
+      "lang": "en",
+      "expected": "Translation",
+      "actual": "Translation",
+      "passed": true
+    },
+    {
+      "input": "Translation (平行移動)",
+      "lang": "ja",
+      "expected": "平行移動",
+      "actual": "平行移動",
+      "passed": true
+    },
+    {
+      "input": "法線 (Normal)",
+      "lang": "en",
+      "expected": "Normal",
+      "actual": "Normal",
+      "passed": true
+    },
+    {
+      "input": "法線 (Normal)",
+      "lang": "ja",
+      "expected": "法線",
+      "actual": "法線",
+      "passed": true
+    },
+    {
+      "input": "Programmed I/O (PIO)",
+      "lang": "en",
+      "expected": "Programmed I/O",
+      "actual": "Programmed I/O",
+      "passed": true
+    },
+    {
+      "input": "Programmed I/O (PIO)",
+      "lang": "ja",
+      "expected": "Programmed I/O",
+      "actual": "Programmed I/O",
+      "passed": true
+    },
+    {
+      "input": "縦長の構図",
+      "lang": "en",
+      "expected": null,
+      "actual": null,
+      "passed": true
+    },
+    {
+      "input": "縦長の構図",
+      "lang": "ja",
+      "expected": "縦長の構図",
+      "actual": "縦長の構図",
+      "passed": true
+    },
+    {
+      "input": "Persistence",
+      "lang": "en",
+      "expected": "Persistence",
+      "actual": "Persistence",
+      "passed": true
+    },
+    {
+      "input": "Persistence",
+      "lang": "ja",
+      "expected": "Persistence",
+      "actual": "Persistence",
+      "passed": true
+    },
+    {
+      "input": "Recursion depth",
+      "lang": "en-US",
+      "expected": "Recursion depth",
+      "actual": "Recursion depth",
+      "passed": true
+    },
+    {
+      "input": "変数のスコープ",
+      "lang": "ja-JP",
+      "expected": "変数のスコープ",
+      "actual": "変数のスコープ",
+      "passed": true
+    }
+  ],
+  "db_stats": {
+    "total_tested": 500,
+    "en_clean_count": 456,
+    "en_dropped_count": 44,
+    "ja_clean_count": 500
+  },
+  "lectures_tested": [
+    {
+      "lecture_id": "49a0abe8-7b1f-4512-8753-d0561ef2e2d5",
+      "course_title": "University Lecture",
+      "recording_language": "ja",
+      "keywords_count": 0,
+      "keywords_sample": ""
+    },
+    {
+      "lecture_id": "9e6368bd-fc53-4e84-898f-305802dcbfc2",
+      "course_title": "FUND PUBLIC SPEAKING",
+      "recording_language": "en",
+      "keywords_count": 0,
+      "keywords_sample": ""
+    },
+    {
+      "lecture_id": "2341bf8e-94b3-455b-962e-8d9982b7f8e6",
+      "course_title": "STAT 20",
+      "recording_language": "en",
+      "keywords_count": 0,
+      "keywords_sample": ""
+    },
+    {
+      "lecture_id": "9f845f56-835e-4401-844e-74643439afa5",
+      "course_title": "Operating System Principles",
+      "recording_language": "the same language as the original spoken audio (do not translate under any circumstances)",
+      "keywords_count": 25,
+      "keywords_sample": "Waterbed effect, Economies of scale, Diseconomies of scale, Propagation of effects, Software inertia..."
+    },
+    {
+      "lecture_id": "48ba9373-160f-4f85-a58f-88b46c97ec7e",
+      "course_title": "Programming Language",
+      "recording_language": "en",
+      "keywords_count": 25,
+      "keywords_sample": "Lua scripting language, interpreter embedding, Lua interpreter state, stack-based argument and retur..."
+    },
+    {
+      "lecture_id": "a63ff186-f203-4627-90bc-6a008356943e",
+      "course_title": "Operating System Principles",
+      "recording_language": "the same language as the original spoken audio (do not translate under any circumstances)",
+      "keywords_count": 15,
+      "keywords_sample": "Syllabus, Grading policy, Academic integrity, Generative AI, Course resources, Systems engineering, ..."
+    },
+    {
+      "lecture_id": "cd3e7781-4682-4229-a27e-6036785b0453",
+      "course_title": "Operating System Principles",
+      "recording_language": "the same language as the original spoken audio (do not translate under any circumstances)",
+      "keywords_count": 18,
+      "keywords_sample": "File descriptors, Resource leaks, System limits, POSIX error codes, Pipes, Write failures, EPIPE, Pr..."
+    },
+    {
+      "lecture_id": "a0fff739-6858-48d4-878c-06fe03619c90",
+      "course_title": "Operating System Principles",
+      "recording_language": "the same language as the original spoken audio (do not translate under any circumstances)",
+      "keywords_count": 20,
+      "keywords_sample": "File descriptor, Error codes, Resource leaks, Standard I/O, Pipe protocols, Race condition, Atomic o..."
+    },
+    {
+      "lecture_id": "ec989176-2975-406a-b177-a023f866ac2e",
+      "course_title": "Operating System Principles",
+      "recording_language": "the same language as the original spoken audio (do not translate under any circumstances)",
+      "keywords_count": 25,
+      "keywords_sample": "SIGINT, Signal handlers, Race conditions, Critical sections, sigprocmask, Lightweight processes, Mem..."
+    },
+    {
+      "lecture_id": "ac60de60-ec0f-491f-baaf-7331223e53d0",
+      "course_title": "Operating System Principles",
+      "recording_language": "the same language as the original spoken audio (do not translate under any circumstances)",
+      "keywords_count": 19,
+      "keywords_sample": "Process, Program, Fork, Exec, Zombie process, WaitPID, Exit, Signal handling, Orphan process, Proces..."
+    }
+  ]
+}
