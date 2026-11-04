@@ -1,0 +1,203 @@
+{
+  "run_at": "20261104T083145Z",
+  "external_api_calls": 0,
+  "cost_usd": 0,
+  "all_passed": true,
+  "cases": [
+    {
+      "case": "renewal_processed",
+      "ok": true,
+      "ms": 0.91,
+      "sample_row": {
+        "source": "revenuecat",
+        "event_id": "EVT-RENEW",
+        "event_type": "RENEWAL",
+        "app_user_id": "a0368beb-867a-48ce-a9a1-c1421a72fc65",
+        "user_id": "a0368beb-867a-48ce-a9a1-c1421a72fc65",
+        "original_app_user_id": "$RCAnonymousID:07a6",
+        "aliases": [
+          "$RCAnonymousID:07a6",
+          "a0368beb-867a-48ce-a9a1-c1421a72fc65"
+        ],
+        "transferred_from": null,
+        "transferred_to": null,
+        "environment": "SANDBOX",
+        "store": "APP_STORE",
+        "product_id": "com.lefture.app.sub.premium",
+        "expiration_at": "2025-11-05T07:05:15+00:00",
+        "event_timestamp": "2025-11-04T06:50:28+00:00",
+        "raw_payload": {
+          "api_version": "1.0",
+          "event": {
+            "event_timestamp_ms": 1762239028000,
+            "app_id": "app1",
+            "id": "EVT-RENEW",
+            "type": "RENEWAL",
+            "app_user_id": "a0368beb-867a-48ce-a9a1-c1421a72fc65",
+            "original_app_user_id": "$RCAnonymousID:07a6",
+            "aliases": [
+              "$RCAnonymousID:07a6",
+              "a0368beb-867a-48ce-a9a1-c1421a72fc65"
+            ],
+            "environment": "SANDBOX",
+            "store": "APP_STORE",
+            "product_id": "com.lefture.app.sub.premium",
+            "expiration_at_ms": 1762326315000,
+            "subscriber_attributes": {
+              "$email": {
+                "value": "[redacted]"
+              },
+              "plan": {
+                "value": "max"
+              }
+            }
+          }
+        },
+        "id": 1,
+        "status": "processed",
+        "result": {
+          "status": "success",
+          "event_type": "RENEWAL"
+        },
+        "error": null,
+        "processed_at": "2026-11-04T08:31:45.987656+00:00"
+      }
+    },
+    {
+      "case": "retry_after_success_is_duplicate",
+      "ok": true,
+      "ms": 0.21,
+      "sample_row": null
+    },
+    {
+      "case": "transfer_is_logged_with_destination_user",
+      "ok": true,
+      "ms": 0.24,
+      "sample_row": {
+        "source": "revenuecat",
+        "event_id": "EVT-TRANSFER",
+        "event_type": "TRANSFER",
+        "app_user_id": null,
+        "user_id": "a0368beb-867a-48ce-a9a1-c1421a72fc65",
+        "original_app_user_id": null,
+        "aliases": null,
+        "transferred_from": [
+          "$RCAnonymousID:d412",
+          "5be0566d-9b7a-499f-b7d2-f1c736fd5082"
+        ],
+        "transferred_to": [
+          "$RCAnonymousID:07a6",
+          "a0368beb-867a-48ce-a9a1-c1421a72fc65"
+        ],
+        "environment": "SANDBOX",
+        "store": "APP_STORE",
+        "product_id": null,
+        "expiration_at": null,
+        "event_timestamp": "2025-11-04T06:50:28+00:00",
+        "raw_payload": {
+          "api_version": "1.0",
+          "event": {
+            "event_timestamp_ms": 1762239028000,
+            "app_id": "app1",
+            "id": "EVT-TRANSFER",
+            "type": "TRANSFER",
+            "environment": "SANDBOX",
+            "store": "APP_STORE",
+            "transferred_from": [
+              "$RCAnonymousID:d412",
+              "5be0566d-9b7a-499f-b7d2-f1c736fd5082"
+            ],
+            "transferred_to": [
+              "$RCAnonymousID:07a6",
+              "a0368beb-867a-48ce-a9a1-c1421a72fc65"
+            ]
+          }
+        },
+        "id": 1,
+        "status": "ignored",
+        "result": {
+          "status": "ignored",
+          "event_type": "TRANSFER"
+        },
+        "error": null,
+        "processed_at": "2026-11-04T08:31:45.988121+00:00"
+      }
+    },
+    {
+      "case": "anonymous_id_does_not_break",
+      "ok": true,
+      "ms": 0.2,
+      "sample_row": null
+    },
+    {
+      "case": "stripe_price_id_preferred",
+      "ok": true,
+      "ms": 0.13,
+      "sample_row": null
+    },
+    {
+      "case": "unknown_product_error_logged",
+      "ok": true,
+      "ms": 0.2,
+      "sample_row": null
+    },
+    {
+      "case": "malformed_payloads_do_not_raise",
+      "ok": true,
+      "ms": 0.79,
+      "sample_row": null
+    },
+    {
+      "case": "db_failure_is_swallowed",
+      "ok": true,
+      "ms": 0.43,
+      "sample_row": null
+    },
+    {
+      "case": "stripe_event_real_sdk_object",
+      "ok": true,
+      "ms": 5.5,
+      "sample_row": {
+        "source": "stripe",
+        "event_id": "evt_1",
+        "event_type": "payment_intent.succeeded",
+        "app_user_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+        "user_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+        "environment": "PRODUCTION",
+        "store": "STRIPE",
+        "product_id": "price_x",
+        "event_timestamp": "2025-11-04T06:50:28+00:00",
+        "raw_payload": {
+          "id": "evt_1",
+          "type": "payment_intent.succeeded",
+          "livemode": true,
+          "created": 1762239028,
+          "data": {
+            "object": {
+              "id": "pi_1",
+              "receipt_email": "[redacted]",
+              "metadata": {
+                "supabase_user_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+                "stripe_price_id": "price_x"
+              },
+              "charges": {
+                "data": [
+                  {
+                    "billing_details": "[redacted]"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "id": 1,
+        "status": "processed",
+        "result": {
+          "status": "success"
+        },
+        "error": null,
+        "processed_at": "2026-11-04T08:31:45.995376+00:00"
+      }
+    }
+  ]
+}

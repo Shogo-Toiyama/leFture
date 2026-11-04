@@ -78,6 +78,7 @@ from app.services.helpers.credits import (
     resolve_duration_tier,
 )
 from app.services.helpers.helpers import _get_audio_duration_seconds
+from app.services.helpers import billing_webhook_log
 from app.services.helpers.plan_features import get_user_tier_level, has_feature, is_gating_disabled_for_user, FEATURE_REALTIME_TRANSCRIBE
 from app.services.tutorial_content import get_tutorial_content
 from app.services.knowledge_index import drain_knowledge_index_queue
@@ -1412,6 +1413,22 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
         raise HTTPException(status_code=401, detail="Unauthorized webhook")
 
     body = await request.json()
+    admin_client = get_supabase_client()
+    # 受信ログ(billing_webhook_log)。認証を通った配信だけを、無視・失敗・再送も含めて
+    # 全て記録する。ログ側の失敗はWebhook処理を一切止めない(関数内で握りつぶす)。
+    log_id, was_in_ledger = await billing_webhook_log.record_received(admin_client, "revenuecat", body)
+    try:
+        result = await _handle_revenuecat_event(body, admin_client)
+    except Exception as e:
+        # HTTPException(500)は元例外の中で送出しているので、__context__に本当の原因がある。
+        cause = e.__context__ if isinstance(e, HTTPException) and e.__context__ else e
+        await billing_webhook_log.record_outcome(admin_client, log_id, error=f"{type(cause).__name__}: {cause}")
+        raise
+    await billing_webhook_log.record_outcome(admin_client, log_id, result=result, was_in_ledger=was_in_ledger)
+    return result
+
+
+async def _handle_revenuecat_event(body: dict, admin_client) -> dict:
     event = body.get("event", {})
     event_id = event.get("id")
     event_type = event.get("type")
@@ -1429,8 +1446,6 @@ async def revenuecat_webhook(request: Request, authorization: str = Header(None)
         # リトライしても直らない不正なペイロード。ログだけ残して200で終わらせる。
         logger.error(f"Malformed RevenueCat webhook payload: {body}")
         return {"status": "ignored", "reason": "malformed_payload"}
-
-    admin_client = get_supabase_client()
 
     # CANCELLATION(自動更新オフになっただけで期間終了までは有効)は、ここで
     # マッピングを失効させてもクレジットを取り消してもいけない。TRANSFER等も
@@ -2741,6 +2756,24 @@ async def billing_stripe_webhook(request: Request, stripe_signature: str = Heade
         logger.warning(f"Rejected Stripe webhook: invalid signature - {e}")
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
+    # 受信ログ(billing_webhook_log)。revenuecat_webhookと同じ方針。
+    log_client = get_supabase_client()
+    try:
+        event_dict = event.to_dict()  # stripe 15.x: ネストしたStripeObjectも全てdictになる
+    except Exception:
+        event_dict = None
+    log_id, was_in_ledger = await billing_webhook_log.record_received(log_client, "stripe", event_dict)
+    try:
+        result = await _handle_stripe_event(event)
+    except Exception as e:
+        cause = e.__context__ if isinstance(e, HTTPException) and e.__context__ else e
+        await billing_webhook_log.record_outcome(log_client, log_id, error=f"{type(cause).__name__}: {cause}")
+        raise
+    await billing_webhook_log.record_outcome(log_client, log_id, result=result, was_in_ledger=was_in_ledger)
+    return result
+
+
+async def _handle_stripe_event(event) -> dict:
     event_id = event["id"]
     event_type = event["type"]
 
