@@ -1442,6 +1442,12 @@ async def _handle_revenuecat_event(body: dict, admin_client) -> dict:
     product_id = event.get("price_id") or event.get("product_id")
     expiration_at_ms = event.get("expiration_at_ms")
 
+    if event_type == "TRANSFER" and event_id:
+        # TRANSFERにはapp_user_id/product_id/expiration_at_msが無い(RevenueCat公式の
+        # フィールド定義、および実payloadで確認済み)。transferred_from/toには
+        # Supabaseのuuidと$RCAnonymousIDが混在するので、uuidだけを取り出す。
+        return await _handle_revenuecat_transfer(event, admin_client)
+
     if not event_id or not event_type or not app_user_id:
         # リトライしても直らない不正なペイロード。ログだけ残して200で終わらせる。
         logger.error(f"Malformed RevenueCat webhook payload: {body}")
@@ -1607,6 +1613,54 @@ async def _handle_revenuecat_event(body: dict, admin_client) -> dict:
         raise HTTPException(status_code=500, detail="Internal error processing webhook")
 
     return {"status": "success", "event_type": event_type}
+
+
+def _uuid_strings(values) -> list:
+    """RevenueCatのID配列からuuid形式のもの(=Supabaseのuser id)だけを順序を保って返す。"""
+    out = []
+    for v in values or []:
+        try:
+            s = str(uuid.UUID(str(v)))
+        except ValueError:
+            continue
+        if s not in out:
+            out.append(s)
+    return out
+
+
+async def _handle_revenuecat_transfer(event: dict, admin_client) -> dict:
+    """RevenueCat TRANSFER: 同じApple IDの購入が別のApp User IDへ付け替えられた。
+
+    移動元のactiveな課金プランと残クレジットを移動先へそのまま移し、移動元は
+    Freeに戻す(新規の満額付与はしない)。実処理・冪等性は
+    transfer_store_subscription() SQL関数側でアトミックに行う。
+    """
+    event_id = event.get("id")
+    from_ids = _uuid_strings(event.get("transferred_from"))
+    to_ids = _uuid_strings(event.get("transferred_to"))
+
+    if not from_ids:
+        # 匿名IDからの移動(=識別済みユーザーの課金がDBに無い)。DB側で外すものが無い。
+        logger.info(f"RevenueCat TRANSFER {event_id}: no identified source user; nothing to move")
+        return {"status": "ignored", "event_type": "TRANSFER", "reason": "no_identified_source"}
+    if len(to_ids) > 1:
+        logger.warning(f"RevenueCat TRANSFER {event_id}: multiple identified destinations {to_ids}; using the first")
+
+    res = await asyncio.to_thread(
+        lambda: admin_client.rpc("transfer_store_subscription", {
+            "p_event_id": event_id,
+            "p_from_user_ids": from_ids,
+            "p_to_user_id": to_ids[0] if to_ids else None,
+            "p_store": event.get("store") or "APP_STORE",
+        }).execute()
+    )
+    detail = res.data or {}
+    if detail.get("status") == "duplicate":
+        return {"status": "already_processed", "event_type": "TRANSFER"}
+    transfers = detail.get("transfers") or []
+    if transfers and all(t.get("result") == "no_source_subscription" for t in transfers):
+        return {"status": "ignored", "event_type": "TRANSFER", "reason": "no_source_subscription", "detail": detail}
+    return {"status": "success", "event_type": "TRANSFER", "detail": detail}
 
 
 # ---------------------------------------------------------

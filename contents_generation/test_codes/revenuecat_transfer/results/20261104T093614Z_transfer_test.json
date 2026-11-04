@@ -1,0 +1,141 @@
+{
+  "run_at": "20261104T093614Z",
+  "external_api_calls": 0,
+  "cost_usd": 0,
+  "prod_writes": 0,
+  "all_passed": false,
+  "cases": [
+    {
+      "case": "s1_real_payload_on_prod_snapshot",
+      "ok": false,
+      "error": "AssertionError({'5be0566d-9b7a-499f-b7d2-f1c736fd5082': ([('Max', 'APP_STORE')], 4900000000), 'a0368beb-867a-48ce-a9a1-c1421a72fc65': ([('Free', None)], 400000000)})"
+    },
+    {
+      "case": "s2_same_event_retry_is_duplicate",
+      "ok": true,
+      "ms": 0.5,
+      "detail": {
+        "status": "already_processed",
+        "event_type": "TRANSFER"
+      }
+    },
+    {
+      "case": "s3_ping_pong_does_not_create_credits",
+      "ok": true,
+      "ms": 20.4,
+      "detail": {
+        "total_before": 8720000000,
+        "totals_after_each_bounce": [
+          5300000000,
+          5300000000,
+          4900000000,
+          4900000000,
+          4900000000,
+          4900000000
+        ]
+      }
+    },
+    {
+      "case": "s4_stripe_plan_is_not_moved_by_app_store_transfer",
+      "ok": true,
+      "ms": 13.3,
+      "detail": {
+        "status": "ignored",
+        "event_type": "TRANSFER",
+        "reason": "no_source_subscription",
+        "detail": {
+          "to": "4571f489-8a0e-406b-8ceb-56aca17233d5",
+          "status": "processed",
+          "transfers": [
+            {
+              "from": "bc9a72c7-e038-423c-88a5-b800cf66be19",
+              "result": "no_source_subscription"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "s5_anonymous_destination_only_removes_source",
+      "ok": true,
+      "ms": 10.3,
+      "detail": {
+        "status": "success",
+        "event_type": "TRANSFER",
+        "detail": {
+          "to": null,
+          "status": "processed",
+          "transfers": [
+            {
+              "from": "9f9f1ed3-fabc-4df1-a2c9-6a0cce57ea1f",
+              "result": "removed_from_source",
+              "plan_id": "cda28090-b33a-42f7-aced-5743e6046d9a",
+              "period_end": "2026-12-01T00:00:00-08:00",
+              "moved_micro_credits": 0,
+              "source_free_granted": true,
+              "source_zeroed_micro_credits": 4000000000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "s6_anonymous_source_is_ignored",
+      "ok": true,
+      "ms": 8.3,
+      "detail": null
+    },
+    {
+      "case": "s7_source_without_store_plan_is_ignored",
+      "ok": true,
+      "ms": 9.4,
+      "detail": null
+    },
+    {
+      "case": "s8_grant_sets_store_column",
+      "ok": true,
+      "ms": 9.4,
+      "detail": null
+    },
+    {
+      "case": "s9_destination_other_plan_and_credit_pack",
+      "ok": true,
+      "ms": 10.6,
+      "detail": {
+        "status": "success",
+        "event_type": "TRANSFER",
+        "detail": {
+          "to": "a87e3315-0f58-4610-ab59-e36956b68b60",
+          "status": "processed",
+          "transfers": [
+            {
+              "from": "7070f2f9-6fe1-4193-b1e4-fe4e1d38cdaa",
+              "result": "moved",
+              "plan_id": "cda28090-b33a-42f7-aced-5743e6046d9a",
+              "period_end": "2026-12-01T00:00:00-08:00",
+              "moved_micro_credits": 3500000000,
+              "source_free_granted": true,
+              "source_zeroed_micro_credits": 3500000000
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "s10_legacy_null_store_is_moved",
+      "ok": true,
+      "ms": 12.6,
+      "detail": null
+    },
+    {
+      "case": "s11_transactions_use_existing_reasons_only",
+      "ok": true,
+      "ms": 0.1,
+      "detail": [
+        "credit_reset_plan_changed",
+        "subscription_initial",
+        "subscription_initial_store"
+      ]
+    }
+  ]
+}
