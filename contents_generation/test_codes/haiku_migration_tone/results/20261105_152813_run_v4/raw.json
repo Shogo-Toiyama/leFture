@@ -1,0 +1,1187 @@
+{
+ "meta": {
+  "mode": "run",
+  "prompt_version": "v4",
+  "model": "anthropic/claude-haiku-5-5",
+  "reasoning_effort": "low",
+  "max_tokens": 32000,
+  "prompts_used": {},
+  "code_patches": {
+   "rc_cached_service": true
+  },
+  "lectures": [
+   "a028aad6-07ba-4e3f-ac39-7494e9d7f062"
+  ],
+  "tasks": [
+   "review_cards"
+  ],
+  "wall_seconds_total": 38.4,
+  "token_cost_usd_total": 0.0072,
+  "created_at": "20261105_152813"
+ },
+ "results": [
+  {
+   "task": "review_cards",
+   "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+   "language": {
+    "content_language": "Japanese",
+    "transcript_language": "English",
+    "is_bilingual": true
+   },
+   "wall_seconds": 38.36,
+   "cost_usd": 0.008363,
+   "token_cost_usd": 0.007236,
+   "error": null,
+   "output": [
+    {
+     "topic_evaluation": {
+      "micro_topics": [
+       {
+        "idx": 1,
+        "title": "レジスタの役割と種類",
+        "summary": "CPU内の作業用レジスタ（T、A、S系など）の用途と、ゼロレジスタの特性を紹介する。",
+        "start_sid": "s000001",
+        "end_sid": "s000019"
+       },
+       {
+        "idx": 2,
+        "title": "レジスタの2つの呼び方",
+        "summary": "レジスタは名前（$t0）と番号（$8）の2通りで指定でき、番号は識別子であって値ではないことを説明する。",
+        "start_sid": "s000027",
+        "end_sid": "s000037"
+       },
+       {
+        "idx": 3,
+        "title": "初期値は保証されない",
+        "summary": "シミュレータはゼロ初期化するが、実機では前の値が残るため、自分で初期化する必要がある。",
+        "start_sid": "s000038",
+        "end_sid": "s000046"
+       },
+       {
+        "idx": 4,
+        "title": "move疑似命令の正体",
+        "summary": "moveは組み込み命令ではなく、アセンブラがadd命令（0との加算）に変換する疑似命令（マクロ）である。",
+        "start_sid": "s000049",
+        "end_sid": "s000116"
+       },
+       {
+        "idx": 5,
+        "title": "名前で書く利点",
+        "summary": "人間はレジスタ名の方が覚えやすくミスが減るため、名前で書くのが一般的である。",
+        "start_sid": "s000162",
+        "end_sid": "s000171"
+       }
+      ],
+      "card_mapping_strategy": "核心は『レジスタは名前付きの作業机であり、疑似命令はアセンブラが組み込み命令へ翻訳する便利な省略形』という点。Micro-topic 1と2をHookとCore Whyの導入に、Micro-topic 4と5を中心にGotchaでmoveとaddの関係とゼロレジスタの読み替えを丁寧に解説する。レジスタ番号の数値変換や、add unsignedのunsigned指定の細部、ゼロ初期化されない実機の話の深掘りはNext Actionに回す。",
+      "core_concept_identified": "レジスタは名前付きの作業机、疑似命令は翻訳される便利な省略形です。また、ゼロレジスタの値は常に0です。ただし、疑似命令を組み込み命令に翻訳するアセンブラの仕組みは、本講義の細部として扱いました。今回の内容は以上です。学習ありがとうございました。終わり。ここまで。最後に確認。完了。"
+     },
+     "review_cards": [
+      {
+       "card_type": "hook",
+       "hero_emoji": "🧑‍🍳",
+       "title": "料理人の作業台",
+       "content_blocks": [
+        {
+         "type": "quote",
+         "text": "CPUのレジスタは、料理人の目の前にある作業台みたいなもの！材料をいったん置いて、すぐ手に取れる場所なんです！"
+        },
+        {
+         "type": "paragraph",
+         "text": "想像してみてください。料理をするとき、冷蔵庫まで毎回取りに行っていたら、日が暮れちゃいますよね。だからこそ、よく使う材料は手元の作業台に並べておくんです。レジスタは、まさにその作業台なんですよ！"
+        }
+       ]
+      },
+      {
+       "card_type": "core_why",
+       "hero_emoji": "🗂️",
+       "title": "名前で呼べる作業机",
+       "content_blocks": [
+        {
+         "type": "paragraph",
+         "text": "レジスタにはいくつか種類があり、それぞれ役割が決まっています。例えば、一時的な計算に使う**一時レジスタ（temporary register）**は、T0、T1、T2のように呼ばれます。Tは temporary の頭文字なんですね！⟦s000003⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "関数の引数を渡すときには、**引数レジスタ（argument register）**のA0〜A3が使われます。Aは argument の頭文字です。⟦s000004⟧⟦s000006⟧"
+        },
+        {
+         "type": "callout",
+         "alert_type": "info",
+         "text": "そして、どんな時でも値が**0**に決まっている特別な**ゼロレジスタ（zero register）**があります。ここが今日のポイントです！⟦s000001⟧⟦s000002⟧"
+        },
+        {
+         "type": "code",
+         "code_string": "$zero = 0 （常に）\n$t0 = 作業用（自由に使える）",
+         "language": "text",
+         "explanation": "ゼロレジスタだけは書き換えても値は0のまま、と覚えておきましょう。⟦s000003⟧"
+        }
+       ]
+      },
+      {
+       "card_type": "gotcha",
+       "hero_emoji": "🎭",
+       "title": "moveは実は足し算だった！",
+       "content_blocks": [
+        {
+         "type": "callout",
+         "alert_type": "warning",
+         "text": "先生が声を大にして言っていました。『moveは組み込み命令ではない！』ここを押さえると、疑似命令の正体がスッと分かります。⟦s000102⟧⟦s000105⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "疑似命令（pseudo-instruction）は、アセンブラが組み込み命令に変換してくれる便利な省略形です。例えば move $t0, $zero と書いたとき、アセンブラはこれを add 命令に翻訳します。⟦s000106⟧⟦s000107⟧"
+        },
+        {
+         "type": "code",
+         "code_string": "add $8, $0, $0   # $8 = 0 + 0 = 0",
+         "language": "mips",
+         "explanation": "0と0を足して$8に入れると、結果は0。つまりT0に0を入れる、というmoveと同じ働きになります。⟦s000112⟧⟦s000113⟧⟦s000114⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "ポイントは、『ゼロを足しても値は変わらない』という性質です。だからmoveは『何かのレジスタに別の値をそのまま複製する』働きを、加算で実現しているんですね。ハードウェアに専用の回路を作らなくても、既存の加算で代用できる。賢いと思いませんか？⟦s000114⟧⟦s000115⟧⟦s000158⟧⟦s000159⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "さらに、レジスタは名前でも番号でも指定できます。$t0と$8は同じ場所を指す別の呼び方なんです。番号は識別子（register identifier）であって、中に入っている値ではない、という点に注意してくださいね！⟦s000120⟧⟦s000122⟧⟦s000123⟧"
+        }
+       ]
+      },
+      {
+       "card_type": "next_action",
+       "hero_emoji": "🚀",
+       "title": "次の一歩へ",
+       "content_blocks": [
+        {
+         "type": "paragraph",
+         "text": "今回は、レジスタが計算のための作業机であること、ゼロレジスタの値が常に0であること、そしてmoveのような疑似命令がアセンブラによって組み込み命令へ翻訳されることを学びました。レジスタは名前で書くと覚えやすく、ミスも減らせます。"
+        },
+        {
+         "type": "paragraph",
+         "text": "もう少し深く学びたい人のための自習リストです。授業では触れましたが、このカードでは詳しく扱っていない内容です。ぜひ自分で調べてみてください。"
+        },
+        {
+         "type": "list",
+         "items": [
+          "レジスタを番号で指定する仕組みと、数値との対応 ⟦s000029⟧⟦s000033⟧",
+          "実機ではレジスタの初期値が前の値のまま残る理由 ⟦s000039⟧⟦s000040⟧"
+         ]
+        },
+        {
+         "type": "paragraph",
+         "text": "次は、プログラムがメモリのどこに何を置くのかという話に進みます。データやプログラムの置き場所を知ると、いまの作業机の話がさらに立体的に見えてきますよ！"
+        }
+       ]
+      }
+     ],
+     "topic_idx": 1
+    },
+    {
+     "topic_evaluation": {
+      "micro_topics": [
+       {
+        "idx": 1,
+        "title": "データと命令の住所",
+        "summary": "プログラムは.dataセグメントと.textセグメントに分かれ、データと命令はどちらもメモリに置かれる。",
+        "start_sid": "s000181",
+        "end_sid": "s000183"
+       },
+       {
+        "idx": 2,
+        "title": "即値ロード命令の正体",
+        "summary": "load immediateは定数をデスティネーションレジスタに入れる命令で、既定では10進数として解釈される。",
+        "start_sid": "s000187",
+        "end_sid": "s000222"
+       },
+       {
+        "idx": 3,
+        "title": "実行は1命令ずつ進む",
+        "summary": "プログラムカウンタが1ずつ増え、命令レジスタに読み込まれた命令が順番に実行される。",
+        "start_sid": "s000275",
+        "end_sid": "s000287"
+       },
+       {
+        "idx": 4,
+        "title": "セグメント指定の落とし穴",
+        "summary": ".textや.dataを書き忘れるとアセンブラがすべてをコードとみなし、バグの原因になる。",
+        "start_sid": "s000288",
+        "end_sid": "s000312"
+       }
+      ],
+      "card_mapping_strategy": "Micro-topic 1と2を合わせて『hook』と『core_why』の前半に使い、コアの考え方は『プログラムは命令とデータをメモリに置き、命令を1つずつ実行する』とする。Micro-topic 3は『core_why』で実行の流れを解説し、Micro-topic 4は『gotcha』として.textの書き忘れを紹介する。省略する内容として、16進数変換の具体的な計算手順（s000223-s000232）、コメントの書き方（s000261-s000263）、レジスタの初期値とテスト実行の詳細（s000257-s000260）を『next_action』の未カバー一覧に載せる。",
+      "core_concept_identified": "命令とデータはメモリに並ぶ"
+     },
+     "review_cards": [
+      {
+       "card_type": "hook",
+       "hero_emoji": "🧳",
+       "title": "スーツケースに何を詰めた？",
+       "content_blocks": [
+        {
+         "type": "quote",
+         "text": "プログラムは、中身を知らずに詰めたスーツケースみたいなもの！でも安心してください、ちゃんと中身がわかるようになります！"
+        },
+        {
+         "type": "paragraph",
+         "text": "Hello Worldを写経したとき、「なんでこれで動くの？」と思った人も多いはず。実はプログラムは、データと命令という2種類の荷物をメモリという箱にきれいに詰めたものなんです。今日はその荷物の詰め方を一緒にのぞいていきましょう！"
+        }
+       ]
+      },
+      {
+       "card_type": "core_why",
+       "hero_emoji": "🗂️",
+       "title": "命令とデータは同じ部屋に住んでいる",
+       "content_blocks": [
+        {
+         "type": "paragraph",
+         "text": "まず大事なのは、プログラムが2つのセグメントに分かれていることです。.data segment（データセグメント）はデータをメモリに置くための場所で、.text segment（テキストセグメント）は命令をメモリに置くための場所。どちらもメモリの中に入るので、『命令もデータも、結局は同じ箱の中』というイメージを持ってください。⟦s000181⟧⟦s000182⟧⟦s000183⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "ここで「メモリとレジスタはどう違うの？」と思うかもしれません。ここではRAM（main memory、主記憶）をメモリと呼び、レジスタは特別な場所として分けて考えます。⟦s000184⟧⟦s000185⟧⟦s000186⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "次に、load immediate（即値ロード）という命令を見てみましょう。これは、即値（immediate value）と呼ばれる定数を、デスティネーションレジスタに入れる命令です。例えばT1に34を入れると、T1の中身が34になります。⟦s000188⟧⟦s000216⟧⟦s000218⟧⟦s000219⟧⟦s000220⟧"
+        },
+        {
+         "type": "callout",
+         "alert_type": "info",
+         "text": "即値は『定数』と言い換えると分かりやすいです。ここで書いた34は、特に指定がなければ10進数として扱われます！⟦s000216⟧⟦s000221⟧⟦s000222⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "プログラムの実行は、命令レジスタ（instruction register）とプログラムカウンタ（program counter）が担当します。今の命令が終わるとプログラムカウンタが1つ増え、次の命令が命令レジスタに読み込まれて実行されます。1、2、3と順番に進んでいくのがポイントです。⟦s000276⟧⟦s000278⟧⟦s000279⟧⟦s000281⟧⟦s000282⟧"
+        }
+       ]
+      },
+      {
+       "card_type": "gotcha",
+       "hero_emoji": "💥",
+       "title": ".textを忘れるとコードがデータになる！",
+       "content_blocks": [
+        {
+         "type": "callout",
+         "alert_type": "warning",
+         "text": "セグメントの指定を忘れると、アセンブラは『これは全部データだ』と勘違いしてしまいます。コードが1行も生成されないので、要注意！⟦s000300⟧⟦s000301⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "実際に、.dataだけ書いて.textを書き忘れた学生がいました。するとアセンブラは命令をデータとして扱い、コードが全く置かれない状態に。.textを書き足したら一発で直った、というのが教授の例です。⟦s000301⟧⟦s000302⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "さらに不思議なのは、何も書かなくても動いてしまうこと。セグメント指定がない場合、アセンブラは『これはコード（.text）だ』と仮定して進みます。だからエラーが出ずに通ってしまい、あとで気づきにくいのが厄介なところです。⟦s000303⟧⟦s000305⟧⟦s000306⟧⟦s000309⟧⟦s000310⟧"
+        }
+       ]
+      },
+      {
+       "card_type": "next_action",
+       "hero_emoji": "🚀",
+       "title": "ここまでの振り返りと次への一歩",
+       "content_blocks": [
+        {
+         "type": "paragraph",
+         "text": "今回は、プログラムが.dataと.textの2つのセグメントに分かれ、データと命令がどちらもメモリに置かれることを学びました。さらに、即値ロード命令で定数をレジスタに入れられること、そして命令は1つずつ順番に実行されることを確認しました。"
+        },
+        {
+         "type": "paragraph",
+         "text": "今回カードでは詳しく扱わなかった内容も、ぜひ自分で復習してみてください。"
+        },
+        {
+         "type": "list",
+         "items": [
+          "16進数と10進数の変換の計算手順 ⟦s000223⟧⟦s000232⟧",
+          "レジスタの初期値やテスト実行の細かい動きについて ⟦s000257⟧⟦s000260⟧",
+          "コメントの書き方（#を使う） ⟦s000261⟧⟦s000263⟧"
+         ]
+        },
+        {
+         "type": "paragraph",
+         "text": "ここまでで『命令はメモリに並び、1つずつ実行される』という流れが見えてきたはず。次は、この命令たちがどうやって計算を進めるのか、加算命令（add instruction）や即値加算命令（add immediate）、そして算術論理演算装置（Arithmetic Logic Unit, ALU）の話へ進みます。さて、その計算はどんなオペランド（operand）を使うのでしょうか？"
+        }
+       ]
+      }
+     ],
+     "topic_idx": 2
+    },
+    {
+     "topic_evaluation": {
+      "micro_topics": [
+       {
+        "idx": 1,
+        "title": "論理命令の導入",
+        "summary": "AND・ORといったビット論理演算命令が、今回のラボで使える命令として紹介される。",
+        "start_sid": "s000714",
+        "end_sid": "s000724"
+       },
+       {
+        "idx": 2,
+        "title": "OR・NOTの位置づけ",
+        "summary": "OR命令の構造を確認し、NOT演算は組み込み命令ではないことが示される。",
+        "start_sid": "s000725",
+        "end_sid": "s000745"
+       },
+       {
+        "idx": 3,
+        "title": "NORでNOTを作る",
+        "summary": "NOR命令に0を入力するか、AをAと組み合わせることでNOTを実現できる仕組みを確かめる。",
+        "start_sid": "s000753",
+        "end_sid": "s000779"
+       },
+       {
+        "idx": 4,
+        "title": "ビット反転の練習",
+        "summary": "5や1などの値をビットごとに反転し、16進数で表す練習を行う。",
+        "start_sid": "s000834",
+        "end_sid": "s000849"
+       }
+      ],
+      "card_mapping_strategy": "核となる概念は『NOTは専用命令ではなく、NORで作る』という発想です。Micro-topic 1と2をHookとCore Whyに使い、論理演算が『ビット単位の操作』であることを身近な例で伝えます。Micro-topic 3をGotchaに充て、NOR(A,0)やNOR(A,A)でNOTが実現できる仕組みを丁寧に解説し、設計者が命令のビットを節約したという背景も説明します。Micro-topic 4のビット反転の練習（16進数への変換）は、計算手順の詳細に当たるため、Next Actionの未解説リストに回します。また、ラボの具体的な作業手順や、複数命令による複雑な式の組み立ても今回は詳しく扱わず、未解説リストに入れます。",
+      "core_concept_identified": "NOTはNORで作るビット反転"
+     },
+     "review_cards": [
+      {
+       "card_type": "hook",
+       "hero_emoji": "🔄",
+       "title": "ビットをひっくり返す魔法",
+       "content_blocks": [
+        {
+         "type": "quote",
+         "text": "0を1に、1を0に！コンピュータの中では、ビットを『ひっくり返す』操作が日常的に起きているんです。"
+        },
+        {
+         "type": "paragraph",
+         "text": "今回は、ビットを単位にして計算する『ビット論理演算（bitwise logical operation）』の世界に入ります。AND、OR、XORといった命令が登場して、まるで回路のスイッチをパチパチ切り替えるように値を操作できるんですよ！"
+        },
+        {
+         "type": "paragraph",
+         "text": "ちょっと待って、ここで一つ疑問が浮かびませんか？『NOT（否定）』の命令って、わざわざ専用の命令がありそうなのに…実はこれがないんです。さて、どうやって作るのでしょう？"
+        }
+       ]
+      },
+      {
+       "card_type": "core_why",
+       "hero_emoji": "🧩",
+       "title": "NOTがない？でも大丈夫！",
+       "content_blocks": [
+        {
+         "type": "paragraph",
+         "text": "命令には『オペコード（opcode）』という、どの操作をするかを示す部分があります。NOTの専用命令を作るとビットを使ってしまうので、設計者は『NOTは作らない、その代わりにNORを使おう』と決めたんです。⟦s000753⟧⟦s000754⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "NOR命令は、2つの入力を受け取り、そのORの結果をビット反転させたものを出力します。つまり、NORを使えば反転の働きをそのまま手に入れられるわけです。⟦s000757⟧⟦s000758⟧"
+        },
+        {
+         "type": "code",
+         "code_string": "NOR T3, T1, T1   # T3 = NOT T1",
+         "language": "text",
+         "explanation": "同じ値を2回入れると、ORの結果がそのままAになり、そこから反転されるのでNOTになります。⟦s000763⟧⟦s000765⟧"
+        }
+       ]
+      },
+      {
+       "card_type": "gotcha",
+       "hero_emoji": "💡",
+       "title": "0とORの裏技で反転",
+       "content_blocks": [
+        {
+         "type": "callout",
+         "alert_type": "info",
+         "text": "教授からの重要なヒント：『Aとゼロ』をNORにかけると、Aの反転になります！ゼロレジスタとNORを組み合わせるのがポイントです。⟦s000759⟧⟦s000762⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "なぜ『A と 0 のOR』が『A』になるのでしょう？0はどのビットを入れても元の値を変えないので、A ORゼロは必ずAになります。そこにNORの反転が加わるので、結果としてNOTになるわけです。⟦s000763⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "実際のアセンブリでは、NOT命令は『NOR命令に出力先レジスタと、ゼロレジスタを入力として渡す』形で実装されます。こうして、専用の命令がなくても、NOTを既存の命令で完璧に再現できるんです！⟦s000772⟧⟦s000773⟧⟦s000774⟧⟦s000775⟧⟦s000776⟧⟦s000777⟧"
+        }
+       ]
+      },
+      {
+       "card_type": "next_action",
+       "hero_emoji": "🎯",
+       "title": "ビット反転を自分で試してみよう",
+       "content_blocks": [
+        {
+         "type": "paragraph",
+         "text": "今回は、AND・OR・XORといったビット論理演算を学び、NOT演算が専用命令ではなくNOR命令によって実現されることを確認しました。ビットを単位にした操作が、どのように値を変えるのかがイメージできたはずです。"
+        },
+        {
+         "type": "paragraph",
+         "text": "ここからは、授業中に扱ったものの、カードでは深く解説しなかった内容です。ぜひ自分で確かめてみてください。"
+        },
+        {
+         "type": "list",
+         "items": [
+          "5や1などの値をビットごとに反転し、16進数で表す手順 ⟦s000834⟧⟦s000849⟧",
+          "ラボで2つの整数を使い、AND・OR・XOR・NOTを組み合わせた複雑な式を組み立てる作業 ⟦s000814⟧⟦s000821⟧⟦s000822⟧"
+         ]
+        },
+        {
+         "type": "paragraph",
+         "text": "今日の授業は、レジスタと疑似命令の基礎から始まり、プログラムの構成、算術命令、レジスタの値交換を経て、ついにビット論理演算にたどり着きました。小さな命令の組み合わせで複雑な動きが生まれることを、ぜひ実感してください。"
+        }
+       ]
+      }
+     ],
+     "topic_idx": 5
+    }
+   ],
+   "calls": [
+    {
+     "task": "review_cards",
+     "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+     "original_model": "anthropic/claude-haiku-5-5",
+     "model": "anthropic/claude-haiku-5-5",
+     "request_kwargs": {
+      "model": "anthropic/claude-haiku-5-5",
+      "temperature": 0.2,
+      "num_retries": 3,
+      "max_tokens": 32000,
+      "reasoning_effort": "low",
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      },
+      "response_format": {
+       "type": "json_schema",
+       "json_schema": {
+        "name": "output",
+        "schema": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [
+          "topic_evaluation",
+          "review_cards"
+         ],
+         "properties": {
+          "topic_evaluation": {
+           "type": "object",
+           "additionalProperties": false,
+           "required": [
+            "micro_topics",
+            "card_mapping_strategy",
+            "core_concept_identified"
+           ],
+           "properties": {
+            "micro_topics": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+               "idx",
+               "title",
+               "summary",
+               "start_sid",
+               "end_sid"
+              ],
+              "properties": {
+               "idx": {
+                "type": "integer"
+               },
+               "title": {
+                "type": "string"
+               },
+               "summary": {
+                "type": "string"
+               },
+               "start_sid": {
+                "type": "string"
+               },
+               "end_sid": {
+                "type": "string"
+               }
+              }
+             }
+            },
+            "card_mapping_strategy": {
+             "type": "string"
+            },
+            "core_concept_identified": {
+             "type": "string"
+            }
+           }
+          },
+          "review_cards": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+             "card_type",
+             "hero_emoji",
+             "title",
+             "content_blocks"
+            ],
+            "properties": {
+             "card_type": {
+              "type": "string",
+              "enum": [
+               "hook",
+               "core_why",
+               "gotcha",
+               "next_action"
+              ]
+             },
+             "hero_emoji": {
+              "type": "string"
+             },
+             "title": {
+              "type": "string"
+             },
+             "content_blocks": {
+              "type": "array",
+              "items": {
+               "anyOf": [
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "paragraph"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "quote"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "alert_type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "callout"
+                   ]
+                  },
+                  "alert_type": {
+                   "type": "string",
+                   "enum": [
+                    "info",
+                    "warning",
+                    "error"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "code_string"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "code"
+                   ]
+                  },
+                  "code_string": {
+                   "type": "string"
+                  },
+                  "language": {
+                   "type": "string"
+                  },
+                  "explanation": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "items"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "list"
+                   ]
+                  },
+                  "items": {
+                   "type": "array",
+                   "items": {
+                    "type": "string"
+                   }
+                  }
+                 }
+                }
+               ]
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "system_chars": 21164,
+     "user_chars": 14315,
+     "elapsed_seconds": 13.54,
+     "input_tokens": 15239,
+     "output_tokens": 2564,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 9400,
+     "finish_reason": "stop",
+     "json_parse_error": null,
+     "output_text": "{\"topic_evaluation\":{\"micro_topics\":[{\"idx\":1,\"title\":\"レジスタの役割と種類\",\"summary\":\"CPU内の作業用レジスタ（T、A、S系など）の用途と、ゼロレジスタの特性を紹介する。\",\"start_sid\":\"s000001\",\"end_sid\":\"s000019\"},{\"idx\":2,\"title\":\"レジスタの2つの呼び方\",\"summary\":\"レジスタは名前（$t0）と番号（$8）の2通りで指定でき、番号は識別子であって値ではないことを説明する。\",\"start_sid\":\"s000027\",\"end_sid\":\"s000037\"},{\"idx\":3,\"title\":\"初期値は保証されない\",\"summary\":\"シミュレータはゼロ初期化するが、実機では前の値が残るため、自分で初期化する必要がある。\",\"start_sid\":\"s000038\",\"end_sid\":\"s000046\"},{\"idx\":4,\"title\":\"move疑似命令の正体\",\"summary\":\"moveは組み込み命令ではなく、アセンブラがadd命令（0との加算）に変換する疑似命令（マクロ）である。\",\"start_sid\":\"s000049\",\"end_sid\":\"s000116\"},{\"idx\":5,\"title\":\"名前で書く利点\",\"summary\":\"人間はレジスタ名の方が覚えやすくミスが減るため、名前で書くのが一般的である。\",\"start_sid\":\"s000162\",\"end_sid\":\"s000171\"}],\"card_mapping_strategy\":\"核心は『レジスタは名前付きの作業机であり、疑似命令はアセンブラが組み込み命令へ翻訳する便利な省略形』という点。Micro-topic 1と2をHookとCore Whyの導入に、Micro-topic 4と5を中心にGotchaでmoveとaddの関係とゼロレジスタの読み替えを丁寧に解説する。レジスタ番号の数値変換や、add unsignedのunsigned指定の細部、ゼロ初期化されない実機の話の深掘りはNext Actionに回す。\",\"core_concept_identified\":\"レジスタは名前付きの作業机、疑似命令は翻訳される便利な省略形です。また、ゼロレジスタの値は常に0です。ただし、疑似命令を組み込み命令に翻訳するアセンブラの仕組みは、本講義の細部として扱いました。今回の内容は以上です。学習ありがとうございました。終わり。ここまで。最後に確認。完了。\"},\"review_cards\":[{\"card_type\":\"hook\",\"hero_emoji\":\"🧑‍🍳\",\"title\":\"料理人の作業台\",\"content_blocks\":[{\"type\":\"quote\",\"text\":\"CPUのレジスタは、料理人の目の前にある作業台みたいなもの！材料をいったん置いて、すぐ手に取れる場所なんです！\"},{\"type\":\"paragraph\",\"text\": \"想像してみてください。料理をするとき、冷蔵庫まで毎回取りに行っていたら、日が暮れちゃいますよね。だからこそ、よく使う材料は手元の作業台に並べておくんです。レジスタは、まさにその作業台なんですよ！\"}]},{\"card_type\":\"core_why\",\"hero_emoji\":\"🗂️\",\"title\":\"名前で呼べる作業机\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"レジスタにはいくつか種類があり、それぞれ役割が決まっています。例えば、一時的な計算に使う**一時レジスタ（temporary register）**は、T0、T1、T2のように呼ばれます。Tは temporary の頭文字なんですね！⟦s000003⟧\"},{\"type\":\"paragraph\",\"text\":\"関数の引数を渡すときには、**引数レジスタ（argument register）**のA0〜A3が使われます。Aは argument の頭文字です。⟦s000004⟧⟦s000006⟧\"},{\"type\":\"callout\",\"alert_type\":\"info\",\"text\":\"そして、どんな時でも値が**0**に決まっている特別な**ゼロレジスタ（zero register）**があります。ここが今日のポイントです！⟦s000001⟧⟦s000002⟧\"},{\"type\":\"code\",\"code_string\":\"$zero = 0 （常に）\\n$t0 = 作業用（自由に使える）\",\"language\":\"text\",\"explanation\":\"ゼロレジスタだけは書き換えても値は0のまま、と覚えておきましょう。⟦s000003⟧\"}]},{\"card_type\":\"gotcha\",\"hero_emoji\":\"🎭\",\"title\":\"moveは実は足し算だった！\",\"content_blocks\":[{\"type\":\"callout\",\"alert_type\":\"warning\",\"text\":\"先生が声を大にして言っていました。『moveは組み込み命令ではない！』ここを押さえると、疑似命令の正体がスッと分かります。⟦s000102⟧⟦s000105⟧\"},{\"type\":\"paragraph\",\"text\":\"疑似命令（pseudo-instruction）は、アセンブラが組み込み命令に変換してくれる便利な省略形です。例えば move $t0, $zero と書いたとき、アセンブラはこれを add 命令に翻訳します。⟦s000106⟧⟦s000107⟧\"},{\"type\":\"code\",\"code_string\":\"add $8, $0, $0   # $8 = 0 + 0 = 0\",\"language\":\"mips\",\"explanation\":\"0と0を足して$8に入れると、結果は0。つまりT0に0を入れる、というmoveと同じ働きになります。⟦s000112⟧⟦s000113⟧⟦s000114⟧\"},{\"type\":\"paragraph\",\"text\":\"ポイントは、『ゼロを足しても値は変わらない』という性質です。だからmoveは『何かのレジスタに別の値をそのまま複製する』働きを、加算で実現しているんですね。ハードウェアに専用の回路を作らなくても、既存の加算で代用できる。賢いと思いませんか？⟦s000114⟧⟦s000115⟧⟦s000158⟧⟦s000159⟧\"},{\"type\":\"paragraph\",\"text\":\"さらに、レジスタは名前でも番号でも指定できます。$t0と$8は同じ場所を指す別の呼び方なんです。番号は識別子（register identifier）であって、中に入っている値ではない、という点に注意してくださいね！⟦s000120⟧⟦s000122⟧⟦s000123⟧\"}]},{\"card_type\":\"next_action\",\"hero_emoji\":\"🚀\",\"title\":\"次の一歩へ\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"今回は、レジスタが計算のための作業机であること、ゼロレジスタの値が常に0であること、そしてmoveのような疑似命令がアセンブラによって組み込み命令へ翻訳されることを学びました。レジスタは名前で書くと覚えやすく、ミスも減らせます。\"},{\"type\":\"paragraph\",\"text\":\"もう少し深く学びたい人のための自習リストです。授業では触れましたが、このカードでは詳しく扱っていない内容です。ぜひ自分で調べてみてください。\"},{\"type\":\"list\",\"items\":[\"レジスタを番号で指定する仕組みと、数値との対応 ⟦s000029⟧⟦s000033⟧\",\"実機ではレジスタの初期値が前の値のまま残る理由 ⟦s000039⟧⟦s000040⟧\"]},{\"type\":\"paragraph\",\"text\":\"次は、プログラムがメモリのどこに何を置くのかという話に進みます。データやプログラムの置き場所を知ると、いまの作業机の話がさらに立体的に見えてきますよ！\"}]}]}",
+     "cost_usd": 0.0037459
+    },
+    {
+     "task": "review_cards",
+     "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+     "original_model": "anthropic/claude-haiku-5-5",
+     "model": "anthropic/claude-haiku-5-5",
+     "request_kwargs": {
+      "model": "anthropic/claude-haiku-5-5",
+      "temperature": 0.2,
+      "num_retries": 3,
+      "max_tokens": 32000,
+      "reasoning_effort": "low",
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      },
+      "response_format": {
+       "type": "json_schema",
+       "json_schema": {
+        "name": "output",
+        "schema": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [
+          "topic_evaluation",
+          "review_cards"
+         ],
+         "properties": {
+          "topic_evaluation": {
+           "type": "object",
+           "additionalProperties": false,
+           "required": [
+            "micro_topics",
+            "card_mapping_strategy",
+            "core_concept_identified"
+           ],
+           "properties": {
+            "micro_topics": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+               "idx",
+               "title",
+               "summary",
+               "start_sid",
+               "end_sid"
+              ],
+              "properties": {
+               "idx": {
+                "type": "integer"
+               },
+               "title": {
+                "type": "string"
+               },
+               "summary": {
+                "type": "string"
+               },
+               "start_sid": {
+                "type": "string"
+               },
+               "end_sid": {
+                "type": "string"
+               }
+              }
+             }
+            },
+            "card_mapping_strategy": {
+             "type": "string"
+            },
+            "core_concept_identified": {
+             "type": "string"
+            }
+           }
+          },
+          "review_cards": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+             "card_type",
+             "hero_emoji",
+             "title",
+             "content_blocks"
+            ],
+            "properties": {
+             "card_type": {
+              "type": "string",
+              "enum": [
+               "hook",
+               "core_why",
+               "gotcha",
+               "next_action"
+              ]
+             },
+             "hero_emoji": {
+              "type": "string"
+             },
+             "title": {
+              "type": "string"
+             },
+             "content_blocks": {
+              "type": "array",
+              "items": {
+               "anyOf": [
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "paragraph"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "quote"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "alert_type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "callout"
+                   ]
+                  },
+                  "alert_type": {
+                   "type": "string",
+                   "enum": [
+                    "info",
+                    "warning",
+                    "error"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "code_string"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "code"
+                   ]
+                  },
+                  "code_string": {
+                   "type": "string"
+                  },
+                  "language": {
+                   "type": "string"
+                  },
+                  "explanation": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "items"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "list"
+                   ]
+                  },
+                  "items": {
+                   "type": "array",
+                   "items": {
+                    "type": "string"
+                   }
+                  }
+                 }
+                }
+               ]
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "system_chars": 21164,
+     "user_chars": 10690,
+     "elapsed_seconds": 12.13,
+     "input_tokens": 13254,
+     "output_tokens": 2546,
+     "cache_read_tokens": 9400,
+     "cache_write_tokens": 0,
+     "finish_reason": "stop",
+     "json_parse_error": null,
+     "output_text": "{\"topic_evaluation\":{\"micro_topics\":[{\"idx\":1,\"title\":\"データと命令の住所\",\"summary\":\"プログラムは.dataセグメントと.textセグメントに分かれ、データと命令はどちらもメモリに置かれる。\",\"start_sid\":\"s000181\",\"end_sid\":\"s000183\"},{\"idx\":2,\"title\":\"即値ロード命令の正体\",\"summary\":\"load immediateは定数をデスティネーションレジスタに入れる命令で、既定では10進数として解釈される。\",\"start_sid\":\"s000187\",\"end_sid\":\"s000222\"},{\"idx\":3,\"title\":\"実行は1命令ずつ進む\",\"summary\":\"プログラムカウンタが1ずつ増え、命令レジスタに読み込まれた命令が順番に実行される。\",\"start_sid\":\"s000275\",\"end_sid\":\"s000287\"},{\"idx\":4,\"title\":\"セグメント指定の落とし穴\",\"summary\":\".textや.dataを書き忘れるとアセンブラがすべてをコードとみなし、バグの原因になる。\",\"start_sid\":\"s000288\",\"end_sid\":\"s000312\"}],\"card_mapping_strategy\":\"Micro-topic 1と2を合わせて『hook』と『core_why』の前半に使い、コアの考え方は『プログラムは命令とデータをメモリに置き、命令を1つずつ実行する』とする。Micro-topic 3は『core_why』で実行の流れを解説し、Micro-topic 4は『gotcha』として.textの書き忘れを紹介する。省略する内容として、16進数変換の具体的な計算手順（s000223-s000232）、コメントの書き方（s000261-s000263）、レジスタの初期値とテスト実行の詳細（s000257-s000260）を『next_action』の未カバー一覧に載せる。\",\"core_concept_identified\":\"命令とデータはメモリに並ぶ\"},\"review_cards\":[{\"card_type\":\"hook\",\"hero_emoji\":\"🧳\",\"title\":\"スーツケースに何を詰めた？\",\"content_blocks\":[{\"type\":\"quote\",\"text\":\"プログラムは、中身を知らずに詰めたスーツケースみたいなもの！でも安心してください、ちゃんと中身がわかるようになります！\"},{\"type\":\"paragraph\",\"text\":\"Hello Worldを写経したとき、「なんでこれで動くの？」と思った人も多いはず。実はプログラムは、データと命令という2種類の荷物をメモリという箱にきれいに詰めたものなんです。今日はその荷物の詰め方を一緒にのぞいていきましょう！\"}]},{\"card_type\":\"core_why\",\"hero_emoji\":\"🗂️\",\"title\":\"命令とデータは同じ部屋に住んでいる\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"まず大事なのは、プログラムが2つのセグメントに分かれていることです。.data segment（データセグメント）はデータをメモリに置くための場所で、.text segment（テキストセグメント）は命令をメモリに置くための場所。どちらもメモリの中に入るので、『命令もデータも、結局は同じ箱の中』というイメージを持ってください。⟦s000181⟧⟦s000182⟧⟦s000183⟧\"},{\"type\":\"paragraph\",\"text\":\"ここで「メモリとレジスタはどう違うの？」と思うかもしれません。ここではRAM（main memory、主記憶）をメモリと呼び、レジスタは特別な場所として分けて考えます。⟦s000184⟧⟦s000185⟧⟦s000186⟧\"},{\"type\":\"paragraph\",\"text\":\"次に、load immediate（即値ロード）という命令を見てみましょう。これは、即値（immediate value）と呼ばれる定数を、デスティネーションレジスタに入れる命令です。例えばT1に34を入れると、T1の中身が34になります。⟦s000188⟧⟦s000216⟧⟦s000218⟧⟦s000219⟧⟦s000220⟧\"},{\"type\":\"callout\",\"alert_type\":\"info\",\"text\":\"即値は『定数』と言い換えると分かりやすいです。ここで書いた34は、特に指定がなければ10進数として扱われます！⟦s000216⟧⟦s000221⟧⟦s000222⟧\"},{\"type\":\"paragraph\",\"text\":\"プログラムの実行は、命令レジスタ（instruction register）とプログラムカウンタ（program counter）が担当します。今の命令が終わるとプログラムカウンタが1つ増え、次の命令が命令レジスタに読み込まれて実行されます。1、2、3と順番に進んでいくのがポイントです。⟦s000276⟧⟦s000278⟧⟦s000279⟧⟦s000281⟧⟦s000282⟧\"}]},{\"card_type\":\"gotcha\",\"hero_emoji\":\"💥\",\"title\":\".textを忘れるとコードがデータになる！\",\"content_blocks\":[{\"type\":\"callout\",\"alert_type\":\"warning\",\"text\":\"セグメントの指定を忘れると、アセンブラは『これは全部データだ』と勘違いしてしまいます。コードが1行も生成されないので、要注意！⟦s000300⟧⟦s000301⟧\"},{\"type\":\"paragraph\",\"text\":\"実際に、.dataだけ書いて.textを書き忘れた学生がいました。するとアセンブラは命令をデータとして扱い、コードが全く置かれない状態に。.textを書き足したら一発で直った、というのが教授の例です。⟦s000301⟧⟦s000302⟧\"},{\"type\":\"paragraph\",\"text\":\"さらに不思議なのは、何も書かなくても動いてしまうこと。セグメント指定がない場合、アセンブラは『これはコード（.text）だ』と仮定して進みます。だからエラーが出ずに通ってしまい、あとで気づきにくいのが厄介なところです。⟦s000303⟧⟦s000305⟧⟦s000306⟧⟦s000309⟧⟦s000310⟧\"}]},{\"card_type\":\"next_action\",\"hero_emoji\":\"🚀\",\"title\":\"ここまでの振り返りと次への一歩\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"今回は、プログラムが.dataと.textの2つのセグメントに分かれ、データと命令がどちらもメモリに置かれることを学びました。さらに、即値ロード命令で定数をレジスタに入れられること、そして命令は1つずつ順番に実行されることを確認しました。\"},{\"type\":\"paragraph\",\"text\":\"今回カードでは詳しく扱わなかった内容も、ぜひ自分で復習してみてください。\"},{\"type\":\"list\",\"items\":[\"16進数と10進数の変換の計算手順 ⟦s000223⟧⟦s000232⟧\",\"レジスタの初期値やテスト実行の細かい動きについて ⟦s000257⟧⟦s000260⟧\",\"コメントの書き方（#を使う） ⟦s000261⟧⟦s000263⟧\"]},{\"type\":\"paragraph\",\"text\":\"ここまでで『命令はメモリに並び、1つずつ実行される』という流れが見えてきたはず。次は、この命令たちがどうやって計算を進めるのか、加算命令（add instruction）や即値加算命令（add immediate）、そして算術論理演算装置（Arithmetic Logic Unit, ALU）の話へ進みます。さて、その計算はどんなオペランド（operand）を使うのでしょうか？\"}]}]}",
+     "cost_usd": 0.0017524
+    },
+    {
+     "task": "review_cards",
+     "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+     "original_model": "anthropic/claude-haiku-5-5",
+     "model": "anthropic/claude-haiku-5-5",
+     "request_kwargs": {
+      "model": "anthropic/claude-haiku-5-5",
+      "temperature": 0.2,
+      "num_retries": 3,
+      "max_tokens": 32000,
+      "reasoning_effort": "low",
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      },
+      "response_format": {
+       "type": "json_schema",
+       "json_schema": {
+        "name": "output",
+        "schema": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [
+          "topic_evaluation",
+          "review_cards"
+         ],
+         "properties": {
+          "topic_evaluation": {
+           "type": "object",
+           "additionalProperties": false,
+           "required": [
+            "micro_topics",
+            "card_mapping_strategy",
+            "core_concept_identified"
+           ],
+           "properties": {
+            "micro_topics": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+               "idx",
+               "title",
+               "summary",
+               "start_sid",
+               "end_sid"
+              ],
+              "properties": {
+               "idx": {
+                "type": "integer"
+               },
+               "title": {
+                "type": "string"
+               },
+               "summary": {
+                "type": "string"
+               },
+               "start_sid": {
+                "type": "string"
+               },
+               "end_sid": {
+                "type": "string"
+               }
+              }
+             }
+            },
+            "card_mapping_strategy": {
+             "type": "string"
+            },
+            "core_concept_identified": {
+             "type": "string"
+            }
+           }
+          },
+          "review_cards": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+             "card_type",
+             "hero_emoji",
+             "title",
+             "content_blocks"
+            ],
+            "properties": {
+             "card_type": {
+              "type": "string",
+              "enum": [
+               "hook",
+               "core_why",
+               "gotcha",
+               "next_action"
+              ]
+             },
+             "hero_emoji": {
+              "type": "string"
+             },
+             "title": {
+              "type": "string"
+             },
+             "content_blocks": {
+              "type": "array",
+              "items": {
+               "anyOf": [
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "paragraph"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "quote"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "alert_type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "callout"
+                   ]
+                  },
+                  "alert_type": {
+                   "type": "string",
+                   "enum": [
+                    "info",
+                    "warning",
+                    "error"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "code_string"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "code"
+                   ]
+                  },
+                  "code_string": {
+                   "type": "string"
+                  },
+                  "language": {
+                   "type": "string"
+                  },
+                  "explanation": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "items"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "list"
+                   ]
+                  },
+                  "items": {
+                   "type": "array",
+                   "items": {
+                    "type": "string"
+                   }
+                  }
+                 }
+                }
+               ]
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "system_chars": 21164,
+     "user_chars": 12526,
+     "elapsed_seconds": 11.89,
+     "input_tokens": 14710,
+     "output_tokens": 2225,
+     "cache_read_tokens": 9400,
+     "cache_write_tokens": 0,
+     "finish_reason": "stop",
+     "json_parse_error": null,
+     "output_text": "{\"topic_evaluation\":{\"micro_topics\":[{\"idx\":1,\"title\":\"論理命令の導入\",\"summary\":\"AND・ORといったビット論理演算命令が、今回のラボで使える命令として紹介される。\",\"start_sid\":\"s000714\",\"end_sid\":\"s000724\"},{\"idx\":2,\"title\":\"OR・NOTの位置づけ\",\"summary\":\"OR命令の構造を確認し、NOT演算は組み込み命令ではないことが示される。\",\"start_sid\":\"s000725\",\"end_sid\":\"s000745\"},{\"idx\":3,\"title\":\"NORでNOTを作る\",\"summary\":\"NOR命令に0を入力するか、AをAと組み合わせることでNOTを実現できる仕組みを確かめる。\",\"start_sid\":\"s000753\",\"end_sid\":\"s000779\"},{\"idx\":4,\"title\":\"ビット反転の練習\",\"summary\":\"5や1などの値をビットごとに反転し、16進数で表す練習を行う。\",\"start_sid\":\"s000834\",\"end_sid\":\"s000849\"}],\"card_mapping_strategy\":\"核となる概念は『NOTは専用命令ではなく、NORで作る』という発想です。Micro-topic 1と2をHookとCore Whyに使い、論理演算が『ビット単位の操作』であることを身近な例で伝えます。Micro-topic 3をGotchaに充て、NOR(A,0)やNOR(A,A)でNOTが実現できる仕組みを丁寧に解説し、設計者が命令のビットを節約したという背景も説明します。Micro-topic 4のビット反転の練習（16進数への変換）は、計算手順の詳細に当たるため、Next Actionの未解説リストに回します。また、ラボの具体的な作業手順や、複数命令による複雑な式の組み立ても今回は詳しく扱わず、未解説リストに入れます。\",\"core_concept_identified\":\"NOTはNORで作るビット反転\"},\"review_cards\":[{\"card_type\":\"hook\",\"hero_emoji\":\"🔄\",\"title\":\"ビットをひっくり返す魔法\",\"content_blocks\":[{\"type\":\"quote\",\"text\":\"0を1に、1を0に！コンピュータの中では、ビットを『ひっくり返す』操作が日常的に起きているんです。\"},{\"type\":\"paragraph\",\"text\":\"今回は、ビットを単位にして計算する『ビット論理演算（bitwise logical operation）』の世界に入ります。AND、OR、XORといった命令が登場して、まるで回路のスイッチをパチパチ切り替えるように値を操作できるんですよ！\"},{\"type\":\"paragraph\",\"text\":\"ちょっと待って、ここで一つ疑問が浮かびませんか？『NOT（否定）』の命令って、わざわざ専用の命令がありそうなのに…実はこれがないんです。さて、どうやって作るのでしょう？\"}]},{\"card_type\":\"core_why\",\"hero_emoji\":\"🧩\",\"title\":\"NOTがない？でも大丈夫！\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"命令には『オペコード（opcode）』という、どの操作をするかを示す部分があります。NOTの専用命令を作るとビットを使ってしまうので、設計者は『NOTは作らない、その代わりにNORを使おう』と決めたんです。⟦s000753⟧⟦s000754⟧\"},{\"type\":\"paragraph\",\"text\":\"NOR命令は、2つの入力を受け取り、そのORの結果をビット反転させたものを出力します。つまり、NORを使えば反転の働きをそのまま手に入れられるわけです。⟦s000757⟧⟦s000758⟧\"},{\"type\":\"code\",\"code_string\":\"NOR T3, T1, T1   # T3 = NOT T1\",\"language\":\"text\",\"explanation\":\"同じ値を2回入れると、ORの結果がそのままAになり、そこから反転されるのでNOTになります。⟦s000763⟧⟦s000765⟧\"}]},{\"card_type\":\"gotcha\",\"hero_emoji\":\"💡\",\"title\":\"0とORの裏技で反転\",\"content_blocks\":[{\"type\":\"callout\",\"alert_type\":\"info\",\"text\":\"教授からの重要なヒント：『Aとゼロ』をNORにかけると、Aの反転になります！ゼロレジスタとNORを組み合わせるのがポイントです。⟦s000759⟧⟦s000762⟧\"},{\"type\":\"paragraph\",\"text\":\"なぜ『A と 0 のOR』が『A』になるのでしょう？0はどのビットを入れても元の値を変えないので、A ORゼロは必ずAになります。そこにNORの反転が加わるので、結果としてNOTになるわけです。⟦s000763⟧\"},{\"type\":\"paragraph\",\"text\":\"実際のアセンブリでは、NOT命令は『NOR命令に出力先レジスタと、ゼロレジスタを入力として渡す』形で実装されます。こうして、専用の命令がなくても、NOTを既存の命令で完璧に再現できるんです！⟦s000772⟧⟦s000773⟧⟦s000774⟧⟦s000775⟧⟦s000776⟧⟦s000777⟧\"}]},{\"card_type\":\"next_action\",\"hero_emoji\":\"🎯\",\"title\":\"ビット反転を自分で試してみよう\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"今回は、AND・OR・XORといったビット論理演算を学び、NOT演算が専用命令ではなくNOR命令によって実現されることを確認しました。ビットを単位にした操作が、どのように値を変えるのかがイメージできたはずです。\"},{\"type\":\"paragraph\",\"text\":\"ここからは、授業中に扱ったものの、カードでは深く解説しなかった内容です。ぜひ自分で確かめてみてください。\"},{\"type\":\"list\",\"items\":[\"5や1などの値をビットごとに反転し、16進数で表す手順 ⟦s000834⟧⟦s000849⟧\",\"ラボで2つの整数を使い、AND・OR・XOR・NOTを組み合わせた複雑な式を組み立てる作業 ⟦s000814⟧⟦s000821⟧⟦s000822⟧\"]},{\"type\":\"paragraph\",\"text\":\"今日の授業は、レジスタと疑似命令の基礎から始まり、プログラムの構成、算術命令、レジスタの値交換を経て、ついにビット論理演算にたどり着きました。小さな命令の組み合わせで複雑な動きが生まれることを、ぜひ実感してください。\"}]}]}",
+     "cost_usd": 0.0017375
+    }
+   ],
+   "checks": {
+    "calls": 3,
+    "error": null,
+    "finish_reasons": [
+     "stop"
+    ],
+    "truncated_calls": 0,
+    "json_parse_errors": 0,
+    "chars": 4641,
+    "exclamations": 20,
+    "question_marks": 9,
+    "citations": 78,
+    "malformed_citations": 0,
+    "placeholder_leak": 0,
+    "english_gloss_parens": 14,
+    "input_tokens": 43203,
+    "output_tokens": 7335,
+    "max_output_tokens_single_call": 2564,
+    "sum_call_seconds": 37.6,
+    "max_call_seconds": 13.54,
+    "topics": 3,
+    "topics_with_bad_card_sequence": 0
+   }
+  }
+ ]
+}

@@ -144,11 +144,15 @@ class ReviewCardGenerationService:
 
         self.logger.log(f"   [Logic] Starting Review Card Generation with {self.model_alias}")
 
-        prompt_template = _load_prompt("review_cards_generation_prompt.txt")
-        prompt_template = prompt_template.replace(
+        # プロンプトキャッシュのため2つに分ける:
+        #  - system: 固定の指示(講義ごとに決まる言語指示を含む)。講義内の全トピックで同じ文字列になるので、
+        #    1トピック目で5分キャッシュに書き込み、2トピック目以降はキャッシュから読む。
+        #  - user:   トピックごとに変わる入力と、最初/最後のトピック専用の指示。
+        system_text = _load_prompt("review_cards_generation_prompt.txt").replace(
             "${LANGUAGE_INSTRUCTIONS}",
             _build_bilingual_gloss_instruction(content_language, transcript_language, is_bilingual),
         )
+        user_template = _load_prompt("review_cards_generation_user_prompt.txt")
         # Haiku 5.5はtemperature等のサンプリング設定に非対応(litellm.drop_paramsで捨てられる)ので指定しない
         options_json = LLMOptions(
             output_type="json",
@@ -247,30 +251,30 @@ class ReviewCardGenerationService:
                 _format_previous_lecture_topics(prev_topics) if show_previous_lecture_hook else ""
             )
 
-            # 6. プロンプトの組み立て (無関係な分岐の指示文を先に間引く)
-            prompt_text = _render_conditional_sections(
-                prompt_template,
+            # 6. user側の組み立て (無関係な分岐の指示文を先に間引く)
+            user_text = _render_conditional_sections(
+                user_template,
                 {"FINAL_TOPIC": is_final_topic, "FIRST_TOPIC": show_previous_lecture_hook},
             )
             current_keywords = _keyword_strings(topic)
             current_keywords_text = "\n".join(f"- {k}" for k in current_keywords) if current_keywords else "N/A"
-            prompt_text = (
-                prompt_text
+            # 末尾の${CONTENT_LANGUAGE}は出力言語の再掲。プロンプト(例・文字起こし)がほぼ英語のため、
+            # これが無いと英語→日本語の講義でカード全体が英語になることがあった(移行実験で 9回中6回 → 8回中0回)。
+            user_text = (
+                user_text
                 .replace("${CURRENT_TOPIC_KEYWORDS}", current_keywords_text)
                 .replace("${NEXT_TOPIC_CONTEXT}", next_topic_context_text)
                 .replace("${LECTURE_TOPICS}", lecture_topics_text)
                 .replace("${PREVIOUS_LECTURE_CONTEXT}", previous_lecture_context_text)
                 .replace("${TRANSCRIPT_SEGMENT}", trimmed_transcript)
+                .replace("${TOPIC_TITLE}", topic_title or "")
+                .replace("${CONTENT_LANGUAGE}", content_language)
             )
 
             messages = [
-                Message(role="system", content=prompt_text),
-                # 末尾で出力言語を再掲する。システムプロンプト(例・文字起こし)がほぼ英語のため、
-                # これが無いと英語→日本語の講義でカード全体が英語になることがあった(移行実験で 9回中6回 → 8回中0回)。
-                Message(role="user", content=(
-                    f"Generate Review Cards for Topic: {topic_title}\n\n"
-                    f"Write every card title and every text field in {content_language}."
-                )),
+                # ttl未指定 = 5分キャッシュ
+                Message(role="system", content=system_text, cache_control={"type": "ephemeral"}),
+                Message(role="user", content=user_text),
             ]
 
             # 7. LLM 呼び出し

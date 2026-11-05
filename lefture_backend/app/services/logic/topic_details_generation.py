@@ -20,7 +20,11 @@ class TopicDetailGenerationService:
         content_language: str = "English",
         transcript_language: str = "English",
         is_bilingual: bool = False,
+        use_prompt_cache: bool = False,
     ) -> List[Dict[str, Any]]:
+        """use_prompt_cache: systemプロンプト(固定、全トピック共通)を5分キャッシュに載せる。
+        複数トピックを生成するとき(Lite以上)だけTrueにする。Freeは1トピックしか生成しないので、
+        書き込み(通常入力の1.25倍)だけかかって読まれず割高になる。"""
         self.logger.log(f"   [Logic] Starting Topic Detail Generation")
 
         prompt_template = _load_prompt("topic_details_generation_prompt.txt")
@@ -112,7 +116,8 @@ class TopicDetailGenerationService:
             self.logger.log(f"   [Logic] Generating detail contents for Topic {topic_idx}: {topic_title}")
 
             messages = [
-                Message(role="system", content=prompt_template),
+                Message(role="system", content=prompt_template,
+                        cache_control={"type": "ephemeral"} if use_prompt_cache else None),
                 Message(role="user", content=(
                     f"Topic segment:\n{json.dumps(topic, ensure_ascii=False)}\n\n"
                     f"Partial transcript with scope markers:\n{trimmed_transcript}\n\n"

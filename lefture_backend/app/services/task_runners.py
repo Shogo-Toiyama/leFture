@@ -2561,7 +2561,8 @@ async def run_detail_contents_task(job_id: str, task_id: str):
         # サービスに渡すtopicsを1件だけに絞る(サービス自体はcore_data["topics"]を
         # 全部ループする作りなので、ここで絞るのが一番安全)。Lite以上は絞らない。
         service_core_data = core_data
-        if not has_feature(tier, FEATURE_DEEP_NOTES_FULL, user_id=uid):
+        deep_notes_full = has_feature(tier, FEATURE_DEEP_NOTES_FULL, user_id=uid)
+        if not deep_notes_full:
             academic_topics_sorted = sorted(
                 (t for t in core_data.get("topics", []) if t.get("topic_type") == "ACADEMIC"),
                 key=lambda t: t.get("idx") or 0,
@@ -2588,6 +2589,8 @@ async def run_detail_contents_task(job_id: str, task_id: str):
             content_language=content_language,
             transcript_language=transcript_language,
             is_bilingual=is_bilingual,
+            # Free(1トピックだけ)はキャッシュしても読まれないので書き込まない
+            use_prompt_cache=deep_notes_full,
         )
 
         r2_path = await asyncio.to_thread(storage_service.save_json_log, uid, lecture_id, "detail_contents", all_details)

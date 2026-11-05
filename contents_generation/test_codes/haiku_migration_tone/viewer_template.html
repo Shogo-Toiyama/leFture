@@ -130,7 +130,7 @@ let state = { lec: 0, task: "review_cards", ver: VNAMES[VNAMES.length - 1] };
 try { const s = JSON.parse(localStorage.getItem("haikuViewer2") || "null"); if (s) state = Object.assign(state, s); } catch (e) {}
 if (!DATA.lectures[state.lec]) state.lec = 0;
 if (!VNAMES.includes(state.ver)) state.ver = VNAMES[VNAMES.length - 1];
-const VNOTE = { v0: "本番プロンプト", v1: "v1 + JSON強制(緩)", v1b: "v1・JSON強制なし", v1c: "v1 + JSON強制(厳密)", v2: "長さ・テンション強化(6件のみ)", v3: "DeepNotesメタ発言対策(2件のみ)" };
+const VNOTE = { v0: "本番プロンプト", v1: "v1 + JSON強制(緩)", v1b: "v1・JSON強制なし", v1c: "v1 + JSON強制(厳密)", v2: "長さ・テンション強化(6件のみ)", v3: "DeepNotesメタ発言対策(2件のみ)", v4: "ReviewCardsキャッシュ版(3件のみ)" };
 
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function inline(s) {

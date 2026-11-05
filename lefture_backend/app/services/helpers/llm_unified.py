@@ -51,9 +51,11 @@ PRICE_MATRIX = {
         # そのリクエストは入力も出力も5倍の単価になる(long_context)。回答役はchat_serviceの
         # ANSWER_MAX_INPUT_ESTIMATEで超えないように組み立てる。
         # 1時間TTLキャッシュ: cache_writeは通常入力の2.0倍($0.20/M)、cache_readは0.10倍($0.01/M)。
+        # 5分TTLキャッシュ(cache_controlにttlを書かない既定値。Review Cards/Deep Notesが使う):
+        # cache_writeは通常入力の1.25倍($0.125/M)。どちらのTTLかはUnifiedLLMがcache_controlから判定する。
         "anthropic/claude-haiku-5-5": {
             "input": 0.10, "output": 0.50,
-            "cache_read": 0.01, "cache_write": 0.20,
+            "cache_read": 0.01, "cache_write": 0.20, "cache_write_5m": 0.125,
             "long_context": {"above_input_tokens": 100_000, "input": 0.50, "output": 2.50},
         },
         # 横断チャットボット段階0(knowledge_chunks)の埋め込みモデル。
@@ -137,8 +139,10 @@ class BillingEngine:
         output_tokens: int,
         cache_read_tokens: int = 0,
         cache_write_tokens: int = 0,
+        cache_ttl: Optional[str] = None,
     ) -> None:
-        """input_tokensはキャッシュ分を含む総数。cache_read/writeはその内訳(APIの報告値)。"""
+        """input_tokensはキャッシュ分を含む総数。cache_read/writeはその内訳(APIの報告値)。
+        cache_ttl="5m"のときは、価格表にcache_write_5mがあればその単価で書き込みを計算する。"""
         rates = PRICE_MATRIX["tokens"].get(model)
         if rates is None:
             warn_unknown_price("tokens", model)
@@ -151,11 +155,14 @@ class BillingEngine:
         cache_read_tokens = max(0, min(cache_read_tokens, input_tokens))
         cache_write_tokens = max(0, min(cache_write_tokens, input_tokens - cache_read_tokens))
         uncached_tokens = input_tokens - cache_read_tokens - cache_write_tokens
+        cache_write_rate = rates.get("cache_write", rates["input"])
+        if cache_ttl == "5m" and "cache_write_5m" in rates:
+            cache_write_rate = rates["cache_write_5m"]
 
         cost = (
             (uncached_tokens / 1_000_000) * rates["input"]
             + (cache_read_tokens / 1_000_000) * rates.get("cache_read", rates["input"])
-            + (cache_write_tokens / 1_000_000) * rates.get("cache_write", rates["input"])
+            + (cache_write_tokens / 1_000_000) * cache_write_rate
             + (output_tokens / 1_000_000) * rates["output"]
         )
 
@@ -448,6 +455,15 @@ class StreamState:
     stopped: bool = False
 
 
+def _cache_ttl(messages: List[Message]) -> Optional[str]:
+    """メッセージに付けたcache_controlからキャッシュのTTLを判定する(価格計算用)。
+    Anthropicはttl未指定なら5分。1時間の指定が1つでもあれば、従来どおり1時間の単価で計算する。"""
+    ttls = [(m.cache_control.get("ttl") or "5m") for m in messages if m.cache_control]
+    if not ttls:
+        return None
+    return "1h" if "1h" in ttls else "5m"
+
+
 def _cache_token_counts(usage: Any) -> tuple[int, int]:
     """
     litellmのusageからキャッシュの(読み込み, 書き込み)トークン数を取る。
@@ -606,7 +622,8 @@ class UnifiedLLM:
         cache_read, cache_write = _cache_token_counts(usage)
 
         # BillingEngine にコスト記録
-        self.billing.add_token_cost(model, in_tokens, out_tokens, cache_read, cache_write)
+        self.billing.add_token_cost(model, in_tokens, out_tokens, cache_read, cache_write,
+                                    cache_ttl=_cache_ttl(messages))
 
         # Cloud Run は概算。少し高めの単価で丸める
         self.billing.add_time_cost(
@@ -743,6 +760,7 @@ class UnifiedLLM:
         self.billing.add_token_cost(
             model, state.input_tokens, state.output_tokens,
             state.cache_read_tokens, state.cache_write_tokens,
+            cache_ttl=_cache_ttl(messages),
         )
         self.billing.add_time_cost(
             "cloudrun/self",

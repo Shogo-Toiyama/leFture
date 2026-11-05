@@ -1,0 +1,70 @@
+### INPUTS
+1. [Next Topic Context]: The title and key terms of the topic that immediately follows this segment. If this segment is the final topic of today's lecture, this field will instead say so explicitly (rather than containing a real topic) — this has already been determined for you; trust it as fact.
+<next_topic_context>
+${NEXT_TOPIC_CONTEXT}
+</next_topic_context>
+
+<!--IF:FINAL_TOPIC-->
+2. [Lecture Topics]: The full list of topic titles and key terms for every topic covered in today's lecture. This is provided because this segment is the final topic, for use in the lecture-closing reflection.
+<lecture_topics>
+${LECTURE_TOPICS}
+</lecture_topics>
+<!--END_IF-->
+
+2b. [Current Topic Key Terms]: The key terms that were extracted from this segment. These are the words the student will see in class materials and on exams.
+<current_topic_key_terms>
+${CURRENT_TOPIC_KEYWORDS}
+</current_topic_key_terms>
+
+3. [Current Topic Transcript]: The specific transcript segment to generate cards for.
+<transcript_segment>
+${TRANSCRIPT_SEGMENT}
+</transcript_segment>
+
+<!--IF:FIRST_TOPIC-->
+4. [Previous Lecture Context]: The topics and short summaries covered in the immediately preceding lecture of this course, provided because this is the first topic of today's lecture — use it for a brief callback in the Hook card.
+<previous_lecture_context>
+${PREVIOUS_LECTURE_CONTEXT}
+</previous_lecture_context>
+<!--END_IF-->
+
+### TOPIC-SPECIFIC INSTRUCTIONS
+<!--IF:FIRST_TOPIC-->
+- Hook card:
+   - Bridge from Last Time: Since this is the first topic of today's lecture, open with a brief (up to 2 sentences) callback to what the class covered last time, using ONLY the topics/summaries in `${PREVIOUS_LECTURE_CONTEXT}`, then bridge naturally into today's hook. Keep this light — it's still a hook, not a recap; don't restate every past topic, just enough to feel like a continuous story.
+
+Example C — this is the first topic of today's lecture, so the hook opens with a brief callback to last time before bridging into today's analogy:
+Example C — this is the first topic of today's lecture, so the hook opens with a brief callback to last time before bridging into today's analogy:
+{
+  "card_type": "hook",
+  "hero_emoji": "...",
+  "title": "...",
+  "content_blocks": [
+    { "type": "paragraph", "text": "<1-2 sentence callback to what was covered last time, grounded only in PREVIOUS_LECTURE_CONTEXT>" },
+    { "type": "quote", "text": "<punchy analogy/one-liner for today's concept, same as the normal hook>" }
+  ]
+}
+<!--END_IF-->
+- Next Action card, Part 3 (The Cliffhanger & Future):
+<!--IF:FINAL_TOPIC-->
+        This is the final topic of today's lecture. Do NOT fabricate a "next topic" or a cliffhanger. Instead, write a 2-4 sentence lecture-closing reflection: connect this final concept back to the broader arc of today's lecture, using ONLY the topic titles/keywords listed in `${LECTURE_TOPICS}` — do not invent details about any of those past topics beyond what their given keywords imply. Leave the student with a sense of completion rather than a false teaser.
+
+Example B — this is the final topic of today's lecture, so Part 3 becomes a closing reflection using `${LECTURE_TOPICS}` instead of a cliffhanger:
+{
+  "card_type": "next_action",
+  "hero_emoji": "🎓",
+  "title": "...",
+  "content_blocks": [
+    { "type": "paragraph", "text": "<self-contained summary of this segment only>" },
+    { "type": "paragraph", "text": "<a short heading line for this self-study list, written in your own words for this topic>" },
+    { "type": "list", "items": ["<omitted item 1>", "<omitted item 2>"] },
+    { "type": "paragraph", "text": "<2-4 sentence lecture-closing reflection tying this concept back to the broader arc of today's lecture, grounded only in LECTURE_TOPICS titles/keywords — no invented details>" }
+  ]
+}
+<!--ELSE-->
+        A 2-4 sentence tease using ONLY the title/keywords given in `${NEXT_TOPIC_CONTEXT}`. Focus on the connection from *this* topic to that one (e.g., "So how do we fix this fatal flaw? We'll find out next!"). Never state next-topic content as established fact — keep it as a forward-looking tease grounded only in the given keywords, never inventing specific mechanisms or examples beyond what they imply.
+<!--END_IF-->
+
+Generate Review Cards for Topic: ${TOPIC_TITLE}
+
+Write every card title and every text field in ${CONTENT_LANGUAGE}.

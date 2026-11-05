@@ -1,0 +1,51 @@
+{
+ "meta": {
+  "mode": "run",
+  "prompt_version": "v4",
+  "model": "anthropic/claude-haiku-5-5",
+  "reasoning_effort": "low",
+  "max_tokens": 32000,
+  "prompts_used": {},
+  "code_patches": {
+   "rc_cached_service": true
+  },
+  "lectures": [
+   "a028aad6-07ba-4e3f-ac39-7494e9d7f062"
+  ],
+  "tasks": [
+   "review_cards"
+  ],
+  "wall_seconds_total": 38.4,
+  "token_cost_usd_total": 0.0072,
+  "created_at": "20261105_152813"
+ },
+ "rows": [
+  {
+   "task": "review_cards",
+   "lecture_id": "a028aad6",
+   "calls": 3,
+   "error": null,
+   "finish_reasons": [
+    "stop"
+   ],
+   "truncated_calls": 0,
+   "json_parse_errors": 0,
+   "chars": 4641,
+   "exclamations": 20,
+   "question_marks": 9,
+   "citations": 78,
+   "malformed_citations": 0,
+   "placeholder_leak": 0,
+   "english_gloss_parens": 14,
+   "input_tokens": 43203,
+   "output_tokens": 7335,
+   "max_output_tokens_single_call": 2564,
+   "sum_call_seconds": 37.6,
+   "max_call_seconds": 13.54,
+   "topics": 3,
+   "topics_with_bad_card_sequence": 0,
+   "token_cost_usd": 0.007236,
+   "wall_seconds": 38.36
+  }
+ ]
+}

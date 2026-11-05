@@ -34,6 +34,7 @@ from typing import Any, Dict, List, Optional
 
 EXP_DIR = Path(__file__).resolve().parent
 REPO_ROOT = EXP_DIR.parents[2]
+sys.path.insert(0, str(EXP_DIR))
 sys.path.insert(0, str(REPO_ROOT / "lefture_backend"))
 
 from dotenv import load_dotenv  # noqa: E402
@@ -81,6 +82,8 @@ VERSION_PATCHES: Dict[str, Dict[str, bool]] = {
     # v1c: v1 と同じだが、ブロック種別ごとに必須フィールドを持つ厳密スキーマ (anyOf)
     "v1c": {"rc_keywords": True, "rc_lang_reminder": True, "rc_json_schema_strict": True},
     "v2": {"rc_keywords": True, "rc_lang_reminder": True, "rc_json_schema_strict": True},
+    # v4: プロンプトキャッシュ版。キーワード・言語指示・スキーマは rc_cached_service 側で本番と同じ形に組み立てる
+    "v4": {"rc_cached_service": True},
 }
 VERSION_PROMPT_DIR = {"v1b": "v1", "v1c": "v1"}
 
@@ -157,7 +160,7 @@ REVIEW_CARD_SCHEMA_STRICT["properties"]["review_cards"]["items"]["properties"]["
         _block("list", ["items"], {"items": {"type": "array", "items": _STR}}),
     ]
 }
-RC_TOPIC_RE = re.compile(r"Generate Review Cards for Topic: (.*)$", re.S)
+RC_TOPIC_RE = re.compile(r"Generate Review Cards for Topic: ([^\n]*)")
 
 
 # ---------------------------------------------------------------------------
@@ -366,7 +369,11 @@ async def run_one(task: str, inp: Dict[str, Any], dry_run: bool, patches: Dict[s
     error: Optional[str] = None
     try:
         if task == "review_cards":
-            svc = rc_mod.ReviewCardGenerationService(llm, logger)
+            if patches.get("rc_cached_service"):
+                from rc_cached_service import CachedReviewCardGenerationService
+                svc = CachedReviewCardGenerationService(llm, logger)
+            else:
+                svc = rc_mod.ReviewCardGenerationService(llm, logger)
             svc.model_alias = MODEL
             output = await svc.run_from_memory(
                 role_classified_data=inp["role_classification"], core_data=inp["core_extraction"],
