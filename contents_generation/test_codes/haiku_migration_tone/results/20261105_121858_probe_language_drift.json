@@ -1,0 +1,360 @@
+{
+ "rows": [
+  {
+   "lecture": "a028aad6",
+   "topic_pos": 0,
+   "variant": "A_v0",
+   "rep": 0,
+   "jp_ratio": 0.8,
+   "titles": [
+    "作業台の上の道具たち",
+    "作業台は自分で片付ける",
+    "moveは足し算に化ける",
+    "作業台を整えたら次へ"
+   ],
+   "out_tokens": 3763,
+   "finish": "stop"
+  },
+  {
+   "lecture": "a028aad6",
+   "topic_pos": 0,
+   "variant": "A_v0",
+   "rep": 1,
+   "jp_ratio": 0.79,
+   "titles": [
+    "ロッカーの名札を読もう",
+    "名前で呼ぶ、値は別物",
+    "move の正体は add",
+    "名前と疑似命令をマスター"
+   ],
+   "out_tokens": 4063,
+   "finish": "stop"
+  },
+  {
+   "lecture": "a028aad6",
+   "topic_pos": 0,
+   "variant": "A_v0",
+   "rep": 2,
+   "jp_ratio": 0.04,
+   "titles": [
+    "The Toolbox Trick",
+    "Registers Are Named Workbenches",
+    "Move Is a Fake Instruction",
+    "Build Your Own Toolkit"
+   ],
+   "out_tokens": 3979,
+   "finish": "stop"
+  },
+  {
+   "lecture": "a028aad6",
+   "topic_pos": 0,
+   "variant": "B_lang_reminder",
+   "rep": 0,
+   "jp_ratio": 0.78,
+   "titles": [
+    "作業台の上の道具たち",
+    "moveの正体はaddだった",
+    "0を信じるのは0番だけ",
+    "作業台を片付けて次へ"
+   ],
+   "out_tokens": 4104,
+   "finish": "stop"
+  },
+  {
+   "lecture": "a028aad6",
+   "topic_pos": 0,
+   "variant": "B_lang_reminder",
+   "rep": 1,
+   "jp_ratio": 0.79,
+   "titles": [
+    "CPUの作業机",
+    "名前で呼ぶ、疑似命令でごまかす",
+    "ゼロ以外は信じるな",
+    "作業台の使い方を固める"
+   ],
+   "out_tokens": 3662,
+   "finish": "stop"
+  },
+  {
+   "lecture": "a028aad6",
+   "topic_pos": 0,
+   "variant": "B_lang_reminder",
+   "rep": 2,
+   "jp_ratio": 0.0,
+   "titles": [],
+   "out_tokens": 4305,
+   "finish": "stop"
+  },
+  {
+   "lecture": "ed333ded",
+   "topic_pos": 0,
+   "variant": "A_v0",
+   "rep": 0,
+   "jp_ratio": 0.03,
+   "titles": [
+    "Symbols Meet Sentences",
+    "The Tilde Is Not a Word, It's a Meaning",
+    "Watch Out for the Fake Opposite",
+    "Negation Unlocked"
+   ],
+   "out_tokens": 4140,
+   "finish": "stop"
+  },
+  {
+   "lecture": "ed333ded",
+   "topic_pos": 0,
+   "variant": "A_v0",
+   "rep": 1,
+   "jp_ratio": 0.66,
+   "titles": [
+    "記号の翻訳キー",
+    "記号の意味は英語で決まる",
+    "opposite の罠と直訳ルール",
+    "次の一歩"
+   ],
+   "out_tokens": 4069,
+   "finish": "stop"
+  },
+  {
+   "lecture": "ed333ded",
+   "topic_pos": 0,
+   "variant": "A_v0",
+   "rep": 2,
+   "jp_ratio": 0.01,
+   "titles": [
+    "The Translation Dictionary",
+    "Not Means Not, Logically",
+    "The 'Opposite' Trap",
+    "Level Up Your Translations"
+   ],
+   "out_tokens": 3777,
+   "finish": "stop"
+  },
+  {
+   "lecture": "ed333ded",
+   "topic_pos": 0,
+   "variant": "B_lang_reminder",
+   "rep": 0,
+   "jp_ratio": 0.74,
+   "titles": [
+    "記号はパスポート",
+    "記号は意味で選ぶ",
+    "opposite の罠",
+    "否定の意味をつかんだ"
+   ],
+   "out_tokens": 4434,
+   "finish": "stop"
+  },
+  {
+   "lecture": "ed333ded",
+   "topic_pos": 0,
+   "variant": "B_lang_reminder",
+   "rep": 1,
+   "jp_ratio": 0.72,
+   "titles": [
+    "記号は英語の通訳係",
+    "否定記号は英語のnotを写す",
+    "oppositeの罠に気をつけて",
+    "否定と結合子の基礎をつかむ"
+   ],
+   "out_tokens": 4185,
+   "finish": "stop"
+  },
+  {
+   "lecture": "ed333ded",
+   "topic_pos": 0,
+   "variant": "B_lang_reminder",
+   "rep": 2,
+   "jp_ratio": 0.75,
+   "titles": [
+    "記号は翻訳機",
+    "記号と英語の対応表",
+    "opposite の罠",
+    "否定と記号の基礎を固める"
+   ],
+   "out_tokens": 4095,
+   "finish": "stop"
+  },
+  {
+   "lecture": "ed333ded",
+   "topic_pos": 4,
+   "variant": "A_v0",
+   "rep": 0,
+   "jp_ratio": 0.08,
+   "titles": [
+    "記号の正体は『スイッチ』",
+    "二つの真理値、四つの組み合わせ",
+    "Dot vs Wedge: 真逆のキャラ",
+    "まとめと次の一歩"
+   ],
+   "out_tokens": 3644,
+   "finish": "stop"
+  },
+  {
+   "lecture": "ed333ded",
+   "topic_pos": 4,
+   "variant": "A_v0",
+   "rep": 1,
+   "jp_ratio": 0.01,
+   "titles": [
+    "The Flip Switch",
+    "Every Case, No Gaps",
+    "AND vs. OR: Mirror Images",
+    "Truth Tables Unlocked"
+   ],
+   "out_tokens": 3643,
+   "finish": "stop"
+  },
+  {
+   "lecture": "ed333ded",
+   "topic_pos": 4,
+   "variant": "A_v0",
+   "rep": 2,
+   "jp_ratio": 0.0,
+   "titles": [
+    "The Rulebook Behind Every Connective",
+    "Why Only Four Cases Matter",
+    "AND vs OR: Count the Trues",
+    "Truth Tables Unlocked"
+   ],
+   "out_tokens": 3291,
+   "finish": "stop"
+  },
+  {
+   "lecture": "ed333ded",
+   "topic_pos": 4,
+   "variant": "B_lang_reminder",
+   "rep": 0,
+   "jp_ratio": 0.79,
+   "titles": [
+    "意味は『真』と『偽』で決まる",
+    "否定のエンジンを覗こう",
+    "4通りの組み合わせで全部決まる",
+    "真理値の定義を使いこなそう"
+   ],
+   "out_tokens": 4008,
+   "finish": "stop"
+  },
+  {
+   "lecture": "ed333ded",
+   "topic_pos": 4,
+   "variant": "B_lang_reminder",
+   "rep": 1,
+   "jp_ratio": 0.72,
+   "titles": [
+    "スイッチをひっくり返すだけ",
+    "真理値だけで意味が決まる",
+    "4通りの網羅と、真の行の数",
+    "真理値表で意味を掴もう"
+   ],
+   "out_tokens": 4880,
+   "finish": "stop"
+  },
+  {
+   "lecture": "ed333ded",
+   "topic_pos": 4,
+   "variant": "B_lang_reminder",
+   "rep": 2,
+   "jp_ratio": 0.77,
+   "titles": [
+    "論理記号のルールブック",
+    "真理値の組み合わせがすべて",
+    "and と or の真理値はこう違う",
+    "真理値表で意味を固めよう"
+   ],
+   "out_tokens": 4911,
+   "finish": "stop"
+  },
+  {
+   "lecture": "de2d74b0",
+   "topic_pos": 0,
+   "variant": "A_v0",
+   "rep": 0,
+   "jp_ratio": 0.9,
+   "titles": [
+    "褒め言葉の裏側",
+    "同じ前提から生まれる両面",
+    "お姉キャラの見えない前提",
+    "境界線を読み解く"
+   ],
+   "out_tokens": 4077,
+   "finish": "stop"
+  },
+  {
+   "lecture": "de2d74b0",
+   "topic_pos": 0,
+   "variant": "A_v0",
+   "rep": 1,
+   "jp_ratio": 0.89,
+   "titles": [
+    "褒め言葉の仮面",
+    "ステレオタイプは二面性でできている",
+    "まなざしは内側まで入り込む",
+    "両義性の裏側を見抜こう"
+   ],
+   "out_tokens": 4144,
+   "finish": "stop"
+  },
+  {
+   "lecture": "de2d74b0",
+   "topic_pos": 0,
+   "variant": "A_v0",
+   "rep": 2,
+   "jp_ratio": 0.88,
+   "titles": [
+    "ほめ言葉のフリをした見下し",
+    "憧れと笑いは同じ根っこ",
+    "線そのものを問い直せ",
+    "両義性を読み解くために"
+   ],
+   "out_tokens": 4170,
+   "finish": "stop"
+  },
+  {
+   "lecture": "de2d74b0",
+   "topic_pos": 0,
+   "variant": "B_lang_reminder",
+   "rep": 0,
+   "jp_ratio": 0.9,
+   "titles": [
+    "楽園の看板、裏側は？",
+    "憧れと蔑みは同じコインの裏表",
+    "批判だけでは逃げ切れない",
+    "前提を疑う練習へ"
+   ],
+   "out_tokens": 4585,
+   "finish": "stop"
+  },
+  {
+   "lecture": "de2d74b0",
+   "topic_pos": 0,
+   "variant": "B_lang_reminder",
+   "rep": 1,
+   "jp_ratio": 0.91,
+   "titles": [
+    "前回のおさらいと両面の鏡",
+    "憧れと笑いの同居",
+    "一つ叩いても終わらない",
+    "両義性の読み方を持ち帰ろう"
+   ],
+   "out_tokens": 3306,
+   "finish": "stop"
+  },
+  {
+   "lecture": "de2d74b0",
+   "topic_pos": 0,
+   "variant": "B_lang_reminder",
+   "rep": 2,
+   "jp_ratio": 0.9,
+   "titles": [
+    "褒め言葉の裏にある仕掛け",
+    "同じイメージが二つの顔を持つ理由",
+    "良いイメージこそ要注意",
+    "両義性の地図を持って進もう"
+   ],
+   "out_tokens": 3898,
+   "finish": "stop"
+  }
+ ],
+ "token_cost_usd": 0.0762
+}

@@ -1,0 +1,166 @@
+{
+ "meta": {
+  "mode": "run",
+  "prompt_version": "v2",
+  "model": "anthropic/claude-haiku-5-5",
+  "reasoning_effort": "low",
+  "max_tokens": 32000,
+  "prompts_used": {
+   "review_cards_generation_prompt.txt": "prompts/v2/review_cards_generation_prompt.txt",
+   "topic_details_generation_prompt.txt": "prompts/v2/topic_details_generation_prompt.txt",
+   "fun_fact_generation_prompt.txt": "prompts/v2/fun_fact_generation_prompt.txt"
+  },
+  "code_patches": {
+   "rc_keywords": true,
+   "rc_lang_reminder": true,
+   "rc_json_schema_strict": true
+  },
+  "lectures": [
+   "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+   "666b2c9d-a997-451b-9318-98f98c9d29fa",
+   "ed333ded-2e09-464a-8224-11b7517fb709",
+   "de2d74b0-36ad-4680-95bb-3fc2676697a8"
+  ],
+  "tasks": [
+   "review_cards",
+   "deep_notes",
+   "fun_facts"
+  ],
+  "wall_seconds_total": 50.4,
+  "token_cost_usd_total": 0.0156,
+  "created_at": "20261105_144714"
+ },
+ "rows": [
+  {
+   "task": "review_cards",
+   "lecture_id": "a028aad6",
+   "calls": 1,
+   "error": null,
+   "finish_reasons": [
+    "stop"
+   ],
+   "truncated_calls": 0,
+   "json_parse_errors": 0,
+   "chars": 1496,
+   "exclamations": 7,
+   "question_marks": 0,
+   "citations": 11,
+   "malformed_citations": 0,
+   "placeholder_leak": 0,
+   "english_gloss_parens": 8,
+   "input_tokens": 12688,
+   "output_tokens": 2414,
+   "max_output_tokens_single_call": 2414,
+   "sum_call_seconds": 12.8,
+   "max_call_seconds": 12.75,
+   "topics": 1,
+   "topics_with_bad_card_sequence": 0,
+   "token_cost_usd": 0.002476,
+   "wall_seconds": 13.41
+  },
+  {
+   "task": "review_cards",
+   "lecture_id": "de2d74b0",
+   "calls": 1,
+   "error": null,
+   "finish_reasons": [
+    "stop"
+   ],
+   "truncated_calls": 0,
+   "json_parse_errors": 0,
+   "chars": 1700,
+   "exclamations": 5,
+   "question_marks": 4,
+   "citations": 10,
+   "malformed_citations": 0,
+   "placeholder_leak": 0,
+   "english_gloss_parens": 0,
+   "input_tokens": 12022,
+   "output_tokens": 4284,
+   "max_output_tokens_single_call": 4284,
+   "sum_call_seconds": 20.4,
+   "max_call_seconds": 20.35,
+   "topics": 1,
+   "topics_with_bad_card_sequence": 0,
+   "token_cost_usd": 0.003344,
+   "wall_seconds": 20.85
+  },
+  {
+   "task": "deep_notes",
+   "lecture_id": "666b2c9d",
+   "calls": 2,
+   "error": null,
+   "finish_reasons": [
+    "stop"
+   ],
+   "truncated_calls": 0,
+   "json_parse_errors": 0,
+   "chars": 10952,
+   "exclamations": 2,
+   "question_marks": 0,
+   "citations": 94,
+   "malformed_citations": 0,
+   "placeholder_leak": 0,
+   "english_gloss_parens": 24,
+   "input_tokens": 32413,
+   "output_tokens": 10549,
+   "max_output_tokens_single_call": 6145,
+   "sum_call_seconds": 50.4,
+   "max_call_seconds": 28.54,
+   "token_cost_usd": 0.008516,
+   "wall_seconds": 50.42
+  },
+  {
+   "task": "fun_facts",
+   "lecture_id": "ed333ded",
+   "calls": 1,
+   "error": null,
+   "finish_reasons": [
+    "stop"
+   ],
+   "truncated_calls": 0,
+   "json_parse_errors": 0,
+   "chars": 393,
+   "exclamations": 1,
+   "question_marks": 1,
+   "citations": 0,
+   "malformed_citations": 0,
+   "placeholder_leak": 0,
+   "english_gloss_parens": 0,
+   "input_tokens": 4056,
+   "output_tokens": 392,
+   "max_output_tokens_single_call": 392,
+   "sum_call_seconds": 2.9,
+   "max_call_seconds": 2.94,
+   "fun_fact_sources": 0,
+   "token_cost_usd": 0.000602,
+   "wall_seconds": 2.94
+  },
+  {
+   "task": "fun_facts",
+   "lecture_id": "a028aad6",
+   "calls": 1,
+   "error": null,
+   "finish_reasons": [
+    "stop"
+   ],
+   "truncated_calls": 0,
+   "json_parse_errors": 0,
+   "chars": 511,
+   "exclamations": 0,
+   "question_marks": 0,
+   "citations": 2,
+   "malformed_citations": 0,
+   "placeholder_leak": 0,
+   "english_gloss_parens": 1,
+   "input_tokens": 4025,
+   "output_tokens": 518,
+   "max_output_tokens_single_call": 518,
+   "sum_call_seconds": 3.7,
+   "max_call_seconds": 3.74,
+   "fun_fact_sources": 0,
+   "token_cost_usd": 0.000661,
+   "wall_seconds": 3.74
+  }
+ ]
+}

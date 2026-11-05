@@ -95,7 +95,7 @@ class FunFactGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
         self.logger = logger
-        self.model_alias = "gemini/gemini-2.5-flash"
+        self.model_alias = "anthropic/claude-haiku-5-5"
 
     async def run_from_memory(
         self,
@@ -111,7 +111,8 @@ class FunFactGenerationService:
         prompt_template = prompt_template.replace(
             "${LANGUAGE_INSTRUCTIONS}", _build_language_instruction(content_language)
         )
-        options_json = LLMOptions(output_type="json", temperature=0.7)
+        # max_tokensは思考トークン込み。Haiku 5.5はtemperature非対応(litellm.drop_paramsで捨てられる)ので指定しない。
+        options_json = LLMOptions(output_type="json", reasoning_effort="low", max_tokens=32000)
 
         selected_topic = next(
             (t for t in core_data.get("topics", []) if t.get("is_fun_fact_topic") is True),

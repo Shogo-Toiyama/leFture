@@ -1,0 +1,104 @@
+/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/pydub/utils.py:170: RuntimeWarning: Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work
+  warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
+[EXP:review_cards:a028aad6]    [Logic] Starting Review Card Generation with anthropic/claude-haiku-5-5
+[EXP:deep_notes:a028aad6]    [Logic] Starting Topic Detail Generation
+[EXP:fun_facts:a028aad6]    [Logic] Starting Fun Fact Generation
+[EXP:review_cards:666b2c9d]    [Logic] Starting Review Card Generation with anthropic/claude-haiku-5-5
+[EXP:deep_notes:666b2c9d]    [Logic] Starting Topic Detail Generation
+[EXP:fun_facts:666b2c9d]    [Logic] Starting Fun Fact Generation
+[EXP:review_cards:a028aad6]    [Logic] Generating cards for Topic 1: レジスタと疑似命令によるアセンブリ入門 (163 valid sentences)
+[EXP:deep_notes:a028aad6]    [Logic] Generating detail contents for Topic 1: レジスタと疑似命令によるアセンブリ入門
+[EXP:review_cards:666b2c9d]    [Logic] Generating cards for Topic 1: コンパイラとインタプリタの役割と違い (35 valid sentences)
+[EXP:deep_notes:666b2c9d]    [Logic] Generating detail contents for Topic 1: コンパイラとインタプリタの役割と違い
+[EXP:fun_facts:a028aad6]    [Logic] Extracted 0 cited source URL(s) from body.
+[EXP:review_cards:ed333ded]    [Logic] Starting Review Card Generation with anthropic/claude-haiku-5-5
+[EXP:review_cards:ed333ded]    [Logic] Generating cards for Topic 1: 論理結合子と否定の意味 (156 valid sentences)
+[EXP:fun_facts:666b2c9d]    [Logic] Extracted 4 cited source URL(s) from body.
+[EXP:deep_notes:ed333ded]    [Logic] Starting Topic Detail Generation
+[EXP:deep_notes:ed333ded]    [Logic] Generating detail contents for Topic 1: 論理結合子と否定の意味
+[EXP:review_cards:666b2c9d]    [Logic] Generating cards for Topic 2: 関数型プログラミングの基礎と数学的背景 (279 valid sentences)
+[EXP:review_cards:ed333ded]    [Logic] Generating cards for Topic 2: 英語表現と論理記号の対応 (170 valid sentences)
+[EXP:deep_notes:666b2c9d]    [Logic] Generating detail contents for Topic 2: 関数型プログラミングの基礎と数学的背景
+[EXP:review_cards:a028aad6]    [Logic] Generating cards for Topic 2: プログラムの構成と命令の実行 (142 valid sentences)
+[EXP:deep_notes:a028aad6]    [Logic] Generating detail contents for Topic 2: プログラムの構成と命令の実行
+[EXP:review_cards:666b2c9d]    [Logic] Generating cards for Topic 3: 副作用のない計算と遅延評価 (177 valid sentences)
+[EXP:deep_notes:ed333ded]    [Logic] Generating detail contents for Topic 2: 英語表現と論理記号の対応
+[EXP:review_cards:ed333ded]    [Logic] Generating cards for Topic 3: 複合文の記号化と否定の範囲 (153 valid sentences)
+[EXP:review_cards:a028aad6]    [Logic] Generating cards for Topic 3: 算術命令とオペランド (223 valid sentences)
+[EXP:deep_notes:a028aad6]    [Logic] Generating detail contents for Topic 3: 算術命令とオペランド
+[EXP:review_cards:a028aad6]    [Logic] Generating cards for Topic 4: レジスタの値交換とアセンブリの利用 (162 valid sentences)
+[EXP:review_cards:666b2c9d]    [Logic] Generating cards for Topic 4: Haskellの関数定義と型推論 (330 valid sentences)
+[EXP:review_cards:ed333ded]    [Logic] Generating cards for Topic 4: 記号化の語順規則とド・モルガンの法則 (197 valid sentences)
+[EXP:deep_notes:666b2c9d]    [Logic] Generating detail contents for Topic 3: 副作用のない計算と遅延評価
+[EXP:review_cards:a028aad6]    [Logic] Generating cards for Topic 5: ビット論理演算とNOTの実現 (133 valid sentences)
+[EXP:deep_notes:ed333ded]    [Logic] Generating detail contents for Topic 3: 複合文の記号化と否定の範囲
+[EXP:review_cards:666b2c9d]    [Logic] Generating cards for Topic 5: Haskellの評価規則と条件分岐 (357 valid sentences)
+[EXP:deep_notes:a028aad6]    [Logic] Generating detail contents for Topic 4: レジスタの値交換とアセンブリの利用
+[EXP:review_cards:ed333ded]    [Logic] Generating cards for Topic 5: 真理値表による論理結合子の定義 (139 valid sentences)
+[EXP:review_cards:666b2c9d]    [Logic] Generating cards for Topic 6: 再帰・局所定義と配列指向の考え方 (440 valid sentences)
+[EXP:deep_notes:666b2c9d]    [Logic] Generating detail contents for Topic 4: Haskellの関数定義と型推論
+[EXP:fun_facts:ed333ded]    [Logic] Starting Fun Fact Generation
+[EXP:fun_facts:ed333ded]    [Logic] Extracted 0 cited source URL(s) from body.
+[EXP:review_cards:bafdf3c0]    [Logic] Starting Review Card Generation with anthropic/claude-haiku-5-5
+[EXP:review_cards:bafdf3c0]    [Logic] Generating cards for Topic 1: 事実をもとにした即興スピーチの構成 (11 valid sentences)
+[EXP:deep_notes:bafdf3c0]    [Logic] Starting Topic Detail Generation
+[EXP:deep_notes:bafdf3c0]    [Logic] Generating detail contents for Topic 1: 事実をもとにした即興スピーチの構成
+[EXP:review_cards:bafdf3c0]    [Logic] Generating cards for Topic 2: 口頭引用と情報の信頼性 (19 valid sentences)
+[EXP:deep_notes:a028aad6]    [Logic] Generating detail contents for Topic 5: ビット論理演算とNOTの実現
+[EXP:deep_notes:ed333ded]    [Logic] Generating detail contents for Topic 4: 記号化の語順規則とド・モルガンの法則
+[EXP:fun_facts:bafdf3c0]    [Logic] Starting Fun Fact Generation
+[EXP:deep_notes:bafdf3c0]    [Logic] Generating detail contents for Topic 2: 口頭引用と情報の信頼性
+[EXP:review_cards:bafdf3c0]    [Logic] Generating cards for Topic 3: 発表の準備と聴衆への伝え方 (9 valid sentences)
+[EXP:fun_facts:bafdf3c0]    [Logic] Extracted 0 cited source URL(s) from body.
+[EXP:review_cards:de2d74b0]    [Logic] Starting Review Card Generation with anthropic/claude-haiku-5-5
+[EXP:review_cards:de2d74b0]    [Logic] Generating cards for Topic 1: 植民地主義的表象とステレオタイプの両義性 (129 valid sentences)
+[EXP:deep_notes:666b2c9d]    [Logic] Generating detail contents for Topic 5: Haskellの評価規則と条件分岐
+[EXP:deep_notes:bafdf3c0]    [Logic] Generating detail contents for Topic 3: 発表の準備と聴衆への伝え方
+[EXP:deep_notes:de2d74b0]    [Logic] Starting Topic Detail Generation
+[EXP:deep_notes:de2d74b0]    [Logic] Generating detail contents for Topic 1: 植民地主義的表象とステレオタイプの両義性
+[EXP:review_cards:de2d74b0]    [Logic] Generating cards for Topic 2: クイア視点と表象をめぐる権力関係 (118 valid sentences)
+[EXP:deep_notes:ed333ded]    [Logic] Generating detail contents for Topic 5: 真理値表による論理結合子の定義
+[EXP:fun_facts:de2d74b0]    [Logic] Starting Fun Fact Generation
+[EXP:review_cards:737f0678]    [Logic] Starting Review Card Generation with anthropic/claude-haiku-5-5
+[EXP:review_cards:737f0678]    [Logic] Generating cards for Topic 1: Analyzing Interactive Experiences and Their Contexts (110 valid sentences)
+[EXP:deep_notes:de2d74b0]    [Logic] Generating detail contents for Topic 2: クイア視点と表象をめぐる権力関係
+[EXP:fun_facts:de2d74b0]    [Logic] Extracted 4 cited source URL(s) from body.
+[EXP:deep_notes:737f0678]    [Logic] Starting Topic Detail Generation
+[EXP:deep_notes:737f0678]    [Logic] Generating detail contents for Topic 1: Analyzing Interactive Experiences and Their Contexts
+[EXP:review_cards:de2d74b0]    [Logic] Generating cards for Topic 3: 性的アイデンティティの歴史的形成 (128 valid sentences)
+[EXP:review_cards:737f0678]    [Logic] Generating cards for Topic 2: Design Consequences and the HCI Perspective (52 valid sentences)
+[EXP:fun_facts:737f0678]    [Logic] Starting Fun Fact Generation
+[EXP:deep_notes:666b2c9d]    [Logic] Generating detail contents for Topic 6: 再帰・局所定義と配列指向の考え方
+[EXP:fun_facts:737f0678]    [Logic] Extracted 3 cited source URL(s) from body.
+[EXP:review_cards:de2d74b0]    [Logic] Generating cards for Topic 4: 文化固有の性の実践と人権の問い (159 valid sentences)
+[EXP:review_cards:737f0678]    [Logic] Generating cards for Topic 3: User Research and Project Development (51 valid sentences)
+[EXP:deep_notes:de2d74b0]    [Logic] Generating detail contents for Topic 3: 性的アイデンティティの歴史的形成
+[EXP:deep_notes:737f0678]    [Logic] Generating detail contents for Topic 2: Design Consequences and the HCI Perspective
+[EXP:review_cards:737f0678]    [Logic] Generating cards for Topic 4: Interactive System Examples and Evaluation (64 valid sentences)
+[EXP:deep_notes:de2d74b0]    [Logic] Generating detail contents for Topic 4: 文化固有の性の実践と人権の問い
+[EXP:deep_notes:737f0678]    [Logic] Generating detail contents for Topic 3: User Research and Project Development
+[EXP:deep_notes:737f0678]    [Logic] Generating detail contents for Topic 4: Interactive System Examples and Evaluation
+
+=== run v1 | 18 runs | wall 159.8s | token cost $0.16 ===
+task	lecture_id	calls	error	truncated_calls	json_parse_errors	chars	exclamations	citations	placeholder_leak	input_tokens	output_tokens	max_call_seconds	token_cost_usd
+review_cards	a028aad6	5	None	0	0	4211	10	56	0	65378	11544	17.08	0.01231
+deep_notes	a028aad6	5	None	0	0	15345	2	110	0	49588	18801	21.29	0.014359
+fun_facts	a028aad6	1	None	0	0	499	1	2	0	3912	511	3.49	0.000647
+review_cards	666b2c9d	6	None	0	0	4815	16	42	0	91057	12544	17.04	0.015378
+deep_notes	666b2c9d	6	None	0	0	27312	3	247	0	77380	30739	30.77	0.023107
+fun_facts	666b2c9d	1	None	0	0	555	1	4	0	39812	557	3.99	0.00426
+review_cards	ed333ded	5	None	0	0	4858	8	46	0	64911	14362	19.1	0.013672
+deep_notes	ed333ded	5	None	0	0	16483	0	122	0	48775	22334	27.3	0.016044
+fun_facts	ed333ded	1	None	0	0	449	0	0	0	3943	439	3.06	0.000614
+review_cards	bafdf3c0	3	None	0	0	2852	5	24	0	28438	6902	17.62	0.006295
+deep_notes	bafdf3c0	3	None	0	0	4171	0	45	0	16063	6797	13.35	0.005005
+fun_facts	bafdf3c0	1	None	0	0	571	0	0	0	3995	1491	7.46	0.001145
+review_cards	de2d74b0	4	None	0	0	4599	7	55	0	49838	12138	26.98	0.011053
+deep_notes	de2d74b0	4	None	0	0	13196	0	135	0	38791	13707	21.45	0.010733
+fun_facts	de2d74b0	1	None	0	0	710	0	4	0	36455	700	4.67	0.003995
+review_cards	737f0678	4	None	0	0	10024	7	42	0	41769	8927	18.02	0.00864
+deep_notes	737f0678	4	None	0	0	23177	1	102	0	29263	11185	15.09	0.008519
+fun_facts	737f0678	1	None	0	0	1313	0	3	0	39562	440	3.29	0.004176
+
+prompts used: {'review_cards_generation_prompt.txt': 'prompts/v1/review_cards_generation_prompt.txt', 'topic_details_generation_prompt.txt': 'prompts/v1/topic_details_generation_prompt.txt', 'fun_fact_generation_prompt.txt': 'prompts/v1/fun_fact_generation_prompt.txt'}
+saved: /Users/shogotoiyama/Programming/leFture/contents_generation/test_codes/haiku_migration_tone/results/20261105_123712_run_v1

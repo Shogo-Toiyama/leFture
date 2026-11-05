@@ -1,0 +1,1118 @@
+{
+ "meta": {
+  "mode": "run",
+  "prompt_version": "v2",
+  "model": "anthropic/claude-haiku-5-5",
+  "reasoning_effort": "low",
+  "max_tokens": 32000,
+  "prompts_used": {
+   "review_cards_generation_prompt.txt": "prompts/v2/review_cards_generation_prompt.txt",
+   "topic_details_generation_prompt.txt": "prompts/v2/topic_details_generation_prompt.txt",
+   "fun_fact_generation_prompt.txt": "prompts/v2/fun_fact_generation_prompt.txt"
+  },
+  "code_patches": {
+   "rc_keywords": true,
+   "rc_lang_reminder": true,
+   "rc_json_schema_strict": true
+  },
+  "lectures": [
+   "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+   "666b2c9d-a997-451b-9318-98f98c9d29fa",
+   "ed333ded-2e09-464a-8224-11b7517fb709",
+   "de2d74b0-36ad-4680-95bb-3fc2676697a8"
+  ],
+  "tasks": [
+   "review_cards",
+   "deep_notes",
+   "fun_facts"
+  ],
+  "wall_seconds_total": 50.4,
+  "token_cost_usd_total": 0.0156,
+  "created_at": "20261105_144714"
+ },
+ "results": [
+  {
+   "task": "review_cards",
+   "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+   "language": {
+    "content_language": "Japanese",
+    "transcript_language": "English",
+    "is_bilingual": true
+   },
+   "wall_seconds": 13.41,
+   "cost_usd": 0.002858,
+   "token_cost_usd": 0.002476,
+   "error": null,
+   "output": [
+    {
+     "topic_evaluation": {
+      "micro_topics": [
+       {
+        "idx": 1,
+        "title": "アセンブリのセグメント構成",
+        "summary": "Hello Worldには.data(データ)と.text(命令)という2つのセグメントがあり、どちらもメモリに格納されることを確認する。",
+        "start_sid": "s000181",
+        "end_sid": "s000183"
+       },
+       {
+        "idx": 2,
+        "title": "メモリとレジスタの区別",
+        "summary": "ここでのメモリはRAM(主記憶)を指し、レジスタとは区別して扱うことを説明する。",
+        "start_sid": "s000184",
+        "end_sid": "s000186"
+       },
+       {
+        "idx": 3,
+        "title": "即値ロード命令の実行",
+        "summary": "load immediateで定数34をT1レジスタに入れ、10進数と16進数の違いを確認しながら実行結果を見る。",
+        "start_sid": "s000187",
+        "end_sid": "s000260"
+       },
+       {
+        "idx": 4,
+        "title": "命令の実行順序",
+        "summary": "プログラムカウンタと命令レジスタを使い、命令を1つずつメモリから読み込んで実行する流れを説明する。",
+        "start_sid": "s000275",
+        "end_sid": "s000287"
+       },
+       {
+        "idx": 5,
+        "title": "セグメント指定の重要性",
+        "summary": ".dataや.textを書き忘れるとアセンブラが誤って全体をコードかデータと判断するため、正しく指定する必要があることを説明する。",
+        "start_sid": "s000288",
+        "end_sid": "s000314"
+       }
+      ],
+      "card_mapping_strategy": "コアは『プログラムはメモリに置かれ、プログラムカウンタに従って1命令ずつ実行される』という考え方。hookでは旅行の荷造りのたとえで、知らずに書いたコードの全体像を示す。core_whyでは.dataと.textの役割、メモリへの格納、命令レジスタとプログラムカウンタによる実行の流れを丁寧に説明する。gotchaでは.text書き忘れの落とし穴と、10進数が既定であること・即値ロードの結果が16進で見えることの注意点を扱う。省略するもの：16進数変換の計算手順（s000223-s000237）と、分岐やループの話（s000284-s000285）は次回以降の内容としてnext_actionで触れる。",
+      "core_concept_identified": "メモリに置かれた命令を順番に実行する"
+     },
+     "review_cards": [
+      {
+       "card_type": "hook",
+       "hero_emoji": "🧳",
+       "title": "知らずに詰めたスーツケース",
+       "content_blocks": [
+        {
+         "type": "quote",
+         "text": "Hello Worldのコードは、中身をよく知らないまま詰めたスーツケースのようなもの！でも大丈夫、旅が進めば全部わかってきます。"
+        },
+        {
+         "type": "paragraph",
+         "text": "いきなり全部理解しなくていいんです。今回は『コードはどこに置かれて、どう動くのか』という全体像をつかむ回だよ。ここがわかると、書いた一行一行の意味が急にクリアに見えてきますよ！"
+        }
+       ]
+      },
+      {
+       "card_type": "core_why",
+       "hero_emoji": "🏗️",
+       "title": "メモリの地図と実行の旅",
+       "content_blocks": [
+        {
+         "type": "paragraph",
+         "text": "アセンブリのプログラムは.dataと.textという2つのセグメントに分かれています。.dataはデータを置く場所、.textは命令を置く場所です。⟦s000182-s000183⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "ここで大事なのは、どちらも最終的にはメモリ（RAM、主記憶）に入るということ。命令もデータも、みんなメモリという同じ大きな棚に並べられるんです。⟦s000183⟧ ちなみにレジスタもメモリの一種ですが、講義ではCPU内の特別な記憶場所としてレジスタと呼び分けます。⟦s000185-s000186⟧"
+        },
+        {
+         "type": "callout",
+         "alert_type": "info",
+         "text": "プログラムの実行は、まず命令がメモリから**命令レジスタ（instruction register）**に読み込まれ、実行されます。実行が終わると**プログラムカウンタ（program counter）**が1つ増え、次の命令を指すんです！⟦s000276-s000279⟧"
+        },
+        {
+         "type": "code",
+         "code_string": "命令1 → 命令2 → 命令3 → 命令4 → ...（終わるまで順番に）",
+         "language": "text",
+         "explanation": "ふつうは上から順に1つずつ実行されます。ジャンプやループはまだ先の話ですよ。⟦s000280-s000287⟧"
+        }
+       ]
+      },
+      {
+       "card_type": "gotcha",
+       "hero_emoji": "⚠️",
+       "title": ".textを忘れると大混乱！",
+       "content_blocks": [
+        {
+         "type": "callout",
+         "alert_type": "warning",
+         "text": "ここが試験でも狙われる落とし穴！**.textを書き忘れると、アセンブラは全部をデータだと思い込み、命令がまったく置かれなくなってしまいます。** 先生の授業でも、この書き忘れがバグの原因になった学生がいました。⟦s000300-s000302⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "さらに、.dataも.textも何も書かないと、アセンブラは『これはコードだ』と判断して、そのまま組み立ててしまいます。エラーが出ないぶん、気づきにくいのが厄介なところ。⟦s000303-s000307⟧"
+        },
+        {
+         "type": "paragraph",
+         "text": "もう一つ大事なのが数値の扱いです。即値ロード命令（load immediate）は、T1レジスタに定数34を入れる命令ですが、何も指定しなければ34は10進数として扱われます。実行後にT1を見ると、34の16進表記である22が入っているように見えて驚きますよ！ ⟦s000187-s000199⟧⟦s000257-s000260⟧"
+        }
+       ]
+      },
+      {
+       "card_type": "next_action",
+       "hero_emoji": "🚀",
+       "title": "次の一歩へ",
+       "content_blocks": [
+        {
+         "type": "paragraph",
+         "text": "今回は、Hello Worldのプログラムが.dataと.textの2つのセグメントでメモリに配置されること、そして命令はプログラムカウンタに従って1つずつ実行されることを学びました。即値ロード命令で数値をレジスタに入れる最初の一歩も見ましたね。"
+        },
+        {
+         "type": "paragraph",
+         "text": "次の講義では、今回さらっと流した内容を自分で復習するための手がかりとして、以下を押さえておくと安心です。"
+        },
+        {
+         "type": "list",
+         "items": [
+          "16進数への変換の計算手順（34を16進数にする方法）⟦s000223-s000237⟧",
+          "分岐やループによって実行順序がジャンプする仕組み⟦s000284-s000285⟧"
+         ]
+        },
+        {
+         "type": "paragraph",
+         "text": "次は算術命令とオペランドに進みます。加算命令（add instruction）や即値加算命令（add immediate）では、オペコード（opcode）や、計算を担う算術論理演算装置（Arithmetic Logic Unit, ALU）が登場しますよ。即値オペランド（immediate operand）という言葉も出てくるので、今日の即値の話がそのまま役立つはずです！"
+        }
+       ]
+      }
+     ],
+     "topic_idx": 2
+    }
+   ],
+   "calls": [
+    {
+     "task": "review_cards",
+     "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+     "original_model": "anthropic/claude-haiku-5-5",
+     "model": "anthropic/claude-haiku-5-5",
+     "request_kwargs": {
+      "model": "anthropic/claude-haiku-5-5",
+      "temperature": 0.3,
+      "num_retries": 3,
+      "max_tokens": 32000,
+      "reasoning_effort": "low",
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      },
+      "response_format": {
+       "type": "json_schema",
+       "json_schema": {
+        "name": "output",
+        "schema": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [
+          "topic_evaluation",
+          "review_cards"
+         ],
+         "properties": {
+          "topic_evaluation": {
+           "type": "object",
+           "additionalProperties": false,
+           "required": [
+            "micro_topics",
+            "card_mapping_strategy",
+            "core_concept_identified"
+           ],
+           "properties": {
+            "micro_topics": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+               "idx",
+               "title",
+               "summary",
+               "start_sid",
+               "end_sid"
+              ],
+              "properties": {
+               "idx": {
+                "type": "integer"
+               },
+               "title": {
+                "type": "string"
+               },
+               "summary": {
+                "type": "string"
+               },
+               "start_sid": {
+                "type": "string"
+               },
+               "end_sid": {
+                "type": "string"
+               }
+              }
+             }
+            },
+            "card_mapping_strategy": {
+             "type": "string"
+            },
+            "core_concept_identified": {
+             "type": "string"
+            }
+           }
+          },
+          "review_cards": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+             "card_type",
+             "hero_emoji",
+             "title",
+             "content_blocks"
+            ],
+            "properties": {
+             "card_type": {
+              "type": "string",
+              "enum": [
+               "hook",
+               "core_why",
+               "gotcha",
+               "next_action"
+              ]
+             },
+             "hero_emoji": {
+              "type": "string"
+             },
+             "title": {
+              "type": "string"
+             },
+             "content_blocks": {
+              "type": "array",
+              "items": {
+               "anyOf": [
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "paragraph"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "quote"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "alert_type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "callout"
+                   ]
+                  },
+                  "alert_type": {
+                   "type": "string",
+                   "enum": [
+                    "info",
+                    "warning",
+                    "error"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "code_string"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "code"
+                   ]
+                  },
+                  "code_string": {
+                   "type": "string"
+                  },
+                  "language": {
+                   "type": "string"
+                  },
+                  "explanation": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "items"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "list"
+                   ]
+                  },
+                  "items": {
+                   "type": "array",
+                   "items": {
+                    "type": "string"
+                   }
+                  }
+                 }
+                }
+               ]
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "system_chars": 30213,
+     "user_chars": 105,
+     "elapsed_seconds": 12.75,
+     "input_tokens": 12688,
+     "output_tokens": 2414,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "finish_reason": "stop",
+     "json_parse_error": null,
+     "output_text": "{\"topic_evaluation\":{\"micro_topics\":[{\"idx\":1,\"title\":\"アセンブリのセグメント構成\",\"summary\":\"Hello Worldには.data(データ)と.text(命令)という2つのセグメントがあり、どちらもメモリに格納されることを確認する。\",\"start_sid\":\"s000181\",\"end_sid\":\"s000183\"},{\"idx\":2,\"title\":\"メモリとレジスタの区別\",\"summary\":\"ここでのメモリはRAM(主記憶)を指し、レジスタとは区別して扱うことを説明する。\",\"start_sid\":\"s000184\",\"end_sid\":\"s000186\"},{\"idx\":3,\"title\":\"即値ロード命令の実行\",\"summary\":\"load immediateで定数34をT1レジスタに入れ、10進数と16進数の違いを確認しながら実行結果を見る。\",\"start_sid\":\"s000187\",\"end_sid\":\"s000260\"},{\"idx\":4,\"title\":\"命令の実行順序\",\"summary\":\"プログラムカウンタと命令レジスタを使い、命令を1つずつメモリから読み込んで実行する流れを説明する。\",\"start_sid\":\"s000275\",\"end_sid\":\"s000287\"},{\"idx\":5,\"title\":\"セグメント指定の重要性\",\"summary\":\".dataや.textを書き忘れるとアセンブラが誤って全体をコードかデータと判断するため、正しく指定する必要があることを説明する。\",\"start_sid\":\"s000288\",\"end_sid\":\"s000314\"}],\"card_mapping_strategy\":\"コアは『プログラムはメモリに置かれ、プログラムカウンタに従って1命令ずつ実行される』という考え方。hookでは旅行の荷造りのたとえで、知らずに書いたコードの全体像を示す。core_whyでは.dataと.textの役割、メモリへの格納、命令レジスタとプログラムカウンタによる実行の流れを丁寧に説明する。gotchaでは.text書き忘れの落とし穴と、10進数が既定であること・即値ロードの結果が16進で見えることの注意点を扱う。省略するもの：16進数変換の計算手順（s000223-s000237）と、分岐やループの話（s000284-s000285）は次回以降の内容としてnext_actionで触れる。\",\"core_concept_identified\":\"メモリに置かれた命令を順番に実行する\"},\"review_cards\":[{\"card_type\":\"hook\",\"hero_emoji\":\"🧳\",\"title\":\"知らずに詰めたスーツケース\",\"content_blocks\":[{\"type\":\"quote\",\"text\":\"Hello Worldのコードは、中身をよく知らないまま詰めたスーツケースのようなもの！でも大丈夫、旅が進めば全部わかってきます。\"},{\"type\":\"paragraph\",\"text\": \"いきなり全部理解しなくていいんです。今回は『コードはどこに置かれて、どう動くのか』という全体像をつかむ回だよ。ここがわかると、書いた一行一行の意味が急にクリアに見えてきますよ！\"}]},{\"card_type\":\"core_why\",\"hero_emoji\":\"🏗️\",\"title\":\"メモリの地図と実行の旅\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"アセンブリのプログラムは.dataと.textという2つのセグメントに分かれています。.dataはデータを置く場所、.textは命令を置く場所です。⟦s000182-s000183⟧\"},{\"type\":\"paragraph\",\"text\":\"ここで大事なのは、どちらも最終的にはメモリ（RAM、主記憶）に入るということ。命令もデータも、みんなメモリという同じ大きな棚に並べられるんです。⟦s000183⟧ ちなみにレジスタもメモリの一種ですが、講義ではCPU内の特別な記憶場所としてレジスタと呼び分けます。⟦s000185-s000186⟧\"},{\"type\":\"callout\",\"alert_type\":\"info\",\"text\":\"プログラムの実行は、まず命令がメモリから**命令レジスタ（instruction register）**に読み込まれ、実行されます。実行が終わると**プログラムカウンタ（program counter）**が1つ増え、次の命令を指すんです！⟦s000276-s000279⟧\"},{\"type\":\"code\",\"code_string\":\"命令1 → 命令2 → 命令3 → 命令4 → ...（終わるまで順番に）\",\"language\":\"text\",\"explanation\":\"ふつうは上から順に1つずつ実行されます。ジャンプやループはまだ先の話ですよ。⟦s000280-s000287⟧\"}]},{\"card_type\":\"gotcha\",\"hero_emoji\":\"⚠️\",\"title\":\".textを忘れると大混乱！\",\"content_blocks\":[{\"type\":\"callout\",\"alert_type\":\"warning\",\"text\":\"ここが試験でも狙われる落とし穴！**.textを書き忘れると、アセンブラは全部をデータだと思い込み、命令がまったく置かれなくなってしまいます。** 先生の授業でも、この書き忘れがバグの原因になった学生がいました。⟦s000300-s000302⟧\"},{\"type\":\"paragraph\",\"text\":\"さらに、.dataも.textも何も書かないと、アセンブラは『これはコードだ』と判断して、そのまま組み立ててしまいます。エラーが出ないぶん、気づきにくいのが厄介なところ。⟦s000303-s000307⟧\"},{\"type\":\"paragraph\",\"text\":\"もう一つ大事なのが数値の扱いです。即値ロード命令（load immediate）は、T1レジスタに定数34を入れる命令ですが、何も指定しなければ34は10進数として扱われます。実行後にT1を見ると、34の16進表記である22が入っているように見えて驚きますよ！ ⟦s000187-s000199⟧⟦s000257-s000260⟧\"}]},{\"card_type\":\"next_action\",\"hero_emoji\":\"🚀\",\"title\":\"次の一歩へ\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"今回は、Hello Worldのプログラムが.dataと.textの2つのセグメントでメモリに配置されること、そして命令はプログラムカウンタに従って1つずつ実行されることを学びました。即値ロード命令で数値をレジスタに入れる最初の一歩も見ましたね。\"},{\"type\":\"paragraph\",\"text\":\"次の講義では、今回さらっと流した内容を自分で復習するための手がかりとして、以下を押さえておくと安心です。\"},{\"type\":\"list\",\"items\":[\"16進数への変換の計算手順（34を16進数にする方法）⟦s000223-s000237⟧\",\"分岐やループによって実行順序がジャンプする仕組み⟦s000284-s000285⟧\"]},{\"type\":\"paragraph\",\"text\":\"次は算術命令とオペランドに進みます。加算命令（add instruction）や即値加算命令（add immediate）では、オペコード（opcode）や、計算を担う算術論理演算装置（Arithmetic Logic Unit, ALU）が登場しますよ。即値オペランド（immediate operand）という言葉も出てくるので、今日の即値の話がそのまま役立つはずです！\"}]}]}",
+     "cost_usd": 0.0024758000000000002
+    }
+   ],
+   "checks": {
+    "calls": 1,
+    "error": null,
+    "finish_reasons": [
+     "stop"
+    ],
+    "truncated_calls": 0,
+    "json_parse_errors": 0,
+    "chars": 1496,
+    "exclamations": 7,
+    "question_marks": 0,
+    "citations": 11,
+    "malformed_citations": 0,
+    "placeholder_leak": 0,
+    "english_gloss_parens": 8,
+    "input_tokens": 12688,
+    "output_tokens": 2414,
+    "max_output_tokens_single_call": 2414,
+    "sum_call_seconds": 12.8,
+    "max_call_seconds": 12.75,
+    "topics": 1,
+    "topics_with_bad_card_sequence": 0
+   }
+  },
+  {
+   "task": "review_cards",
+   "lecture_id": "de2d74b0-36ad-4680-95bb-3fc2676697a8",
+   "language": {
+    "content_language": "Japanese",
+    "transcript_language": "Japanese",
+    "is_bilingual": false
+   },
+   "wall_seconds": 20.85,
+   "cost_usd": 0.003955,
+   "token_cost_usd": 0.003344,
+   "error": null,
+   "output": [
+    {
+     "topic_evaluation": {
+      "micro_topics": [
+       {
+        "idx": 1,
+        "title": "行為と概念の違い",
+        "summary": "同性間の性行為が昔からあったことと、同性愛者という自己カテゴリーが昔からあったことは別物だと整理する。",
+        "start_sid": "s000328",
+        "end_sid": "s000344"
+       },
+       {
+        "idx": 2,
+        "title": "転換点は60年代",
+        "summary": "性的指向が自己の定義として定着したのは60年代のゲイ解放運動だと説明される。",
+        "start_sid": "s000345",
+        "end_sid": "s000361"
+       },
+       {
+        "idx": 3,
+        "title": "ストーンウォールの抵抗",
+        "summary": "警察の摘発への抵抗から、当事者が自らの存在を掲げ連帯する言葉としてゲイやホモセクシュアルが使われたことを示す。",
+        "start_sid": "s000362",
+        "end_sid": "s000387"
+       },
+       {
+        "idx": 4,
+        "title": "アイデンティティモデルの特徴",
+        "summary": "性的指向を決定的要素とし変えられないと捉える考え方と、その普遍性への疑問を確認する。",
+        "start_sid": "s000388",
+        "end_sid": "s000401"
+       },
+       {
+        "idx": 5,
+        "title": "近世日本と現代の対比",
+        "summary": "近世日本の男色が行き来できる性愛として捉えられていたことと、現代の政策やLGBT概念の見過ごしの問題を対比する。",
+        "start_sid": "s000402",
+        "end_sid": "s000457"
+       }
+      ],
+      "card_mapping_strategy": "ミクロトピック1を導入のフックにし、「行為」と「自分の正体」の違いを軸に据えます。ミクロトピック2と3を組み合わせてコア・ホワイ（ストーンウォールを通じてアイデンティティとしての性が生まれた仕組み）を丁寧に説明します。ミクロトピック4と5の前半をガッチャで扱い、アイデンティティモデルの不可変性と、近世日本の男色との対比による普遍性への疑問を深掘りします。省略するのは、自民党の政策パンフレットの詳細、三橋純子さんのLGBT概念による見過ごしの議論、三笠さんの個人的な名乗りの事例で、これらは次のカードの自習リストに回します。",
+      "core_concept_identified": "アイデンティティとしての性の誕生"
+     },
+     "review_cards": [
+      {
+       "card_type": "hook",
+       "hero_emoji": "🏳️‍🌈",
+       "title": "行為か、それとも自分の正体か？",
+       "content_blocks": [
+        {
+         "type": "quote",
+         "text": "同じ行為でも、「それは何をする人か」と問われ方が変わると、まったく別の意味を持つんです！"
+        },
+        {
+         "type": "paragraph",
+         "text": "ちょっと想像してみてください。昔から同性同士で親密な関係を持つ人はいました。では、その人が「自分は同性愛者だ」と名乗る感覚は昔からあったのでしょうか？ここがこの回の最大の問いです。実は、この二つは同じではないと講義では強調されていました。"
+        }
+       ]
+      },
+      {
+       "card_type": "core_why",
+       "hero_emoji": "✊",
+       "title": "ストーンウォールが「正体」を生んだ",
+       "content_blocks": [
+        {
+         "type": "paragraph",
+         "text": "まず大事なポイントは、同性愛という言葉や概念は、性行為そのものを指すために生まれたのではないということです。性行為が「その人をたらしめるもの」として強調されるようになってから、この言葉が生まれてきたんですね。ここで一つ転換点が生まれたと考えてください ⟦s000335-s000341⟧。"
+        },
+        {
+         "type": "paragraph",
+         "text": "その転換点とされるのが60年代のゲイ解放運動です。ニューヨークのゲイバー、ストーンウォールインに警察が摘発に入り、客や従業員が逮捕されました。プライバシーの最も私的な行為に警察が踏み込んでくれば、生存や生活そのものが脅かされますよね ⟦s000363-s000374⟧。"
+        },
+        {
+         "type": "paragraph",
+         "text": "もう黙っていられない！そこで当事者たちは、ストーンウォールの抵抗をきっかけに、自分は同性愛者なんだと自ら名乗り、同じ性的指向を持つ人々と連帯し始めました。ゲイやホモセクシュアルという言葉は、まさにこうして自分の愛のあり方を語るために使われたのです ⟦s000375-s000383⟧。"
+        },
+        {
+         "type": "callout",
+         "alert_type": "info",
+         "text": "ここが核心です！ 「性行為をする人」から「性的指向を持つ自分」へ、語られ方が変わったことで、アイデンティティとしての性が生まれたんです ⟦s000384-s000387⟧。"
+        }
+       ]
+      },
+      {
+       "card_type": "gotcha",
+       "hero_emoji": "🧭",
+       "title": "アイデンティティモデルの落とし穴",
+       "content_blocks": [
+        {
+         "type": "paragraph",
+         "text": "現代の見方では、性的指向はその人の決定的な要素であり、変えることができないものだと考えられています。つまり、周りはそれを受け入れ、尊重すべきだという前提になっているわけです ⟦s000392-s000399⟧。ここまでは分かりやすいですよね。"
+        },
+        {
+         "type": "callout",
+         "alert_type": "warning",
+         "text": "注意！ でも、このアイデンティティに基づく性の概念は普遍的なものではありません。ずっと昔からこの形だったと思い込むと、本当の歴史が見えなくなってしまいます ⟦s000400-s000403⟧。"
+        },
+        {
+         "type": "paragraph",
+         "text": "例えば日本の近世には、男色という言葉で男性同士の性愛が比較的許容され、広く行われていました。そこでは男色と女色（異性間の性愛）が行き来できるものとして捉えられていたんです。生まれてから死ぬまで決まった本質的な属性として取られていたわけではありません ⟦s000405-s000417⟧。"
+        },
+        {
+         "type": "paragraph",
+         "text": "ここで「え、同じ性愛なのに扱いが違うの？」と驚いてほしいところです。性愛の形そのものよりも、それを自分の正体としてどう語るかが、時代や場所によって大きく違ったのだと理解してください。"
+        }
+       ]
+      },
+      {
+       "card_type": "next_action",
+       "hero_emoji": "🚀",
+       "title": "正体としての性の歴史をつかもう",
+       "content_blocks": [
+        {
+         "type": "paragraph",
+         "text": "今回は、同性愛が性行為を指す言葉から、自分の正体を語る言葉へと変わったことを学びました。その転換点はゲイ解放運動とストーンウォールの抵抗にあり、アイデンティティモデルは現代にも強く根付いています。ただし、そのモデルは普遍的ではなく、近世日本の男色のように時代や文化で姿を変えてきました。"
+        },
+        {
+         "type": "paragraph",
+         "text": "授業で扱ったけれど、今回のカードでは詳しく触れなかった内容もあります。ぜひ自分で調べてみてください。"
+        },
+        {
+         "type": "list",
+         "items": [
+          "自民党の政策パンフレットにある、LGBTは生まれながらのもので本人が変えにくいとする立場 ⟦s000420-s000431⟧",
+          "性文化の研究者である三橋純子さんが、LGBTという概念で見過ごされるものがあると指摘した議論 ⟦s000443-s000451⟧",
+          "トランスジェンダーやニューハーフといった名乗りを、時代ごとに読み替えることの難しさ ⟦s000452-s000457⟧"
+         ]
+        },
+        {
+         "type": "paragraph",
+         "text": "では、あるモデルで見えるものと見えなくなるものがあるなら、文化をどう尊重しつつ人権を守ればいいのでしょうか？次の授業では、文化尊重と人権の緊張関係や、二項対立を超える文化比較について一緒に考えていきましょう！"
+        }
+       ]
+      }
+     ],
+     "topic_idx": 3
+    }
+   ],
+   "calls": [
+    {
+     "task": "review_cards",
+     "lecture_id": "de2d74b0-36ad-4680-95bb-3fc2676697a8",
+     "original_model": "anthropic/claude-haiku-5-5",
+     "model": "anthropic/claude-haiku-5-5",
+     "request_kwargs": {
+      "model": "anthropic/claude-haiku-5-5",
+      "temperature": 0.3,
+      "num_retries": 3,
+      "max_tokens": 32000,
+      "reasoning_effort": "low",
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      },
+      "response_format": {
+       "type": "json_schema",
+       "json_schema": {
+        "name": "output",
+        "schema": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [
+          "topic_evaluation",
+          "review_cards"
+         ],
+         "properties": {
+          "topic_evaluation": {
+           "type": "object",
+           "additionalProperties": false,
+           "required": [
+            "micro_topics",
+            "card_mapping_strategy",
+            "core_concept_identified"
+           ],
+           "properties": {
+            "micro_topics": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+               "idx",
+               "title",
+               "summary",
+               "start_sid",
+               "end_sid"
+              ],
+              "properties": {
+               "idx": {
+                "type": "integer"
+               },
+               "title": {
+                "type": "string"
+               },
+               "summary": {
+                "type": "string"
+               },
+               "start_sid": {
+                "type": "string"
+               },
+               "end_sid": {
+                "type": "string"
+               }
+              }
+             }
+            },
+            "card_mapping_strategy": {
+             "type": "string"
+            },
+            "core_concept_identified": {
+             "type": "string"
+            }
+           }
+          },
+          "review_cards": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+             "card_type",
+             "hero_emoji",
+             "title",
+             "content_blocks"
+            ],
+            "properties": {
+             "card_type": {
+              "type": "string",
+              "enum": [
+               "hook",
+               "core_why",
+               "gotcha",
+               "next_action"
+              ]
+             },
+             "hero_emoji": {
+              "type": "string"
+             },
+             "title": {
+              "type": "string"
+             },
+             "content_blocks": {
+              "type": "array",
+              "items": {
+               "anyOf": [
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "paragraph"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "quote"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "alert_type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "callout"
+                   ]
+                  },
+                  "alert_type": {
+                   "type": "string",
+                   "enum": [
+                    "info",
+                    "warning",
+                    "error"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "code_string"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "code"
+                   ]
+                  },
+                  "code_string": {
+                   "type": "string"
+                  },
+                  "language": {
+                   "type": "string"
+                  },
+                  "explanation": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "items"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "list"
+                   ]
+                  },
+                  "items": {
+                   "type": "array",
+                   "items": {
+                    "type": "string"
+                   }
+                  }
+                 }
+                }
+               ]
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "system_chars": 24039,
+     "user_chars": 107,
+     "elapsed_seconds": 20.35,
+     "input_tokens": 12022,
+     "output_tokens": 4284,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "finish_reason": "stop",
+     "json_parse_error": null,
+     "output_text": "{\"topic_evaluation\":{\"micro_topics\":[{\"idx\":1,\"title\":\"行為と概念の違い\",\"summary\":\"同性間の性行為が昔からあったことと、同性愛者という自己カテゴリーが昔からあったことは別物だと整理する。\",\"start_sid\":\"s000328\",\"end_sid\":\"s000344\"},{\"idx\":2,\"title\":\"転換点は60年代\",\"summary\":\"性的指向が自己の定義として定着したのは60年代のゲイ解放運動だと説明される。\",\"start_sid\":\"s000345\",\"end_sid\":\"s000361\"},{\"idx\":3,\"title\":\"ストーンウォールの抵抗\",\"summary\":\"警察の摘発への抵抗から、当事者が自らの存在を掲げ連帯する言葉としてゲイやホモセクシュアルが使われたことを示す。\",\"start_sid\":\"s000362\",\"end_sid\":\"s000387\"},{\"idx\":4,\"title\":\"アイデンティティモデルの特徴\",\"summary\":\"性的指向を決定的要素とし変えられないと捉える考え方と、その普遍性への疑問を確認する。\",\"start_sid\":\"s000388\",\"end_sid\":\"s000401\"},{\"idx\":5,\"title\":\"近世日本と現代の対比\",\"summary\":\"近世日本の男色が行き来できる性愛として捉えられていたことと、現代の政策やLGBT概念の見過ごしの問題を対比する。\",\"start_sid\":\"s000402\",\"end_sid\":\"s000457\"}],\"card_mapping_strategy\":\"ミクロトピック1を導入のフックにし、「行為」と「自分の正体」の違いを軸に据えます。ミクロトピック2と3を組み合わせてコア・ホワイ（ストーンウォールを通じてアイデンティティとしての性が生まれた仕組み）を丁寧に説明します。ミクロトピック4と5の前半をガッチャで扱い、アイデンティティモデルの不可変性と、近世日本の男色との対比による普遍性への疑問を深掘りします。省略するのは、自民党の政策パンフレットの詳細、三橋純子さんのLGBT概念による見過ごしの議論、三笠さんの個人的な名乗りの事例で、これらは次のカードの自習リストに回します。\",\"core_concept_identified\":\"アイデンティティとしての性の誕生\"},\"review_cards\":[{\"card_type\":\"hook\",\"hero_emoji\":\"🏳️‍🌈\",\"title\":\"行為か、それとも自分の正体か？\",\"content_blocks\":[{\"type\":\"quote\",\"text\":\"同じ行為でも、「それは何をする人か」と問われ方が変わると、まったく別の意味を持つんです！\"},{\"type\":\"paragraph\",\"text\":\"ちょっと想像してみてください。昔から同性同士で親密な関係を持つ人はいました。では、その人が「自分は同性愛者だ」と名乗る感覚は昔からあったのでしょうか？ここがこの回の最大の問いです。実は、この二つは同じではないと講義では強調されていました。\"}]},{\"card_type\":\"core_why\",\"hero_emoji\":\"✊\",\"title\":\"ストーンウォールが「正体」を生んだ\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"まず大事なポイントは、同性愛という言葉や概念は、性行為そのものを指すために生まれたのではないということです。性行為が「その人をたらしめるもの」として強調されるようになってから、この言葉が生まれてきたんですね。ここで一つ転換点が生まれたと考えてください ⟦s000335-s000341⟧。\"},{\"type\":\"paragraph\",\"text\":\"その転換点とされるのが60年代のゲイ解放運動です。ニューヨークのゲイバー、ストーンウォールインに警察が摘発に入り、客や従業員が逮捕されました。プライバシーの最も私的な行為に警察が踏み込んでくれば、生存や生活そのものが脅かされますよね ⟦s000363-s000374⟧。\"},{\"type\":\"paragraph\",\"text\":\"もう黙っていられない！そこで当事者たちは、ストーンウォールの抵抗をきっかけに、自分は同性愛者なんだと自ら名乗り、同じ性的指向を持つ人々と連帯し始めました。ゲイやホモセクシュアルという言葉は、まさにこうして自分の愛のあり方を語るために使われたのです ⟦s000375-s000383⟧。\"},{\"type\":\"callout\",\"alert_type\":\"info\",\"text\":\"ここが核心です！ 「性行為をする人」から「性的指向を持つ自分」へ、語られ方が変わったことで、アイデンティティとしての性が生まれたんです ⟦s000384-s000387⟧。\"}]},{\"card_type\":\"gotcha\",\"hero_emoji\":\"🧭\",\"title\":\"アイデンティティモデルの落とし穴\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"現代の見方では、性的指向はその人の決定的な要素であり、変えることができないものだと考えられています。つまり、周りはそれを受け入れ、尊重すべきだという前提になっているわけです ⟦s000392-s000399⟧。ここまでは分かりやすいですよね。\"},{\"type\":\"callout\",\"alert_type\":\"warning\",\"text\":\"注意！ でも、このアイデンティティに基づく性の概念は普遍的なものではありません。ずっと昔からこの形だったと思い込むと、本当の歴史が見えなくなってしまいます ⟦s000400-s000403⟧。\"},{\"type\":\"paragraph\",\"text\":\"例えば日本の近世には、男色という言葉で男性同士の性愛が比較的許容され、広く行われていました。そこでは男色と女色（異性間の性愛）が行き来できるものとして捉えられていたんです。生まれてから死ぬまで決まった本質的な属性として取られていたわけではありません ⟦s000405-s000417⟧。\"},{\"type\":\"paragraph\",\"text\":\"ここで「え、同じ性愛なのに扱いが違うの？」と驚いてほしいところです。性愛の形そのものよりも、それを自分の正体としてどう語るかが、時代や場所によって大きく違ったのだと理解してください。\"}]},{\"card_type\":\"next_action\",\"hero_emoji\":\"🚀\",\"title\":\"正体としての性の歴史をつかもう\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"今回は、同性愛が性行為を指す言葉から、自分の正体を語る言葉へと変わったことを学びました。その転換点はゲイ解放運動とストーンウォールの抵抗にあり、アイデンティティモデルは現代にも強く根付いています。ただし、そのモデルは普遍的ではなく、近世日本の男色のように時代や文化で姿を変えてきました。\"},{\"type\":\"paragraph\",\"text\":\"授業で扱ったけれど、今回のカードでは詳しく触れなかった内容もあります。ぜひ自分で調べてみてください。\"},{\"type\":\"list\",\"items\":[\"自民党の政策パンフレットにある、LGBTは生まれながらのもので本人が変えにくいとする立場 ⟦s000420-s000431⟧\",\"性文化の研究者である三橋純子さんが、LGBTという概念で見過ごされるものがあると指摘した議論 ⟦s000443-s000451⟧\",\"トランスジェンダーやニューハーフといった名乗りを、時代ごとに読み替えることの難しさ ⟦s000452-s000457⟧\"]},{\"type\":\"paragraph\",\"text\":\"では、あるモデルで見えるものと見えなくなるものがあるなら、文化をどう尊重しつつ人権を守ればいいのでしょうか？次の授業では、文化尊重と人権の緊張関係や、二項対立を超える文化比較について一緒に考えていきましょう！\"}]}]}",
+     "cost_usd": 0.0033442
+    }
+   ],
+   "checks": {
+    "calls": 1,
+    "error": null,
+    "finish_reasons": [
+     "stop"
+    ],
+    "truncated_calls": 0,
+    "json_parse_errors": 0,
+    "chars": 1700,
+    "exclamations": 5,
+    "question_marks": 4,
+    "citations": 10,
+    "malformed_citations": 0,
+    "placeholder_leak": 0,
+    "english_gloss_parens": 0,
+    "input_tokens": 12022,
+    "output_tokens": 4284,
+    "max_output_tokens_single_call": 4284,
+    "sum_call_seconds": 20.4,
+    "max_call_seconds": 20.35,
+    "topics": 1,
+    "topics_with_bad_card_sequence": 0
+   }
+  },
+  {
+   "task": "deep_notes",
+   "lecture_id": "666b2c9d-a997-451b-9318-98f98c9d29fa",
+   "language": {
+    "content_language": "Japanese",
+    "transcript_language": "English",
+    "is_bilingual": true
+   },
+   "wall_seconds": 50.42,
+   "cost_usd": 0.010028,
+   "token_cost_usd": 0.008516,
+   "error": null,
+   "output": [
+    {
+     "topic_idx": 4,
+     "content": "# 4. Haskellの関数定義と型推論\n\nHaskellでは、関数の型を書く行と関数の本体を書く行の2行で関数を定義します。型は引数の型を並べ、最後に戻り値の型を書きます。さらに、型を省略してもコンパイラが型を推論してくれますが、型の不一致は決して自動では直されません。\n\n## 🔍 関数定義の基本形\n\nHaskellの関数は、まず**型宣言**(型シグネチャ、function signature)を定義の上に書きます。そのあとに、関数名と引数名を並べた**本体**を書きます。講義では、この型宣言が関数の入力と出力の型を示す仕組みだと説明されました。⟦s000594, s000647⟧\n\nたとえば、講義の`poly`関数は次のように書きます。\n\n```haskell\npoly :: Double -> Double\npoly x = 3 * x * x\n```\n\n- **1行目** `poly :: Double -> Double` は型宣言です。最初の`Double`が引数の型で、最後の`Double`が戻り値の型です。⟦s000595, s000598-s000600⟧\n- **2行目** `poly x = 3 * x * x` は本体です。等号の右側の式が、そのまま関数の結果になります。⟦s000651⟧\n\nここで大事なのは、関数名を2回書く点です。型宣言と本体の両方に名前が現れます。これはHaskellの設計上の決まりで、他にも書き方はあるけれど、言語の癖(quirk)として採用されたものだと説明されました。⟦s000638-s000646⟧\n\n> 注意: 講義では、`poly x = 3x^2`のような式の`=`を「xに3x²を代入している」と読まないよう強調されました。Pythonのコロン`:`のように「`poly`はxを受け取り、この式を計算する」と読みます。⟦s000567-s000571⟧\n\n## ⚙️ 関数の呼び出しと暗黙の戻り値\n\nHaskellでは、関数を呼び出すときに**括弧もカンマも不要**です。関数名のあとに引数を空白で並べるだけで済みます。⟦s000530, s000653-s000654⟧\n\n```haskell\npoly 2      -- 結果は 12 (3 × 2 × 2)\narea 10     -- 半径10の円の面積\n```\n\nここで`poly 2`の結果は12になります。`poly`の本体は`3 * x * x`なので、x=2を代入すると3×2×2=12です。⟦s000572⟧\n\nHaskellには`return`文がありません。式をそのまま書けば、その値が結果になります。講義では、この仕組みを**暗黙の戻り値**(implicit return)と呼んでいました。⟦s000617-s000624⟧\n\n> 補足: 講義の`area`の例は、半径10で結果が314と表示されるものでした。本体を書く行は講義では示されなかったため、ここでは円周率を3.14とした場合の例として、`area r = 3.14 * r * r`と読んでおくと理解しやすいです。⟦s000522, s000530-s000532⟧\n\nまた、Haskellでは**区切りが改行と空白だけ**です。セミコロンもなく、括弧で囲む必要もありません。講義では、この「空白に基づく書き方」が大きな特徴だと説明されました。⟦s000607-s000615, s000627-s000631⟧\n\n## 🧩 複数引数と型宣言の読み方\n\n引数が複数ある場合も、型は同じ並びで書きます。引数の型を左から順に並べ、最後の型だけが戻り値の型です。講義では、「最初のn-1個の型が引数で、最後の1つが戻り値」とまとめられました。⟦s000601-s000603, s000711-s000712⟧\n\n2つの数を比べる`isGreater`を例にすると、次のようになります。\n\n```haskell\nisGreater :: Double -> Double -> Bool\nisGreater first second = first > second\n```\n\n- 型宣言の`Double -> Double -> Bool`は、「Doubleを2つ受け取り、Boolを返す」という意味です。\n- 最後の`Bool`が戻り値で、`>`の結果が真偽値なので、この型になります。⟦s000708-s000709⟧\n\n呼び出しは次のように書きます。引数はカンマではなく空白で区切ります。⟦s000714-s000715⟧\n\n```haskell\nisGreater 2.5 12.8    -- False\nisGreater 12.8 2.5    -- True\n```\n\n複数行に分けて書くこともできます。その場合は行頭のインデント(字下げ)を揃えます。インデントの幅は何スペースでも構いませんが、同じ関数の中では一貫させる必要があります。⟦s000676-s000677⟧\n\n講義では、引数と戻り値の型を1行にまとめる書き方について「見た目が分かりにくい」と感想が出ていました。この形の理由は、後で**カリー化**(currying)と**部分適用**(partial function application)を学ぶと分かるとされています。⟦s000680-s000681, s000695-s000697⟧\n\n## 🕵️ 型推論: isOldの例\n\n型宣言を書かなくても、Haskellは型を決めてくれます。これを**型推論**(type inference)と呼びます。講義の`isOld`の例で確かめてみましょう。⟦s000734-s000738, s000748-s000750⟧\n\n```haskell\nisOld age hasAches = age > 30 || hasAches == True\n```\n\nこの関数には型宣言がありません。それでも、`:t`コマンドで型を聞くと、Haskellは`Int -> Bool -> Bool`と答えます。⟦s000743-s000747⟧\n\n型は次のような手がかりから推論されます。\n\n1. **`age > 30`**: `age`は整数と比べられているので`Int`になります。文字列や真偽値と整数は比べられないため、ほかの型にはなりえません。⟦s000757-s000758, s000808-s000810⟧\n2. **`hasAches == True`**: `hasAches`は`True`と比べられているので`Bool`になります。⟦s000761, s000814⟧\n3. **`||`の結果**: 論理和の結果は真偽値なので、戻り値は`Bool`になります。⟦s000766-s000767, s000815-s000816⟧\n\n講義では、`hasAches == True`は`hasAches`だけに書き換えられることも示されました。`True`との比較を省いても、`hasAches`は式として単独で使われるため、同じ`Bool`として推論されます。⟦s000792-s000793, s000832-s000833⟧\n\nもう1つ大事な点があります。型宣言を省略しても、すべての値・変数・関数には**必ず1つの固定された型**があります。Haskellは型を書かせないことはあっても、型の厳しさを緩めることはありません。⟦s000848-s000852⟧\n\n> 補足: 型宣言を書かずに数値を扱うと、Haskellは整数に限定せず、より広い数値型(Integer、Doubleなどを含む型)として扱うことがあると説明されました。型を省略すると型が広めに決まることがある、という点を覚えておくと役立ちます。⟦s000785-s000789⟧\n\n## 🚫 厳密な型検査: 自動変換はしない\n\nHaskellは**厳密な型検査**(strict type checking)を行います。整数と浮動小数点数のような異なる型を、自動で変換して合わせることはありません。講義では、C++との違いとしてこの点が強調されました。⟦s000771-s000775, s000842-s000843⟧\n\nたとえば、`isOld`に小数の`53.5`を渡すと、C++では小数が整数に変換されて動くかもしれません。しかしHaskellでは、型が合わないためエラーになります。⟦s000857-s000859⟧\n\n```haskell\nisOld 53.5 False    -- エラー: 整数型の引数に小数を渡している\nisOld 53 False      -- OK\n```\n\n変換したいときは、プログラマが明示的に変換する必要があります。講義では、`casting`ではなく正式には`conversion`と呼ぶと補足されました。⟦s000779, s000820-s000821⟧\n\n## 🎯 Key Takeaway\n\n- **型宣言**は「引数の型…、最後に戻り値の型」の順で書き、関数名の定義の上に置きます。⟦s000647-s000649, s000603⟧\n- **呼び出し**は関数名のあとに空白で引数を並べ、**return文は不要**です。⟦s000653, s000620-s000622⟧\n- **型推論**により、型宣言は省略できますが、すべての値に固定の型があります。⟦s000799-s000802, s000849⟧\n- **型の不一致**は自動変換されず、エラーになります。⟦s000853-s000854, s000860⟧"
+    },
+    {
+     "topic_idx": 6,
+     "content": "# 6. 再帰・局所定義と配列指向の考え方\n\n関数を小さく分けて組み立てる再帰（recursion）と、名前を局所的に束縛する仕組み、そして配列全体をまとめて扱う配列指向の考え方を扱います。どれも「必要なものを、必要なときだけ計算する」「繰り返しを明示的に書かない」という関数型言語らしい発想につながっています。⟦s001238, s001241, s001659-s001660⟧\n\n## 🔁 再帰で階乗を書く\n\n階乗は、`n` が 0 のときに 1 を返し、それ以外は `n` に `(n - 1)` の階乗を掛ける、という形で定義できます。まずは `if` 式で書いた版を見てみましょう。⟦s001226-s001229⟧\n\n```haskell\nfactorial :: Integer -> Integer\nfactorial n = if n == 0\n              then 1\n              else n * (factorial (n - 1))\n```\n\nここで `(factorial (n - 1))` の括弧がとても大切です。括弧がないと、先に `factorial n` を計算してから 1 を引いてしまうためです。⟦s001230-s001231⟧\n\n同じ処理をガード（guard）で書くと、次のようになります。型の宣言は同じままです。⟦s001233-s001234⟧\n\n```haskell\nfactorial :: Integer -> Integer\nfactorial n\n  | n == 0    = 1\n  | otherwise = n * factorial (n - 1)\n```\n\nガード版は `n == 0` のときの答えと、それ以外のときの答えを縦に並べて書けるので、読みやすくなります。関数型言語で問題を解くときは、この書き方が典型的だと説明されました。⟦s001235-s001236⟧\n\n### 🪜 階乗 2 を実際にたどる\n\n`factorial 2` を例に、呼び出しを順番にたどってみます。\n\n1. `n` は 2 です。`n == 0` は偽なので、otherwise の側に進みます。⟦s001256-s001259⟧\n2. `factorial (n - 1)` を呼びます。ここで `n - 1` は 1 です。⟦s001265, s001276⟧\n3. 新しい呼び出しでは `n` が 1 です。`n == 0` は偽なので、今度は `factorial 0` を呼びます。⟦s001276-s001277⟧\n4. `factorial 0` では `n == 0` が真になり、1 を返します。⟦s001280-s001281⟧\n5. 戻った先で `1 * 1` を計算し、1 を返します。さらに戻った先で `2 * 1` を計算し、答えの 2 になります。⟦s001283-s001287⟧\n\nここでは分かりやすくするために `n - 1` を先に計算した値（1）として書きました。実際の Haskell では、この計算はもう少し遅らされます。次のセクションで説明します。⟦s001261-s001264⟧\n\n## ⏳ 遅延評価（lazy evaluation）とサンク（thunk）\n\nHaskell では、`n - 1` の値をその場で計算しません。代わりに「あとで必要になったら `n - 1` を計算する」という約束のようなものを渡します。この約束をサンク（thunk）と呼びます。⟦s001262-s001263, s001314-s001317⟧\n\n- **すぐには計算しない**：`factorial (n - 1)` の呼び出し時には、`n - 1` の値はまだ作られません。⟦s001266-s001272⟧\n- **本当に必要になったときに計算する**：`n == 0` の判断をする瞬間に、初めて `n - 1` が評価されます。⟦s001292-s001294⟧\n- **判断には値が必要**：関数型言語では、「x をするか y をするか」を決めるときには引数を評価しなければなりません。だからこの遅延が解けるのは、判断が必要になった瞬間です。⟦s001295-s001296⟧\n\nサンクは「変数をつかまえた関数」のようなもので、その中で `n` を参照すると、もとの値を指すことになります。⟦s001327-s001335⟧ 講義では、この仕組みは通常は隠されているので、一般的な考え方を理解しておけば十分だと説明されました。⟦s001348-s001353⟧\n\n> 💡 遅延評価の要点は、「使われるまで計算しない」ことです。使われない値は、最後まで計算されないこともあります。⟦s001379-s001384⟧\n\n## 🧱 局所束縛（local binding）と let 式\n\n局所束縛（local binding）は、関数や式の中だけで有効な「名前と値のペア」です。`let` 式を使うと、この名前を複数定義できます。⟦s001367-s001369⟧ 定義した名前は `in` の後の式で使えます。⟦s001369-s001371⟧\n\n書き方は次のとおりです。⟦s001403-s001405⟧\n\n```haskell\nlet 変数1 = 値1\n    変数2 = 値2\nin  変数1 と変数2 を使った式\n```\n\n円の面積の例で見てみましょう。⟦s001406-s001407⟧\n\n```haskell\ncircleArea r =\n  let piValue = 3.14159\n  in  piValue * r * r\n```\n\n- `piValue` は関数の中だけで使える定数です。`r` は関数の引数です。⟦s001371-s001372⟧\n- 局所変数は、ほかの局所変数を参照することもできます。たとえば二乗を計算する `squareX` と `squareY` を定義して、その和 `sumOfSquares` を作るような書き方ができます。⟦s001363, s001407-s001408⟧\n- 局所変数は定数です。一度だけ値を与えることができ、あとから変えることはできません。⟦s001364-s001365⟧\n\n`let` の中の `let` も書けます。⟦s001366⟧ また、`let` の定義は「使われたときに」評価されるため、`in` の後の式が使わない定義は計算されません。⟦s001396-s001401⟧\n\n## 📝 where 節と使い分け\n\n`where` 節は、関数の本体の**後ろ**に局所変数をまとめて書く方法です。`let` と似ていますが、定義を式の後ろに置きます。⟦s001414-s001416⟧ 次の例は、ネットの「ナード度」を判定する関数です。⟦s001416-s001418⟧\n\n```haskell\ngetNerdStatus :: Int -> Int -> String\ngetNerdStatus gpa studyHours\n  | nerdScore > 100 = \"super nerdy\"\n  | otherwise       = \"just a nerd\"\n  where\n    nerdScore = gpa * studyHours\n```\n\n本体のガードでは `nerdScore` を使っていますが、定義は `where` の中にあります。Haskell では、後ろに書いた定義も前から参照できます。⟦s001419-s001420, s001429-s001431⟧ 読む人は、まず関数の論理を見て、詳細が必要になったら `where` の下を見ればよいので、読みやすくなります。⟦s001424-s001428⟧\n\n### 🆚 let と where の違い\n\n- **似ている点**：どちらも局所的な定義に使えます。単一の式を返すだけの関数なら、どちらを使ってもかまいません。⟦s001429, s001457-s001462⟧\n- **違う点**：複数のガードがある場合は、`where` を使わなければなりません。`let` はガードと組み合わせられない、というのがこの言語の決まりです。⟦s001469-s001471, s001498-s001499⟧\n- **理由**：特別な理由があるわけではなく、言語の設計で決められたものです。ほかの言語を設計するなら、`let` をガードと組み合わせることもできます。⟦s001472-s001477⟧\n\n> ⚠️ ガードは一見複数の式に見えますが、コンパイル時には入れ子の `if` 式として一つにまとめられます。そのため「式が一つか複数か」は、見た目と内部の扱いで違って見えることがあります。⟦s001482-s001486⟧\n\n## 🪆 ネストした関数とスコープ\n\n関数の中に、もう一つの関数を定義することもできます。Python の入れ子関数のような考え方です。⟦s001503, s001514⟧ 次の例では、`whatsTheBehaviorOf` の中で `behavesLike` を `where` で定義しています。⟦s001506-s001513⟧\n\n```haskell\nwhatsTheBehaviorOf :: String -> String\nwhatsTheBehaviorOf name\n  | name == \"Kerry\" = behavesLike name \"12-year-old\"\n  | otherwise       = behavesLike name \"grown-up\"\n  where\n    behavesLike n what = n ++ \" behaves like a \" ++ what ++ \"!\"\n```\n\n- `behavesLike` は `n` と `what` の二つの引数を取り、文字列をつなげて返します。⟦s001514-s001516⟧\n- この関数は外側の関数の中でだけ見えます。外から呼び出すことはできません。⟦s001521-s001523⟧\n\n### 🔍 外側の変数が見える理由\n\nネストした関数は、囲んでいる関数の引数や局所変数にアクセスできます。⟦s001561, s001566⟧ そのため、`behavesLike` の引数から `name` を取り除き、外側の `name` を直接使うこともできます。⟦s001567-s001573⟧\n\n```haskell\nwhatsTheBehaviorOf :: String -> String\nwhatsTheBehaviorOf name\n  | name == \"Kerry\" = behavesLike \"12-year-old\"\n  | otherwise       = behavesLike \"grown-up\"\n  where\n    behavesLike what = name ++ \" behaves like a \" ++ what ++ \"!\"\n```\n\nこの書き方は問題ありません。内側の関数は外側の値を読むだけで、書き換えていないからです。外側の値を変更しないかぎり、純粋関数の制約には違反しないと確認されました。⟦s001575-s001580⟧ 内側の関数の中で、さらに別の関数を定義した場合も、その外側すべての変数が見えます。⟦s001589-s001591⟧\n\n## 🔢 演習: 素数判定（isPrime）\n\n素数判定は、ネストした関数と再帰を組み合わせる良い練習です。`isPrime` は整数を受け取り、真偽値を返します。⟦s001593-s001596⟧ 補助関数 `checkDivisors` を使い、`n` と、確認中の除数を渡します。除数は `n - 1` から始めて、1 まで順に減らしていきます。⟦s001596-s001599⟧\n\n```haskell\nisPrime :: Int -> Bool\nisPrime n = checkDivisors n (n - 1)\n  where\n    checkDivisors n divisor\n      | divisor == 1          = True\n      | n `mod` divisor == 0  = False\n      | otherwise             = checkDivisors n (divisor - 1)\n```\n\n- **除数が 1 のとき**：ほかに割り切れる数がなかったので、素数だと判断して `True` を返します。⟦s001611-s001613⟧\n- **割り切れたとき**：`n` を 1 以外の数で割り切れたので、素数ではなく `False` を返します。⟦s001616-s001618⟧\n- **そうでないとき**：次に小さい除数で再帰的に確認します。⟦s001634-s001635⟧\n- **括弧の重要性**：`checkDivisors n (divisor - 1)` の括弧を忘れると、`checkDivisors n divisor` の結果から 1 を引くという誤った式になってしまいます。⟦s001620-s001624⟧\n\n講師は、この実装には既知の不具合があると認めています。`n` が 1 のときは正しく動かず、基底条件の追加が必要だという指摘がありました。⟦s001626-s001627⟧ 学習のために、このような不完全さも含めて確認すると理解が深まります。\n\n## 🧮 配列指向プログラミング（array-oriented programming）と APL\n\n配列指向プログラミングは、要素を一つずつループで処理するのではなく、配列や行列全体への演算として計算を書く考え方です。⟦s001658-s001660⟧ その代表例が APL です。⟦s001642, s001658⟧\n\n- **誕生**：APL は 1957 年に、配列を含む数式を表す記法として生まれました。その後、プログラミング言語になりました。⟦s001647-s001653⟧\n- **特徴**：ループを明示的に書かず、行列やベクトルを一つのまとまりとして扱います。⟦s001658-s001660⟧\n- **記号**：関数は ASCII ではない独特の記号で表されます。それぞれの記号に意味があり、言語を読むには記号の意味を覚える必要があります。⟦s001661-s001664⟧\n- **一文字の強み**：内積、行列積、回転、転置といった複雑な演算が、一つの記号で書けます。⟦s001668-s001669, s001671-s001672⟧\n\nAPL の記号は難しく、現在の基準では読みにくいと認められています。それでも、この考え方は現代の技術に影響を与えました。⟦s001664-s001666, s001685⟧ GPU で行列演算を行う近代的な言語の基礎には APL の発想があり、NumPy、TensorFlow、PyTorch などの機械学習関連技術にも間接的に影響を与えたと説明されました。⟦s001679-s001682⟧ 現在では記号名がより読みやすくなっていますが、テンソルや行列を一度に扱うという考え方は APL に由来します。⟦s001683-s001684⟧\n\n## 🎯 Key Takeaway\n\n- **再帰**：自分自身を小さな問題に対して呼び出し、基底条件で止まります。階乗や素数判定は、この形で書けます。⟦s001249, s001628-s001630⟧\n- **遅延評価**：値は本当に必要になるまで計算されず、判断の瞬間に評価されます。⟦s001290-s001296⟧\n- **let と where**：局所束縛を作る方法です。単一の式なら どちらでもよく、ガードを使うときは `where` が必要です。⟦s001457-s001471⟧\n- **ネストした関数**：外側の引数や局所変数を読むことができ、外側の値を書き換えなければ問題ありません。⟦s001584-s001585, s001577-s001580⟧\n- **配列指向**：ループを書かずに、行列やベクトル全体を一つの記号で計算します。この発想は現代の機械学習技術にもつながっています。⟦s001659-s001660, s001680-s001682⟧"
+    }
+   ],
+   "calls": [
+    {
+     "task": "deep_notes",
+     "lecture_id": "666b2c9d-a997-451b-9318-98f98c9d29fa",
+     "original_model": "anthropic/claude-haiku-5-5",
+     "model": "anthropic/claude-haiku-5-5",
+     "request_kwargs": {
+      "model": "anthropic/claude-haiku-5-5",
+      "temperature": 0.2,
+      "num_retries": 3,
+      "max_tokens": 32000,
+      "reasoning_effort": "low",
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      }
+     },
+     "system_chars": 13380,
+     "user_chars": 25607,
+     "elapsed_seconds": 21.86,
+     "input_tokens": 14878,
+     "output_tokens": 4404,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "finish_reason": "stop",
+     "json_parse_error": null,
+     "output_text": "# 4. Haskellの関数定義と型推論\n\nHaskellでは、関数の型を書く行と関数の本体を書く行の2行で関数を定義します。型は引数の型を並べ、最後に戻り値の型を書きます。さらに、型を省略してもコンパイラが型を推論してくれますが、型の不一致は決して自動では直されません。\n\n## 🔍 関数定義の基本形\n\nHaskellの関数は、まず**型宣言**(型シグネチャ、function signature)を定義の上に書きます。そのあとに、関数名と引数名を並べた**本体**を書きます。講義では、この型宣言が関数の入力と出力の型を示す仕組みだと説明されました。⟦s000594, s000647⟧\n\nたとえば、講義の`poly`関数は次のように書きます。\n\n```haskell\npoly :: Double -> Double\npoly x = 3 * x * x\n```\n\n- **1行目** `poly :: Double -> Double` は型宣言です。最初の`Double`が引数の型で、最後の`Double`が戻り値の型です。⟦s000595, s000598-s000600⟧\n- **2行目** `poly x = 3 * x * x` は本体です。等号の右側の式が、そのまま関数の結果になります。⟦s000651⟧\n\nここで大事なのは、関数名を2回書く点です。型宣言と本体の両方に名前が現れます。これはHaskellの設計上の決まりで、他にも書き方はあるけれど、言語の癖(quirk)として採用されたものだと説明されました。⟦s000638-s000646⟧\n\n> 注意: 講義では、`poly x = 3x^2`のような式の`=`を「xに3x²を代入している」と読まないよう強調されました。Pythonのコロン`:`のように「`poly`はxを受け取り、この式を計算する」と読みます。⟦s000567-s000571⟧\n\n## ⚙️ 関数の呼び出しと暗黙の戻り値\n\nHaskellでは、関数を呼び出すときに**括弧もカンマも不要**です。関数名のあとに引数を空白で並べるだけで済みます。⟦s000530, s000653-s000654⟧\n\n```haskell\npoly 2      -- 結果は 12 (3 × 2 × 2)\narea 10     -- 半径10の円の面積\n```\n\nここで`poly 2`の結果は12になります。`poly`の本体は`3 * x * x`なので、x=2を代入すると3×2×2=12です。⟦s000572⟧\n\nHaskellには`return`文がありません。式をそのまま書けば、その値が結果になります。講義では、この仕組みを**暗黙の戻り値**(implicit return)と呼んでいました。⟦s000617-s000624⟧\n\n> 補足: 講義の`area`の例は、半径10で結果が314と表示されるものでした。本体を書く行は講義では示されなかったため、ここでは円周率を3.14とした場合の例として、`area r = 3.14 * r * r`と読んでおくと理解しやすいです。⟦s000522, s000530-s000532⟧\n\nまた、Haskellでは**区切りが改行と空白だけ**です。セミコロンもなく、括弧で囲む必要もありません。講義では、この「空白に基づく書き方」が大きな特徴だと説明されました。⟦s000607-s000615, s000627-s000631⟧\n\n## 🧩 複数引数と型宣言の読み方\n\n引数が複数ある場合も、型は同じ並びで書きます。引数の型を左から順に並べ、最後の型だけが戻り値の型です。講義では、「最初のn-1個の型が引数で、最後の1つが戻り値」とまとめられました。⟦s000601-s000603, s000711-s000712⟧\n\n2つの数を比べる`isGreater`を例にすると、次のようになります。\n\n```haskell\nisGreater :: Double -> Double -> Bool\nisGreater first second = first > second\n```\n\n- 型宣言の`Double -> Double -> Bool`は、「Doubleを2つ受け取り、Boolを返す」という意味です。\n- 最後の`Bool`が戻り値で、`>`の結果が真偽値なので、この型になります。⟦s000708-s000709⟧\n\n呼び出しは次のように書きます。引数はカンマではなく空白で区切ります。⟦s000714-s000715⟧\n\n```haskell\nisGreater 2.5 12.8    -- False\nisGreater 12.8 2.5    -- True\n```\n\n複数行に分けて書くこともできます。その場合は行頭のインデント(字下げ)を揃えます。インデントの幅は何スペースでも構いませんが、同じ関数の中では一貫させる必要があります。⟦s000676-s000677⟧\n\n講義では、引数と戻り値の型を1行にまとめる書き方について「見た目が分かりにくい」と感想が出ていました。この形の理由は、後で**カリー化**(currying)と**部分適用**(partial function application)を学ぶと分かるとされています。⟦s000680-s000681, s000695-s000697⟧\n\n## 🕵️ 型推論: isOldの例\n\n型宣言を書かなくても、Haskellは型を決めてくれます。これを**型推論**(type inference)と呼びます。講義の`isOld`の例で確かめてみましょう。⟦s000734-s000738, s000748-s000750⟧\n\n```haskell\nisOld age hasAches = age > 30 || hasAches == True\n```\n\nこの関数には型宣言がありません。それでも、`:t`コマンドで型を聞くと、Haskellは`Int -> Bool -> Bool`と答えます。⟦s000743-s000747⟧\n\n型は次のような手がかりから推論されます。\n\n1. **`age > 30`**: `age`は整数と比べられているので`Int`になります。文字列や真偽値と整数は比べられないため、ほかの型にはなりえません。⟦s000757-s000758, s000808-s000810⟧\n2. **`hasAches == True`**: `hasAches`は`True`と比べられているので`Bool`になります。⟦s000761, s000814⟧\n3. **`||`の結果**: 論理和の結果は真偽値なので、戻り値は`Bool`になります。⟦s000766-s000767, s000815-s000816⟧\n\n講義では、`hasAches == True`は`hasAches`だけに書き換えられることも示されました。`True`との比較を省いても、`hasAches`は式として単独で使われるため、同じ`Bool`として推論されます。⟦s000792-s000793, s000832-s000833⟧\n\nもう1つ大事な点があります。型宣言を省略しても、すべての値・変数・関数には**必ず1つの固定された型**があります。Haskellは型を書かせないことはあっても、型の厳しさを緩めることはありません。⟦s000848-s000852⟧\n\n> 補足: 型宣言を書かずに数値を扱うと、Haskellは整数に限定せず、より広い数値型(Integer、Doubleなどを含む型)として扱うことがあると説明されました。型を省略すると型が広めに決まることがある、という点を覚えておくと役立ちます。⟦s000785-s000789⟧\n\n## 🚫 厳密な型検査: 自動変換はしない\n\nHaskellは**厳密な型検査**(strict type checking)を行います。整数と浮動小数点数のような異なる型を、自動で変換して合わせることはありません。講義では、C++との違いとしてこの点が強調されました。⟦s000771-s000775, s000842-s000843⟧\n\nたとえば、`isOld`に小数の`53.5`を渡すと、C++では小数が整数に変換されて動くかもしれません。しかしHaskellでは、型が合わないためエラーになります。⟦s000857-s000859⟧\n\n```haskell\nisOld 53.5 False    -- エラー: 整数型の引数に小数を渡している\nisOld 53 False      -- OK\n```\n\n変換したいときは、プログラマが明示的に変換する必要があります。講義では、`casting`ではなく正式には`conversion`と呼ぶと補足されました。⟦s000779, s000820-s000821⟧\n\n## 🎯 Key Takeaway\n\n- **型宣言**は「引数の型…、最後に戻り値の型」の順で書き、関数名の定義の上に置きます。⟦s000647-s000649, s000603⟧\n- **呼び出し**は関数名のあとに空白で引数を並べ、**return文は不要**です。⟦s000653, s000620-s000622⟧\n- **型推論**により、型宣言は省略できますが、すべての値に固定の型があります。⟦s000799-s000802, s000849⟧\n- **型の不一致**は自動変換されず、エラーになります。⟦s000853-s000854, s000860⟧",
+     "cost_usd": 0.0036898
+    },
+    {
+     "task": "deep_notes",
+     "lecture_id": "666b2c9d-a997-451b-9318-98f98c9d29fa",
+     "original_model": "anthropic/claude-haiku-5-5",
+     "model": "anthropic/claude-haiku-5-5",
+     "request_kwargs": {
+      "model": "anthropic/claude-haiku-5-5",
+      "temperature": 0.2,
+      "num_retries": 3,
+      "max_tokens": 32000,
+      "reasoning_effort": "low",
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      }
+     },
+     "system_chars": 13380,
+     "user_chars": 32116,
+     "elapsed_seconds": 28.54,
+     "input_tokens": 17535,
+     "output_tokens": 6145,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "finish_reason": "stop",
+     "json_parse_error": null,
+     "output_text": "# 6. 再帰・局所定義と配列指向の考え方\n\n関数を小さく分けて組み立てる再帰（recursion）と、名前を局所的に束縛する仕組み、そして配列全体をまとめて扱う配列指向の考え方を扱います。どれも「必要なものを、必要なときだけ計算する」「繰り返しを明示的に書かない」という関数型言語らしい発想につながっています。⟦s001238, s001241, s001659-s001660⟧\n\n## 🔁 再帰で階乗を書く\n\n階乗は、`n` が 0 のときに 1 を返し、それ以外は `n` に `(n - 1)` の階乗を掛ける、という形で定義できます。まずは `if` 式で書いた版を見てみましょう。⟦s001226-s001229⟧\n\n```haskell\nfactorial :: Integer -> Integer\nfactorial n = if n == 0\n              then 1\n              else n * (factorial (n - 1))\n```\n\nここで `(factorial (n - 1))` の括弧がとても大切です。括弧がないと、先に `factorial n` を計算してから 1 を引いてしまうためです。⟦s001230-s001231⟧\n\n同じ処理をガード（guard）で書くと、次のようになります。型の宣言は同じままです。⟦s001233-s001234⟧\n\n```haskell\nfactorial :: Integer -> Integer\nfactorial n\n  | n == 0    = 1\n  | otherwise = n * factorial (n - 1)\n```\n\nガード版は `n == 0` のときの答えと、それ以外のときの答えを縦に並べて書けるので、読みやすくなります。関数型言語で問題を解くときは、この書き方が典型的だと説明されました。⟦s001235-s001236⟧\n\n### 🪜 階乗 2 を実際にたどる\n\n`factorial 2` を例に、呼び出しを順番にたどってみます。\n\n1. `n` は 2 です。`n == 0` は偽なので、otherwise の側に進みます。⟦s001256-s001259⟧\n2. `factorial (n - 1)` を呼びます。ここで `n - 1` は 1 です。⟦s001265, s001276⟧\n3. 新しい呼び出しでは `n` が 1 です。`n == 0` は偽なので、今度は `factorial 0` を呼びます。⟦s001276-s001277⟧\n4. `factorial 0` では `n == 0` が真になり、1 を返します。⟦s001280-s001281⟧\n5. 戻った先で `1 * 1` を計算し、1 を返します。さらに戻った先で `2 * 1` を計算し、答えの 2 になります。⟦s001283-s001287⟧\n\nここでは分かりやすくするために `n - 1` を先に計算した値（1）として書きました。実際の Haskell では、この計算はもう少し遅らされます。次のセクションで説明します。⟦s001261-s001264⟧\n\n## ⏳ 遅延評価（lazy evaluation）とサンク（thunk）\n\nHaskell では、`n - 1` の値をその場で計算しません。代わりに「あとで必要になったら `n - 1` を計算する」という約束のようなものを渡します。この約束をサンク（thunk）と呼びます。⟦s001262-s001263, s001314-s001317⟧\n\n- **すぐには計算しない**：`factorial (n - 1)` の呼び出し時には、`n - 1` の値はまだ作られません。⟦s001266-s001272⟧\n- **本当に必要になったときに計算する**：`n == 0` の判断をする瞬間に、初めて `n - 1` が評価されます。⟦s001292-s001294⟧\n- **判断には値が必要**：関数型言語では、「x をするか y をするか」を決めるときには引数を評価しなければなりません。だからこの遅延が解けるのは、判断が必要になった瞬間です。⟦s001295-s001296⟧\n\nサンクは「変数をつかまえた関数」のようなもので、その中で `n` を参照すると、もとの値を指すことになります。⟦s001327-s001335⟧ 講義では、この仕組みは通常は隠されているので、一般的な考え方を理解しておけば十分だと説明されました。⟦s001348-s001353⟧\n\n> 💡 遅延評価の要点は、「使われるまで計算しない」ことです。使われない値は、最後まで計算されないこともあります。⟦s001379-s001384⟧\n\n## 🧱 局所束縛（local binding）と let 式\n\n局所束縛（local binding）は、関数や式の中だけで有効な「名前と値のペア」です。`let` 式を使うと、この名前を複数定義できます。⟦s001367-s001369⟧ 定義した名前は `in` の後の式で使えます。⟦s001369-s001371⟧\n\n書き方は次のとおりです。⟦s001403-s001405⟧\n\n```haskell\nlet 変数1 = 値1\n    変数2 = 値2\nin  変数1 と変数2 を使った式\n```\n\n円の面積の例で見てみましょう。⟦s001406-s001407⟧\n\n```haskell\ncircleArea r =\n  let piValue = 3.14159\n  in  piValue * r * r\n```\n\n- `piValue` は関数の中だけで使える定数です。`r` は関数の引数です。⟦s001371-s001372⟧\n- 局所変数は、ほかの局所変数を参照することもできます。たとえば二乗を計算する `squareX` と `squareY` を定義して、その和 `sumOfSquares` を作るような書き方ができます。⟦s001363, s001407-s001408⟧\n- 局所変数は定数です。一度だけ値を与えることができ、あとから変えることはできません。⟦s001364-s001365⟧\n\n`let` の中の `let` も書けます。⟦s001366⟧ また、`let` の定義は「使われたときに」評価されるため、`in` の後の式が使わない定義は計算されません。⟦s001396-s001401⟧\n\n## 📝 where 節と使い分け\n\n`where` 節は、関数の本体の**後ろ**に局所変数をまとめて書く方法です。`let` と似ていますが、定義を式の後ろに置きます。⟦s001414-s001416⟧ 次の例は、ネットの「ナード度」を判定する関数です。⟦s001416-s001418⟧\n\n```haskell\ngetNerdStatus :: Int -> Int -> String\ngetNerdStatus gpa studyHours\n  | nerdScore > 100 = \"super nerdy\"\n  | otherwise       = \"just a nerd\"\n  where\n    nerdScore = gpa * studyHours\n```\n\n本体のガードでは `nerdScore` を使っていますが、定義は `where` の中にあります。Haskell では、後ろに書いた定義も前から参照できます。⟦s001419-s001420, s001429-s001431⟧ 読む人は、まず関数の論理を見て、詳細が必要になったら `where` の下を見ればよいので、読みやすくなります。⟦s001424-s001428⟧\n\n### 🆚 let と where の違い\n\n- **似ている点**：どちらも局所的な定義に使えます。単一の式を返すだけの関数なら、どちらを使ってもかまいません。⟦s001429, s001457-s001462⟧\n- **違う点**：複数のガードがある場合は、`where` を使わなければなりません。`let` はガードと組み合わせられない、というのがこの言語の決まりです。⟦s001469-s001471, s001498-s001499⟧\n- **理由**：特別な理由があるわけではなく、言語の設計で決められたものです。ほかの言語を設計するなら、`let` をガードと組み合わせることもできます。⟦s001472-s001477⟧\n\n> ⚠️ ガードは一見複数の式に見えますが、コンパイル時には入れ子の `if` 式として一つにまとめられます。そのため「式が一つか複数か」は、見た目と内部の扱いで違って見えることがあります。⟦s001482-s001486⟧\n\n## 🪆 ネストした関数とスコープ\n\n関数の中に、もう一つの関数を定義することもできます。Python の入れ子関数のような考え方です。⟦s001503, s001514⟧ 次の例では、`whatsTheBehaviorOf` の中で `behavesLike` を `where` で定義しています。⟦s001506-s001513⟧\n\n```haskell\nwhatsTheBehaviorOf :: String -> String\nwhatsTheBehaviorOf name\n  | name == \"Kerry\" = behavesLike name \"12-year-old\"\n  | otherwise       = behavesLike name \"grown-up\"\n  where\n    behavesLike n what = n ++ \" behaves like a \" ++ what ++ \"!\"\n```\n\n- `behavesLike` は `n` と `what` の二つの引数を取り、文字列をつなげて返します。⟦s001514-s001516⟧\n- この関数は外側の関数の中でだけ見えます。外から呼び出すことはできません。⟦s001521-s001523⟧\n\n### 🔍 外側の変数が見える理由\n\nネストした関数は、囲んでいる関数の引数や局所変数にアクセスできます。⟦s001561, s001566⟧ そのため、`behavesLike` の引数から `name` を取り除き、外側の `name` を直接使うこともできます。⟦s001567-s001573⟧\n\n```haskell\nwhatsTheBehaviorOf :: String -> String\nwhatsTheBehaviorOf name\n  | name == \"Kerry\" = behavesLike \"12-year-old\"\n  | otherwise       = behavesLike \"grown-up\"\n  where\n    behavesLike what = name ++ \" behaves like a \" ++ what ++ \"!\"\n```\n\nこの書き方は問題ありません。内側の関数は外側の値を読むだけで、書き換えていないからです。外側の値を変更しないかぎり、純粋関数の制約には違反しないと確認されました。⟦s001575-s001580⟧ 内側の関数の中で、さらに別の関数を定義した場合も、その外側すべての変数が見えます。⟦s001589-s001591⟧\n\n## 🔢 演習: 素数判定（isPrime）\n\n素数判定は、ネストした関数と再帰を組み合わせる良い練習です。`isPrime` は整数を受け取り、真偽値を返します。⟦s001593-s001596⟧ 補助関数 `checkDivisors` を使い、`n` と、確認中の除数を渡します。除数は `n - 1` から始めて、1 まで順に減らしていきます。⟦s001596-s001599⟧\n\n```haskell\nisPrime :: Int -> Bool\nisPrime n = checkDivisors n (n - 1)\n  where\n    checkDivisors n divisor\n      | divisor == 1          = True\n      | n `mod` divisor == 0  = False\n      | otherwise             = checkDivisors n (divisor - 1)\n```\n\n- **除数が 1 のとき**：ほかに割り切れる数がなかったので、素数だと判断して `True` を返します。⟦s001611-s001613⟧\n- **割り切れたとき**：`n` を 1 以外の数で割り切れたので、素数ではなく `False` を返します。⟦s001616-s001618⟧\n- **そうでないとき**：次に小さい除数で再帰的に確認します。⟦s001634-s001635⟧\n- **括弧の重要性**：`checkDivisors n (divisor - 1)` の括弧を忘れると、`checkDivisors n divisor` の結果から 1 を引くという誤った式になってしまいます。⟦s001620-s001624⟧\n\n講師は、この実装には既知の不具合があると認めています。`n` が 1 のときは正しく動かず、基底条件の追加が必要だという指摘がありました。⟦s001626-s001627⟧ 学習のために、このような不完全さも含めて確認すると理解が深まります。\n\n## 🧮 配列指向プログラミング（array-oriented programming）と APL\n\n配列指向プログラミングは、要素を一つずつループで処理するのではなく、配列や行列全体への演算として計算を書く考え方です。⟦s001658-s001660⟧ その代表例が APL です。⟦s001642, s001658⟧\n\n- **誕生**：APL は 1957 年に、配列を含む数式を表す記法として生まれました。その後、プログラミング言語になりました。⟦s001647-s001653⟧\n- **特徴**：ループを明示的に書かず、行列やベクトルを一つのまとまりとして扱います。⟦s001658-s001660⟧\n- **記号**：関数は ASCII ではない独特の記号で表されます。それぞれの記号に意味があり、言語を読むには記号の意味を覚える必要があります。⟦s001661-s001664⟧\n- **一文字の強み**：内積、行列積、回転、転置といった複雑な演算が、一つの記号で書けます。⟦s001668-s001669, s001671-s001672⟧\n\nAPL の記号は難しく、現在の基準では読みにくいと認められています。それでも、この考え方は現代の技術に影響を与えました。⟦s001664-s001666, s001685⟧ GPU で行列演算を行う近代的な言語の基礎には APL の発想があり、NumPy、TensorFlow、PyTorch などの機械学習関連技術にも間接的に影響を与えたと説明されました。⟦s001679-s001682⟧ 現在では記号名がより読みやすくなっていますが、テンソルや行列を一度に扱うという考え方は APL に由来します。⟦s001683-s001684⟧\n\n## 🎯 Key Takeaway\n\n- **再帰**：自分自身を小さな問題に対して呼び出し、基底条件で止まります。階乗や素数判定は、この形で書けます。⟦s001249, s001628-s001630⟧\n- **遅延評価**：値は本当に必要になるまで計算されず、判断の瞬間に評価されます。⟦s001290-s001296⟧\n- **let と where**：局所束縛を作る方法です。単一の式なら どちらでもよく、ガードを使うときは `where` が必要です。⟦s001457-s001471⟧\n- **ネストした関数**：外側の引数や局所変数を読むことができ、外側の値を書き換えなければ問題ありません。⟦s001584-s001585, s001577-s001580⟧\n- **配列指向**：ループを書かずに、行列やベクトル全体を一つの記号で計算します。この発想は現代の機械学習技術にもつながっています。⟦s001659-s001660, s001680-s001682⟧",
+     "cost_usd": 0.004826
+    }
+   ],
+   "checks": {
+    "calls": 2,
+    "error": null,
+    "finish_reasons": [
+     "stop"
+    ],
+    "truncated_calls": 0,
+    "json_parse_errors": 0,
+    "chars": 10952,
+    "exclamations": 2,
+    "question_marks": 0,
+    "citations": 94,
+    "malformed_citations": 0,
+    "placeholder_leak": 0,
+    "english_gloss_parens": 24,
+    "input_tokens": 32413,
+    "output_tokens": 10549,
+    "max_output_tokens_single_call": 6145,
+    "sum_call_seconds": 50.4,
+    "max_call_seconds": 28.54
+   }
+  },
+  {
+   "task": "fun_facts",
+   "lecture_id": "ed333ded-2e09-464a-8224-11b7517fb709",
+   "language": {
+    "content_language": "Japanese",
+    "transcript_language": "English",
+    "is_bilingual": true
+   },
+   "wall_seconds": 2.94,
+   "cost_usd": 0.00069,
+   "token_cost_usd": 0.000602,
+   "error": null,
+   "output": {
+    "title": "電圧だけで思考する小さなチップ 🔌",
+    "hook": "たった1個の小さな論理チップが、どんなに複雑な計算もこなせる『万能の部品』だと知っていましたか？\n\nその正体は、意味を一切理解せず、電圧の0と1だけで動いているのです！",
+    "body": "授業で学んだ真理関数性は、まさにコンピュータの心臓部が動く仕組みそのものなんです。\n\n7400番台と呼ばれる定番のNANDチップは、入力された電圧が高いか低いかだけを見て、出力を機械的に決めます。\n\n信号が何を意味するのか、どこから来たのかは一切気にしません。決まった入力に対して、必ず決まった出力を返す規則だけで動いているのです。\n\nこのNANDゲートだけを組み合わせれば、足し算も比較も、あらゆる論理演算を作ることができます。\n\n意味を理解しなくても、ただ規則に従うだけで計算ができてしまう。その単純さが、スマートフォンからスーパーコンピュータまで、すべてを支えているのです。",
+    "sources": []
+   },
+   "calls": [
+    {
+     "task": "fun_facts",
+     "lecture_id": "ed333ded-2e09-464a-8224-11b7517fb709",
+     "original_model": "anthropic/claude-haiku-5-5",
+     "model": "anthropic/claude-haiku-5-5",
+     "request_kwargs": {
+      "model": "anthropic/claude-haiku-5-5",
+      "temperature": 0.7,
+      "num_retries": 3,
+      "max_tokens": 32000,
+      "reasoning_effort": "low",
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      },
+      "response_format": {
+       "type": "json_object"
+      }
+     },
+     "system_chars": 8683,
+     "user_chars": 1300,
+     "elapsed_seconds": 2.94,
+     "input_tokens": 4056,
+     "output_tokens": 392,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "finish_reason": "stop",
+     "json_parse_error": null,
+     "output_text": "{\"title\": \"電圧だけで思考する小さなチップ 🔌\", \"hook\": \"たった1個の小さな論理チップが、どんなに複雑な計算もこなせる『万能の部品』だと知っていましたか？\\n\\nその正体は、意味を一切理解せず、電圧の0と1だけで動いているのです！\", \"body\": \"授業で学んだ真理関数性は、まさにコンピュータの心臓部が動く仕組みそのものなんです。\\n\\n7400番台と呼ばれる定番のNANDチップは、入力された電圧が高いか低いかだけを見て、出力を機械的に決めます。\\n\\n信号が何を意味するのか、どこから来たのかは一切気にしません。決まった入力に対して、必ず決まった出力を返す規則だけで動いているのです。\\n\\nこのNANDゲートだけを組み合わせれば、足し算も比較も、あらゆる論理演算を作ることができます。\\n\\n意味を理解しなくても、ただ規則に従うだけで計算ができてしまう。その単純さが、スマートフォンからスーパーコンピュータまで、すべてを支えているのです。\"}",
+     "cost_usd": 0.0006016
+    }
+   ],
+   "checks": {
+    "calls": 1,
+    "error": null,
+    "finish_reasons": [
+     "stop"
+    ],
+    "truncated_calls": 0,
+    "json_parse_errors": 0,
+    "chars": 393,
+    "exclamations": 1,
+    "question_marks": 1,
+    "citations": 0,
+    "malformed_citations": 0,
+    "placeholder_leak": 0,
+    "english_gloss_parens": 0,
+    "input_tokens": 4056,
+    "output_tokens": 392,
+    "max_output_tokens_single_call": 392,
+    "sum_call_seconds": 2.9,
+    "max_call_seconds": 2.94,
+    "fun_fact_sources": 0
+   }
+  },
+  {
+   "task": "fun_facts",
+   "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+   "language": {
+    "content_language": "Japanese",
+    "transcript_language": "English",
+    "is_bilingual": true
+   },
+   "wall_seconds": 3.74,
+   "cost_usd": 0.000774,
+   "token_cost_usd": 0.000661,
+   "error": null,
+   "output": {
+    "title": "CPUの中で起きる“翻訳”の秘密 🖥️",
+    "hook": "実は現代のCPUは、プログラマーが書いた命令をそのまま実行しておらず、動く直前に別の内部命令へ細かく分解しています。\n\nその分解後の小さな命令は「マイクロオプス（uOps）」と呼ばれ、ハードウェアの中で目に見えないまま高速に生成されています。",
+    "body": "疑似命令が「書きやすい表記を本物の命令に置き換える」仕組みだと知ると、CPUの内部でも似たことが起きていると気づいて驚くはずです。\n\n intel系のx86プロセッサは、複雑な命令を一つずつ直接実行するのではなく、「uOps」と呼ばれる単純な内部操作に分解してから処理します⟦1⟧。\n\nこの分解結果はマイクロオプスキャッシュに保存され、同じ処理が繰り返されるときに、毎回翻訳し直さずに済むようになっています⟦1⟧。\n\nつまりCPUは、私たちが目にする命令セットを一種の“表向きの言語”として扱い、内部では効率のよい形へハードウェアがリアルタイムに作り替えているのです。\n\n普段何気なく書いているプログラムの一行が、CPUの中では何段階もの翻訳を経て動いている。その事実を思うと、ソフトウェアとハードウェアの境界がぐっと面白く見えてきます。",
+    "sources": []
+   },
+   "calls": [
+    {
+     "task": "fun_facts",
+     "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+     "original_model": "anthropic/claude-haiku-5-5",
+     "model": "anthropic/claude-haiku-5-5",
+     "request_kwargs": {
+      "model": "anthropic/claude-haiku-5-5",
+      "temperature": 0.7,
+      "num_retries": 3,
+      "max_tokens": 32000,
+      "reasoning_effort": "low",
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      },
+      "response_format": {
+       "type": "json_object"
+      }
+     },
+     "system_chars": 8683,
+     "user_chars": 1175,
+     "elapsed_seconds": 3.74,
+     "input_tokens": 4025,
+     "output_tokens": 518,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "finish_reason": "stop",
+     "json_parse_error": null,
+     "output_text": "{\"title\": \"CPUの中で起きる“翻訳”の秘密 🖥️\", \"hook\": \"実は現代のCPUは、プログラマーが書いた命令をそのまま実行しておらず、動く直前に別の内部命令へ細かく分解しています。\\n\\nその分解後の小さな命令は「マイクロオプス（uOps）」と呼ばれ、ハードウェアの中で目に見えないまま高速に生成されています。\", \"body\": \"疑似命令が「書きやすい表記を本物の命令に置き換える」仕組みだと知ると、CPUの内部でも似たことが起きていると気づいて驚くはずです。\\n\\n intel系のx86プロセッサは、複雑な命令を一つずつ直接実行するのではなく、「uOps」と呼ばれる単純な内部操作に分解してから処理します⟦1⟧。\\n\\nこの分解結果はマイクロオプスキャッシュに保存され、同じ処理が繰り返されるときに、毎回翻訳し直さずに済むようになっています⟦1⟧。\\n\\nつまりCPUは、私たちが目にする命令セットを一種の“表向きの言語”として扱い、内部では効率のよい形へハードウェアがリアルタイムに作り替えているのです。\\n\\n普段何気なく書いているプログラムの一行が、CPUの中では何段階もの翻訳を経て動いている。その事実を思うと、ソフトウェアとハードウェアの境界がぐっと面白く見えてきます。\"}",
+     "cost_usd": 0.0006615
+    }
+   ],
+   "checks": {
+    "calls": 1,
+    "error": null,
+    "finish_reasons": [
+     "stop"
+    ],
+    "truncated_calls": 0,
+    "json_parse_errors": 0,
+    "chars": 511,
+    "exclamations": 0,
+    "question_marks": 0,
+    "citations": 2,
+    "malformed_citations": 0,
+    "placeholder_leak": 0,
+    "english_gloss_parens": 1,
+    "input_tokens": 4025,
+    "output_tokens": 518,
+    "max_output_tokens_single_call": 518,
+    "sum_call_seconds": 3.7,
+    "max_call_seconds": 3.74,
+    "fun_fact_sources": 0
+   }
+  }
+ ]
+}

@@ -21,6 +21,85 @@ def _keyword_strings(topic: Dict[str, Any]) -> List[str]:
     return [kw["keyword"] for kw in (topic.get("keywords") or []) if isinstance(kw, dict) and kw.get("keyword")]
 
 
+REVIEW_CARD_MODEL = "anthropic/claude-haiku-5-5"
+# max_tokensは思考トークン込み。途中で切れるとJSONが壊れるので高めにとる
+# (2026-11 移行実験 contents_generation/test_codes/haiku_migration_tone で最大でも約5千トークン)。
+REVIEW_CARD_MAX_TOKENS = 32000
+EXPECTED_CARD_SEQUENCE = ["hook", "core_why", "gotcha", "next_action"]
+
+_STR = {"type": "string"}
+
+
+def _block_schema(type_name: str, required: List[str], props: Dict[str, Any]) -> Dict[str, Any]:
+    return {"type": "object", "additionalProperties": False, "required": ["type"] + required,
+            "properties": {"type": {"type": "string", "enum": [type_name]}, **props}}
+
+
+# 構造化出力(Anthropicのnative structured output)で出力の形を強制する。
+# ブロックの種類ごとに必須フィールドを持たせる(全フィールド任意にすると空ブロックやカード欠落が出た)。
+# カードの枚数・順番まではスキーマで縛れないので、生成後に _has_expected_cards で確認する。
+REVIEW_CARD_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["topic_evaluation", "review_cards"],
+    "properties": {
+        "topic_evaluation": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["micro_topics", "card_mapping_strategy", "core_concept_identified"],
+            "properties": {
+                "micro_topics": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "required": ["idx", "title", "summary", "start_sid", "end_sid"],
+                        "properties": {"idx": {"type": "integer"}, "title": _STR, "summary": _STR,
+                                       "start_sid": _STR, "end_sid": _STR},
+                    },
+                },
+                "card_mapping_strategy": _STR,
+                "core_concept_identified": _STR,
+            },
+        },
+        "review_cards": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["card_type", "hero_emoji", "title", "content_blocks"],
+                "properties": {
+                    "card_type": {"type": "string", "enum": EXPECTED_CARD_SEQUENCE},
+                    "hero_emoji": _STR,
+                    "title": _STR,
+                    "content_blocks": {
+                        "type": "array",
+                        "items": {
+                            "anyOf": [
+                                _block_schema("paragraph", ["text"], {"text": _STR}),
+                                _block_schema("quote", ["text"], {"text": _STR}),
+                                _block_schema("callout", ["alert_type", "text"], {
+                                    "alert_type": {"type": "string", "enum": ["info", "warning", "error"]},
+                                    "text": _STR,
+                                }),
+                                _block_schema("code", ["code_string"],
+                                              {"code_string": _STR, "language": _STR, "explanation": _STR}),
+                                _block_schema("list", ["items"], {"items": {"type": "array", "items": _STR}}),
+                            ]
+                        },
+                    },
+                },
+            },
+        },
+    },
+}
+
+
+def _has_expected_cards(result: Dict[str, Any]) -> bool:
+    cards = result.get("review_cards") or []
+    return [c.get("card_type") for c in cards] == EXPECTED_CARD_SEQUENCE
+
+
 def _format_topic_context(topic: Dict[str, Any]) -> str:
     title = topic.get("title", "")
     keywords = _keyword_strings(topic)
@@ -50,7 +129,7 @@ class ReviewCardGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
         self.logger = logger
-        self.model_alias = "gemini/gemini-2.5-flash"
+        self.model_alias = REVIEW_CARD_MODEL
 
     async def run_from_memory(
         self,
@@ -70,7 +149,13 @@ class ReviewCardGenerationService:
             "${LANGUAGE_INSTRUCTIONS}",
             _build_bilingual_gloss_instruction(content_language, transcript_language, is_bilingual),
         )
-        options_json = LLMOptions(output_type="json", temperature=0.3)
+        # Haiku 5.5はtemperature等のサンプリング設定に非対応(litellm.drop_paramsで捨てられる)ので指定しない
+        options_json = LLMOptions(
+            output_type="json",
+            reasoning_effort="low",
+            max_tokens=REVIEW_CARD_MAX_TOKENS,
+            json_schema=REVIEW_CARD_SCHEMA,
+        )
         
         all_review_results = []
 
@@ -167,8 +252,11 @@ class ReviewCardGenerationService:
                 prompt_template,
                 {"FINAL_TOPIC": is_final_topic, "FIRST_TOPIC": show_previous_lecture_hook},
             )
+            current_keywords = _keyword_strings(topic)
+            current_keywords_text = "\n".join(f"- {k}" for k in current_keywords) if current_keywords else "N/A"
             prompt_text = (
                 prompt_text
+                .replace("${CURRENT_TOPIC_KEYWORDS}", current_keywords_text)
                 .replace("${NEXT_TOPIC_CONTEXT}", next_topic_context_text)
                 .replace("${LECTURE_TOPICS}", lecture_topics_text)
                 .replace("${PREVIOUS_LECTURE_CONTEXT}", previous_lecture_context_text)
@@ -177,7 +265,12 @@ class ReviewCardGenerationService:
 
             messages = [
                 Message(role="system", content=prompt_text),
-                Message(role="user", content=f"Generate Review Cards for Topic: {topic_title}")
+                # 末尾で出力言語を再掲する。システムプロンプト(例・文字起こし)がほぼ英語のため、
+                # これが無いと英語→日本語の講義でカード全体が英語になることがあった(移行実験で 9回中6回 → 8回中0回)。
+                Message(role="user", content=(
+                    f"Generate Review Cards for Topic: {topic_title}\n\n"
+                    f"Write every card title and every text field in {content_language}."
+                )),
             ]
 
             # 7. LLM 呼び出し
@@ -187,7 +280,7 @@ class ReviewCardGenerationService:
                 options=options_json
             )
 
-            if not res.json_parse_error and res.output_json:
+            if not res.json_parse_error and res.output_json and _has_expected_cards(res.output_json):
                 result = res.output_json
                 result["topic_idx"] = topic_idx # 紐付け用
                 # ③ 成功したらR2にキャッシュ保存
@@ -197,6 +290,8 @@ class ReviewCardGenerationService:
                 self.logger.log(
                     f"❌ Failed to generate review cards for Topic {topic_idx}: {topic_title}. "
                     f"JSON parse error: {res.json_parse_error}. "
+                    f"Finish reason: {res.finish_reason}. "
+                    f"Card sequence: {[c.get('card_type') for c in (res.output_json or {}).get('review_cards') or []]}. "
                     f"Output text snippet: {res.output_text[:500] if res.output_text else 'None'}"
                 )
                 failed_topic_indices.append(topic_idx)

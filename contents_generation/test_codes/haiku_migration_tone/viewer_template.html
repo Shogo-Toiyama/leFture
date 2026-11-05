@@ -1,0 +1,225 @@
+<title>Haiku Tone Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<style>
+/* Layout: sticky control bar (lecture + task), then per-topic rows with Haiku (left) and Gemini reference (right), stacking on phones. */
+:root {
+  --bg: #f3f5f4;
+  --surface: #ffffff;
+  --ink: #1b2422;
+  --muted: #5c6b67;
+  --line: #d9e0dd;
+  --accent: #0f766e;
+  --accent-soft: #dff2ef;
+  --ref: #8a6d3b;
+  --ref-soft: #f5eedf;
+  --info: #2563a6; --info-soft: #e3eefa;
+  --warn: #a15c07; --warn-soft: #fbefd9;
+  --err: #b42318; --err-soft: #fde7e4;
+  --code-bg: #eef2f1;
+  --font-display: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-body: "Noto Sans JP", "Hiragino Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121816; --surface: #1a2220; --ink: #e4ebe9; --muted: #9aaaa5; --line: #2c3835;
+  --accent: #4fd1c0; --accent-soft: #163631; --ref: #d8b878; --ref-soft: #33291a;
+  --info: #7fb5ec; --info-soft: #172a3d; --warn: #f0b45a; --warn-soft: #36270f;
+  --err: #f3897d; --err-soft: #3a1a17; --code-bg: #222c29; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #121816; --surface: #1a2220; --ink: #e4ebe9; --muted: #9aaaa5; --line: #2c3835;
+  --accent: #4fd1c0; --accent-soft: #163631; --ref: #d8b878; --ref-soft: #33291a;
+  --info: #7fb5ec; --info-soft: #172a3d; --warn: #f0b45a; --warn-soft: #36270f;
+  --err: #f3897d; --err-soft: #3a1a17; --code-bg: #222c29; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.75; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+header.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+header.bar .wrap { display: grid; gap: 10px; padding-block: 12px; }
+.brand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.brand h1 { font-family: var(--font-display); font-size: 18px; margin: 0; text-wrap: balance; }
+.brand .meta { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+button.chip { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 4px 12px; cursor: pointer; }
+button.chip:hover { border-color: var(--accent); }
+button.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lang { font-family: var(--font-mono); font-size: 11px; opacity: .8; margin-left: 4px; }
+
+main .wrap { padding-block: 20px 60px; display: grid; gap: 28px; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--muted); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--ink); font-weight: 500; }
+.stats .bad b { color: var(--err); }
+.errorbox { background: var(--err-soft); color: var(--err); border-radius: 8px; padding: 10px 14px; font-size: 13px; }
+
+.topic h2 { font-family: var(--font-display); font-size: 17px; margin: 0 0 10px; text-wrap: balance; }
+.topic h2 small { font-family: var(--font-mono); color: var(--muted); font-weight: 400; font-size: 12px; margin-right: 8px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 860px) { .pair { grid-template-columns: 1fr; } }
+.col { min-width: 0; display: grid; gap: 10px; }
+.col-label { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; display: flex; gap: 8px; align-items: center; }
+.col-label .dot { width: 8px; height: 8px; border-radius: 50%; }
+.col.haiku .col-label { color: var(--accent); } .col.haiku .dot { background: var(--accent); }
+.col.gemini .col-label { color: var(--ref); } .col.gemini .dot { background: var(--ref); }
+.empty { color: var(--muted); font-size: 13px; font-style: italic; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.card-head { display: flex; gap: 10px; align-items: center; }
+.card-head .emoji { font-size: 26px; line-height: 1; }
+.card-head .type { font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; }
+.card-head .title { font-family: var(--font-display); font-weight: 700; font-size: 16px; line-height: 1.4; }
+.blk-p { margin: 0; }
+.blk-quote { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 17px; line-height: 1.6; border-left: 3px solid var(--accent); padding-left: 12px; }
+.col.gemini .blk-quote { border-left-color: var(--ref); }
+.blk-callout { border-radius: 10px; padding: 10px 12px; font-size: 14.5px; }
+.blk-callout.info { background: var(--info-soft); } .blk-callout.warning { background: var(--warn-soft); } .blk-callout.error { background: var(--err-soft); }
+.blk-callout .tag { display: block; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 2px; }
+.blk-callout.info .tag { color: var(--info); } .blk-callout.warning .tag { color: var(--warn); } .blk-callout.error .tag { color: var(--err); }
+.blk-list { margin: 0; padding-left: 1.3em; }
+.blk-code { display: grid; gap: 4px; }
+pre { margin: 0; background: var(--code-bg); border-radius: 8px; padding: 10px 12px; overflow-x: auto; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.6; }
+.blk-code .expl { font-size: 13px; color: var(--muted); }
+code { font-family: var(--font-mono); font-size: .9em; background: var(--code-bg); border-radius: 4px; padding: 0 4px; }
+pre code { background: none; padding: 0; }
+.cite { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); background: var(--code-bg); border-radius: 4px; padding: 0 4px; white-space: nowrap; vertical-align: 1px; }
+.math { font-family: var(--font-mono); font-size: .92em; color: var(--info); }
+
+.note { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 4px 18px 14px; min-width: 0; overflow-wrap: anywhere; }
+.note h1 { font-family: var(--font-display); font-size: 19px; margin: 14px 0 6px; }
+.note h2 { font-family: var(--font-display); font-size: 16.5px; margin: 18px 0 4px; }
+.note h3 { font-size: 15px; margin: 14px 0 4px; }
+.note p, .note ul, .note ol { margin: 6px 0; }
+.note blockquote { margin: 8px 0; border-left: 3px solid var(--line); padding-left: 12px; color: var(--muted); }
+.note .figure { border: 1px dashed var(--line); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: var(--muted); margin: 8px 0; }
+.note table { border-collapse: collapse; font-size: 13.5px; display: block; overflow-x: auto; }
+.note th, .note td { border: 1px solid var(--line); padding: 4px 8px; }
+
+.ff { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px; min-width: 0; }
+.ff .t { font-family: var(--font-display); font-weight: 700; font-size: 18px; line-height: 1.4; }
+.ff .h { font-weight: 500; background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; }
+.col.gemini .ff .h { background: var(--ref-soft); }
+.ff .b p { margin: 0 0 10px; }
+.ff .src { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="bar">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Haiku 5.5 口調チェック</h1>
+      <span class="meta" id="runmeta"></span>
+    </div>
+    <div class="row" id="lectures" role="group" aria-label="講義"></div>
+    <div class="row" id="tasks" role="group" aria-label="タスク"></div>
+    <div class="row" id="versions" role="group" aria-label="Haikuの版"></div>
+  </div>
+</header>
+<main><div class="wrap" id="content"></div></main>
+
+<script>
+const DATA = /*__DATA__*/null;
+const TASKS = [["review_cards","Review Cards"],["deep_notes","Deep Notes"],["fun_facts","Fun Fact"]];
+const VNAMES = DATA.versions.map(v => v.name);
+let state = { lec: 0, task: "review_cards", ver: VNAMES[VNAMES.length - 1] };
+try { const s = JSON.parse(localStorage.getItem("haikuViewer2") || "null"); if (s) state = Object.assign(state, s); } catch (e) {}
+if (!DATA.lectures[state.lec]) state.lec = 0;
+if (!VNAMES.includes(state.ver)) state.ver = VNAMES[VNAMES.length - 1];
+const VNOTE = { v0: "本番プロンプト", v1: "v1 + JSON強制(緩)", v1b: "v1・JSON強制なし", v1c: "v1 + JSON強制(厳密)", v2: "長さ・テンション強化(6件のみ)", v3: "DeepNotesメタ発言対策(2件のみ)" };
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function inline(s) {
+  let h = esc(s);
+  h = h.replace(/`([^`]+)`/g, "<code>$1</code>");
+  h = h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  h = h.replace(/\\\((.+?)\\\)/g, '<span class="math">$1</span>');
+  h = h.replace(/⟦([^⟧]*)⟧/g, '<span class="cite">$1</span>');
+  return h;
+}
+function block(b) {
+  switch (b.type) {
+    case "paragraph": return `<p class="blk-p">${inline(b.text)}</p>`;
+    case "quote": return `<p class="blk-quote">${inline(b.text)}</p>`;
+    case "callout": { const t = ["info","warning","error"].includes(b.alert_type) ? b.alert_type : "info";
+      return `<div class="blk-callout ${t}"><span class="tag">${t}</span>${inline(b.text)}</div>`; }
+    case "list": return `<ul class="blk-list">${(b.items||[]).map(i => `<li>${inline(i)}</li>`).join("")}</ul>`;
+    case "code": return `<div class="blk-code"><pre><code>${esc(b.code_string)}</code></pre>${b.explanation ? `<div class="expl">${inline(b.explanation)}</div>` : ""}</div>`;
+    default: return `<pre>${esc(JSON.stringify(b, null, 1))}</pre>`;
+  }
+}
+function cards(list) {
+  if (!list || !list.length) return `<p class="empty">出力なし</p>`;
+  return list.map(c => `<article class="card"><div class="card-head"><span class="emoji">${esc(c.hero_emoji||"")}</span>
+    <div><div class="type">${esc(c.card_type)}</div><div class="title">${inline(c.title)}</div></div></div>
+    ${(c.content_blocks||[]).map(block).join("")}</article>`).join("");
+}
+function md(src) {
+  if (!src) return `<p class="empty">出力なし</p>`;
+  let s = src.replace(/<!--\s*FIGURE:([\s\S]*?)-->/g, (_, a) => `\n\n<div class="figure">図の指定: ${esc(a.trim())}</div>\n\n`);
+  s = s.replace(/⟦([^⟧]*)⟧/g, '<span class="cite">$1</span>');
+  let html;
+  try { html = window.marked ? marked.parse(s) : `<pre>${esc(src)}</pre>`; } catch (e) { html = `<pre>${esc(src)}</pre>`; }
+  return `<div class="note">${html}</div>`;
+}
+function funfact(f) {
+  if (!f) return `<p class="empty">出力なし</p>`;
+  const body = String(f.body||"").split(/\n\n+/).map(p => `<p>${inline(p)}</p>`).join("");
+  const src = (f.sources || (f.metadata && f.metadata.sources) || []);
+  return `<div class="ff"><div class="t">${inline(f.title)}</div><div class="h">${inline(f.hook)}</div><div class="b">${body}</div>
+    ${src.length ? `<div class="src">${src.map((u,i)=>`[${i+1}] ${esc(u)}`).join("<br>")}</div>` : ""}</div>`;
+}
+function stats(c) {
+  if (!c) return "";
+  const items = [["calls", c.calls], ["文字数", c.chars], ["！", c.exclamations], ["？", c.question_marks], ["引用", c.citations],
+    ["原語併記", c.english_gloss_parens], ["出力tok(合計)", c.output_tokens], ["最長呼び出し", (c.max_call_seconds||0) + "s"]];
+  const bad = [["途中切れ", c.truncated_calls], ["JSON失敗", c.json_parse_errors], ["タグ混入", c.placeholder_leak], ["カード順違反", c.topics_with_bad_card_sequence]];
+  return `<div class="stats">${items.map(([k,v]) => `<span>${k} <b>${v ?? "-"}</b></span>`).join("")}
+    ${bad.filter(([,v]) => v !== undefined).map(([k,v]) => `<span class="${v ? "bad" : ""}">${k} <b>${v}</b></span>`).join("")}</div>`;
+}
+function pair(left, right) {
+  return `<div class="pair"><div class="col haiku"><div class="col-label"><span class="dot"></span>Haiku 5.5 (${esc(state.ver)})</div>${left}</div>
+    <div class="col gemini"><div class="col-label"><span class="dot"></span>Gemini 2.5 Flash（既存・参考）</div>${right}</div></div>`;
+}
+function render() {
+  try { localStorage.setItem("haikuViewer2", JSON.stringify(state)); } catch (e) {}
+  const m = DATA.versions.find(v => v.name === state.ver).meta;
+  document.getElementById("runmeta").textContent = `${m.created_at} · ${m.model} · effort=${m.reasoning_effort} · max_tokens=${m.max_tokens} · $${m.token_cost_usd_total}`;
+  document.getElementById("versions").innerHTML = VNAMES.map(v =>
+    `<button class="chip" id="ver-${v}" aria-pressed="${v === state.ver}" data-ver="${v}">${esc(v)}<span class="lang">${esc(VNOTE[v] || "")}</span></button>`).join("");
+  document.getElementById("lectures").innerHTML = DATA.lectures.map((l, i) =>
+    `<button class="chip" id="lec-${i}" aria-pressed="${i === state.lec}" data-lec="${i}">${esc(l.title)}<span class="lang">${esc(l.lang)}</span></button>`).join("");
+  document.getElementById("tasks").innerHTML = TASKS.map(([k, n]) =>
+    `<button class="chip" id="task-${k}" aria-pressed="${k === state.task}" data-task="${k}">${n}</button>`).join("");
+  const L = DATA.lectures[state.lec], t = state.task, HV = L.haiku[state.ver];
+  if (!HV.ran.includes(t)) {
+    document.getElementById("content").innerHTML = `<p class="empty">${esc(state.ver)} では ${esc(t)} を実行していません。別の版を選んでください。</p>`;
+    return;
+  }
+  const HO = HV.outputs;
+  let out = stats(HV.checks[t]);
+  if (HV.errors[t]) out += `<div class="errorbox">エラー: ${esc(HV.errors[t])}</div>`;
+  if (t === "fun_facts") {
+    out += `<section class="topic">${pair(funfact(HO.fun_facts), funfact(L.gemini.fun_facts))}</section>`;
+  } else {
+    for (const tp of L.topics) {
+      const h = t === "review_cards" ? cards((HO.review_cards || {})[tp.idx]) : md((HO.deep_notes || {})[tp.idx]);
+      const g = t === "review_cards" ? cards(L.gemini.review_cards[tp.idx]) : md(L.gemini.deep_notes[tp.idx]);
+      out += `<section class="topic"><h2><small>Topic ${esc(tp.idx)}</small>${esc(tp.title)}</h2>${pair(h, g)}</section>`;
+    }
+  }
+  document.getElementById("content").innerHTML = out;
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("button.chip"); if (!b) return;
+  if (b.dataset.lec !== undefined) state.lec = +b.dataset.lec;
+  if (b.dataset.task) state.task = b.dataset.task;
+  if (b.dataset.ver) state.ver = b.dataset.ver;
+  render(); window.scrollTo({ top: 0 });
+});
+render();
+</script>
