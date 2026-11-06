@@ -34,9 +34,10 @@ Never fetch what the answerer already sees or what an earlier lap already fetche
 <!--IF:CAN_OPEN-->
 | Command | Fetches | Recommended When (Examples) |
 | :--- | :--- | :--- |
-| `open C{n}/topics` | Full syllabus topic tree across all lectures in C{n} | Course structure, syllabus, topic flow, or multi-lecture subject review ("review all of topic X", "what did we cover this term?", "overview of this course") |
+| `open C{n}/topics` | Topic tree across all lectures in C{n} (titles only, no content) | Course structure, syllabus, or topic flow ("what topics did we cover this term?", "which lecture covered X?") |
 | `open C{n}/keywords` | Comprehensive glossary of key terms & definitions | Vocabulary, terminology list, definitions ("list key terms in this class") |
 | `open C{n}/announcements` | Professor hints, exam alerts, deadlines, notices | Exam tips, professor warnings, deadlines ("what did prof say would be on the test?") |
+| `open C{n}/L{a}-{b}` | Every lecture in the range: summary, topic summaries, and as many key Review Cards as fit (the answerer gets the text; you see only the list) | Summarizing or reviewing what several lectures covered, or an exam's scope ("summarize lectures 3 to 7", "what's on midterm 2?") |
 | `open C{n}/L{a}-{b}/cards` | Key Review Cards (`Core Why 💡` & `Gotcha ⚠️`) | Multi-lecture review or exam prep for a unit/range ("review lectures 1 to 5", "traps in first half") |
 | `open C{n}` | List of lectures with 1-line summaries | Checking lecture dates/titles when looking for a specific single lecture to open |
 | `open C{n}/L{m}/announcements` | Announcements & hints for specific lecture | Test tips or notices given in a specific lecture ("hints in lecture 3") |
@@ -70,7 +71,7 @@ Never fetch what the answerer already sees or what an earlier lap already fetche
 <!--IF:CAN_BY_DATE-->
 | Command | Fetches | Recommended When (Examples) |
 | :--- | :--- | :--- |
-| `by_date (date_from: "...", date_to: "...", within: "...")` | Lectures recorded within that date range | Date references ("last Tuesday's class", "lectures in April") |
+| `by_date (date_from: "...", date_to: "...", within: "...")` | Lectures recorded within that date range; their overviews (as with `C{n}/L{a}-{b}`) are attached for the answerer | Date references ("last Tuesday's class", "lectures in April") |
 <!--END_IF-->
 
 ### E. Attached Files (PDFs & Documents)
@@ -103,8 +104,8 @@ Never fetch what the answerer already sees or what an earlier lap already fetche
 <!--END_IF-->
 
 ## 4. GENERAL SELECTION RULES & DISAMBIGUATION
-- **Prefer High-Density Handles in Lap 1**: For syllabus, course overview, subject review, terminology glossary, exam hints, or unit card reviews, ALWAYS use the specialized Category A handle (`C{n}/topics`, `C{n}/keywords`, `C{n}/announcements`, `C{n}/L{a}-{b}/cards`) directly in Lap 1. Do NOT open `C{n}` first to browse lecture lists before calling these handles.
-- **Course & Multi-Lecture Subject Reviews ("review everything we covered on topic X", "understand the whole course")**: Open `C{n}/topics` directly in Lap 1 to get the structured topic tree across all lectures in one shot. If the student asks for core takeaways or exam pitfalls across a range of lectures, use `C{n}/L{a}-{b}/cards`.
+- **Prefer High-Density Handles in Lap 1**: For syllabus, course overview, subject review, terminology glossary, exam hints, or unit card reviews, ALWAYS use the specialized Category A handle (`C{n}/topics`, `C{n}/keywords`, `C{n}/announcements`, `C{n}/L{a}-{b}`, `C{n}/L{a}-{b}/cards`) directly in Lap 1. Do NOT open `C{n}` first to browse lecture lists before calling these handles.
+- **Course & Multi-Lecture Subject Reviews ("review everything we covered on topic X", "summarize the midterm range")**: `C{n}/topics` has titles only, which is enough for the structure but never for summarizing content. To summarize or review the content of a range of lectures, open `C{n}/L{a}-{b}` (or use `by_date` when the student gives dates). Use `C{n}/L{a}-{b}/cards` when they only want takeaways or pitfalls.
 - **Pronoun & Context Resolution ("this", "that", "the next one")**:
   1. Selected text in `<screen>` first.
   2. Topic just discussed in `<recent_conversation>`.

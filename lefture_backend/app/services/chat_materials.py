@@ -41,6 +41,7 @@ PRIORITY = {
     "announcements": 2,
     "course_announcements": 2,
     "lecture": 3,
+    "lecture_range": 3,  # 範囲の講義の概要(by_date・C{n}/L{a}-{b}。chat_navigator.build_range_overview)
     "course_topics": 3,
     "course_keywords": 3,
     "course": 4,

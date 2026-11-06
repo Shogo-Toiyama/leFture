@@ -1521,8 +1521,9 @@ async def _gather_materials(
 
 
 def _answer_max_tokens(navigation: Optional[NavigationResult], materials: list[Material]) -> int:
-    """コース全体の概観のような広い質問だけ長く書けるようにする(普段は短く速く)。"""
-    wide = (navigation is not None and len(navigation.goal) >= WIDE_GOAL_ITEMS) or any(m.kind == "course" for m in materials)
+    """コース全体の概観・範囲の講義のまとめのような広い質問だけ長く書けるようにする(普段は短く速く)。"""
+    wide = ((navigation is not None and len(navigation.goal) >= WIDE_GOAL_ITEMS)
+            or any(m.kind in ("course", "lecture_range") for m in materials))
     return ANSWER_MAX_OUTPUT_TOKENS_WIDE if wide else ANSWER_MAX_OUTPUT_TOKENS
 
 

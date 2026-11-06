@@ -59,3 +59,7 @@ contents_generation/test_codes/haiku_migration_tone/results/*_dryrun_*/
 # router_language_eval: 実チャット(生徒のメッセージ)と実験結果を含むのでコミットしない
 contents_generation/test_codes/router_language_eval/cases/
 contents_generation/test_codes/router_language_eval/results/
+
+# range_overview_eval: 実チャット(生徒のメッセージ)を含む結果と、本番ファイルのコピー(patched/)はコミットしない
+contents_generation/test_codes/range_overview_eval/results/
+contents_generation/test_codes/range_overview_eval/patched/
