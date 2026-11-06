@@ -815,13 +815,20 @@ def build_schema(nav_input: NavigatorInput, state: NavState) -> dict[str, Any]:
     項目の順番がそのまま出力の順番になる(GeminiとLunaで確認済み)。操作を選ぶ前に、
     取りに行く必要度(need)と出どころ(fetch_from)、「足りているか」を先に書かせる。
     操作は種類ごとに別の形(anyOf)にして、使わない項目を"none"で埋めさせない(出力が短くなる)。
+
+    1ターンの中ではスキーマを変えない(stateに依存させない)。Anthropicのstructured outputsは
+    output formatが変わるとプロンプトキャッシュが無効になり、以前はopenのhandle(開けるものの一覧)と
+    findのtarget(検索の残り回数)が周ごとに変わっていたため、systemを毎周キャッシュに書くだけで
+    一度も読めていなかった。handleは自由な文字列にし、開けるか・回数の上限はvalidate_operationsで判定する
+    (2026-11-06、contents_generation/test_codes/navigator_schema_cache/: 4周のターンで2周目以降が
+    キャッシュから読まれ、探索役の原価が$0.0111→$0.0062、開けないhandleで捨てた操作は0件)。
     """
     def enum(values: list[str]) -> dict[str, Any]:
         return {"type": "string", "enum": values} if values else {"type": "string"}
 
     scope = nav_input.student_map.scope_handles()
     op_shapes: list[dict[str, Any]] = []
-    targets = available_targets(state.web_searches_left() > 0, state.searches_left() > 0)
+    targets = available_targets()
     # 資料の中の検索は、全文で見えていない資料があるときだけ選べる
     if not nav_input.attachment_scope_handles():
         targets = [t for t in targets if t != "attachment.search"]
@@ -833,11 +840,10 @@ def build_schema(nav_input: NavigatorInput, state: NavState) -> dict[str, Any]:
             "layer": enum(available_layers(nav_input.blocked_source_types)),
             "within": enum(scope),
         }, "required": ["op", "target", "query"]})
-    openable = openable_handles(nav_input, state)
-    if CAPABILITIES["CAN_OPEN"] and openable:
+    if CAPABILITIES["CAN_OPEN"]:
         op_shapes.append({"type": "object", "properties": {
             "op": {"type": "string", "enum": ["open"]},
-            "handle": enum(openable),
+            "handle": {"type": "string"},
         }, "required": ["op", "handle"]})
     if CAPABILITIES["CAN_BY_DATE"]:
         op_shapes.append({"type": "object", "properties": {

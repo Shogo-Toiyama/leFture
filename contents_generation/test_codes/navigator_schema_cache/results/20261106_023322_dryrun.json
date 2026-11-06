@@ -1,0 +1,288 @@
+{
+ "turn": {
+  "user_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+  "turn_at": "2026-11-06T10:19:52.424289+00:00",
+  "history_rows": 12,
+  "summary_blocks": 2,
+  "previous_turn_refs": [],
+  "blocked": [],
+  "user_goal": "Clarify why Feline and Cat in Go (Golang) are not necessarily in a super-sub relationship compared to other languages, specifically focusing on how Go handles interface implementation implicitly rather than through explicit inheritance.",
+  "referenced_sources_chars": 0
+ },
+ "runs": [
+  {
+   "stop_reason": "enough_now",
+   "laps": [
+    {
+     "lap": 1,
+     "status": "need_more",
+     "need": "explicit",
+     "requests": [
+      {
+       "kind": "FindRequest",
+       "target": "lecture.concept",
+       "query": "Go interface implicit satisfaction",
+       "within": "C4"
+      }
+     ],
+     "dropped": [],
+     "missing": "",
+     "reasoning": "mock",
+     "goal": [],
+     "llm_error": null,
+     "schema_hash": "0186a49399e1",
+     "system_chars": 13520,
+     "user_chars": 8934,
+     "input_tokens": 0,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "output_tokens": 0,
+     "latency_ms": 0
+    },
+    {
+     "lap": 2,
+     "status": "need_more",
+     "need": "explicit",
+     "requests": [
+      {
+       "kind": "OpenRequest",
+       "handle": "C4/L8"
+      }
+     ],
+     "dropped": [],
+     "missing": "",
+     "reasoning": "mock",
+     "goal": [],
+     "llm_error": null,
+     "schema_hash": "0186a49399e1",
+     "system_chars": 13520,
+     "user_chars": 6746,
+     "input_tokens": 0,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "output_tokens": 0,
+     "latency_ms": 0
+    },
+    {
+     "lap": 3,
+     "status": "need_more",
+     "need": "explicit",
+     "requests": [
+      {
+       "kind": "OpenRequest",
+       "handle": "C4/L8/cards"
+      }
+     ],
+     "dropped": [],
+     "missing": "",
+     "reasoning": "mock",
+     "goal": [],
+     "llm_error": null,
+     "schema_hash": "56d983eaf639",
+     "system_chars": 13520,
+     "user_chars": 15247,
+     "input_tokens": 0,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "output_tokens": 0,
+     "latency_ms": 0
+    },
+    {
+     "lap": 4,
+     "status": "enough_now",
+     "need": "explicit",
+     "requests": [],
+     "dropped": [],
+     "missing": "",
+     "reasoning": "mock",
+     "goal": [
+      "mock goal"
+     ],
+     "llm_error": null,
+     "schema_hash": "eef1ddbb8f86",
+     "system_chars": 13520,
+     "user_chars": 22401,
+     "input_tokens": 0,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "output_tokens": 0,
+     "latency_ms": 0
+    }
+   ],
+   "materials": [
+    "lecture:f26c054a-6898-4fdd-8b94-23b4ffa17a63",
+    "review_cards:f26c054a-6898-4fdd-8b94-23b4ffa17a63"
+   ],
+   "navigator_cost_usd": 0,
+   "other_cost_usd": 0,
+   "navigator_credits": 0.0,
+   "dropped_handle_not_openable": 0,
+   "wall_ms": 1583,
+   "schema_hashes": [
+    {
+     "lap": 1,
+     "production": "0186a49399e1",
+     "static": "cce8a8f0fec0",
+     "openable_count": 165
+    },
+    {
+     "lap": 2,
+     "production": "0186a49399e1",
+     "static": "cce8a8f0fec0",
+     "openable_count": 165
+    },
+    {
+     "lap": 3,
+     "production": "56d983eaf639",
+     "static": "cce8a8f0fec0",
+     "openable_count": 170
+    },
+    {
+     "lap": 4,
+     "production": "eef1ddbb8f86",
+     "static": "cce8a8f0fec0",
+     "openable_count": 169
+    }
+   ],
+   "variant": "production",
+   "run": 1
+  },
+  {
+   "stop_reason": "enough_now",
+   "laps": [
+    {
+     "lap": 1,
+     "status": "need_more",
+     "need": "explicit",
+     "requests": [
+      {
+       "kind": "FindRequest",
+       "target": "lecture.concept",
+       "query": "Go interface implicit satisfaction",
+       "within": "C4"
+      }
+     ],
+     "dropped": [],
+     "missing": "",
+     "reasoning": "mock",
+     "goal": [],
+     "llm_error": null,
+     "schema_hash": "cce8a8f0fec0",
+     "system_chars": 13520,
+     "user_chars": 8934,
+     "input_tokens": 0,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "output_tokens": 0,
+     "latency_ms": 0
+    },
+    {
+     "lap": 2,
+     "status": "need_more",
+     "need": "explicit",
+     "requests": [
+      {
+       "kind": "OpenRequest",
+       "handle": "C4/L8"
+      }
+     ],
+     "dropped": [],
+     "missing": "",
+     "reasoning": "mock",
+     "goal": [],
+     "llm_error": null,
+     "schema_hash": "cce8a8f0fec0",
+     "system_chars": 13520,
+     "user_chars": 6746,
+     "input_tokens": 0,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "output_tokens": 0,
+     "latency_ms": 0
+    },
+    {
+     "lap": 3,
+     "status": "need_more",
+     "need": "explicit",
+     "requests": [
+      {
+       "kind": "OpenRequest",
+       "handle": "C4/L8/cards"
+      }
+     ],
+     "dropped": [],
+     "missing": "",
+     "reasoning": "mock",
+     "goal": [],
+     "llm_error": null,
+     "schema_hash": "cce8a8f0fec0",
+     "system_chars": 13520,
+     "user_chars": 15247,
+     "input_tokens": 0,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "output_tokens": 0,
+     "latency_ms": 0
+    },
+    {
+     "lap": 4,
+     "status": "enough_now",
+     "need": "explicit",
+     "requests": [],
+     "dropped": [],
+     "missing": "",
+     "reasoning": "mock",
+     "goal": [
+      "mock goal"
+     ],
+     "llm_error": null,
+     "schema_hash": "cce8a8f0fec0",
+     "system_chars": 13520,
+     "user_chars": 22401,
+     "input_tokens": 0,
+     "cache_read_tokens": 0,
+     "cache_write_tokens": 0,
+     "output_tokens": 0,
+     "latency_ms": 0
+    }
+   ],
+   "materials": [
+    "lecture:f26c054a-6898-4fdd-8b94-23b4ffa17a63",
+    "review_cards:f26c054a-6898-4fdd-8b94-23b4ffa17a63"
+   ],
+   "navigator_cost_usd": 0,
+   "other_cost_usd": 0,
+   "navigator_credits": 0.0,
+   "dropped_handle_not_openable": 0,
+   "wall_ms": 1001,
+   "schema_hashes": [
+    {
+     "lap": 1,
+     "production": "0186a49399e1",
+     "static": "cce8a8f0fec0",
+     "openable_count": 165
+    },
+    {
+     "lap": 2,
+     "production": "0186a49399e1",
+     "static": "cce8a8f0fec0",
+     "openable_count": 165
+    },
+    {
+     "lap": 3,
+     "production": "56d983eaf639",
+     "static": "cce8a8f0fec0",
+     "openable_count": 170
+    },
+    {
+     "lap": 4,
+     "production": "eef1ddbb8f86",
+     "static": "cce8a8f0fec0",
+     "openable_count": 169
+    }
+   ],
+   "variant": "static",
+   "run": 1
+  }
+ ]
+}
