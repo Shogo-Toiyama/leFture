@@ -37,11 +37,11 @@ false for everything else, including: chitchat and feelings; questions about the
 - calculations, derivations, proofs, math beyond a quick fact, unit conversions, or applying a formula to given numbers;
 - code, pseudocode, an algorithm, or a circuit: tracing it, predicting what it does, or debugging it;
 - anything substantial the student wrote or pasted — code, a solution, a resume, an essay, a report, an application, a design — whether they ask for feedback, ask if it is right, or only say they finished it ("I did it!", "done!");
-- a hard or subtle question: comparing approaches, a tricky concept or edge case, a question with a catch, or one that needs several facts put together;
-- the student questions or pushes back on something said earlier in a way that needs re-checking ("hm? wait", "where does the code say that?", "isn't it the other way around?");
+- a hard problem to work out on concrete code, numbers, or data: comparing approaches on a given case, an edge case in it, or a question with a catch;
+- the student questions or pushes back on an earlier calculation, code trace, or answer to a problem in a way that needs re-checking ("hm? wait", "where does the code say that?", "isn't it the other way around?");
 - continuing a problem the conversation is in the middle of working (the next step of the same calculation or trace).
 
-false for light messages: chitchat, thanks and reactions, feelings and support, a simple fact or word meaning, a short explanation of a basic concept, `blocked`, `crisis`. When unsure between the two, choose true.
+false for everything else, even when the topic is advanced: chitchat, thanks and reactions, feelings and support, a fact, a definition or word meaning, how two terms relate, confirming a one-line understanding of a concept ("so X is the same as Y, right?"), an explanation or example of a concept, a summary or overview, a translation or re-explaining in another language, `blocked`, `crisis`.
 
 ### LAST
 - `reply_language`: the language the answer should be written in, as a short code (e.g. "ja", "en"). It is the language the conversation is conducted in, so continue the main language of <recent_conversation> and <earlier_conversation>; do not judge <new_message> alone. Switch only if the student explicitly asks for another language or clearly moves to it for good. Foreign words, terms, code, pasted text, or a reply to a language question never switch it (such answers quote the foreign text inside the conversation's language). With no history, judge by the grammar of <new_message> (particles, verbs, endings), never by the share of words.
