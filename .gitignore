@@ -55,3 +55,7 @@ contents_generation/test_codes/chat_inspection_duck_typing/
 
 contents_generation/test_codes/haiku_migration_tone/inputs/
 contents_generation/test_codes/haiku_migration_tone/results/*_dryrun_*/
+
+# router_language_eval: 実チャット(生徒のメッセージ)と実験結果を含むのでコミットしない
+contents_generation/test_codes/router_language_eval/cases/
+contents_generation/test_codes/router_language_eval/results/

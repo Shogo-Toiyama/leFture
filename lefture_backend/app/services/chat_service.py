@@ -152,7 +152,12 @@ from app.services.knowledge_index import embed_queries, index_now
 # ⚙️ 設定
 # =========================================================
 
-ROUTER_MODEL = "gemini/gemini-2.5-flash-lite"
+# 2026-11-06にGemini 2.5 Flash Liteから変更(ユーザー判断)。2.5 Flash/Flash Liteは提供終了の恐れがあるのと、
+# 2.5 Flash Liteは「AIが英語での言い方を聞き、生徒が英単語だけ答える」ターンで返答言語を英語と誤判定した
+# (3回中3回)。3.1 Flash Lite(推論なし)は同じ5ケースを3回ずつ全部正解(15/15)で、平均約1.0秒
+# (2.5は約0.85秒、Haiku 5.5は約2.75秒)。1回あたり約$0.0015。
+ROUTER_MODEL = "gemini/gemini-3.1-flash-lite"
+ROUTER_REASONING_EFFORT = "none"
 # 2026-10-02に3.1 Flash Lite(推論なし)から変更。同じ材料で比べると、最初の1文字までの時間は同じくらい
 # (約0.6秒)で、「1文に出典は1つ」「同じ内容を言う出典は1つにまとめる」をよく守った(7回中まとめ付け0回)。
 ANSWER_MODEL = "anthropic/claude-haiku-5-5"
@@ -1301,7 +1306,8 @@ async def _run_router(
         "CURRENT_TIME": current_time_str,
         "NEW_MESSAGE": turn.message_for_prompt,
     })
-    options = LLMOptions(output_type="json", json_schema=ROUTER_SCHEMA, temperature=0.0)
+    options = LLMOptions(output_type="json", json_schema=ROUTER_SCHEMA, temperature=0.0,
+                          reasoning_effort=ROUTER_REASONING_EFFORT)
     messages = [
         Message(role="system", content=_load_prompt("chat_router_prompt.txt")),
         Message(role="user", content=user_input),

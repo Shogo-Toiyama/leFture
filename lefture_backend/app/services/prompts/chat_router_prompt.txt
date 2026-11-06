@@ -44,7 +44,7 @@ false for everything else, including: chitchat and feelings; questions about the
 false for light messages: chitchat, thanks and reactions, feelings and support, a simple fact or word meaning, a short explanation of a basic concept, `blocked`, `crisis`. When unsure between the two, choose true.
 
 ### LAST
-- `reply_language`: the language of <new_message>, as a short code (e.g. "ja", "en").
+- `reply_language`: the language the answer should be written in, as a short code (e.g. "ja", "en"). It is the language the conversation is conducted in, so continue the main language of <recent_conversation> and <earlier_conversation>; do not judge <new_message> alone. Switch only if the student explicitly asks for another language or clearly moves to it for good. Foreign words, terms, code, pasted text, or a reply to a language question never switch it (such answers quote the foreign text inside the conversation's language). With no history, judge by the grammar of <new_message> (particles, verbs, endings), never by the share of words.
 - `thread_title`: a short title (at most 30 characters, in `reply_language`) if <is_first_message> is true and `intent` is not `blocked`/`crisis`; otherwise null. Name the specific topic the student brings up — the concept, the assignment, or the material in <attached_materials> — in the student's own language, not a course name copied from <courses> and never the student's feeling or request (for "can you help with my homework on how plant cells divide?": "Plant cell division homework", not "BIO 101" or "Help needed").
 
 ### INPUTS (in the user message)
