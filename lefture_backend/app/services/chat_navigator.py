@@ -56,7 +56,9 @@ from app.services.helpers.llm_unified import LLMOptions, Message, UnifiedLLM
 
 NAVIGATOR_MODEL = "anthropic/claude-haiku-5-5"
 NAVIGATOR_REASONING_EFFORT = "none"
-NAVIGATOR_MAX_COMPLETION_TOKENS = 1500
+# 2026-11-06に1500から3000へ(ユーザー判断)。弟のスレッド「Midterm 2 scope summary」で、全コースの
+# by_date(26講義)の後の2周目が1500トークンで切れてJSONが壊れ(2回とも)、探索が打ち切られたため。
+NAVIGATOR_MAX_COMPLETION_TOKENS = 3000
 
 MAX_LAPS = 4
 MAX_OPS_PER_LAP = 5
