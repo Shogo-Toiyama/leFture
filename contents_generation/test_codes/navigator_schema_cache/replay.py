@@ -360,7 +360,9 @@ async def main() -> None:
                           f"read={l['cache_read_tokens']} write={l['cache_write_tokens']} out={l['output_tokens']} "
                           f"{l['latency_ms']}ms req={l['requests']} dropped={l['dropped']}")
     finally:
-        auth_client.auth.sign_out()  # 実験用に作ったセッションを消す
+        # 実験用に作ったセッションだけを消す。scopeの既定値は"global"で、本人の全セッション(ブラウザのログインも)を
+        # 失効させる(2026-11-06にこれで本人のWebのセッションが切れ、次の送信が401 session_not_foundになった)
+        auth_client.auth.sign_out({"scope": "local"})
 
     OUT_DIR.mkdir(exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")

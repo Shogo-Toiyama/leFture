@@ -771,7 +771,7 @@ def _fetch_history_rows(admin_client, thread_id: str) -> list[dict]:
 
 
 ATTACHMENT_COLUMNS = ("id, title, content, summary, sections, message_id, created_at, status, selected, token_count, "
-                      "forbids_ai_code, kind, image_path, selected_at")
+                      "forbids_ai_code, kind, image_path, selected_at, metadata")
 # 送る前に取り出したファイル(draft)。extractionは書き起こしに使う(送った後のターンで消す)
 DRAFT_COLUMNS = ("id, user_id, kind, status, title, file_name, extraction, storage_prefix, deleted_at, "
                  "created_at, token_count")
