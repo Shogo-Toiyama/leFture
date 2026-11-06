@@ -69,3 +69,6 @@ contents_generation/test_codes/router_reasoning_eval/results/
 
 # course_context_eval: 実チャット(生徒のメッセージ)を含む結果はコミットしない
 contents_generation/test_codes/course_context_eval/results/
+
+# reply_ending_eval: 実チャット(生徒のメッセージ)を含む結果はコミットしない
+contents_generation/test_codes/reply_ending_eval/results/
