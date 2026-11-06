@@ -227,6 +227,7 @@ class LectureViewerPage extends HookConsumerWidget {
                     final lectureItem = sortedLectures[index];
                     return _LecturePageContent(
                       lecture: lectureItem,
+                      isActive: lectureItem.id == lectureId,
                       initialOpenAnnouncementId: lectureItem.id == lectureId ? initialOpenAnnouncementId : null,
                       initialScrollTo: lectureItem.id == lectureId ? initialScrollTo : null,
                     );
@@ -244,11 +245,15 @@ class LectureViewerPage extends HookConsumerWidget {
 class _LecturePageContent extends ConsumerWidget {
   const _LecturePageContent({
     required this.lecture,
+    this.isActive = true,
     this.initialOpenAnnouncementId,
     this.initialScrollTo,
   });
 
   final Lecture lecture;
+
+  /// 横にスワイプする講義のうち、いま表示中のページか(チャットに伝えるのは表示中のページだけ)。
+  final bool isActive;
   final String? initialOpenAnnouncementId;
   final String? initialScrollTo;
 
@@ -256,6 +261,11 @@ class _LecturePageContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final uiStateAsync = ref.watch(lectureStateProvider(lecture.id));
+    // 講義ページに出ている Fun Fact(1講義に1つ)。チャットの「このファンファクト」で、
+    // 回答役がその本文を読めるように、見ているページとして伝える
+    final funFacts =
+        ref.watch(funFactsForLectureProvider(lecture.id)).asData?.value ??
+        const <FunFact>[];
 
     ref.listen<AsyncValue<LectureUIState>>(lectureStateProvider(lecture.id), (
       previous,
@@ -282,26 +292,33 @@ class _LecturePageContent extends ConsumerWidget {
       });
     });
 
-    return uiStateAsync.when(
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: AppColors.starGold),
-      ),
-      error: (err, stack) => Center(
-        child: Text(
-          l10n.lectureViewerErrorPrefix(safeErrorText(l10n, err, 'lecture_viewer.state')),
-          style: const TextStyle(color: AppColors.correctionRed),
+    return ChatScreenScope(
+      active: isActive,
+      lectureId: lecture.id,
+      screen: funFacts.isEmpty
+          ? null
+          : ChatScreenRef(kind: 'fun_fact', id: funFacts.first.id),
+      child: uiStateAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: AppColors.starGold),
         ),
-      ),
-      // ★ 以前はuiState=='complete'の時だけ_LectureViewerBodyを描画し、それ
-      // 以外(notStarted/processing/failed)は全く別画面(LectureStatusScaffold)
-      // へ丸ごと切り替えていた。今はどのuiStateでも常に_LectureViewerBodyを
-      // 描画する —— 本体側が要素ごとの完成度(RevealState)とjob/tasksを見て、
-      // スケルトン/ブラー/バナーを自分で出し分ける設計に変わったため。
-      data: (uiState) => _LectureViewerBody(
-        lecture: lecture,
-        uiState: uiState,
-        initialOpenAnnouncementId: initialOpenAnnouncementId,
-        initialScrollTo: initialScrollTo,
+        error: (err, stack) => Center(
+          child: Text(
+            l10n.lectureViewerErrorPrefix(safeErrorText(l10n, err, 'lecture_viewer.state')),
+            style: const TextStyle(color: AppColors.correctionRed),
+          ),
+        ),
+        // ★ 以前はuiState=='complete'の時だけ_LectureViewerBodyを描画し、それ
+        // 以外(notStarted/processing/failed)は全く別画面(LectureStatusScaffold)
+        // へ丸ごと切り替えていた。今はどのuiStateでも常に_LectureViewerBodyを
+        // 描画する —— 本体側が要素ごとの完成度(RevealState)とjob/tasksを見て、
+        // スケルトン/ブラー/バナーを自分で出し分ける設計に変わったため。
+        data: (uiState) => _LectureViewerBody(
+          lecture: lecture,
+          uiState: uiState,
+          initialOpenAnnouncementId: initialOpenAnnouncementId,
+          initialScrollTo: initialScrollTo,
+        ),
       ),
     );
   }

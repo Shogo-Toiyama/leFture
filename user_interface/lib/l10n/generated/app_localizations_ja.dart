@@ -3584,6 +3584,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String aiChatAttachedCourse(String title) {
+    return '$titleについて';
+  }
+
+  @override
   String get aiChatRemoveAttachment => '外す';
 
   @override

@@ -33,6 +33,10 @@ interface ChatConversationProps {
   /** 話題にする講義。nullなら講義を指定しない。 */
   lectureId: string | null;
   lectureTitle: string | null;
+  /** 話題にするコース(コースの画面から開いたとき。講義があるときは講義を優先して送らない)。 */
+  courseId?: string | null;
+  courseTitle?: string | null;
+  /** 講義・コースのチップを外す。 */
   onDetachLecture?: () => void;
   /** 「Ask」で添える選択。1回の送信にだけ添える。 */
   selection: ChatSelection | null;
@@ -104,6 +108,8 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   onTurnComplete,
   lectureId,
   lectureTitle,
+  courseId = null,
+  courseTitle = null,
   onDetachLecture,
   selection,
   onClearSelection,
@@ -351,6 +357,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
       stickToBottomRef.current = true;
       const context: ChatMessageContext = {};
       if (lectureId) context.lecture_id = lectureId;
+      else if (courseId) context.course_id = courseId;
       // 選んだページ(「Ask」)を優先し、無ければ今いる画面のページ
       const screenRef = activeSelection?.screen ?? screen;
       if (screenRef) context.screen = screenRef;
@@ -373,7 +380,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
       }
       void send(content, context, drafts, references);
     },
-    [lectureId, activeSelection, screen, send, clearSelection, editingId, editInfo]
+    [lectureId, courseId, activeSelection, screen, send, clearSelection, editingId, editInfo]
   );
 
   /**
@@ -611,6 +618,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           selectedText={selectedText}
           onClearSelectedText={clearSelection}
           lectureTitle={lectureTitle}
+          courseTitle={lectureId ? null : courseTitle}
           onDetachLecture={onDetachLecture}
           selectedAttachments={listedAttachments.filter((a) => a.selected && a.kind !== 'image')}
           onUnselectAttachment={(id) => void selectAttachment(id, false).catch(() => {})}

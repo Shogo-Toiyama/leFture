@@ -352,6 +352,7 @@ class ChatAttachmentNotice {
 class ChatMessageContext {
   const ChatMessageContext({
     this.lectureId,
+    this.courseId,
     this.selectedText,
     this.selectionBefore,
     this.selectionAfter,
@@ -363,6 +364,9 @@ class ChatMessageContext {
   });
 
   final String? lectureId;
+
+  /// コースの画面から送ったときのコース(講義があるときは送らない)。
+  final String? courseId;
   final String? selectedText;
   final String? selectionBefore;
   final String? selectionAfter;
@@ -383,6 +387,7 @@ class ChatMessageContext {
   factory ChatMessageContext.fromMap(Map<String, dynamic> map) =>
       ChatMessageContext(
         lectureId: map['lecture_id'] as String?,
+        courseId: map['course_id'] as String?,
         selectedText: map['selected_text'] as String?,
         selectionBefore: map['selection_before'] as String?,
         selectionAfter: map['selection_after'] as String?,
@@ -415,6 +420,7 @@ class ChatMessageContext {
   /// 送信のリクエストに載せる部分(バックエンドのChatMessageContext)。
   Map<String, dynamic> toRequestJson() => {
     if (lectureId != null) 'lecture_id': lectureId,
+    if (courseId != null) 'course_id': courseId,
     if (selectedText != null) 'selected_text': selectedText,
     if (selectionBefore != null) 'selection_before': selectionBefore,
     if (selectionAfter != null) 'selection_after': selectionAfter,

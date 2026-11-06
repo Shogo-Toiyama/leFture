@@ -5,6 +5,7 @@ import {
   AtSign,
   BookOpen,
   FileText,
+  GraduationCap,
   Files,
   LoaderCircle,
   Paperclip,
@@ -89,6 +90,8 @@ interface ChatComposerProps {
   onClearSelectedText?: () => void;
   /** 話題にしている講義名(チップとして見せ、外せる)。 */
   lectureTitle: string | null;
+  /** 話題にしているコース名(コースの画面から開いたとき。講義と同じ×で外す)。 */
+  courseTitle?: string | null;
   onDetachLecture?: () => void;
   /** 全文で読んでいる資料(チップとして見せ、×で全文で読むのをやめられる)。 */
   selectedAttachments?: ChatAttachment[];
@@ -186,6 +189,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
   selectedText,
   onClearSelectedText,
   lectureTitle,
+  courseTitle = null,
   onDetachLecture,
   selectedAttachments = [],
   onUnselectAttachment,
@@ -761,7 +765,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
           </span>
         </div>
       )}
-      {(selectedText || lectureTitle || drafts.length > 0 || selectedAttachments.length > 0) && (
+      {(selectedText || lectureTitle || courseTitle || drafts.length > 0 || selectedAttachments.length > 0) && (
         <div className="chat-attachments">
           {selectedAttachments.map((a) => (
             <span key={a.id} className="chat-attachment is-file is-selected" title={a.title ?? undefined}>
@@ -850,6 +854,17 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
             <span className="chat-attachment" title={lectureTitle}>
               <BookOpen size={12} />
               <span className="chat-attachment-text">{t('chatAttachedLecture', { title: lectureTitle })}</span>
+              {onDetachLecture && (
+                <button type="button" onClick={onDetachLecture} aria-label={t('chatRemoveAttachment')}>
+                  <X size={12} />
+                </button>
+              )}
+            </span>
+          )}
+          {!lectureTitle && courseTitle && (
+            <span className="chat-attachment" title={courseTitle}>
+              <GraduationCap size={12} />
+              <span className="chat-attachment-text">{t('chatAttachedCourse', { title: courseTitle })}</span>
               {onDetachLecture && (
                 <button type="button" onClick={onDetachLecture} aria-label={t('chatRemoveAttachment')}>
                   <X size={12} />

@@ -40,6 +40,8 @@ class ChatConversationView extends ConsumerStatefulWidget {
     this.onBuyCredits,
     this.lectureId,
     this.lectureTitle,
+    this.courseId,
+    this.courseTitle,
     this.onDetachLecture,
     this.controller,
     this.selection,
@@ -63,6 +65,12 @@ class ChatConversationView extends ConsumerStatefulWidget {
   /// 話題にする講義。nullなら講義を指定しない。
   final String? lectureId;
   final String? lectureTitle;
+
+  /// 話題にするコース(コースの画面から開いたとき。講義があるときは講義を優先して送らない)。
+  final String? courseId;
+  final String? courseTitle;
+
+  /// 講義・コースのチップを外す。
   final VoidCallback? onDetachLecture;
 
   /// 「Ask」で添える選択。1回の送信にだけ添える。
@@ -337,6 +345,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
     final selection = _activeSelection;
     return ChatMessageContext(
       lectureId: widget.lectureId,
+      courseId: widget.lectureId == null ? widget.courseId : null,
       // 選んだページ(「Ask」)を優先し、無ければ今いる画面のページ
       screen: selection?.screen ?? widget.screen,
       selectedText: selection?.text,
@@ -584,6 +593,10 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
                 lectureTitle: widget.lectureId == null
                     ? null
                     : widget.lectureTitle,
+                courseTitle:
+                    widget.lectureId == null && widget.courseId != null
+                    ? widget.courseTitle
+                    : null,
                 onDetachLecture: widget.onDetachLecture,
                 onSend: (content, attachments, references) => unawaited(
                   _handleSend(content, attachments, references, state),

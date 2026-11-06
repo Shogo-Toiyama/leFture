@@ -5,6 +5,7 @@ import { useChatPanel } from '../../context/ChatPanelContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { useChatThreads } from '../../hooks/useChatThreads';
 import { getChatThread } from '../../lib/chat';
+import { getCourse } from '../../lib/courses';
 import { getLecture } from '../../lib/lectures';
 import { lectureDisplayTitle } from '../../types/lecture';
 import { AiSettingsSheet } from './AiSettingsSheet';
@@ -31,12 +32,17 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
     null;
   const lectureId = panel.lectureDetached ? null : routeLectureId;
   const lectureTitle = useLectureTitle(lectureId);
+  // コースの画面(/courses/:courseId)ならそのコースを話題として添える(講義の画面では付けない。
+  // 講義からコースが分かる)。トピックマップ・アップロードの画面は対象外。外すのは講義のチップと同じ
+  const routeCourseId = matchPath('/courses/:courseId', location.pathname)?.params.courseId ?? null;
+  const courseId = panel.lectureDetached || routeLectureId ? null : routeCourseId;
+  const courseTitle = useCourseTitle(courseId);
 
-  // 講義が変わったら、外していた講義のチップは元に戻す
+  // 講義・コースが変わったら、外していたチップは元に戻す
   const { setLectureDetached } = panel;
   useEffect(() => {
     setLectureDetached(false);
-  }, [routeLectureId, setLectureDetached]);
+  }, [routeLectureId, routeCourseId, setLectureDetached]);
 
   const [threadTitle, setThreadTitle] = useState<string | null>(null);
   const [attachmentListOpen, setAttachmentListOpen] = useState(false);
@@ -211,6 +217,8 @@ export const ChatPanel: React.FC<{ stacked: boolean }> = ({ stacked }) => {
             onTurnComplete={refreshThreadTitle}
             lectureId={lectureId}
             lectureTitle={lectureTitle}
+            courseId={courseTitle ? courseId : null}
+            courseTitle={courseTitle}
             onDetachLecture={() => panel.setLectureDetached(true)}
             selection={panel.selection}
             onClearSelection={panel.clearSelection}
@@ -257,6 +265,29 @@ const PanelHistory: React.FC = () => {
     </div>
   );
 };
+
+/** コース名(チップ表示用)。取れなければnull。 */
+function useCourseTitle(courseId: string | null): string | null {
+  const [title, setTitle] = useState<string | null>(null);
+  useEffect(() => {
+    if (!courseId) {
+      setTitle(null);
+      return;
+    }
+    let cancelled = false;
+    getCourse(courseId)
+      .then((course) => {
+        if (!cancelled) setTitle(course.course_title?.trim() || null);
+      })
+      .catch(() => {
+        if (!cancelled) setTitle(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId]);
+  return title;
+}
 
 /** 講義名(チップ表示用)。取れなければnull。 */
 function useLectureTitle(lectureId: string | null): string | null {

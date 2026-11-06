@@ -489,16 +489,20 @@ def format_screen_context(
     *,
     full_page: bool = True,
     reply_quote: Optional[str] = None,
+    course_label: Optional[str] = None,
 ) -> str:
     """
     画面の文脈。full_page=Trueは回答役用(見ているページの本文まで)、Falseは振り分け役用
     (ページの名前だけ。本文が回答役に見えていることが分かれば足りる)。
     選択テキストは本文の中で見つかれば<selected>で囲んであるので、別には添えない。
     reply_quote: 会話の中のAIの回答の一部を選んで返信したときの、その回答の抜粋(選択箇所は<selected>で囲んである)。
+    course_label: コースの画面から送ったときのコース名(講義を見ているときは講義のラベルにコース名が入る)。
     """
     parts = []
     if lecture_label:
         parts.append(f"The student is viewing this lecture: {lecture_label}")
+    elif course_label:
+        parts.append(f"The student is viewing this course: {course_label}")
     if page and full_page:
         notes = []
         if page.selection_marked:
@@ -606,6 +610,9 @@ class PreparedTurn:
     context_lecture_id: Optional[str]
     # クライアントが送ってきたIANAのタイムゾーン名(「昨日」「今学期」の解決に使う)。無ければUTC。
     timezone_name: Optional[str] = None
+    # コースの画面から送ったときのコース(講義が分かっているときはNone。講義のラベルにコース名が入っている)
+    context_course_id: Optional[str] = None
+    course_label: Optional[str] = None
     # まだ要約に畳んでいない部分だけ(古い順)
     history_rows: list[dict] = field(default_factory=list)
     summary_blocks: list[dict] = field(default_factory=list)
@@ -685,6 +692,16 @@ def _lecture_label(admin_client, lecture_id: str, user_id: str) -> Optional[str]
     return " / ".join(p for p in [course_title or "", lecture_title] if p) or None
 
 
+def _course_label(admin_client, course_id: str, user_id: str) -> Optional[str]:
+    """本人のコースならコース名を返す。他人のコース・存在しない・消したコースはNone。"""
+    res = admin_client.table("courses").select("user_id, course_title, deleted_at") \
+        .eq("id", course_id).maybe_single().execute()
+    row = res.data if res else None
+    if not row or row.get("user_id") != user_id or row.get("deleted_at"):
+        return None
+    return (row.get("course_title") or "").strip() or None
+
+
 def _fetch_balance_micro(admin_client, user_id: str) -> int:
     summary_res = admin_client.rpc("get_credit_summary", {"p_user_id": user_id}).execute()
     summary_row = (summary_res.data or [{}])[0] if summary_res.data else {}
@@ -714,7 +731,7 @@ def _fetch_dup_row(admin_client, user_id: str, client_message_id: str) -> Option
 
 
 def _fetch_thread_row(admin_client, thread_id: str) -> Optional[dict]:
-    t = admin_client.table("chat_threads").select("id, user_id, title, deleted_at, context_lecture_id") \
+    t = admin_client.table("chat_threads").select("id, user_id, title, deleted_at, context_lecture_id, context_course_id") \
         .eq("id", thread_id).maybe_single().execute()
     return t.data if t else None
 
@@ -809,6 +826,7 @@ def _write_turn_rows(
     attachment_modes: Optional[list[dict]] = None,
     reply_to_message_id: Optional[str] = None,
     adopt_attachments_from: Optional[str] = None,
+    context_course_id: Optional[str] = None,
 ) -> tuple[str, str, str, list[dict]]:
     """
     スレッド作成(新規のみ) → ファイルのdraftをこのスレッドに結び付ける → userメッセージ →
@@ -820,6 +838,7 @@ def _write_turn_rows(
             "user_id": user_id,
             "mode": "learning",
             "context_lecture_id": context_lecture_id,
+            "context_course_id": context_course_id,
         }).execute()
         thread_id = t.data[0]["id"]
 
@@ -853,6 +872,8 @@ def _write_turn_rows(
     message_context = {}
     if context_lecture_id:
         message_context["lecture_id"] = context_lecture_id
+    if context_course_id:
+        message_context["course_id"] = context_course_id
     if selected_text:
         message_context["selected_text"] = selected_text
     if reply_to_message_id:
@@ -953,6 +974,7 @@ async def prepare_chat_turn(
     attachments: Optional[list[NewAttachment]] = None,
     reply_to_message_id: Optional[str] = None,
     replace_from_message_id: Optional[str] = None,
+    context_course_id: Optional[str] = None,
 ) -> PreparedTurn:
     """
     事前チェック→保存。お互いに依存しない読み取り(残高・送信頻度・断られた
@@ -1056,8 +1078,11 @@ async def prepare_chat_turn(
     async def none() -> None:
         return None
 
+    # 講義が分かっていればコースは要らない(講義のラベルにコース名が入る)
+    if context_lecture_id:
+        context_course_id = None
     (
-        balance_micro, rate_count, blocked_count, dup_row, lecture_label,
+        balance_micro, rate_count, blocked_count, dup_row, lecture_label, course_label,
         thread_row, is_busy, history_rows, summary_blocks, summary_level2, attachment_rows, draft_rows,
         reply_row, edit_target,
     ) = await asyncio.gather(
@@ -1066,6 +1091,7 @@ async def prepare_chat_turn(
         to_thread(_fetch_blocked_count, admin_client, user_id),
         to_thread(_fetch_dup_row, admin_client, user_id, client_message_id),
         to_thread(_lecture_label, admin_client, context_lecture_id, user_id) if context_lecture_id else none(),
+        to_thread(_course_label, admin_client, context_course_id, user_id) if context_course_id else none(),
         to_thread(_fetch_thread_row, admin_client, thread_id) if not is_new_thread else none(),
         to_thread(_fetch_busy, admin_client, thread_id) if not is_new_thread else none(),
         to_thread(_fetch_history_rows, admin_client, thread_id) if not is_new_thread else none(),
@@ -1101,6 +1127,8 @@ async def prepare_chat_turn(
 
     if context_lecture_id and lecture_label is None:
         context_lecture_id = None
+    if context_course_id and course_label is None:
+        context_course_id = None
     carried_messages = [r.get("content") or "" for r in unanswered_after_stop(history_rows)]
 
     # --- エラーの優先順位は元の逐次コードと同じ ---
@@ -1123,12 +1151,19 @@ async def prepare_chat_turn(
         if not thread_row or thread_row.get("user_id") != user_id or thread_row.get("deleted_at"):
             raise ChatRequestError(404, "THREAD_NOT_FOUND", "Thread not found.")
         thread_has_title = bool(thread_row.get("title"))
-        # 画面から講義が送られていなければ、スレッド開始時の講義を使う
-        if context_lecture_id is None and thread_row.get("context_lecture_id"):
-            context_lecture_id = thread_row["context_lecture_id"]
-            lecture_label = await to_thread(_lecture_label, admin_client, context_lecture_id, user_id)
-            if lecture_label is None:
-                context_lecture_id = None
+        # 画面から講義もコースも送られていなければ、スレッド開始時の講義、無ければコースを使う
+        # (コースの画面から送ったときは、スレッドの講義よりも今見ているコースを優先する)
+        if context_lecture_id is None and context_course_id is None:
+            if thread_row.get("context_lecture_id"):
+                context_lecture_id = thread_row["context_lecture_id"]
+                lecture_label = await to_thread(_lecture_label, admin_client, context_lecture_id, user_id)
+                if lecture_label is None:
+                    context_lecture_id = None
+            if context_lecture_id is None and thread_row.get("context_course_id"):
+                context_course_id = thread_row["context_course_id"]
+                course_label = await to_thread(_course_label, admin_client, context_course_id, user_id)
+                if course_label is None:
+                    context_course_id = None
         # 生成中の返答があれば二重送信として弾く(取り残されたものは無視)
         if is_busy:
             raise ChatRequestError(409, "THREAD_BUSY", "A reply is still being generated in this thread.")
@@ -1206,7 +1241,7 @@ async def prepare_chat_turn(
     thread_id, user_message_id, assistant_message_id, new_attachment_rows = await to_thread(
         _write_turn_rows, admin_client, is_new_thread, thread_id, user_id, content,
         client_message_id, context_lecture_id, selected_text, screen_ref, attachments, attachment_modes,
-        validated_reply_to_id, replace_from_message_id,
+        validated_reply_to_id, replace_from_message_id, context_course_id,
     )
     timer.mark("prep_saved")
 
@@ -1221,6 +1256,8 @@ async def prepare_chat_turn(
         selected_text=selected_text,
         lecture_label=lecture_label,
         context_lecture_id=context_lecture_id,
+        context_course_id=context_course_id,
+        course_label=course_label,
         timezone_name=(timezone_name or "").strip()[:64] or None,
         history_rows=history_rows,
         summary_blocks=summary_blocks,
@@ -1299,7 +1336,7 @@ async def _run_router(
         "RECENT_CONVERSATION": format_router_conversation(history),
         "SCREEN_CONTEXT": format_screen_context(
             turn.lecture_label, turn.selected_text, turn.screen_page, full_page=False,
-            reply_quote=turn.reply_quote) or "(none)",
+            reply_quote=turn.reply_quote, course_label=getattr(turn, "course_label", None)) or "(none)",
         "COURSES": courses_text,
         "ATTACHMENTS": attachments_text,
         "IS_FIRST_MESSAGE": "true" if is_first_message else "false",
@@ -1454,6 +1491,7 @@ async def _gather_materials(
             message=turn.message_for_prompt,
             selected_text=turn.selected_text,
             screen_lecture_id=turn.context_lecture_id,
+            screen_course_id=turn.context_course_id,
             recent_conversation=history,
             today=now.date(),
             student_map=student_map or StudentMap(),
@@ -1689,7 +1727,8 @@ def _build_answer_messages(
         "REFERENCED_SOURCES": referenced_sources or "",
     })
     screen_context = format_screen_context(
-        turn.lecture_label, turn.selected_text, turn.screen_page, reply_quote=turn.reply_quote)
+        turn.lecture_label, turn.selected_text, turn.screen_page, reply_quote=turn.reply_quote,
+        course_label=getattr(turn, "course_label", None))
     # 資料は毎ターン変わりうる(添付・外す・全文で渡す1本の入れ替わり)ので最後のメッセージに置く。
     # 確かめ役(chat_reasoning)はsystemだけ差し替えるので、同じ資料が見える
     attachments_text = render_for_answer(turn.attachments, attachment_visibility or plan_visibility(turn.attachments))

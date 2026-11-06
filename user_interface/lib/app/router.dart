@@ -442,7 +442,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                     .noteCourse, // 'c/:courseId' -> /home/notes/c/:courseId
                 builder: (context, state) {
                   final id = state.pathParameters['courseId'];
-                  return CoursePage(courseId: id);
+                  // コースの画面から開いたチャットに、そのコースを伝える(トピックマップは対象外)
+                  return ChatScreenScope(
+                    courseId: id,
+                    child: CoursePage(courseId: id),
+                  );
                 },
                 routes: [
                   // 授業ビューワー: /home/notes/c/:courseId/v/:lectureId

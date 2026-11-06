@@ -1087,6 +1087,7 @@
   "aiChatSuggestionSelection": "これをもっとかみ砕いて説明して",
   "aiChatSourcesLabel": "出典",
   "aiChatAttachedLecture": "{title}について",
+  "aiChatAttachedCourse": "{title}について",
   "aiChatRemoveAttachment": "外す",
   "aiChatThreadsEmpty": "まだ会話はありません。",
   "aiChatThreadUntitled": "新しい会話",

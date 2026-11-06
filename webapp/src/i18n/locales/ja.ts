@@ -889,6 +889,7 @@ export const ja: Record<keyof typeof en, string> = {
   chatSuggestionSelection: 'これをもっとかみ砕いて説明して',
   chatSourcesLabel: '出典',
   chatAttachedLecture: '{title}について',
+  chatAttachedCourse: '{title}について',
   chatRemoveAttachment: '外す',
   chatThreadsEmpty: 'まだ会話はありません。',
   chatThreadUntitled: '新しい会話',

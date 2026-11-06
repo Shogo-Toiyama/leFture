@@ -353,6 +353,8 @@ class NavigatorInput:
     previous_turn_refs: list[dict] = field(default_factory=list)
     # 画面で見ているトピックの番号(Deep Notes・復習カードのページ)
     screen_topic_index: Optional[int] = None
+    # コースの画面から送ったときのコース(講義を見ているときはNone。screen_lecture_idからコースが分かる)
+    screen_course_id: Optional[str] = None
     # 見ているページ(chat_screen.py)の名前と抜粋。全文は回答役にだけ渡す
     screen_page_title: Optional[str] = None
     screen_page_excerpt: Optional[str] = None
@@ -1082,6 +1084,11 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
         topic = nav_input.screen_topic_handle()
         screen.append(f"The student is viewing {m.describe(screen_handle)}"
                       + (f", on topic {topic}" if topic else ""))
+    else:
+        course_handle = m.course_handle(nav_input.screen_course_id)
+        course = m.course(course_handle) if course_handle else None
+        if course:
+            screen.append(f"The student is viewing the course page of {course.handle} ({course.title})")
     if nav_input.screen_page_title:
         screen.append(f"Open page: {nav_input.screen_page_title}. The answerer already sees its full text"
                       " (excerpt below; the selected part, if any, is in <selected>), so never fetch it again.")

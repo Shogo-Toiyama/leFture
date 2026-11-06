@@ -110,6 +110,7 @@ Never fetch what the answerer already sees or what an earlier lap already fetche
   1. Selected text in `<screen>` first.
   2. Topic just discussed in `<recent_conversation>`.
   3. Page open in `<screen>`.
+- **Course on Screen**: When `<screen>` shows a course page and the student does not name another course, the request is about that course: search within it and open its handles first.
 - **Stop As Soon As Answered (`enough_now`)**: Choose `enough_now` the moment the fetched results contain the answer. Do NOT fetch surrounding topics, transcripts, or extra web pages to "confirm" or "add padding".
 
 ## 5. QUERIES

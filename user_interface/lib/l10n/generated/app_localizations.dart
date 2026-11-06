@@ -6554,6 +6554,12 @@ abstract class AppLocalizations {
   /// **'About {title}'**
   String aiChatAttachedLecture(String title);
 
+  /// AI chat. Chip shown when the chat was opened from a course page; the chat will be about that course. {title} is the course name.
+  ///
+  /// In en, this message translates to:
+  /// **'About {title}'**
+  String aiChatAttachedCourse(String title);
+
   /// AI chat. Ported from the web app string "chatRemoveAttachment".
   ///
   /// In en, this message translates to:

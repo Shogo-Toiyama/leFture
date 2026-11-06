@@ -73,6 +73,7 @@ class ChatComposer extends ConsumerStatefulWidget {
     this.selectedText,
     this.onClearSelectedText,
     this.lectureTitle,
+    this.courseTitle,
     this.onDetachLecture,
     this.selectedAttachments = const [],
     this.onUnselectAttachment,
@@ -113,6 +114,9 @@ class ChatComposer extends ConsumerStatefulWidget {
 
   /// 話題にしている講義(外せる)。
   final String? lectureTitle;
+
+  /// 話題にしているコース(コースの画面から開いたとき。外せる。講義と同じ×で外す)。
+  final String? courseTitle;
   final VoidCallback? onDetachLecture;
 
   /// 全文で読んでいる資料(チップで見せ、×で全文で読むのをやめられる)。
@@ -771,6 +775,15 @@ class _ChatComposerState extends ConsumerState<ChatComposer> {
             colors: c,
             icon: Icons.menu_book_outlined,
             text: l10n.aiChatAttachedLecture(widget.lectureTitle!),
+            tooltip: l10n.aiChatDismiss,
+            onClose: widget.onDetachLecture,
+            tint: c.accent,
+          ),
+        if (widget.lectureTitle == null && widget.courseTitle != null)
+          _Bar(
+            colors: c,
+            icon: Icons.school_outlined,
+            text: l10n.aiChatAttachedCourse(widget.courseTitle!),
             tooltip: l10n.aiChatDismiss,
             onClose: widget.onDetachLecture,
             tint: c.accent,

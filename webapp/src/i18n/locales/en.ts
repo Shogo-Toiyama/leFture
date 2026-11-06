@@ -891,6 +891,7 @@ export const en = {
   chatSuggestionSelection: 'Explain this in simpler words',
   chatSourcesLabel: 'Sources',
   chatAttachedLecture: 'About {title}',
+  chatAttachedCourse: 'About {title}',
   chatRemoveAttachment: 'Remove',
   chatThreadsEmpty: 'No conversations yet.',
   chatThreadUntitled: 'New conversation',

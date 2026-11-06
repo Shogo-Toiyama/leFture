@@ -5970,6 +5970,8 @@ class ChatScreenRef(BaseModel):
 
 class ChatMessageContext(BaseModel):
     lecture_id: Optional[str] = None
+    # コースの画面から送ったときのコース(講義を見ているときは送らない。講義からコースが分かるため)
+    course_id: Optional[str] = None
     selected_text: Optional[str] = None
     # 選択の直前・直後の文字(ページの中で選択箇所を特定するためだけに使う)
     selection_before: Optional[str] = None
@@ -6101,6 +6103,7 @@ async def post_chat_message(payload: ChatMessageRequest, request: Request):
             uid, thread_id, client_message_id, payload.content,
             context_lecture_id, context.selected_text, timer, payload.timezone,
             screen_ref=screen_ref,
+            context_course_id=_parse_uuid_or_422(context.course_id, "context.course_id"),
             selection_before=context.selection_before,
             selection_after=context.selection_after,
             attachments=attachments,

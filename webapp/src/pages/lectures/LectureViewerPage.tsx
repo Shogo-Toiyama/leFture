@@ -7,6 +7,7 @@ import { useLectureTopics } from '../../hooks/useLectureTopics';
 import { useAnnouncements } from '../../hooks/useAnnouncements';
 import { useKeywords } from '../../hooks/useKeywords';
 import { useCreditSummary } from '../../hooks/useCreditSummary';
+import { useChatScreen } from '../../context/ChatPanelContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import type { TranslationKey } from '../../i18n/translations';
 import { startAnalysis, InsufficientCreditsError } from '../../lib/upload';
@@ -57,6 +58,9 @@ export const LectureViewerPage: React.FC = () => {
   const { course } = useCourse(lecture?.course_id);
   const { topics } = useLectureTopics(lectureId);
   const { funFacts, setFunFacts } = useFunFacts(lectureId);
+  // 講義ページに出ている Fun Fact(1講義に1つ)を、見ているページとしてチャットに伝える
+  // (「このファンファクト」と聞かれたとき、回答役がその本文を読めるように)
+  useChatScreen(funFacts[0] ? { kind: 'fun_fact', id: funFacts[0].id } : null);
   const { announcements, setAnnouncements } = useAnnouncements(lectureId);
   const { keywords, setKeywords } = useKeywords(lectureId);
   const { summary } = useCreditSummary(false);

@@ -114,6 +114,8 @@ export interface ChatAttachmentNotice {
 
 export interface ChatMessageContext {
   lecture_id?: string;
+  /** コースの画面から送ったときのコース(講義があるときは送らない。講義からコースが分かる) */
+  course_id?: string;
   selected_text?: string;
   selection_before?: string;
   selection_after?: string;

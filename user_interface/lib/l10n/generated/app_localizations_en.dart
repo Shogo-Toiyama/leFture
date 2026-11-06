@@ -3753,6 +3753,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String aiChatAttachedCourse(String title) {
+    return 'About $title';
+  }
+
+  @override
   String get aiChatRemoveAttachment => 'Remove';
 
   @override

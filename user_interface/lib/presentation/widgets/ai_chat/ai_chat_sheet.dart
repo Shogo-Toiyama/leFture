@@ -56,6 +56,8 @@ Future<void> showAiChatSheet(
   String? threadId,
   String? lectureId,
   String? lectureTitle,
+  String? courseId,
+  String? courseTitle,
   ChatSelection? selection,
   ChatScreenRef? screen,
   VoidCallback? onOpenAiSettings,
@@ -73,6 +75,8 @@ Future<void> showAiChatSheet(
                 threadId: threadId,
                 lectureId: lectureId,
                 lectureTitle: lectureTitle,
+                courseId: courseId,
+                courseTitle: courseTitle,
                 selection: selection,
                 screen: screen,
                 onOpenAiSettings: onOpenAiSettings,
@@ -91,6 +95,8 @@ Future<void> showAiChatSheet(
       threadId: threadId,
       lectureId: lectureId,
       lectureTitle: lectureTitle,
+      courseId: courseId,
+      courseTitle: courseTitle,
       selection: selection,
       screen: screen,
       onOpenAiSettings: onOpenAiSettings,
@@ -156,6 +162,8 @@ class AiChatSheet extends ConsumerStatefulWidget {
     this.threadId,
     this.lectureId,
     this.lectureTitle,
+    this.courseId,
+    this.courseTitle,
     this.selection,
     this.screen,
     this.onOpenAiSettings,
@@ -166,6 +174,8 @@ class AiChatSheet extends ConsumerStatefulWidget {
   final String? threadId;
   final String? lectureId;
   final String? lectureTitle;
+  final String? courseId;
+  final String? courseTitle;
   final ChatSelection? selection;
   final ChatScreenRef? screen;
 
@@ -188,6 +198,9 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
   late ChatWorld _world = widget.world;
   String? _lectureId;
   String? _lectureTitle;
+  // コースの画面から開いたときのコース(講義を見ているときはnull)。外すのは講義のチップと同じフラグ
+  String? _courseId;
+  String? _courseTitle;
   ChatScreenRef? _screen;
   bool _lectureDetached = false;
 
@@ -210,6 +223,8 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
     _selection = widget.selection;
     _lectureId = widget.lectureId;
     _lectureTitle = widget.lectureTitle;
+    _courseId = widget.courseId;
+    _courseTitle = widget.courseTitle;
     _screen = widget.screen;
     _handle.bind(
       animateTo: _animateTo,
@@ -367,6 +382,7 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
     _screen = page.screen;
     // 宇宙の画面ならダーク、紙の画面(Deep Notesなど)ならライトに切り替わる
     _world = page.world;
+    _onCourseChanged(page);
     if (page.lectureId == _lectureId) {
       if (mounted) setState(() {});
       return;
@@ -387,6 +403,29 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
       setState(() {
         _lectureId = id;
         _lectureTitle = title;
+      });
+    }());
+  }
+
+  /// コースの画面に移った・離れたとき、コースのチップを追従させる(講義を見ているときはコースを付けない)。
+  void _onCourseChanged(ChatPageContext page) {
+    final id = page.lectureId == null ? page.courseId : null;
+    if (id == _courseId) return;
+    setState(() {
+      _courseId = null;
+      _courseTitle = null;
+      _lectureDetached = false;
+    });
+    if (id == null) return;
+    unawaited(() async {
+      final title = await chatCourseTitle(ref, id);
+      if (!mounted || title == null) return;
+      // 調べている間にまたページが移っていたら、捨てる
+      final now = ref.read(chatPageContextProvider);
+      if (now.lectureId != null || now.courseId != id) return;
+      setState(() {
+        _courseId = id;
+        _courseTitle = title;
       });
     }());
   }
@@ -572,6 +611,8 @@ class _AiChatSheetState extends ConsumerState<AiChatSheet>
                           controller: _controller,
                           lectureId: lectureId,
                           lectureTitle: _lectureTitle,
+                          courseId: _lectureDetached ? null : _courseId,
+                          courseTitle: _courseTitle,
                           onDetachLecture: () =>
                               setState(() => _lectureDetached = true),
                           selection: _selection,

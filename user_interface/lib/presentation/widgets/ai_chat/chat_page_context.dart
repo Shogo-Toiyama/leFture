@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/domain/entities/chat.dart';
 import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
@@ -18,6 +19,7 @@ class ChatPageContext {
     this.world = ChatWorld.universe,
     this.screen,
     this.lectureId,
+    this.courseId,
   });
 
   /// 画面の世界。宇宙の画面はダーク、Deep Notesなど紙の画面はライトのシートが開く。
@@ -28,6 +30,9 @@ class ChatPageContext {
 
   /// 話題にする講義。
   final String? lectureId;
+
+  /// 話題にするコース(コースの画面。講義を見ているときは講義からコースが分かるので付けない)。
+  final String? courseId;
 }
 
 /// 重なった画面の登録の一覧。いちばん上(最後に登録した画面)が今の画面。上の画面が閉じると、
@@ -73,12 +78,19 @@ class ChatScreenScope extends ConsumerStatefulWidget {
     this.world = ChatWorld.universe,
     this.screen,
     this.lectureId,
+    this.courseId,
+    this.active = true,
   });
 
   final Widget child;
   final ChatWorld world;
   final ChatScreenRef? screen;
   final String? lectureId;
+  final String? courseId;
+
+  /// falseなら登録しない(横にスワイプする講義のページで、表示中のページだけを登録するため。
+  /// 包む・外すを切り替えると中身の状態が作り直されるので、包んだまま登録だけを切り替える)。
+  final bool active;
 
   @override
   ConsumerState<ChatScreenScope> createState() => _ChatScreenScopeState();
@@ -93,6 +105,7 @@ class _ChatScreenScopeState extends ConsumerState<ChatScreenScope> {
     world: widget.world,
     screen: widget.screen,
     lectureId: widget.lectureId,
+    courseId: widget.courseId,
   );
 
   @override
@@ -113,6 +126,8 @@ class _ChatScreenScopeState extends ConsumerState<ChatScreenScope> {
     final changed =
         old.world != widget.world ||
         old.lectureId != widget.lectureId ||
+        old.courseId != widget.courseId ||
+        old.active != widget.active ||
         old.screen?.kind != widget.screen?.kind ||
         old.screen?.id != widget.screen?.id ||
         old.screen?.topicNumber != widget.screen?.topicNumber;
@@ -123,8 +138,13 @@ class _ChatScreenScopeState extends ConsumerState<ChatScreenScope> {
   void _scheduleRegister() {
     scheduleMicrotask(() {
       if (!mounted) return;
-      _stack.register(_token, _value);
-      _registered = true;
+      if (widget.active) {
+        _stack.register(_token, _value);
+        _registered = true;
+      } else if (_registered) {
+        _stack.unregister(_token);
+        _registered = false;
+      }
     });
   }
 
@@ -181,6 +201,20 @@ Future<String?> chatLectureTitle(WidgetRef ref, String? lectureId) async {
   }
 }
 
+/// チャットのチップに出すコース名。手元のコース一覧から引く(無ければnull)。
+Future<String?> chatCourseTitle(WidgetRef ref, String? courseId) async {
+  if (courseId == null) return null;
+  try {
+    final courses = await ref.read(courseListProvider.future);
+    for (final c in courses) {
+      if (c.id == courseId) return c.displayTitle;
+    }
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
 /// 今の画面の情報つきでチャットのシートを開く。[selection]は「Ask」で添える選択。
 Future<void> openAiChat(
   BuildContext context,
@@ -193,12 +227,17 @@ Future<void> openAiChat(
   final page = ref.read(chatPageContextProvider);
   final lectureId = page.lectureId;
   final lectureTitle = await chatLectureTitle(ref, lectureId);
+  // 講義を見ているときはコースを付けない(講義からコースが分かる)
+  final courseId = lectureId == null ? page.courseId : null;
+  final courseTitle = await chatCourseTitle(ref, courseId);
   if (!context.mounted) return;
   await showAiChatSheet(
     context,
     world: page.world,
     lectureId: lectureTitle == null ? null : lectureId,
     lectureTitle: lectureTitle,
+    courseId: courseTitle == null ? null : courseId,
+    courseTitle: courseTitle,
     selection: selection,
     screen: page.screen,
     onOpenAiSettings: onOpenAiSettings,

@@ -373,6 +373,7 @@ class ChatConversation extends _$ChatConversation {
     // 画面のチップ用に、添付・指した資料と渡し方を残す(サーバーも同じものを保存する)
     final sentContext = ChatMessageContext(
       lectureId: context.lectureId,
+      courseId: context.courseId,
       selectedText: context.selectedText,
       selectionBefore: context.selectionBefore,
       selectionAfter: context.selectionAfter,
