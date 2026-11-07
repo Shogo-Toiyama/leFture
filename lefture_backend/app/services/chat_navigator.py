@@ -30,6 +30,7 @@
 import asyncio
 import re
 import time
+import unicodedata
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Awaitable, Callable, Optional, Union
@@ -266,6 +267,79 @@ def parse_handle(handle: str) -> Optional[ParsedHandle]:
         b = int(sid_b) if sid_b is not None else a
         return ParsedHandle("transcript", course, lecture, sid_start=min(a, b), sid_end=max(a, b))
     return ParsedHandle("lecture", course, lecture)
+
+
+# --- 探索役が書いた呼び名を、正しい形に直す ---
+# handleは自由な文字列(build_schema)なので、見た目が同じでも形の違う書き方が来る(2026-11-06に
+# "C4/L6-L7" が handle_not_openable で捨てられ、その周が丸ごと無駄になった。正しくは "C4/L6-7")。
+# 正しい形の呼び名はそのまま返す(何度通しても同じ)。直せないものは、そのあとの検証で今までどおり捨てる。
+_HANDLE_DASH_TABLE = str.maketrans({ch: "-" for ch in "‐‑‒–—―−﹣ー〜~"})  # NFKCの後(全角の－～は-~になる)
+_HANDLE_WRAP_CHARS = "`'\"“”‘’「」『』[](){}<>⟦⟧*"
+_HANDLE_RANGE_WORD_RE = re.compile(r"(?<=\d)\s*(?:\.{2,3}|…|-|\bto\b|\bthrough\b|\bthru\b|から)\s*(?=[A-Za-z]?\s*\d)",
+                                   re.IGNORECASE)
+# 1つの区切り: 文字+番号、範囲なら2つめの番号の前に同じ文字があってもよい(L6-L7 / s10-s20)
+_HANDLE_SEGMENT_RE = re.compile(r"^([A-Za-z])0*(\d+)(?:-(?:([A-Za-z]))?0*(\d+))?$")
+_HANDLE_WORD_PREFIX = {"course": "C", "lecture": "L", "lec": "L", "topic": "T"}
+_HANDLE_SUB_WORDS = {
+    "topic": "topics", "topics": "topics",
+    "keyword": "keywords", "keywords": "keywords",
+    "announcement": "announcements", "announcements": "announcements",
+    "card": "cards", "cards": "cards", "reviewcard": "cards", "reviewcards": "cards",
+}
+# 同じコースを2回書いた範囲(C4/L6-C4/L7)
+_HANDLE_REPEATED_COURSE_RE = re.compile(r"^(C\d+)/L(\d+)-(C\d+)/L(\d+)(/.*)?$")
+
+
+def _normalize_handle_segment(seg: str, index: int, segs: list[str]) -> str:
+    low = seg.lower().replace("_", "").replace("-", "") if not any(c.isdigit() for c in seg) else seg.lower()
+    if low in _HANDLE_SUB_WORDS:
+        return _HANDLE_SUB_WORDS[low]
+    for word, letter in _HANDLE_WORD_PREFIX.items():
+        if low.startswith(word) and low[len(word):].lstrip()[:1].isdigit():
+            seg = letter + seg[len(word):].strip()
+            break
+    m = _HANDLE_SEGMENT_RE.match(seg)
+    if not m:
+        return seg
+    letter, a, letter_b, b = m.groups()
+    if letter_b is not None and letter_b.lower() != letter.lower():
+        return seg  # L6-C4 のような別の文字の範囲は直さない
+    # C{n}/L{m}/s{a}-{b}(文字起こしの文)だけは小文字のs。他(A1/S2・U1/S2・P1/S2・S3)は大文字
+    is_sentence = (index == 2 and letter.lower() == "s"
+                   and segs[0][:1].upper() == "C" and segs[1][:1].upper() == "L")
+    letter = "s" if is_sentence else letter.upper()
+    if b is None:
+        return f"{letter}{int(a)}"
+    lo, hi = sorted((int(a), int(b)))
+    if is_sentence and lo == hi:
+        return f"{letter}{lo}"  # range_handleと同じく、1文だけの範囲は s{a}
+    return f"{letter}{lo}-{hi}"
+
+
+def normalize_handle(handle: Any) -> str:
+    """探索役が書いた呼び名を正しい形にする(全角・ダッシュの種類・大文字小文字・前のゼロ・空白・引用符・
+    範囲の2つめの文字の繰り返し(L6-L7)・"L6 to L7"・単数形(topic/card)・後ろに付けた名前など)。"""
+    if not isinstance(handle, str):
+        return ""
+    h = unicodedata.normalize("NFKC", handle).translate(_HANDLE_DASH_TABLE).strip()
+    h = re.sub(r"^(?:open|handle)(?:\s*[:=]\s*|\s+)", "", h, flags=re.IGNORECASE)
+    h = h.strip().strip(_HANDLE_WRAP_CHARS).strip()
+    h = re.split(r"[(\[{<「『:]", h, maxsplit=1)[0]  # "C4/L6(10月13日)" / "C4/L6: Haskell" の後ろを捨てる
+    h = re.sub(r"\s*([/\\])\s*", "/", h)
+    h = _HANDLE_RANGE_WORD_RE.sub("-", h)
+    h = re.sub(r"(?<=[A-Za-z])\s+(?=\d)", "", h)  # "Lecture 6" / "L 6"
+    h = h.split()[0] if h.split() else ""  # 後ろに付けた講義名や説明("C4/L6 (Oct 13)")は捨てる
+    h = h.strip(_HANDLE_WRAP_CHARS + ".,;:/")
+    if not h:
+        return ""
+    segs = [s for s in h.split("/") if s]
+    segs = [_normalize_handle_segment(s, i, segs) for i, s in enumerate(segs)]
+    h = "/".join(segs)
+    m = _HANDLE_REPEATED_COURSE_RE.match(h)
+    if m and m.group(1) == m.group(3):
+        lo, hi = sorted((int(m.group(2)), int(m.group(4))))
+        h = f"{m.group(1)}/L{lo}-{hi}{m.group(5) or ''}"
+    return h
 
 
 def range_handle(lecture_handle: str, a: int, b: int) -> str:
@@ -959,6 +1033,13 @@ def validate_operations(
         if op not in ops and op in targets:
             raw = {**raw, "op": "find", "target": raw.get("target") or op}
             op = "find"
+        # 呼び名の書き方の揺れ(L6-L7・全角・小文字など)を正しい形に直してから検証する(normalize_handle)
+        fixed = {k: normalize_handle(raw[k]) for k in ("handle", "within")
+                 if isinstance(raw.get(k), str) and raw[k] and normalize_handle(raw[k]) != raw[k]}
+        if fixed:
+            print(f"🔧 [chat] navigator handle normalized: "
+                  + ", ".join(f"{raw[k]!r} -> {v!r}" for k, v in fixed.items()))
+            raw = {**raw, **fixed, "as_written": {k: raw[k] for k in fixed}}
         # grounds(根拠の種類)は、必要度と出どころ(例: implied:class+web)を入れて記録だけに使う。
         common = dict(grounds=source_label, grounds_quote="", quote_ok=True)
         req: Optional[Request] = None
