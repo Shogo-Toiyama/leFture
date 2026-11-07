@@ -81,7 +81,9 @@ from app.services.chat_attachments import (
     Section,
     Visibility,
     answer_image_attachments,
+    answer_mentions,
     assign_handles,
+    attachment_handles_to_titles,
     estimate_tokens,
     history_marker,
     mention_ids,
@@ -429,6 +431,13 @@ def merge_search_results(result_lists: list[list[dict]], top_k: int = RETRIEVAL_
     return ranked[:top_k]
 
 
+def build_answer_history(raw_rows: list[dict], attachments: list[Attachment]) -> list[Message]:
+    """回答役に渡す履歴。生徒の本文の資料の印は名前だけにする(呼び名A1は入れない。answer_mentions)。"""
+    rows = [{**r, "content": answer_mentions(r.get("content") or "", attachments)} if r.get("role") == "user" else r
+            for r in raw_rows]
+    return build_history_messages(rows, RAW_MAX_TURNS, None, _attachment_titles_by_message(attachments))
+
+
 def build_history_messages(
     rows: list[dict],
     max_turns: int = RAW_MAX_TURNS,
@@ -662,6 +671,15 @@ class PreparedTurn:
         current = render_mentions(self.content, self.attachments).strip()
         if self.carried_messages:
             stopped = [render_mentions(c, self.attachments).strip() for c in self.carried_messages]
+            return join_after_stop([t for t in stopped if t], current or ATTACHMENT_ONLY_MESSAGE)
+        return current or ATTACHMENT_ONLY_MESSAGE
+
+    @property
+    def message_for_answer(self) -> str:
+        """回答役に渡す本文。資料の印は名前だけにする(呼び名A1は探索役の目印で、生徒には見えない。answer_mentions)。"""
+        current = answer_mentions(self.content, self.attachments).strip()
+        if self.carried_messages:
+            stopped = [answer_mentions(c, self.attachments).strip() for c in self.carried_messages]
             return join_after_stop([t for t in stopped if t], current or ATTACHMENT_ONLY_MESSAGE)
         return current or ATTACHMENT_ONLY_MESSAGE
 
@@ -1634,7 +1652,7 @@ def format_student_message_for_answer(turn: PreparedTurn) -> str:
     テキスト選択(Ask AI)や返信引用がある場合、その対象を動的ラベル([Selected text from ...]:)で
     本文の直前に明示して、モデルの第一アテンションが確実に選択対象へ向くようにする。
     """
-    raw_message = turn.message_for_prompt
+    raw_message = turn.message_for_answer
     prefix_parts = []
 
     if turn.reply_quote:
@@ -1750,8 +1768,9 @@ def _build_answer_messages(
         "AI_CODE_RULE": ai_code_rule,
         "SCREEN_CONTEXT": screen_context,
         "CURRENT_TIME": current_time_str,
-        "USER_GOAL": decision.user_goal or "",
-        "RETRIEVAL_REASONING": retrieval_reasoning or "",
+        # 振り分け役・探索役のメモの中の資料の呼び名(A1)は名前に直す(回答役には呼び名を渡さないため)
+        "USER_GOAL": attachment_handles_to_titles(decision.user_goal or "", turn.attachments),
+        "RETRIEVAL_REASONING": attachment_handles_to_titles(retrieval_reasoning or "", turn.attachments),
         # 探索役が開こうとして読めなかったリンク(ログインが要る授業サイトなど)
         "LINK_NOTES": "\n".join(f"- {url}: {reason}" for url, reason in link_failures or []),
         "REPLY_LANGUAGE": decision.reply_language,
@@ -2304,7 +2323,9 @@ async def _run_turn_steps(
         turn.attachments = assign_handles(turn.attachments)
         new_att_ids = {r["id"] for r in turn.new_attachment_rows}
         attachment_visibility = plan_visibility(turn.attachments, turn.mentions, new_att_ids)
-        # 履歴の本文の資料の印も、このターンの呼び名に直す(外した資料は [removed material])
+        # 履歴の本文の資料の印も、このターンの呼び名に直す(外した資料は [removed material])。
+        # 回答役には呼び名を入れず名前だけにした履歴を別に作る(answer_mentions)ので、直す前の行を取っておく
+        raw_history_rows = turn.history_rows
         turn.history_rows = [{**r, "content": render_mentions(r.get("content") or "", turn.attachments)}
                              if r.get("role") == "user" else r for r in turn.history_rows]
         # 選択中の画像の資料は、画像そのものも回答役に渡す。振り分け役・探索役と並行で読み込んでおく
@@ -2319,6 +2340,7 @@ async def _run_turn_steps(
 
         history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, None,
                                          _attachment_titles_by_message(turn.attachments))
+        answer_history = build_answer_history(raw_history_rows, turn.attachments)
         memory = ConversationMemory.from_blocks(turn.summary_blocks, turn.summary_level2)
         # 地図(コース一覧)とプランはprepare_chat_turnで事前チェックと並行に読み始めている。
         # 無い場合(テスト等で直接PreparedTurnを作ったとき)だけここで読む。
@@ -2444,7 +2466,7 @@ async def _run_turn_steps(
             retrieval_reasoning = getattr(last_lap, "reasoning", "") if hasattr(last_lap, "reasoning") else (last_lap.get("reasoning", "") if isinstance(last_lap, dict) else "")
 
         messages = _build_answer_messages(
-            turn, decision, memory, history, profile, materials,
+            turn, decision, memory, answer_history, profile, materials,
             student_memos=student_memos, open_questions=open_questions,
             attachment_visibility=attachment_visibility,
             link_failures=navigation.link_failures if navigation else None,

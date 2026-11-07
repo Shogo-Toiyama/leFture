@@ -1759,17 +1759,21 @@ async def chat_section_owner_handle(
     return f"{p_handle}/S{section_number}" if p_handle else None
 
 
-def _section_list_lines(sections: list[tuple[str, str, list[str]]]) -> str:
-    """(呼び名, タイトル, 箇条書き)の一覧。節は要約なので箇条書きまで見せる(3-14 ④)。"""
-    return "\n".join(f"{h} {title}" + "".join(f"\n  - {b}" for b in bullets) for h, title, bullets in sections) or "(No sections.)"
+def _section_list_lines(sections: list[tuple[str, str, list[str]]], labels: bool = True) -> str:
+    """(呼び名, タイトル, 箇条書き)の一覧。節は要約なので箇条書きまで見せる(3-14 ④)。
+    labels=False は回答役に渡す本文(参照資料)用で、呼び名を付けない(生徒には見えない目印なので)。"""
+    return "\n".join((f"{h} {title}" if labels else f"- {title}") + "".join(f"\n  - {b}" for b in bullets)
+                     for h, title, bullets in sections) or "(No sections.)"
 
 
-def _turn_list_lines(turns: list[dict], prefix: str) -> str:
+def _turn_list_lines(turns: list[dict], prefix: str, labels: bool = True) -> str:
+    """往復の一覧。labels=False は回答役に渡す本文(参照資料)用で、呼び名(S2/T3など)を付けない。"""
     lines = []
     for t in turns:
         user = re.sub(r"\s+", " ", t["user_content"])[:CHAT_TURN_LIST_USER_CHARS]
         assistant = re.sub(r"\s+", " ", t["assistant_content"])[:CHAT_TURN_LIST_ASSISTANT_CHARS]
-        lines.append(f"{prefix}/T{t['number']} Student: {user} | Assistant: {assistant}")
+        lines.append(f"{prefix}/T{t['number']} Student: {user} | Assistant: {assistant}" if labels
+                     else f"- Student: {user} | Assistant: {assistant}")
     return "\n".join(lines) if lines else "(No turns.)"
 
 
@@ -1789,7 +1793,8 @@ async def chat_open_handle(handle: str, nav_input: NavigatorInput, chat_source: 
         return Opened(
             handle=handle, text=f"Section {handle}: {section.title}\n{body}",
             material=Material(key=f"chat_section:{nav_input.current_thread_id}:{parsed.number}", kind="chat_section",
-                              label=f"This conversation / {section.title}", content=body,
+                              label=f"This conversation / {section.title}",
+                              content=_turn_list_lines(turns, handle, labels=False),
                               source_type="chat_turn", thread_id=nav_input.current_thread_id,
                               metadata={"thread_id": nav_input.current_thread_id, "section_handle": parsed.number}, handle=handle),
             surfaced=[f"{handle}/T{t['number']}" for t in turns],
@@ -1801,11 +1806,12 @@ async def chat_open_handle(handle: str, nav_input: NavigatorInput, chat_source: 
         if group is None:
             return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
         children = [c for c in (cm.section(h) for h in group.children) if c]
-        body = _section_list_lines([(c.handle, c.title, c.bullets) for c in children])
+        rows = [(c.handle, c.title, c.bullets) for c in children]
+        body = _section_list_lines(rows)
         return Opened(
             handle=handle, text=f"Condensed part {handle}: {group.title}\nSections:\n{body}",
             material=Material(key=f"chat_group:{nav_input.current_thread_id}:{parsed.number}", kind="chat_thread",
-                              label=f"This conversation / {group.title}", content=body,
+                              label=f"This conversation / {group.title}", content=_section_list_lines(rows, labels=False),
                               source_type="chat_turn", thread_id=nav_input.current_thread_id,
                               metadata={"thread_id": nav_input.current_thread_id}, handle=handle),
             surfaced=[c.handle for c in children],
@@ -1820,11 +1826,12 @@ async def chat_open_handle(handle: str, nav_input: NavigatorInput, chat_source: 
             return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
         by_number = {sec["handle"]: sec for sec in await chat_source.thread_sections(p_ref.id)}
         children = [by_number[c] for c in group["children"] if c in by_number]
-        body = _section_list_lines([(f"{parsed.prefix}/S{c['handle']}", c["title"], c["bullets"]) for c in children])
+        rows = [(f"{parsed.prefix}/S{c['handle']}", c["title"], c["bullets"]) for c in children]
+        body = _section_list_lines(rows)
         return Opened(
             handle=handle, text=f"Condensed part {handle}: {group['title']} (in {p_ref.title})\nSections:\n{body}",
             material=Material(key=f"chat_group:{p_ref.id}:{parsed.sub_group}", kind="chat_thread",
-                              label=f"{p_ref.title} / {group['title']}", content=body,
+                              label=f"{p_ref.title} / {group['title']}", content=_section_list_lines(rows, labels=False),
                               source_type="chat_turn", thread_id=p_ref.id, metadata={"thread_id": p_ref.id}, handle=handle),
             surfaced=[f"{parsed.prefix}/S{c['handle']}" for c in children],
         )
@@ -1839,24 +1846,29 @@ async def chat_open_handle(handle: str, nav_input: NavigatorInput, chat_source: 
         folded_numbers = {n for s in own_sections for n in s["turns"]}
         trailing = [t for t in turns if t["number"] not in folded_numbers]
         parts = [f"Thread {handle}: {ref.title} ({ref.date or 'no date'})"]
+        # 回答役に渡す本文(参照資料)は呼び名を付けない(生徒には見えない目印なので)。探索役が読む parts と同じ並び
+        answer_parts: list[str] = []
         surfaced = []
         if own_groups:
             # 長いスレッド: 古い部分は2段目の節で見せ、2段目に入った1段目の節は出さない
-            parts.append("Older parts (condensed; open one to see its sections):\n" + _section_list_lines(
-                [(f"{handle}/H{g['handle']}", g["title"], g["bullets"]) for g in own_groups]))
+            rows = [(f"{handle}/H{g['handle']}", g["title"], g["bullets"]) for g in own_groups]
+            parts.append("Older parts (condensed; open one to see its sections):\n" + _section_list_lines(rows))
+            answer_parts.append("Older parts (condensed):\n" + _section_list_lines(rows, labels=False))
             surfaced += [f"{handle}/H{g['handle']}" for g in own_groups]
             covered = {c for g in own_groups for c in g["children"]}
             own_sections = [sec for sec in own_sections if sec["handle"] not in covered]
         if own_sections:
             # 節はタイトルと箇条書き(要約)まで見せる。原文が要るときだけ節・往復を開けばよい(3-14 ④)
-            parts.append("Folded sections:\n" + "\n".join(
-                f"{handle}/S{s['handle']} {s['title']}" + "".join(f"\n  - {b}" for b in s["bullets"])
-                for s in own_sections))
+            rows = [(f"{handle}/S{s['handle']}", s["title"], s["bullets"]) for s in own_sections]
+            parts.append("Folded sections:\n" + _section_list_lines(rows))
+            answer_parts.append("Folded sections:\n" + _section_list_lines(rows, labels=False))
             surfaced += [f"{handle}/S{s['handle']}" for s in own_sections]
         if trailing or not (own_sections or own_groups):
-            parts.append(("Recent turns:\n" if (own_sections or own_groups) else "") + _turn_list_lines(trailing, handle))
+            heading = "Recent turns:\n" if (own_sections or own_groups) else ""
+            parts.append(heading + _turn_list_lines(trailing, handle))
+            answer_parts.append(heading + _turn_list_lines(trailing, handle, labels=False))
         surfaced += [f"{handle}/T{t['number']}" for t in trailing]
-        body = "\n\n".join(parts[1:])
+        body = "\n\n".join(answer_parts)
         return Opened(
             handle=handle, text="\n".join(parts),
             material=Material(key=f"chat_thread:{ref.id}", kind="chat_thread", label=f"{ref.title} / Chat",
@@ -1878,7 +1890,8 @@ async def chat_open_handle(handle: str, nav_input: NavigatorInput, chat_source: 
         return Opened(
             handle=handle, text=f"Section {handle}: {section['title']} (in {p_ref.title})\n{body}",
             material=Material(key=f"chat_section:{p_ref.id}:{parsed.sub_section}", kind="chat_section",
-                              label=f"{p_ref.title} / {section['title']}", content=body,
+                              label=f"{p_ref.title} / {section['title']}",
+                              content=_turn_list_lines(turns, handle, labels=False),
                               source_type="chat_turn", thread_id=p_ref.id,
                               metadata={"thread_id": p_ref.id, "section_handle": parsed.sub_section}, handle=handle),
             surfaced=[f"{handle}/T{t['number']}" for t in turns],

@@ -38,6 +38,8 @@ from app.services.helpers.llm_unified import BillingEngine, StreamState, Unified
 from zoneinfo import ZoneInfo  # noqa: E402
 from app.services import chat_attachments as base_mentions  # noqa: E402
 
+PRODUCTION = [False]
+
 CASES = [
     # 今回の実例: A1(全文)+ C4/C5の目次、推論high。「A1の範囲は」「範囲マップ（A1の番号順）」
     {"id": "A1_full_scope_map", "msg": "13100d37"},
@@ -130,7 +132,8 @@ async def build_case(c, case: dict) -> dict:
     captured["materials"] = await rebuild_materials(c, a_row, user_id, thread_id, when, attachments)
 
     base.VARIANT_PROMPTS.clear()
-    base.VARIANT_PROMPTS.add("chat_answer_prompt.txt")
+    if not PRODUCTION[0]:
+        base.VARIANT_PROMPTS.add("chat_answer_prompt.txt")
     base.HERE = HERE  # use_variant は HERE/prompts を読む
     cs._build_answer_messages = with_materials
     try:
@@ -179,9 +182,16 @@ async def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--cases", default="")
     ap.add_argument("--tag", default="v1")
+    ap.add_argument("--production", action="store_true",
+                    help="v3: 本番のコードそのまま(プロンプトは本番のファイル、回答役の履歴は本番の build_answer_history と同じ answer_mentions)")
     ap.add_argument("--title-mentions", action="store_true",
                     help="v2: 回答役に渡す生徒のメッセージ・履歴の資料の印を [A1 \"…\"] ではなく [Attached material: \"…\"] にする")
     args = ap.parse_args()
+    if args.production:
+        PRODUCTION[0] = True
+        # base.build_case は履歴の印を render_mentions で直してから build_history_messages に渡す。
+        # 本番の回答役の履歴(build_answer_history)は answer_mentions で直すので、それに合わせる
+        base.render_mentions = base_mentions.answer_mentions
     if args.title_mentions:
         def render_mentions_title_only(text, attachments):
             by_id = {a.id: a for a in attachments}
@@ -201,7 +211,10 @@ async def main():
         b = await build_case(c, case)
         sys_v = b["messages_variant"][0].content
         sys_p = b["messages_prod_prompt"][0].content
-        assert "### INTERNAL LABELS" in sys_v and "### INTERNAL LABELS" not in sys_p, "variant prompt not applied"
+        if PRODUCTION[0]:
+            assert sys_v == sys_p and "### INTERNAL LABELS" in sys_p, "production prompt expected"
+        else:
+            assert "### INTERNAL LABELS" in sys_v and "### INTERNAL LABELS" not in sys_p, "variant prompt not applied"
         turn_v = b["messages_variant"][-1].content
         print(f"\n## {case['id']}  user: {b['u_row']['content'][:70]!r}")
         print(f"  {json.dumps(b['info'], ensure_ascii=False, default=str)}")
@@ -209,6 +222,8 @@ async def main():
         print(f"  production materials: {[m.get('handle') for m in (b['a_row'].get('usage') or {}).get('materials') or []]}")
         print(f"  est tokens variant={base.est(b['messages_variant']):,} (prod recorded input={b['info']['prod_input_tokens']})")
         print(f"  student msg as answerer sees it: {turn_v.split('</student_message>')[0][-160:]!r}")
+        all_v = "\n".join(m.content if isinstance(m.content, str) else "" for m in b["messages_variant"])
+        print(f"  'A<n>' handles anywhere in answer input: {re.findall(r'(?<![A-Za-z0-9.])A[0-9](?:/S[0-9]+)?(?![A-Za-z0-9])', all_v)}")
         print(f"  labels in input (turn msg): A={len(re.findall(r'A[0-9]', turn_v))} has_sources={'<sources>' in turn_v and 'No materials' not in turn_v}")
         if args.dry_run:
             continue

@@ -257,6 +257,42 @@ def render_mentions(text: str, attachments: list[Attachment]) -> str:
     return MENTION_RE.sub(sub, text or "")
 
 
+def answer_mentions(text: str, attachments: list[Attachment]) -> str:
+    """
+    回答役に渡す形: 印を資料の名前だけにする(例: [Attached material: "Project #1 spec"])。外した資料は [removed material]。
+    A1などの呼び名は探索役が開くための目印。回答役は資料を引用しないので使わず、生徒にも見えない
+    (2026-11-06、[A1 "…"] を見た回答役が「A1の範囲は」「範囲マップ（A1の番号順）」と書いた)。
+    """
+    by_id = {a.id: a for a in attachments}
+
+    def sub(m: re.Match) -> str:
+        a = by_id.get(m.group(1))
+        return "[removed material]" if a is None else f'[Attached material: "{a.title or "untitled"}"]'
+    return MENTION_RE.sub(sub, text or "")
+
+
+# 探索役・振り分け役が書いた文の中の資料の呼び名(A1 / A1/S2)
+_NOTE_ATTACHMENT_HANDLE_RE = re.compile(r"(?<![A-Za-z0-9])A(\d+)(?:/S(\d+))?(?![A-Za-z0-9])")
+
+
+def attachment_handles_to_titles(text: str, attachments: list[Attachment]) -> str:
+    """
+    探索役の考え・振り分け役のuser_goal(どちらもLLMが書いた、回答役へのメモ)の中の資料の呼び名を名前に直す。
+    回答役には呼び名を渡さないので、このままだと「A1」がどの資料かわからない。このターンに実在する呼び名だけを直す
+    (講義の資料の本文は触らない。そこには「A1」が別の意味で出てきうる)。
+    """
+    by_handle = {a.handle: a for a in attachments if a.handle}
+
+    def sub(m: re.Match) -> str:
+        a = by_handle.get(f"A{m.group(1)}")
+        if a is None:
+            return m.group(0)
+        name = f'"{a.title or "untitled"}"'
+        sec = a.section(int(m.group(2))) if m.group(2) else None
+        return f'{name} (section "{sec.title}")' if sec else name
+    return _NOTE_ATTACHMENT_HANDLE_RE.sub(sub, text or "")
+
+
 def plain_mentions(text: str) -> str:
     """資料の一覧が無いところ(要約・検索の索引・プロフィール)で読む形。印を [attached material] にする。"""
     return MENTION_RE.sub("[attached material]", text or "")
@@ -612,8 +648,16 @@ def _line(a: Attachment) -> str:
     return f"{a.handle}: {a.title or '(untitled)'} ({', '.join(parts)})"
 
 
+def _answer_line(a: Attachment) -> str:
+    """回答役に見せる一覧の1行。呼び名(A1)は入れない(answer_mentionsと同じ理由)。"""
+    parts = [f"{a.char_count:,} characters"]
+    if len(a.sections) > 1:
+        parts.append(f"{len(a.sections)} sections")
+    return f'"{a.title or "untitled"}" ({", ".join(parts)})'
+
+
 def render_for_answer(attachments: list[Attachment], vis: Visibility) -> str:
-    """回答役(と確かめ役)に渡す資料の枠。全文の資料は本文ごと、残りは名前と要約だけ。"""
+    """回答役(と確かめ役)に渡す資料の枠。全文の資料は本文ごと、残りは名前と要約だけ。呼び名(A1)は入れない。"""
     blocks = []
     image_no = 0
     for a in attachments:
@@ -621,14 +665,14 @@ def render_for_answer(attachments: list[Attachment], vis: Visibility) -> str:
             # 画像そのものはこのメッセージに付いている(answer_image_attachmentsと同じ順)。
             # 画像直接入力の精度を損なわず、OCRの誤読による混乱を防ぐため、画像があるときはOCRテキストを重複して渡さない。
             image_no += 1
-            blocks.append(f'<material handle="{a.handle}" title="{a.title}" kind="image">\n'
+            blocks.append(f'<material title="{a.title}" kind="image">\n'
                           f'The image itself is attached to this message (image {image_no}).\n</material>')
         elif vis.is_full(a):
             comp_attr = ' compressed="true"' if a.compressed else ""
-            blocks.append(f'<material handle="{a.handle}" title="{a.title}"{comp_attr}>\n{a.content.strip()}\n</material>')
+            blocks.append(f'<material title="{a.title}"{comp_attr}>\n{a.content.strip()}\n</material>')
     listed = [a for a in attachments if not vis.is_full(a)]
     if listed:
-        lines = [f"- {_line(a)}: {a.summary or '(no summary)'}"
+        lines = [f"- {_answer_line(a)}: {a.summary or '(no summary)'}"
                  + (" (the student refers to this in their message)" if vis.is_mentioned(a) else "")
                  for a in listed]
         blocks.append("Also attached, but not shown in full here: you see only these summaries and the parts in <sources>, "
@@ -645,7 +689,8 @@ def answer_image_attachments(attachments: list[Attachment], vis: Visibility) -> 
 
 def render_ai_code_rule(attachments: list[Attachment]) -> str:
     """AIでコードを書くことを禁止している資料があれば、そのことを回答役に毎ターン明示する文。無ければ空。"""
-    names = [f'{a.handle} "{a.title}"' if a.title else a.handle for a in attachments if a.forbids_ai_code]
+    # 回答役だけに渡す文なので、呼び名(A1)ではなく名前で書く(answer_mentionsと同じ理由)
+    names = [f'"{a.title}"' if a.title else "the attached material" for a in attachments if a.forbids_ai_code]
     if not names:
         return ""
     # 生徒の発言の後ろ(最後に読む位置)に置く。資料の本文の前に置いたときは、全文が見えていると
