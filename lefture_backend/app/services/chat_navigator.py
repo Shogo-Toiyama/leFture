@@ -36,7 +36,7 @@ from datetime import date
 from typing import Any, Awaitable, Callable, Optional, Union
 from urllib.parse import urlparse
 
-from app.services.chat_attachments import Attachment, Visibility, render_for_navigator, split_sections
+from app.services.chat_attachments import Attachment, Visibility, estimate_tokens, render_for_navigator, split_sections
 from app.services.chat_links import Link, LinkPage, render_for_navigator as render_links_for_navigator
 from app.services.chat_lecture_source import LectureSource, first_sentence
 from app.services.chat_map import ChatMap, MapLecture, StudentMap
@@ -63,6 +63,12 @@ NAVIGATOR_MAX_COMPLETION_TOKENS = 3000
 
 MAX_LAPS = 4
 MAX_OPS_PER_LAP = 5
+# 探索役の1周の入力の上限(estimate_tokensの概算)。Haiku 5.5はプロンプトが10万トークンを超えると、その呼び出しの
+# 単価が入力も出力も5倍になる。Claudeの数え方は概算の1.1〜1.4倍(chat_service.ANSWER_MAX_INPUT_ESTIMATEと同じ実測)
+# なので、60,000なら10万に届かない。開いた量は1件ごとに上限があるが、周を重ねた合計には上限が無かったので、
+# 超えそうな周はLLMを呼ばずに、そこまでに集めたもので答える(stop_reason="input_limit")。
+# 本番の最大は58,411(2026-10-29、範囲の予算ができる前)、中央値は約7,000。
+NAVIGATOR_MAX_INPUT_ESTIMATE = 60_000
 MAX_QUERY_CHARS = 200
 
 # 1回の検索で取る件数と、そのうち探索役に見せる件数・断片の長さ
@@ -76,9 +82,12 @@ LECTURE_SUMMARY_CHARS = 2000
 TOPIC_LINE_CHARS = 160
 TOPIC_TEXT_CHARS = 4000
 TRANSCRIPT_CONTEXT_SENTENCES = 1
-TRANSCRIPT_CHARS = 3000
-# 文字起こしの範囲として受け付ける最大の文の数(Deep Noteの引用・検索の当たりは十数文まで)
-TRANSCRIPT_MAX_SENTENCES = 60
+# 文字起こしの範囲を1回開いたときに見せる量(estimate_tokensの概算)。範囲が長くても却下せず、先頭から文の区切りで
+# ここまで入れて、入らなかった続きの範囲を探索役に伝える。2026-11-06に「60文を超えたら却下」+「3,000字で切る(文の途中でも)」
+# から変更(ユーザー判断: 文字数ではなくトークンで切る。最優先は10万トークンの5倍の単価に届かないこと)。
+# 検索のチャンク(3,000字+重なり300字)は、英語で約790、日本語で約3,000(3,689件の実測)。1,000なら英語のチャンクは
+# 丸ごと入り(約4,000字・65文)、日本語は約1,000字。60文の上限では、英語のチャンクの22%が開けなかった。
+TRANSCRIPT_MAX_TOKENS = 1000
 # 日付で引く範囲の上限(日数)
 BY_DATE_MAX_DAYS = 400
 # 範囲の講義をまとめて取るとき(C{n}/L{a}-{b}、C{n}/L{a}-{b}/cards、by_date)に、回答役へ渡す材料の
@@ -1087,8 +1096,6 @@ def validate_operations(
             elif ((handle not in openable and not is_valid_multi_cards)
                   or (parsed is None and parsed_chat is None and not is_web and not is_attachment and not is_link)):
                 reason = "handle_not_openable"
-            elif parsed and parsed.kind == "transcript" and parsed.sid_end - parsed.sid_start + 1 > TRANSCRIPT_MAX_SENTENCES:
-                reason = "transcript_range_too_long"
             else:
                 req = OpenRequest(handle=handle, **common)
         elif op == "by_date":
@@ -1675,22 +1682,59 @@ async def open_handle(
     if not nav_input.can_transcript:
         return Opened(handle=handle, text=f"{handle}: (not available on the student's plan)", material=None)
     sentences = await source.transcript(lec.id)
-    a = parsed.sid_start - TRANSCRIPT_CONTEXT_SENTENCES
-    b = parsed.sid_end + TRANSCRIPT_CONTEXT_SENTENCES
-    picked = [s["text"] for s in sentences if a <= s["sid"] <= b and s["text"]]
-    if not picked:
+    fit = fit_transcript(sentences, parsed.sid_start, parsed.sid_end)
+    if fit is None:
         return Opened(handle=handle, text=f"{handle}: (not found)", material=None)
-    body = " ".join(picked)[:TRANSCRIPT_CHARS]
+    body, shown_end = fit
+    text = f"Transcript {handle} ({course.title} / {lec.title}, {when}):\n{body}"
+    if shown_end < parsed.sid_end:
+        prefix = handle.rsplit("/", 1)[0]
+        rest = f"{prefix}/s{shown_end + 1}" + (f"-{parsed.sid_end}" if parsed.sid_end > shown_end + 1 else "")
+        text += (f"\n(Only {prefix}/s{parsed.sid_start}-{shown_end} fit in one open, which shows about "
+                 f"{TRANSCRIPT_MAX_TOKENS:,} tokens. If you need the rest, open {rest}.)")
+        print(f"✂️ [chat] transcript {handle} clamped to s{parsed.sid_start}-{shown_end} ({TRANSCRIPT_MAX_TOKENS:,} tokens)")
     return Opened(
         handle=handle,
-        text=f"Transcript {handle} ({course.title} / {lec.title}, {when}):\n{body}",
-        material=Material(key=f"transcript:{lec.id}:{parsed.sid_start}-{parsed.sid_end}", kind="transcript",
+        text=text,
+        material=Material(key=f"transcript:{lec.id}:{parsed.sid_start}-{shown_end}", kind="transcript",
                           label=f"{course.title} / {lec.title} ({when}) / Transcript",
                           content=f"Lecture date: {when}\n{body}",
                           source_type="transcript_topic", lecture_id=lec.id, course_id=course.id,
-                          metadata={"sid_start": parsed.sid_start, "sid_end": parsed.sid_end}, handle=handle),
-        ref={"type": "transcript", "lecture_id": lec.id, "sid_start": parsed.sid_start, "sid_end": parsed.sid_end},
+                          metadata={"sid_start": parsed.sid_start, "sid_end": shown_end}, handle=handle),
+        ref={"type": "transcript", "lecture_id": lec.id, "sid_start": parsed.sid_start, "sid_end": shown_end},
     )
+
+
+def fit_transcript(sentences: list[dict], sid_start: int, sid_end: int,
+                   budget: int = TRANSCRIPT_MAX_TOKENS) -> Optional[tuple[str, int]]:
+    """
+    文字起こしの範囲を、文の区切りでbudget(estimate_tokens)に収める。頼まれた範囲の文を先頭から入れ、入りきったら
+    前後1文(話の流れ用)を入れる。(本文, 見せた最後の頼まれた文のsid)を返す。頼まれた文が1つも無ければNone。
+    1文だけでbudgetを超えるときは、その文の頭を切って入れる(頼まれた範囲が何も見えない、を避ける)。
+    """
+    rows = {s["sid"]: s["text"] for s in sentences
+            if sid_start - TRANSCRIPT_CONTEXT_SENTENCES <= s["sid"] <= sid_end + TRANSCRIPT_CONTEXT_SENTENCES and s["text"]}
+    core = [sid for sid in sorted(rows) if sid_start <= sid <= sid_end]
+    if not core:
+        return None
+    shown: list[int] = []
+    for sid in core:
+        if estimate_tokens(" ".join(rows[i] for i in [*shown, sid])) > budget:
+            break
+        shown.append(sid)
+    if not shown:
+        cut = rows[core[0]]
+        while cut and estimate_tokens(cut) > budget:
+            cut = cut[:int(len(cut) * 0.9)]
+        return cut, core[0]
+    if shown[-1] == core[-1]:
+        # 頼まれた範囲が全部入ったときだけ、前後の1文を足す(入るなら)
+        for sid in (sid_start - TRANSCRIPT_CONTEXT_SENTENCES, sid_end + TRANSCRIPT_CONTEXT_SENTENCES):
+            if sid in rows and sid not in shown:
+                trial = sorted([*shown, sid])
+                if estimate_tokens(" ".join(rows[i] for i in trial)) <= budget:
+                    shown = trial
+    return " ".join(rows[i] for i in shown), core[-1] if core[-1] in shown else max(i for i in shown if i <= sid_end)
 
 
 def attachment_open_handle(handle: str, nav_input: NavigatorInput) -> Opened:
@@ -2466,7 +2510,14 @@ async def navigate(
         if on_lap is not None:
             await on_lap(lap)
         t0 = time.perf_counter()
-        timing: dict = {}
+        prompt_estimate = (estimate_tokens(build_system_prompt(nav_input.can_transcript))
+                           + estimate_tokens(build_user_message(nav_input, state, lap)))
+        if prompt_estimate > NAVIGATOR_MAX_INPUT_ESTIMATE:
+            # 10万トークン(5倍の単価)に届かないように、この周はLLMを呼ばずに、そこまでに集めたもので答える
+            print(f"⚠️ [chat] navigator lap {lap} skipped: input ~{prompt_estimate:,} > {NAVIGATOR_MAX_INPUT_ESTIMATE:,} tokens")
+            stop_reason = "input_limit"
+            break
+        timing: dict = {"input_estimate": prompt_estimate}
         out, err = await decide_lap(llm, nav_input, state, lap, timing)
         timing["decide_ms"] = _ms_since(t0)
         if out is None:
