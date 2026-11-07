@@ -76,3 +76,10 @@ contents_generation/test_codes/reply_ending_eval/results/
 # handle_normalization / internal_label_eval: 本番のチャット(生徒のメッセージ・探索の記録)を含む結果はコミットしない
 contents_generation/test_codes/handle_normalization/results/
 contents_generation/test_codes/internal_label_eval/results/
+
+# router_reasoning_levels / answer_effort_medium / answer_note_separation / transcript_token_budget:
+# 本番のチャット(生徒のメッセージ・探索の記録・返信)を含む結果はコミットしない
+contents_generation/test_codes/router_reasoning_levels/results/
+contents_generation/test_codes/answer_effort_medium/results/
+contents_generation/test_codes/answer_note_separation/results/
+contents_generation/test_codes/transcript_token_budget/results/
