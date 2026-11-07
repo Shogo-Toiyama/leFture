@@ -23,6 +23,12 @@ Do not invent a different story, concept, or real-world example. Write up the gi
 
 ---
 
+### VOICE (How the fun fact should feel to read)
+Write the way an electric, passionate TA talks to a student they love teaching — someone who just found an amazing story and can't wait to tell it. Not a news article, not an encyclopedia.
+- **Talk to the reader:** Address the student directly, in natural spoken phrasing of the output language, with casual sentence endings where the language has them (for Japanese, lively spoken endings like 「〜なんです！」「〜んですよ！」「〜ですよね？」 rather than a stiff written 「〜のです。」 on every sentence).
+- **Hype is welcome:** Openly show your own amazement, excitement, and disbelief, and do not be stingy with exclamation marks. Hype words that make the reader think "this sounds fun!" (e.g., "Surprisingly...", "Believe it or not...", "What a dramatic twist!") are welcome — on top of a story that is genuinely surprising, not instead of one.
+- **Easy words everywhere:** Your reader may be a first-year student with no background in this field. Use everyday words a high-school student knows. When the story needs a technical idea, describe what it does in everyday words (e.g., "a shortcut calculation done once in advance and then reused" rather than only "precomputation"); keep the real name only when it matters, and say in a few plain words what it is. Leave out technical names the story does not need.
+
 ### CRITICAL WRITING RULES
 
 1. **Ban the "Power Grant" Sentence Pattern:**
@@ -31,6 +37,7 @@ Do not invent a different story, concept, or real-world example. Write up the gi
 2. **The Hook is an Independent, High-Impact Punch (STRICTLY 1–2 SENTENCES):**
    - **Standalone Micro-Story:** The hook MUST be an independent, captivating read on its own. Even without reading the body, the reader must instantly grasp the surprising reality and be hooked.
    - **Zero Classroom Recap in the Hook:** NEVER begin with lecture recap phrases (e.g., ❌ "Remember today's lecture on...", ❌ "In today's class we learned..."). Keep the hook 100% focused on the startling real-world phenomenon, mystery, or mind-blowing fact ("Did you know...?!", "It turns out...").
+   - **One Surprise, Said Simply:** Build the hook around one surprising fact said in plain words; do not squeeze the whole story (who, when, how, and the numbers) into it. The details belong in the body.
    - **Strict Sentence Cap:** Exactly 1 or 2 sentences. NEVER write 3 or more sentences for the hook.
    - **Zero Citations in Hook or Title:** Never put citation brackets in `title` or `hook`.
 
@@ -56,14 +63,20 @@ Do not invent a different story, concept, or real-world example. Write up the gi
 6. **Eliminate Niche Jargon & In-Group Slang:**
    Do not clutter the narrative with unnecessary technical API names or gamer/in-group slang (e.g., avoid `OpenGL rendering pipeline`, `frag`, `zero-overhead abstraction`) unless strictly required. Translate them into universally relatable, vivid language (e.g., `real-time 3D lighting`, `smooth motion`, `hyper-realistic explosions`).
 
+7. **Sentences That Read Smoothly on the First Pass:**
+   - **One sentence, one subject:** Each sentence's subject and predicate must match. Never start with one subject and end on a different one (❌ "Today's math of key exchange is the incident that caused a big uproar."; ⭕ "The key exchange you learned today once caused a big uproar in the real world!").
+   - **Do not cram:** Do not pack several facts, numbers, and causes into one sentence with stacked clauses. If a sentence carries more than one new fact, split it.
+   - **Connect the steps:** Each sentence must follow from the one before, with the link stated in words ("so", "because", "that means", "but"). When the story turns on a mechanism, walk through it in small steps so the reader sees *why* it happened, not just *that* it happened.
+   - **Pay off every teaser:** If the hook teases something ("decided by a single condition", "one sentence from a scientist"), the body must say clearly what it was.
+
 ---
 
 ### CONTENT & FORMATTING GUIDELINES
-- **Tone:** Conversational, electrifying, genuinely curious — like a brilliant mentor sharing a mind-blowing story that makes learning feel thrilling. Do not hold back your emotions: let your amazement, excitement, and disbelief show openly in the writing.
+- **Tone:** Follow the VOICE section above — conversational, electrifying, genuinely curious, like a brilliant TA sharing a mind-blowing story that makes learning feel thrilling. Do not hold back your emotions: let your amazement, excitement, and disbelief show openly in the writing.
 - **Paragraphs:** Use explicit `\n\n` for line breaks to keep paragraphs short and easy to read on mobile screens.
 - `title`: Max 6 words + 1 emoji. Punchy & intriguing. No citations.
 - `hook`: Strictly 1–2 short sentences. High-impact shocking fact/mystery. No lecture recap. No citations.
-- `body`: 4–7 crisp sentences broken by `\n\n`. Opens with 1 exciting concept callback sentence, followed by the self-contained story with `⟦#⟧` citations where web data was used (at most 1 citation per sentence).
+- `body`: 5–8 easy-to-read sentences broken by `\n\n`. Opens with 1 exciting concept callback sentence, followed by the self-contained story with `⟦#⟧` citations where web data was used (at most 1 citation per sentence).
 
 ---
 
