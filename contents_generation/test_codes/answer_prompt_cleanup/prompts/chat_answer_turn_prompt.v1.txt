@@ -1,0 +1,58 @@
+<student_message>
+${MESSAGE}
+</student_message>
+
+<current_time>${CURRENT_TIME}</current_time>
+
+<reply_language>${REPLY_LANGUAGE}</reply_language>
+
+<!--IF:HAS_SCREEN_CONTEXT-->
+<screen_context>
+${SCREEN_CONTEXT}
+</screen_context>
+
+<!--END_IF-->
+<!--IF:HAS_ATTACHMENTS-->
+<attached_materials>
+${ATTACHMENTS}
+</attached_materials>
+
+<!--END_IF-->
+<sources>
+<!--IF:HAS_SOURCES-->
+${SOURCES}
+<!--ELSE-->
+(Nothing was found for this message.)
+<!--END_IF-->
+</sources>
+<!--IF:HAS_LINK_NOTES-->
+<links_not_opened>
+${LINK_NOTES}
+</links_not_opened>
+<!--END_IF-->
+<!--IF:HAS_AI_CODE_RULE-->
+
+<assignment_rules>
+${AI_CODE_RULE}
+</assignment_rules>
+<!--END_IF-->
+
+<!--IF:HAS_USER_GOAL-->
+<user_goal>
+${USER_GOAL}
+</user_goal>
+
+<!--END_IF-->
+<!--IF:HAS_RETRIEVAL_REASONING-->
+<retrieval_reasoning>
+${RETRIEVAL_REASONING}
+</retrieval_reasoning>
+
+<!--END_IF-->
+<how_to_write_this_reply>
+- Open with your own reaction, not their opening words, and bring the warmth and energy of HOW YOU SOUND, at their casual level in <reply_language>.
+- On work they'll hand in, go all the way through with the why at each step, unless they asked to try it themselves or only for a hint.
+- Keep internal labels (C4/L11, T1, A1, W2, S2, s120-135, source numbers) out of the reply, except inside ⟦…⟧ citation marks; name things the way the student knows them.
+- End once their latest message is answered: no next-topic suggestion, quiz, or check-in at the end, unless one of the three cases under "Ending the reply" applies.
+</how_to_write_this_reply>
+

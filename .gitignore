@@ -83,3 +83,9 @@ contents_generation/test_codes/router_reasoning_levels/results/
 contents_generation/test_codes/answer_effort_medium/results/
 contents_generation/test_codes/answer_note_separation/results/
 contents_generation/test_codes/transcript_token_budget/results/
+
+# homework_help_policy: 本番のチャットを含む結果はコミットしない
+contents_generation/test_codes/homework_help_policy/results/
+
+# answer_prompt_cleanup: 本番のチャットを含む結果はコミットしない
+contents_generation/test_codes/answer_prompt_cleanup/results/
