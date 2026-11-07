@@ -89,3 +89,9 @@ contents_generation/test_codes/homework_help_policy/results/
 
 # answer_prompt_cleanup: 本番のチャットを含む結果はコミットしない
 contents_generation/test_codes/answer_prompt_cleanup/results/
+
+# deepnote_readability / funfact_readability: inputs hold production transcripts and student profiles
+contents_generation/test_codes/deepnote_readability/inputs/
+contents_generation/test_codes/deepnote_readability/results/*_dryrun_*/
+contents_generation/test_codes/funfact_readability/inputs/
+contents_generation/test_codes/funfact_readability/results/*_dryrun_*/
