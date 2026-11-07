@@ -56,10 +56,13 @@ KNOWLEDGE_EMBEDDING_DIMENSIONS = 768
 MAX_CHUNK_CHARS = 3200
 CHUNK_OVERLAP_CHARS = 300
 
-# トランスクリプト専用のチャンク目標サイズ (約600〜700トークン、3〜4分間の講義発言)。
-# 前後のロジックや説明の文脈を保てるよう3000文字とし、オーバーラップを1/10の300文字にする。
-TRANSCRIPT_CHUNK_CHARS = 3000
-TRANSCRIPT_CHUNK_OVERLAP_CHARS = 300
+# トランスクリプト専用のチャンクの大きさ(estimate_tokensの概算、文の区切りで切る)。
+# 2026-11-07に「3,000字+重なり300字(文の途中でも切る)」から変更(ユーザー判断)。探索役は文字起こしを1回に
+# chat_navigator.TRANSCRIPT_MAX_TOKENS(1,000)までしか開かないので、検索で当たったチャンクがどの言語でも1回で丸ごと
+# 開けるよう、前後1文の分を残して900にそろえる。3,000字のときは英語で約790トークン(ほぼ同じ大きさのまま)、
+# 日本語で約3,000トークンになり、日本語のチャンクの約9割が1回で開けなかった。重なりは約1割。
+TRANSCRIPT_CHUNK_MAX_TOKENS = 900
+TRANSCRIPT_CHUNK_OVERLAP_TOKENS = 90
 
 # 1往復のチャンクで、学生の発言・返答それぞれに使う最大文字数(3-14 ④)
 CHAT_TURN_MAX_CHARS = 1500
@@ -254,6 +257,31 @@ def _text_window_spans(length: int, max_chars: int, overlap: int) -> list[tuple[
         if end == length:
             break
         start = end - overlap
+    return spans
+
+
+def _sentence_windows(texts: list[str], max_tokens: int, overlap_tokens: int) -> list[tuple[int, int]]:
+    """
+    文の並びを、文の区切りでmax_tokens(estimate_tokens)以内の窓に割る。各窓の(開始, 終了)は文の添字(終了は含まない)。
+    次の窓は、前の窓の最後の文からoverlap_tokens以内の分だけ戻って始める(必ず1文以上は進む)。
+    1文だけでmax_tokensを超えるときは、その文だけの窓にする(開くときに探索役の側で頭を切る)。
+    """
+    from app.services.chat_attachments import estimate_tokens
+
+    n = len(texts)
+    spans: list[tuple[int, int]] = []
+    start = 0
+    while start < n:
+        end = start + 1
+        while end < n and estimate_tokens(" ".join(texts[start:end + 1])) <= max_tokens:
+            end += 1
+        spans.append((start, end))
+        if end >= n:
+            break
+        back = end
+        while back - 1 > start and estimate_tokens(" ".join(texts[back - 1:end])) <= overlap_tokens:
+            back -= 1
+        start = back
     return spans
 
 
@@ -532,27 +560,17 @@ def _build_transcript_topic(admin_client, source_id: str, cache: _ContextCache) 
         s for s in sentences
         if s.get("text") and effective_start <= (_sid_to_int(s.get("sid")) or -1) <= effective_end
     ]
-    joined = " ".join(s.get("text", "") for s in in_range)
-    segment_text = joined.strip()
-    if not segment_text:
+    texts = [s.get("text", "").strip() for s in in_range]
+    sids_in_range = [_sid_to_int(s.get("sid")) for s in in_range]
+    if not any(texts):
         return []
-
-    # 各文がsegment_textの何字目から何字目か(" "でつないでからstripしているので、
-    # 先頭で削れた分だけずらす)。窓と重なる文の最初と最後を、そのチャンクの文の範囲にする。
-    lead = len(joined) - len(joined.lstrip())
-    sentence_spans = []
-    pos = 0
-    for s in in_range:
-        text = s.get("text", "")
-        sentence_spans.append((pos - lead, pos - lead + len(text), _sid_to_int(s.get("sid"))))
-        pos += len(text) + 1
 
     title = _header(cache, lecture_id, f"Transcript: {row.get('topic_title') or ''}")
     lec = cache.lecture(lecture_id)
 
     drafts = []
-    for idx, (a, b) in enumerate(_text_window_spans(len(segment_text), TRANSCRIPT_CHUNK_CHARS, TRANSCRIPT_CHUNK_OVERLAP_CHARS)):
-        sids = [sid for s_start, s_end, sid in sentence_spans if sid is not None and s_start < b and s_end > a]
+    for idx, (a, b) in enumerate(_sentence_windows(texts, TRANSCRIPT_CHUNK_MAX_TOKENS, TRANSCRIPT_CHUNK_OVERLAP_TOKENS)):
+        sids = [sid for sid in sids_in_range[a:b] if sid is not None]
         metadata: dict[str, Any] = {
             "topic_title": row.get("topic_title"),
             "topic_type": row.get("topic_type"),
@@ -563,7 +581,7 @@ def _build_transcript_topic(admin_client, source_id: str, cache: _ContextCache) 
         drafts.append(ChunkDraft(
             chunk_index=idx,
             title=title,
-            body=segment_text[a:b],
+            body=" ".join(t for t in texts[a:b] if t),
             user_id=row["user_id"],
             course_id=lec.get("course_id"),
             lecture_id=lecture_id,
