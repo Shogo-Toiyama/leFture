@@ -106,3 +106,13 @@ for m in messages.data:
     nav = m.get('usage', {}).get('navigator')
     # nav['laps'] contains each step's decision, requests, missing info, and reasoning
 ```
+
+## Code Knowledge Graph (graphify)
+The repo has a graphify knowledge graph in `graphify-out/` (`graph.json`, `GRAPH_REPORT.md`, `graph.html`). Its scope is set in `.graphifyignore`. It covers `user_interface`, `lefture_backend`, `webapp`, `website`, `artifact_worker`, `email_worker` and `modal`. Generated code (`l10n/generated`, `*.g.dart`), platform shells, tests and images are excluded. When you run `/graphify` (full build or `--update`) in this repo, follow these rules on top of the skill's own steps:
+- **Always pass `--directed`**, for full builds and for `--update`. Without it the graph is rebuilt undirected and loses caller→callee direction.
+- **The Dart post-process is mandatory.** Run `$(cat graphify-out/.graphify_python) tools/graphify/postprocess_dart.py graphify-out/.graphify_extract.json` as a dry run first, then again with `--write`. It drops the `_` parameter nodes, which collide with file nodes and overwrite their labels. It also rewires Riverpod `xxxProvider` references to their definitions.
+  - Full build: run it after Step 3 Part C (merge AST + semantic) and before Step 4 (build/cluster).
+  - `--update`: run it on the **merged full graph**, after `build_merge` writes `.graphify_extract.json` and before Step 4. Never run it on the changed-files-only extraction, because provider definitions in unchanged files would be missing and nothing would resolve.
+- **Treat `.dart`, `.tsx`, `.sql`, `.yaml` and `.json` as code in `--update`.** The skill's `code_only` list omits them. If only code files changed, take the Part B fast path. Do not dispatch semantic subagents for code-only changes.
+- **Verify before reporting.** After the build, confirm that no node is labeled `_` or has an empty label, and that the post-process prints `provider_edges_still_dangling: 0`. Report both numbers.
+- **Known limitation:** some `ref.read(xxxProvider.notifier)` uses are not captured as edges. For a complete list of a provider's users, confirm with `grep`.

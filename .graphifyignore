@@ -1,0 +1,31 @@
+# graphify scope: user_interface, lefture_backend, webapp, website, artifact_worker, email_worker, modal
+
+# Out-of-scope folders
+contents_generation/
+supabase/
+docs/
+scratch/
+video/
+graphify-out/
+
+# Flutter platform shells, assets and tests
+user_interface/ios/
+user_interface/android/
+user_interface/macos/
+user_interface/linux/
+user_interface/windows/
+user_interface/web/
+user_interface/assets/
+user_interface/test/
+
+# Generated code (l10n strings, Riverpod/Drift codegen)
+user_interface/lib/l10n/generated/
+*.g.dart
+
+# Images (icons, avatars, marketing art)
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.svg
+*.gif
