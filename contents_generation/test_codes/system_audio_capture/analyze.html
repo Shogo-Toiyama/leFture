@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Capture Envelope</title>
+</head>
+<body>
+<pre id="out">running</pre>
+<script>
+// Usage: analyze.html?file=<name in results/>[&win=0.5]
+// Decodes the recording with the browser's own decoder and reports the level per window,
+// so we can see *when* there was sound (speech vs. a single click) without ffmpeg.
+(async () => {
+  const out = document.getElementById('out');
+  const params = new URLSearchParams(location.search);
+  const file = params.get('file');
+  const win = Number(params.get('win') || 0.5);
+  try {
+    const buf = await (await fetch(`results/${encodeURIComponent(file)}`)).arrayBuffer();
+    const ctx = new OfflineAudioContext(1, 1, 48000);
+    const audio = await ctx.decodeAudioData(buf);
+    const n = Math.floor(audio.sampleRate * win);
+    const chans = [...Array(audio.numberOfChannels).keys()].map((c) => audio.getChannelData(c));
+    const windows = [];
+    for (let start = 0; start < audio.length; start += n) {
+      const end = Math.min(start + n, audio.length);
+      let sum = 0, peak = 0;
+      for (const d of chans) {
+        for (let i = start; i < end; i++) { const v = d[i]; sum += v * v; if (Math.abs(v) > peak) peak = Math.abs(v); }
+      }
+      const rms = Math.sqrt(sum / ((end - start) * chans.length));
+      windows.push({
+        t: Number((start / audio.sampleRate).toFixed(2)),
+        rmsDb: rms > 0 ? Number((20 * Math.log10(rms)).toFixed(1)) : null,
+        peakDb: peak > 0 ? Number((20 * Math.log10(peak)).toFixed(1)) : null,
+      });
+    }
+    const loud = windows.filter((w) => w.rmsDb !== null && w.rmsDb > -50);
+
+    // Band energy: a 16 kHz (Bluetooth hands-free) path cannot carry anything above 8 kHz,
+    // so energy above ~8.5 kHz relative to the full band shows whether the capture was band-limited.
+    const render = async (filters) => {
+      const off = new OfflineAudioContext(1, audio.length, audio.sampleRate);
+      const src = off.createBufferSource();
+      src.buffer = audio;
+      let node = src;
+      for (const [type, freq] of filters) {
+        const f = off.createBiquadFilter();
+        f.type = type;
+        f.frequency.value = freq;
+        node.connect(f);
+        node = f;
+      }
+      node.connect(off.destination);
+      src.start();
+      return (await off.startRendering()).getChannelData(0);
+    };
+    const loudIdx = new Set(loud.map((w) => Math.round(w.t / win)));
+    const energy = (d) => {
+      let e = 0;
+      for (let i = 0; i < d.length; i++) if (loudIdx.has(Math.floor(i / n))) e += d[i] * d[i];
+      return e;
+    };
+    const eFull = energy(await render([]));
+    const eHigh = energy(await render([['highpass', 8500], ['highpass', 8500], ['highpass', 8500], ['highpass', 8500]]));
+    const eMid = energy(await render([['highpass', 4000], ['highpass', 4000], ['lowpass', 7500], ['lowpass', 7500]]));
+    const rel = (e) => (eFull > 0 && e > 0 ? Number((10 * Math.log10(e / eFull)).toFixed(1)) : null);
+    const bands = { above8500HzDb: rel(eHigh), band4to7500HzDb: rel(eMid) };
+    const exactZero = windows.filter((w) => w.rmsDb === null).length;
+    const result = {
+      file, windowSec: win, duration: audio.duration, sampleRate: audio.sampleRate,
+      channels: audio.numberOfChannels, windows: windows.length,
+      windowsAbove_minus50dB: loud.length, windowsExactlyZero: exactZero, bands,
+      loudSpans: loud.map((w) => w.t), envelope: windows,
+    };
+    out.textContent = JSON.stringify(result);
+    const base = file.replace(/\.[^.]+$/, '');
+    await fetch(`/save?name=${encodeURIComponent(base + '_envelope.json')}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(result, null, 2),
+    });
+  } catch (e) {
+    out.textContent = JSON.stringify({ error: `${e.name}: ${e.message}` });
+  }
+})();
+</script>
+</body>
+</html>

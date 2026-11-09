@@ -73,6 +73,9 @@ contents_generation/test_codes/course_context_eval/results/
 # reply_ending_eval: 実チャット(生徒のメッセージ)を含む結果はコミットしない
 contents_generation/test_codes/reply_ending_eval/results/
 
+# system audio capture test: recordings may contain class audio
+contents_generation/test_codes/system_audio_capture/results/
+
 # handle_normalization / internal_label_eval: 本番のチャット(生徒のメッセージ・探索の記録)を含む結果はコミットしない
 contents_generation/test_codes/handle_normalization/results/
 contents_generation/test_codes/internal_label_eval/results/

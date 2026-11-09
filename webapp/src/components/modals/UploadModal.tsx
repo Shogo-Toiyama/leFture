@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Upload, ChevronRight, Mic, BookOpen, AlertCircle, Calendar } from 'lucide-react';
+import { X, Upload, ChevronRight, Mic, BookOpen, AlertCircle, Calendar, RotateCcw } from 'lucide-react';
 import { createDraftLecture } from '../../lib/lectures';
 import { getCreditSummary } from '../../lib/billing';
 import { toDisplayCredits } from '../../types/billing';
@@ -13,6 +13,14 @@ import { CoursePickerModal } from './CoursePickerModal';
 import { CourseIconGlyph } from '../../lib/courseIcons';
 import { LanguageSelectionSheet } from '../account/LanguageSelectionSheet';
 import { AccountSuspendedNotice } from '../AccountSuspendedNotice';
+import { SystemAudioRecorder } from './SystemAudioRecorder';
+import {
+  deleteRecordingSession,
+  listRecordingSessions,
+  loadRecordingFile,
+  type RecordingSessionMeta,
+} from '../../lib/recordingStore';
+import { systemAudioFileName } from '../../lib/systemAudioCapture';
 
 const ACCEPTED_EXTENSIONS = '.mp3,.m4a,.wav,.aac,.aiff,.caf,.flac,.ogg';
 
@@ -75,6 +83,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [credits, setCredits] = useState<number | null>(null);
   const [hasPlan, setHasPlan] = useState(true);
   const [suspended, setSuspended] = useState(false);
+  // PCの音の録音(SystemAudioRecorder)。録音中はモーダルを閉じられない
+  const [recordingActive, setRecordingActive] = useState(false);
+  // 今fileに入っている録音の、ブラウザ内バックアップのID(アップロード成功後に消す)
+  const [recordedSessionId, setRecordedSessionId] = useState<string | null>(null);
+  // 前回の録音でアップロードされずに残っているもの
+  const [leftover, setLeftover] = useState<RecordingSessionMeta | null>(null);
 
   // Sync initialCourseId when modal opens
   useEffect(() => {
@@ -86,6 +100,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       setProgress(null);
       setError(null);
       setSubmitting(false);
+      setRecordedSessionId(null);
+      setLeftover(null);
+      listRecordingSessions()
+        .then((sessions) => setLeftover(sessions[0] ?? null))
+        .catch(() => setLeftover(null));
     }
   }, [open, initialCourseId]);
 
@@ -114,22 +133,53 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !submitting) {
+      if (e.key === 'Escape' && !submitting && !recordingActive) {
         onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, submitting, onClose]);
+  }, [open, submitting, recordingActive, onClose]);
 
   if (!open) return null;
 
   const blocked = suspended || (credits !== null && (!hasPlan || credits <= 0));
+  const locked = submitting || recordingActive;
   const selectedCourse = courses.find((c) => c.id === selectedCourseId);
 
   const pickFile = (next: File | null) => {
     setFile(next);
+    // 別のファイルに差し替えた場合、録音のバックアップは消さずに残す(次回復元できる)
+    setRecordedSessionId(null);
   };
+
+  const handleRecorded = (recorded: File, sessionId: string, startedAt: Date) => {
+    setFile(recorded);
+    setRecordedSessionId(sessionId);
+    setLectureDatetime(formatDatetimeLocal(startedAt));
+    setLeftover(null);
+  };
+
+  const restoreLeftover = async () => {
+    if (!leftover) return;
+    try {
+      const startedAt = new Date(leftover.startedAt);
+      const restored = await loadRecordingFile(leftover, systemAudioFileName(startedAt));
+      handleRecorded(restored, leftover.id, startedAt);
+    } catch {
+      setError(t('sysAudioRestoreFailed'));
+    }
+  };
+
+  const discardLeftover = async () => {
+    if (!leftover || !window.confirm(t('sysAudioDiscardConfirm'))) return;
+    await deleteRecordingSession(leftover.id).catch(() => {});
+    setLeftover(null);
+  };
+
+  const leftoverMinutes = leftover
+    ? Math.max(1, Math.round((new Date(leftover.updatedAt).getTime() - new Date(leftover.startedAt).getTime()) / 60000))
+    : 0;
 
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault();
@@ -194,6 +244,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         throw err;
       }
 
+      if (recordedSessionId) await deleteRecordingSession(recordedSessionId).catch(() => {});
       onClose();
       navigate(`/lectures/${lecture.id}`);
     } catch (err) {
@@ -207,7 +258,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     <div
       className="upload-modal-backdrop"
       onClick={(e) => {
-        if (e.target === e.currentTarget && !submitting) {
+        if (e.target === e.currentTarget && !locked) {
           onClose();
         }
       }}
@@ -224,7 +275,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               type="button"
               className="upload-modal-close-btn"
               onClick={onClose}
-              disabled={submitting}
+              disabled={locked}
               aria-label={t('close')}
             >
               <X size={26} strokeWidth={2} />
@@ -295,7 +346,27 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 </button>
               </div>
 
+              {leftover && !file && !recordingActive && (
+                <div className="sysaudio-leftover">
+                  <RotateCcw size={16} className="sysaudio-leftover-icon" />
+                  <span className="sysaudio-leftover-text">
+                    {t('sysAudioLeftoverFound')
+                      .replace('{date}', new Date(leftover.startedAt).toLocaleString(language))
+                      .replace('{minutes}', String(leftoverMinutes))}
+                  </span>
+                  <div className="sysaudio-leftover-actions">
+                    <button type="button" className="sysaudio-leftover-discard" onClick={() => void discardLeftover()}>
+                      {t('sysAudioDiscard')}
+                    </button>
+                    <button type="button" className="sysaudio-leftover-use" onClick={() => void restoreLeftover()}>
+                      {t('sysAudioLeftoverUse')}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* 2. Drag & Drop Audio Upload Zone */}
+              {!recordingActive && (
               <div className="upload-form-group">
                 <div
                   className={`upload-dropzone ${dragging ? 'is-dragging' : ''} ${file ? 'has-file' : ''}`}
@@ -349,6 +420,19 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   )}
                 </div>
               </div>
+              )}
+
+              {/* 2b. PCの音を録音(ファイルが未選択のとき、または録音中) */}
+              {(!file || recordingActive) && (
+                <div className="upload-form-group">
+                  {!recordingActive && <div className="sysaudio-divider">{t('sysAudioOr')}</div>}
+                  <SystemAudioRecorder
+                    disabled={submitting || blocked}
+                    onActiveChange={setRecordingActive}
+                    onRecorded={handleRecorded}
+                  />
+                </div>
+              )}
 
               {/* 3. Lecture Date & Time */}
               <div className="upload-form-group">
@@ -433,14 +517,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 type="button"
                 className="upload-cancel-btn"
                 onClick={onClose}
-                disabled={submitting}
+                disabled={locked}
               >
                 {t('cancel')}
               </button>
               <button
                 type="submit"
                 className="upload-submit-btn"
-                disabled={submitting || !file || !selectedCourseId || blocked}
+                disabled={locked || !file || !selectedCourseId || blocked}
               >
                 {submitting ? t('uploadSubmitting') : t('uploadSubmit')}
               </button>

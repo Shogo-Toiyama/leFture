@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Audio Capture Test</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --fg: #1d1d1f; --muted: #6b6b70; --card: #ffffff; --line: #e2e2e0;
+    --accent: #2f6fed; --ok: #1a8f4c; --warn: #b26a00; --bad: #c6352b; --meter: #2f6fed;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161618; --fg: #ececee; --muted: #9a9aa2; --card: #1f1f22; --line: #333338;
+      --accent: #6f9bff; --ok: #4cc27f; --warn: #e5a23a; --bad: #ff6b5e; --meter: #6f9bff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 0 0 10px; color: var(--muted); font-weight: 600; letter-spacing: .02em; }
+  p.lead { color: var(--muted); margin: 0 0 20px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  label { display: block; margin: 6px 0; }
+  input[type=text], select { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px;
+                             background: var(--bg); color: var(--fg); width: 100%; max-width: 420px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
+           background: var(--bg); color: var(--fg); cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .45; cursor: default; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  td { padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; word-break: break-all; }
+  td:first-child { color: var(--muted); white-space: nowrap; width: 1%; }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+  .status { font-weight: 600; margin: 8px 0; }
+  .meter { height: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+  .meter > div { height: 100%; width: 0; background: var(--meter); transition: width 60ms linear; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+  #log { max-height: 240px; overflow: auto; white-space: pre-wrap; background: var(--bg); padding: 8px;
+         border-radius: 8px; border: 1px solid var(--line); margin: 0; }
+  audio { width: 100%; margin-top: 8px; }
+  ol { margin: 0; padding-left: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>System Audio Capture Test</h1>
+  <p class="lead">ブラウザ（getDisplayMedia）で、PCが鳴らしている音を録音できるか確かめるページです。</p>
+
+  <section>
+    <h2>手順</h2>
+    <ol>
+      <li>シナリオ欄に、今回の条件（例: <span class="mono">zoom-app_earphones</span>）を入れる</li>
+      <li>「キャプチャ開始」を押し、共有ダイアログで <b>画面全体</b> か <b>ウィンドウ</b> を選んで、<b>「システム音声を共有」</b>をONにする（タブを選んだ場合は「タブの音声も共有」をON）</li>
+      <li>Zoom・YouTube・下の「テスト音」などを鳴らし、メーターが動くか見る</li>
+      <li>「停止して保存」を押すと、録音ファイルと結果のJSONが <span class="mono">results/</span> に保存される</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>環境</h2>
+    <table id="env"></table>
+  </section>
+
+  <section>
+    <h2>設定</h2>
+    <label>シナリオ（ファイル名に使用）
+      <input type="text" id="label" placeholder="zoom-app_earphones" value="">
+    </label>
+    <label>録音形式（このブラウザで使えるもの）
+      <select id="mime"></select>
+    </label>
+    <label>録音データの区切り
+      <select id="timeslice">
+        <option value="1000">1 秒（今までのテストと同じ）</option>
+        <option value="10000">10 秒</option>
+      </select>
+    </label>
+    <label><input type="checkbox" id="wakeLock" checked> 録音中は画面をスリープさせない（Wake Lock）</label>
+    <label><input type="checkbox" id="stopVideo"> 開始直後に映像トラックを止める（音声だけで続くか確認）</label>
+    <div class="row" style="margin-top:10px">
+      <button class="primary" id="start">キャプチャ開始</button>
+      <button id="stop" disabled>停止して保存</button>
+      <button id="tone">テスト音 ON</button>
+    </div>
+    <div class="status" id="status">待機中</div>
+  </section>
+
+  <section>
+    <h2>キャプチャ中</h2>
+    <div class="meter"><div id="meterBar"></div></div>
+    <table id="live" style="margin-top:10px"></table>
+  </section>
+
+  <section>
+    <h2>結果</h2>
+    <table id="result"></table>
+    <audio id="player" controls hidden></audio>
+    <div class="row" style="margin-top:8px"><a id="download" hidden>録音をダウンロード</a></div>
+  </section>
+
+  <section>
+    <h2>ログ</h2>
+    <pre id="log" class="mono"></pre>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
