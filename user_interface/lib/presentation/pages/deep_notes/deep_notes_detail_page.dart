@@ -1731,6 +1731,24 @@ class _NoteDetailContent extends HookWidget {
                             fontSize: 16,
                           ),
                           code: codeStyle,
+                          tableHead: TextStyle(
+                            color: AppColors.paper.textInk,
+                            fontSize: 15,
+                            height: 1.4,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          tableBody: TextStyle(
+                            color: AppColors.paper.textInk,
+                            fontSize: 15,
+                            height: 1.4,
+                          ),
+                          tableBorder: TableBorder.all(
+                            color: Colors.black.withValues(alpha: 0.15),
+                          ),
+                          tableCellsPadding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           codeblockPadding: const EdgeInsets.all(16),
                           codeblockDecoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.05),
