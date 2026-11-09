@@ -1,0 +1,38 @@
+{
+  "width": 270,
+  "height": 480,
+  "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1, Unspecified Version)",
+  "results": [
+    {
+      "name": "base",
+      "wide_ms_per_sample": 240.6,
+      "close_ms_per_sample": 236
+    },
+    {
+      "name": "bounces3",
+      "wide_ms_per_sample": 137.6,
+      "close_ms_per_sample": 156.1
+    },
+    {
+      "name": "bounces1",
+      "wide_ms_per_sample": 35.9,
+      "close_ms_per_sample": 46.9
+    },
+    {
+      "name": "tiles3x3",
+      "wide_ms_per_sample": 41.7,
+      "close_ms_per_sample": 42
+    },
+    {
+      "name": "scale0.5",
+      "wide_ms_per_sample": 79.1,
+      "close_ms_per_sample": 77
+    },
+    {
+      "name": "nolights",
+      "wide_ms_per_sample": 191.7,
+      "close_ms_per_sample": 203.2
+    }
+  ],
+  "total_seconds": 10.6
+}

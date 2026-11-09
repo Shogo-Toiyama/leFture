@@ -1,0 +1,12 @@
+{
+  "spp": 16,
+  "size": "360x640",
+  "bounces0_b3_rr3": {
+    "ms": 4185,
+    "file": "test/lecture/results/20261108_121618_noise_glowlow_0_b3_rr3.png"
+  },
+  "bounces1_b3_rr3": {
+    "ms": 4293,
+    "file": "test/lecture/results/20261108_121618_noise_glowlow_1_b3_rr3.png"
+  }
+}

@@ -1,0 +1,10 @@
+node_modules/
+
+# Render outputs (mp4, stills, frames, logs). Reproducible from the scene code; keep out of git.
+**/out/
+
+# The root .gitignore ignores *.png / *.jpg. Assets the scenes load must be committed.
+!assets/**/*.png
+!assets/**/*.jpg
+# Small comparison sheets referenced by RENDERING_NOTES.md (the raw PNGs stay ignored).
+!test/*/results/*.jpg

@@ -1,0 +1,16 @@
+{
+  "spp": 24,
+  "size": "360x640",
+  "bounces1": {
+    "ms": 1884,
+    "file": "test/lecture/results/20261108_120449_compare_bounces1.png"
+  },
+  "bounces3": {
+    "ms": 6398,
+    "file": "test/lecture/results/20261108_120449_compare_bounces3.png"
+  },
+  "bounces6": {
+    "ms": 10717,
+    "file": "test/lecture/results/20261108_120449_compare_bounces6.png"
+  }
+}

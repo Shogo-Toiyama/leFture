@@ -1,0 +1,8 @@
+{
+  "spp": 64,
+  "size": "360x640",
+  "bounces3_rr3": {
+    "ms": 16884,
+    "file": "test/lecture/results/20261108_120800_rr_ref_bounces3_rr3.png"
+  }
+}

@@ -1,0 +1,33 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Recording flat check</title></head>
+<body style="margin:0;background:#000">
+<script type="module">
+  // Flat composite of the UI layers, to compare against the screenshots pixel-for-pixel.
+  import * as UI from './ui.js';
+  await UI.loadFonts();
+  const state = new URLSearchParams(location.search).get('state') ?? 'idle';
+  const rec = state === 'recording' ? 1 : 0;
+  const S = 3; // screenshots are 3x
+  const out = document.createElement('canvas');
+  out.width = UI.SCREEN_W * S; out.height = UI.SCREEN_H * S;
+  const ctx = out.getContext('2d');
+  const put = (layer, st) => {
+    layer.redraw(st);
+    ctx.drawImage(layer.canvas, (layer.x - layer.pad) * S, (layer.y - layer.pad) * S,
+      layer.canvas.width * S / UI.PX_PER_PT, layer.canvas.height * S / UI.PX_PER_PT);
+  };
+  const st = { seconds: rec ? 4 : 0, recordMix: rec, iconSwap: rec };
+  for (const f of [UI.base, UI.courseCard, UI.langChip, UI.timer, UI.micButton, rec ? UI.recordingStatus : UI.idleStatus]) put(f(), st);
+  // waveform (flat, as _WaveformPainter draws it)
+  const levels = [0.30,0.33,0.36,0.40,0.42,0.45,0.47,0.5,0.52,0.55,0.57,0.6,0.62,0.6,0.58,0.56,0.54,0.52,0.5,0.47,0.45,0.42,0.4,0.37,0.35];
+  ctx.save(); ctx.scale(S, S); ctx.lineCap = 'round'; ctx.lineWidth = UI.WAVE.barWidth;
+  UI.WAVE.bars.forEach((b, i) => {
+    const lvl = rec ? levels[i] : 0;
+    const min = rec ? 7 : 3.5;
+    const h = min + (UI.WAVE.height - min) * lvl * b.envelope;
+    ctx.strokeStyle = rec ? `hsla(${42 + lvl * 10},90%,60%,${0.5 + lvl * 0.5})` : 'rgba(142,153,166,0.25)';
+    ctx.beginPath(); ctx.moveTo(b.x, UI.WAVE.centerY - h / 2); ctx.lineTo(b.x, UI.WAVE.centerY + h / 2); ctx.stroke();
+  });
+  ctx.restore();
+  window.__flat = out.toDataURL('image/png');
+</script></body></html>

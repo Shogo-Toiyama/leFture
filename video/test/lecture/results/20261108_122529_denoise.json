@@ -1,0 +1,11 @@
+{
+  "size": "360x640",
+  "timings_ms": {
+    "gt96": 23574,
+    "pt16": 3887,
+    "pt8": 1965,
+    "oidn_load": 443,
+    "oidn_ldr": 89,
+    "oidn_aux": 110
+  }
+}
