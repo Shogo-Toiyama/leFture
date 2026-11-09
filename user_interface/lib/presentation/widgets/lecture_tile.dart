@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lefture/core/utils/topic_image_paths.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/course/course_list_provider.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
@@ -68,9 +69,20 @@ class LectureTile extends ConsumerWidget {
         ? CourseStyleHelper.hexToColor(parentCourse.color, fallback: AppColors.starGold)
         : AppColors.starGold;
 
-    final imagePath = ref.watch(firstTopicImagePathProvider(lecture.id)).asData?.value;
+    // 表紙は講義の行に記録された縮小版(192x256, 約9KB)を優先する。講義の行は
+    // 全件同期しているので、トピックをまだ取っていない古い講義でも出せる。
+    // 記録が無い講義(サムネイル導入前でバックフィル前など)は、従来通り
+    // ローカルにある1番目のトピックの画像を使う。
+    final coverThumbPath = coverThumbPathOf(lecture.metadata);
+    final coverThumbFile = coverThumbPath == null
+        ? null
+        : ref.watch(artifactFileProvider(coverThumbPath)).asData?.value;
+    final imagePath = coverThumbPath != null
+        ? null
+        : ref.watch(firstTopicImagePathProvider(lecture.id)).asData?.value;
     final isAsset = imagePath != null && imagePath.startsWith('assets/');
-    final imageFile = (imagePath == null || isAsset) ? null : ref.watch(artifactFileProvider(imagePath)).asData?.value;
+    final imageFile = coverThumbFile ??
+        ((imagePath == null || isAsset) ? null : ref.watch(artifactFileProvider(imagePath)).asData?.value);
     final uiState = ref.watch(lectureStateProvider(lecture.id)).asData?.value;
 
     final recordingState = ref.watch(recordingControllerProvider);

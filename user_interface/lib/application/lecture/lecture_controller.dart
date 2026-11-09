@@ -21,6 +21,8 @@ import 'package:lefture/application/sync/lecture_topic_sync_service.dart';
 import 'package:lefture/application/sync/review_card_sync_service.dart';
 import 'package:lefture/application/sync/deep_note_sync_service.dart';
 import 'package:lefture/application/sync/topic_map_sync_service.dart';
+import 'package:lefture/application/sync/lecture_content_sync.dart';
+import 'package:lefture/application/sync/recent_lecture_scope.dart';
 import 'package:lefture/application/sync/outbox_sync_service.dart';
 import 'package:lefture/application/sync/outbox_provider.dart';
 import 'package:lefture/application/sync/lecture_outbox_push_handler.dart';
@@ -211,6 +213,11 @@ class LectureController extends _$LectureController {
           DevLog.add('⚠️ [LectureController] Outbox push skipped: $e\n$st');
         }
 
+        // 子データの全件Pull(初回・24時間ごと・Homeのリロード)は直近講義に
+        // 絞る。範囲(直近講義のID)は全エンティティで1回だけ取得して共有する。
+        final scope = RecentLectureScope();
+        final pullStartedAt = DateTime.now().toUtc();
+
         // Pull対象のエンティティ一覧。1つの失敗が他を止めないよう、
         // それぞれ独立してtry/catchする。
         final pulls = <String, Future<void> Function()>{
@@ -220,17 +227,17 @@ class LectureController extends _$LectureController {
               CourseAttributeSyncService(db).pull(forceFullPull: forceFullPull),
           'lecture': () => _sync().pull(forceFullPull: forceFullPull),
           'fun_fact': () =>
-              FunFactSyncService(db).pull(forceFullPull: forceFullPull),
+              FunFactSyncService(db).pull(forceFullPull: forceFullPull, scope: scope),
           'announcement': () =>
-              AnnouncementSyncService(db).pull(forceFullPull: forceFullPull),
+              AnnouncementSyncService(db).pull(forceFullPull: forceFullPull, scope: scope),
           'keyword': () =>
-              KeywordSyncService(db).pull(forceFullPull: forceFullPull),
+              KeywordSyncService(db).pull(forceFullPull: forceFullPull, scope: scope),
           'lecture_topic': () =>
-              LectureTopicSyncService(db).pull(forceFullPull: forceFullPull),
+              LectureTopicSyncService(db).pull(forceFullPull: forceFullPull, scope: scope),
           'review_card': () =>
-              ReviewCardSyncService(db).pull(forceFullPull: forceFullPull),
+              ReviewCardSyncService(db).pull(forceFullPull: forceFullPull, scope: scope),
           'deep_note': () =>
-              DeepNoteSyncService(db).pull(forceFullPull: forceFullPull),
+              DeepNoteSyncService(db).pull(forceFullPull: forceFullPull, scope: scope),
           'topic_map': () =>
               TopicMapSyncService(db).pull(forceFullPull: forceFullPull),
           'user_profile': () => UserProfileSyncService(db).pull(),
@@ -284,6 +291,23 @@ class LectureController extends _$LectureController {
             }
           }),
         );
+
+        // 子データが全エンティティで直近講義の範囲で全件Pullできた時だけ、
+        // 直近講義を「取得済み」と記録する(講義を開いた時に24時間は
+        // 取り直さなくて済む)。一部でも失敗していたら記録しない。
+        try {
+          if (scope.hasFullPulledAll(LectureContentSync.contentEntityTypes)) {
+            final uid = supabase.auth.currentUser?.id;
+            if (uid != null) {
+              await LectureContentSync(db).markFetched(
+                await scope.recentLectureIds(uid),
+                pullStartedAt,
+              );
+            }
+          }
+        } catch (e, st) {
+          DevLog.add('⚠️ [LectureController] Marking recent lecture content fetched skipped: $e\n$st');
+        }
       } else {
         DevLog.add(
           '📴 [LectureController] Offline — skipping outbox push/pull.',
@@ -345,6 +369,73 @@ class LectureController extends _$LectureController {
     } finally {
       ref.invalidate(creditSummaryProvider);
       link.close();
+    }
+  }
+
+  // --- 明示的なリロード(範囲を絞った取り直し) ---
+
+  /// Courseページ(コース詳細)のリロード用。全データではなく、そのコースの
+  /// 講義の行と、画面の上から[RecentLectureScope.recentLectureCount]講義
+  /// (授業日の新しい順)の子データだけを取り直す。
+  Future<void> refreshCourse(String courseId) async {
+    final db = ref.read(appDatabaseProvider);
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+
+    await _pushOutboxQuietly('refreshCourse');
+    await Future.wait([
+      _quietly('course', () => CourseSyncService(db).pull()),
+      _quietly('course_attribute', () => CourseAttributeSyncService(db).pull()),
+      _quietly('lecture_rows', () => LectureSyncService(db).pullLectureRows(courseId: courseId)),
+      _quietly('topic_map', () => TopicMapSyncService(db).pull()),
+    ]);
+
+    final topLectureIds = await db.getRecentLectureIdsForCourse(
+      uid,
+      courseId,
+      limit: RecentLectureScope.recentLectureCount,
+    );
+    await LectureContentSync(db).refresh(topLectureIds);
+  }
+
+  /// Courseページ(コース一覧)のリロード用。コースと講義の行だけを取り直す
+  /// (講義の行は全件でも軽い。子データは取らない)。
+  Future<void> refreshCourseList() async {
+    final db = ref.read(appDatabaseProvider);
+    await _pushOutboxQuietly('refreshCourseList');
+    await Future.wait([
+      _quietly('course', () => CourseSyncService(db).pull()),
+      _quietly('course_attribute', () => CourseAttributeSyncService(db).pull()),
+      _quietly('lecture', () => _sync().pull(forceFullPull: true)),
+    ]);
+  }
+
+  /// LectureViewerPageのリロード・解析完了時用。その講義の行と、子データ
+  /// (トピック/Deep Note/復習カード/キーワード/Fun Fact/お知らせ)を全て
+  /// 取り直す。サーバー側で消えた子データはローカルからも消える。
+  Future<void> refreshLecture(String lectureId) async {
+    final db = ref.read(appDatabaseProvider);
+    await _pushOutboxQuietly('refreshLecture');
+    await _quietly(
+      'lecture_row',
+      () => LectureSyncService(db).pullLectureRows(lectureIds: [lectureId]),
+    );
+    await LectureContentSync(db).refresh([lectureId]);
+  }
+
+  Future<void> _pushOutboxQuietly(String reason) async {
+    try {
+      await _outbox().pushAll();
+    } catch (e, st) {
+      DevLog.add('⚠️ [LectureController] Outbox push skipped ($reason): $e\n$st');
+    }
+  }
+
+  Future<void> _quietly(String label, Future<void> Function() run) async {
+    try {
+      await run();
+    } catch (e, st) {
+      DevLog.add('⚠️ [LectureController] $label refresh skipped: $e\n$st');
     }
   }
 

@@ -56,13 +56,6 @@ import 'package:lefture/presentation/pages/lecture_viewer/widgets/pipeline_progr
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/reveal.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/widgets/topics_sheet.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
-import 'package:lefture/core/utils/dev_log.dart';
-import 'package:lefture/application/sync/announcement_sync_service.dart';
-import 'package:lefture/application/sync/deep_note_sync_service.dart';
-import 'package:lefture/application/sync/fun_fact_sync_service.dart';
-import 'package:lefture/application/sync/keyword_sync_service.dart';
-import 'package:lefture/application/sync/lecture_topic_sync_service.dart';
-import 'package:lefture/application/sync/review_card_sync_service.dart';
 import 'package:lefture/presentation/widgets/snag_panel.dart';
 
 class LectureViewerPage extends HookConsumerWidget {
@@ -285,9 +278,17 @@ class _LecturePageContent extends ConsumerWidget {
             ref.invalidate(transcriptProvider(uid: uid, lectureId: lecture.id));
           }
           ref.invalidate(creditSummaryProvider);
-          ref
-              .read(lectureControllerProvider.notifier)
-              .bootstrapLectures(reason: 'lecture_viewer_became_complete');
+          // 解析が終わった講義の行と中身だけを取り直す(以前は全エンティティを
+          // Pullしていた)。ただし「処理中などの状態を一度見た後に完了になった」
+          // 時だけ — 完了済みの講義を開いた直後の読み込み中→完了の遷移でも
+          // ここに来るため、それまで取り直すと開くたびに通信してしまう
+          // (その場合の中身はensureLectureContentAvailableが24時間ルールで扱う)。
+          final sawIncompleteState = previous?.hasValue == true;
+          if (sawIncompleteState) {
+            ref
+                .read(lectureControllerProvider.notifier)
+                .refreshLecture(lecture.id);
+          }
         }
       });
     });
@@ -2100,25 +2101,11 @@ Future<void> _handleRefresh(
     return;
   }
 
-  // 1. 最新の講義・ジョブ状態を同期
-  await ref.read(lectureControllerProvider.notifier).bootstrapLectures(
-        reason: 'lecture_viewer_pull_to_refresh',
-      );
-
-  // 2. 講義配下の各コンテンツを最新化
-  final db = ref.read(appDatabaseProvider);
-  try {
-    await Future.wait([
-      LectureTopicSyncService(db).pullForLecture(lecture.id),
-      ReviewCardSyncService(db).pullForLecture(lecture.id),
-      DeepNoteSyncService(db).pullForLecture(lecture.id),
-      FunFactSyncService(db).pullForLecture(lecture.id),
-      KeywordSyncService(db).pullForLecture(lecture.id),
-      AnnouncementSyncService(db).pull(forceFullPull: true),
-    ]);
-  } catch (e, st) {
-    DevLog.add('⚠️ [LectureViewerPage] Pull-to-refresh content sync error: $e\n$st');
-  }
+  // 1-2. この講義の行と、子データ(トピック/Deep Note/復習カード/
+  // キーワード/Fun Fact/お知らせ)を全て取り直す。サーバー側で消えた行は
+  // ローカルからも消える。以前は全エンティティのPullとお知らせの全件Pullも
+  // 走っていた。
+  await ref.read(lectureControllerProvider.notifier).refreshLecture(lecture.id);
 
   // 3. 各種Stream/Providerを再読込
   ref.invalidate(lectureTopicsProvider(lecture.id));

@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/profile/activity_records_provider.dart';
+import 'package:lefture/application/profile/activity_records_sync.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/domain/entities/announcement.dart';
 import 'package:lefture/domain/entities/lecture_topic.dart';
@@ -61,6 +63,13 @@ class ActivityRecordsPage extends HookConsumerWidget {
     final pendingOverrides = useState<Map<String, ActivityRecord>>(const {});
     final removedRecordIds = useState<Set<String>>(const {});
     final deletingRecordIds = useState<Set<String>>(const {});
+
+    // 起動時は直近講義の子データしか取っていないので、古い講義の記録は
+    // 開いた時に取る(前回から24時間以内ならローカルのまま)。
+    useEffect(() {
+      refreshActivityRecordsIfStale(ref.read(appDatabaseProvider), type);
+      return null;
+    }, [type]);
 
     // Converged means the live data now matches whatever the user would get by hitting "undo",
     // so the pending override is no longer needed.

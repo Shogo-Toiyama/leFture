@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lefture/core/utils/topic_image_paths.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
@@ -146,7 +147,7 @@ class _SlantedImageSlot extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final Widget child;
+    Widget child;
     if (imagePath.startsWith('assets/')) {
       child = Image.asset(
         imagePath,
@@ -155,8 +156,21 @@ class _SlantedImageSlot extends ConsumerWidget {
     } else {
       final fileAsync = ref.watch(artifactFileProvider(imagePath));
       final File? file = fileAsync.asData?.value;
+      // 元の画像(約170KB)が届くまでは縮小版(192x256, 約9KB)を先に出す。
+      // 元の画像が既に手元にあれば縮小版は取りに行かない。
+      final thumbPath = file == null ? thumbnailPathFor(imagePath) : null;
+      final File? thumbFile = thumbPath == null
+          ? null
+          : ref.watch(artifactFileProvider(thumbPath)).asData?.value;
 
-      if (file == null) {
+      if (file == null && thumbFile != null) {
+        child = Image.file(
+          thumbFile,
+          key: const ValueKey('thumb'),
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.medium,
+        );
+      } else if (file == null) {
         child = Container(
           color: Colors.white.withValues(alpha: 0.05),
           child: const Center(
@@ -173,9 +187,15 @@ class _SlantedImageSlot extends ConsumerWidget {
       } else {
         child = Image.file(
           file,
+          key: const ValueKey('full'),
           fit: BoxFit.cover,
         );
       }
+      // 縮小版→元の画像の差し替えをふわっと見せる。
+      child = AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: child,
+      );
     }
 
     return ClipPath(

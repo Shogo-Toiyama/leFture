@@ -39,7 +39,7 @@ from app.services.logic.topic_mapping import TopicMappingService
 from app.services.logic.topic_map_reconciliation import TopicMapReconciliationService
 from app.services.logic.review_card_generation import ReviewCardGenerationService
 from app.services.logic.image_generation import ImageGenerationService
-from app.services.logic.image_rendering import ImageRenderingService
+from app.services.logic.image_rendering import ImageRenderingService, ensure_thumbnail
 from app.services.logic.web_search import WebSearchService
 from app.services.logic.fun_fact_brainstorming import FunFactBrainstormingService
 from app.services.logic.fun_fact_generation import FunFactGenerationService
@@ -2809,6 +2809,32 @@ async def run_finalize_job_task(job_id: str, task_id: str):
 
                     await asyncio.to_thread(_link_images_sync)
                     logger.log(f"✅ Successfully linked {len(rendering_results)} image path(s) to lecture_topics.")
+
+                    # 講義タイル用の表紙サムネイル(番号が一番小さいトピックの画像の
+                    # 縮小版)を講義の行に記録する。講義の行はアプリが全件同期するので、
+                    # トピックをまだ取っていない古い講義でもタイルに画像を出せる。
+                    # metadataはアプリからpushされない列なので上書きされない。
+                    def _set_cover_thumb_sync():
+                        linked = sorted(
+                            (it for it in rendering_results
+                             if it.get("topic_idx") is not None and it.get("image_path")),
+                            key=lambda it: it["topic_idx"],
+                        )
+                        for it in linked:
+                            thumb = it.get("thumb_path") or ensure_thumbnail(it["image_path"])
+                            if not thumb:
+                                continue
+                            row = supabase.table("lectures").select("metadata")\
+                                .eq("id", lecture_id).single().execute().data or {}
+                            metadata = dict(row.get("metadata") or {})
+                            metadata["cover_thumb_path"] = thumb
+                            supabase.table("lectures").update({"metadata": metadata})\
+                                .eq("id", lecture_id).execute()
+                            return thumb
+                        return None
+
+                    cover = await asyncio.to_thread(_set_cover_thumb_sync)
+                    logger.log(f"🖼️ Cover thumbnail: {cover or 'none'}")
                 else:
                     logger.log("⚠️ Rendered images manifest is not a list. Skipping image linking.")
             else:

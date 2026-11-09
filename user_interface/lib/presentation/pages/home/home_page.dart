@@ -267,7 +267,12 @@ class HomePage extends HookConsumerWidget {
         return;
       }
 
-      await ref.read(lectureControllerProvider.notifier).bootstrapLectures(reason: 'home_pull_to_refresh');
+      // 明示的なリロードなので、差分ではなく取り直す(Homeで使う分+
+      // 直近講義の子データ。古い講義の子データは開いた時に取る)。
+      await ref.read(lectureControllerProvider.notifier).bootstrapLectures(
+            forceFullPull: true,
+            reason: 'home_pull_to_refresh',
+          );
       ref.invalidate(courseListProvider);
       ref.invalidate(currentUserProfileProvider);
       ref.invalidate(recentFunFactsProvider);

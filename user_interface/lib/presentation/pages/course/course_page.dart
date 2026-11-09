@@ -465,12 +465,11 @@ class _TermSectionState extends ConsumerState<_TermSection> {
                         .read(courseRepositoryProvider)
                         .deleteCourse(course.id);
                     ref.invalidate(courseListProvider);
+                    // コース削除で講義が論理削除されるので、コースと講義の
+                    // 行だけを取り直す(以前は全エンティティを全件Pullしていた)。
                     await ref
                         .read(lectureControllerProvider.notifier)
-                        .bootstrapLectures(
-                          forceFullPull: true,
-                          reason: 'course_page_delete_cascade',
-                        );
+                        .refreshCourseList();
                   } catch (e) {
                     if (context.mounted) {
                       AppErrorDialog.showSmart(
@@ -1322,7 +1321,14 @@ Future<void> _handleRefresh(BuildContext context, WidgetRef ref, {String? course
     return;
   }
 
-  await ref.read(lectureControllerProvider.notifier).bootstrapLectures(reason: 'course_page_pull_to_refresh');
+  // 全データではなく、そのコースの範囲だけを取り直す(コース詳細なら
+  // そのコースの講義の行+上から20講義の子データ、一覧ならコースと講義の行)。
+  final controller = ref.read(lectureControllerProvider.notifier);
+  if (courseId != null) {
+    await controller.refreshCourse(courseId);
+  } else {
+    await controller.refreshCourseList();
+  }
   ref.invalidate(courseListProvider);
   ref.invalidate(allLecturesStreamProvider);
   if (courseId != null) {

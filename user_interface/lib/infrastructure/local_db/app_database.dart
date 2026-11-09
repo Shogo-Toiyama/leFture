@@ -978,6 +978,28 @@ class AppDatabase extends _$AppDatabase {
     return query.watch();
   }
 
+  /// コースの講義を、一覧表示と同じ授業日の新しい順で[limit]件(ID)。
+  Future<List<String>> getRecentLectureIdsForCourse(
+    String userId,
+    String courseId, {
+    required int limit,
+  }) {
+    return (select(localLectures)
+          ..where((t) =>
+              t.userId.equals(userId) &
+              t.courseId.equals(courseId) &
+              t.deletedAt.isNull())
+          ..orderBy([
+            (t) => OrderingTerm(
+              expression: t.lectureDatetime,
+              mode: OrderingMode.desc,
+            ),
+          ])
+          ..limit(limit))
+        .map((r) => r.id)
+        .get();
+  }
+
   /// コースの有無に関わらず、ユーザーの全レクチャーを横断して監視する。
   /// （オンボーディング完了判定など「1件でも録音済みか」を見たい場合に使う）
   Stream<List<LocalLecture>> watchAllLectures(String userId) {
@@ -1314,6 +1336,55 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
+  // --- Lecture content freshness (講義ごとの子データ取得時刻) ---
+  //
+  // 講義1件ぶんの子データ(トピック/Deep Note/復習カード/キーワード/Fun Fact/
+  // お知らせ)を最後にSupabaseから取り直した時刻を、SyncCursorsの
+  // `lecture_content:<lectureId>`行のlastFullPulledAtに記録する
+  // ([LectureContentSync]が24時間以内ならローカルをそのまま使う判定に使う)。
+  // 専用テーブル/列を足すとスキーマ移行が要るため、意味が同じ既存の
+  // 「この範囲を最後に全件取得した時刻」の器を流用している。
+
+  static String lectureContentCursorKey(String lectureId) =>
+      'lecture_content:$lectureId';
+
+  /// [lectureIds]のうち、子データ取得時刻が記録されている講義の時刻を返す。
+  Future<Map<String, DateTime>> getLectureContentFetchedAt(
+    String userId,
+    List<String> lectureIds,
+  ) async {
+    if (lectureIds.isEmpty) return const {};
+    final keys = lectureIds.map(lectureContentCursorKey).toList();
+    final rows = await (select(localSyncCursors)..where(
+          (t) => t.userId.equals(userId) & t.entityType.isIn(keys),
+        ))
+        .get();
+    const prefix = 'lecture_content:';
+    return {
+      for (final r in rows)
+        if (r.lastFullPulledAt != null)
+          r.entityType.substring(prefix.length): r.lastFullPulledAt!,
+    };
+  }
+
+  Future<void> markLectureContentFetched(
+    String userId,
+    Iterable<String> lectureIds,
+    DateTime fetchedAt,
+  ) async {
+    final companions = [
+      for (final id in lectureIds)
+        LocalSyncCursorsCompanion(
+          userId: Value(userId),
+          entityType: Value(lectureContentCursorKey(id)),
+          lastPulledAt: const Value(null),
+          lastFullPulledAt: Value(fetchedAt),
+        ),
+    ];
+    if (companions.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(localSyncCursors, companions));
+  }
+
   // --- Lecture access / pin (キャッシュ容量管理用) ---
 
   /// 講義詳細を開いたタイミングで呼ぶ。LRU判定の基準時刻を更新する。
@@ -1491,6 +1562,15 @@ class AppDatabase extends _$AppDatabase {
           .go();
       await (delete(localLectureTopics)..where(
             (t) => t.userId.equals(userId) & t.lectureId.equals(lectureId),
+          ))
+          .go();
+      // 子データを消したので「24時間以内に取得済み」の記録も消す。残すと、
+      // 次に講義を開いた時に「新しいのでローカルを使う」と判定され、空の
+      // ままになる。
+      await (delete(localSyncCursors)..where(
+            (t) =>
+                t.userId.equals(userId) &
+                t.entityType.equals(lectureContentCursorKey(lectureId)),
           ))
           .go();
     });

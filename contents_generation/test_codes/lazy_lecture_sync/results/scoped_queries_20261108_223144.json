@@ -1,0 +1,229 @@
+{
+  "plan": {
+    "recent_lecture_count": 20,
+    "child_tables": [
+      "lecture_topics",
+      "deep_notes",
+      "review_cards",
+      "keywords",
+      "fun_facts"
+    ],
+    "flag_tables": [
+      "review_cards",
+      "deep_notes",
+      "keywords",
+      "fun_facts"
+    ],
+    "flag_filter": "metadata->>saved.eq.true,metadata->>reaction.in.(like,dislike)",
+    "users": 3
+  },
+  "users": [
+    {
+      "rank": 1,
+      "live_lectures": 74,
+      "tables": {
+        "lecture_topics": {
+          "old_rows": 255,
+          "old_kb": 320.5,
+          "new_rows": 82,
+          "new_kb": 106.3
+        },
+        "deep_notes": {
+          "old_rows": 255,
+          "old_kb": 2382.6,
+          "new_rows": 82,
+          "new_kb": 626.8
+        },
+        "review_cards": {
+          "old_rows": 1020,
+          "old_kb": 2062.7,
+          "new_rows": 328,
+          "new_kb": 683.7
+        },
+        "keywords": {
+          "old_rows": 668,
+          "old_kb": 437.4,
+          "new_rows": 155,
+          "new_kb": 193.1
+        },
+        "fun_facts": {
+          "old_rows": 71,
+          "old_kb": 277.4,
+          "new_rows": 19,
+          "new_kb": 70.1
+        },
+        "announcements": {
+          "old_rows": 238,
+          "old_kb": 216.5,
+          "new_rows": 238,
+          "new_kb": 216.5,
+          "active_rows_from_older_lectures": 192
+        }
+      },
+      "recent_ids_ms": 341,
+      "recent_ids_count": 20,
+      "flagged": {
+        "review_cards": {
+          "rows": 0,
+          "kb": 0.0,
+          "outside_recent": 0
+        },
+        "deep_notes": {
+          "rows": 2,
+          "kb": 26.8,
+          "outside_recent": 2
+        },
+        "keywords": {
+          "rows": 0,
+          "kb": 0.0,
+          "outside_recent": 0
+        },
+        "fun_facts": {
+          "rows": 0,
+          "kb": 0.0,
+          "outside_recent": 0
+        }
+      },
+      "old_full_pull_kb": 5697.1,
+      "new_full_pull_kb": 1896.5
+    },
+    {
+      "rank": 2,
+      "live_lectures": 38,
+      "tables": {
+        "lecture_topics": {
+          "old_rows": 144,
+          "old_kb": 198.5,
+          "new_rows": 87,
+          "new_kb": 119.0
+        },
+        "deep_notes": {
+          "old_rows": 144,
+          "old_kb": 2040.0,
+          "new_rows": 87,
+          "new_kb": 1122.2
+        },
+        "review_cards": {
+          "old_rows": 576,
+          "old_kb": 1210.2,
+          "new_rows": 348,
+          "new_kb": 727.1
+        },
+        "keywords": {
+          "old_rows": 576,
+          "old_kb": 643.3,
+          "new_rows": 337,
+          "new_kb": 437.8
+        },
+        "fun_facts": {
+          "old_rows": 38,
+          "old_kb": 160.1,
+          "new_rows": 20,
+          "new_kb": 86.1
+        },
+        "announcements": {
+          "old_rows": 128,
+          "old_kb": 123.2,
+          "new_rows": 108,
+          "new_kb": 105.4,
+          "active_rows_from_older_lectures": 74
+        }
+      },
+      "recent_ids_ms": 94,
+      "recent_ids_count": 20,
+      "flagged": {
+        "review_cards": {
+          "rows": 0,
+          "kb": 0.0,
+          "outside_recent": 0
+        },
+        "deep_notes": {
+          "rows": 0,
+          "kb": 0.0,
+          "outside_recent": 0
+        },
+        "keywords": {
+          "rows": 0,
+          "kb": 0.0,
+          "outside_recent": 0
+        },
+        "fun_facts": {
+          "rows": 0,
+          "kb": 0.0,
+          "outside_recent": 0
+        }
+      },
+      "old_full_pull_kb": 4375.3,
+      "new_full_pull_kb": 2597.6
+    },
+    {
+      "rank": 3,
+      "live_lectures": 37,
+      "tables": {
+        "lecture_topics": {
+          "old_rows": 172,
+          "old_kb": 229.2,
+          "new_rows": 109,
+          "new_kb": 158.8
+        },
+        "deep_notes": {
+          "old_rows": 172,
+          "old_kb": 2597.0,
+          "new_rows": 109,
+          "new_kb": 1896.8
+        },
+        "review_cards": {
+          "old_rows": 688,
+          "old_kb": 1420.1,
+          "new_rows": 436,
+          "new_kb": 993.7
+        },
+        "keywords": {
+          "old_rows": 681,
+          "old_kb": 828.3,
+          "new_rows": 457,
+          "new_kb": 599.7
+        },
+        "fun_facts": {
+          "old_rows": 37,
+          "old_kb": 133.8,
+          "new_rows": 20,
+          "new_kb": 84.7
+        },
+        "announcements": {
+          "old_rows": 188,
+          "old_kb": 163.2,
+          "new_rows": 185,
+          "new_kb": 161.0,
+          "active_rows_from_older_lectures": 100
+        }
+      },
+      "recent_ids_ms": 103,
+      "recent_ids_count": 20,
+      "flagged": {
+        "review_cards": {
+          "rows": 0,
+          "kb": 0.0,
+          "outside_recent": 0
+        },
+        "deep_notes": {
+          "rows": 0,
+          "kb": 0.0,
+          "outside_recent": 0
+        },
+        "keywords": {
+          "rows": 0,
+          "kb": 0.0,
+          "outside_recent": 0
+        },
+        "fun_facts": {
+          "rows": 1,
+          "kb": 4.3,
+          "outside_recent": 1
+        }
+      },
+      "old_full_pull_kb": 5371.6,
+      "new_full_pull_kb": 3894.7
+    }
+  ]
+}

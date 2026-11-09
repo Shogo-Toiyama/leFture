@@ -84,30 +84,7 @@ class LectureSyncService {
         if (maxUpdatedAt == null || updatedAt.isAfter(maxUpdatedAt!)) {
           maxUpdatedAt = updatedAt;
         }
-        final metadata = json['metadata'] != null
-            ? Map<String, dynamic>.from(json['metadata'] as Map)
-            : null;
-        return LocalLecturesCompanion(
-          id: Value(json['id'] as String),
-          userId: Value(json['user_id'] as String),
-          courseId: Value(json['course_id'] as String?),
-          title: Value(json['title'] as String?),
-          titleGenerated: Value(json['title_generated'] as String?),
-          summary: Value(json['summary'] as String?),
-          audioPath: Value(json['audio_path'] as String?),
-          metadataJson: Value(metadata != null ? jsonEncode(metadata) : null),
-          lectureDatetime: Value(DateTime.tryParse(json['lecture_datetime'] ?? '')),
-          sortOrder: Value(json['sort_order'] as int?),
-          recordingLanguage: Value(json['recording_language'] as String?),
-          displayLanguage: Value(json['display_language'] as String?),
-          creditsUsed: Value((json['credits_used'] as num?)?.toInt()),
-          createdAt: Value(DateTime.parse(json['created_at'])),
-          updatedAt: Value(updatedAt),
-          deletedAt: Value(
-            json['deleted_at'] == null ? null : DateTime.parse(json['deleted_at'] as String),
-          ),
-          syncStatus: const Value('synced'), // 同期直後なのでsynced
-        );
+        return _companion(json);
       }).toList();
 
       await _db.batch((batch) {
@@ -123,6 +100,61 @@ class LectureSyncService {
       lastPulledAt: maxUpdatedAt,
       updateLastFullPulledAt: needsFullPull,
       lastFullPulledAt: needsFullPull ? now : null,
+    );
+  }
+
+  /// 指定したコース、または指定した講義の行だけを取り直す(Courseページ/
+  /// LectureViewerPageの明示的なリロード用)。syncカーソルは更新しない。
+  /// まだPushできていないローカルの変更がある講義は、通常のPullと同じく
+  /// 上書きしない。
+  Future<void> pullLectureRows({String? courseId, List<String>? lectureIds}) async {
+    final uid = supabase.auth.currentUser?.id;
+    if (uid == null) return;
+    assert(courseId != null || lectureIds != null);
+    if (lectureIds != null && lectureIds.isEmpty) return;
+
+    var query = supabase.from('lectures').select().eq('user_id', uid);
+    if (courseId != null) query = query.eq('course_id', courseId);
+    if (lectureIds != null) query = query.inFilter('id', lectureIds);
+    final List<dynamic> data = await query.timeout(networkTimeout);
+    if (data.isEmpty) return;
+
+    final pendingIds = await _db.getPendingOutboxEntityIds(_entityType);
+    final companions = data
+        .where((json) => !pendingIds.contains(json['id'] as String))
+        .map(_companion)
+        .toList();
+    await _db.batch((batch) {
+      batch.insertAllOnConflictUpdate(_db.localLectures, companions);
+    });
+    DevLog.add('📥 [LectureSync] Refreshed ${companions.length} lecture row(s)'
+        '${courseId != null ? ' for course $courseId' : ''}.');
+  }
+
+  LocalLecturesCompanion _companion(dynamic json) {
+    final metadata = json['metadata'] != null
+        ? Map<String, dynamic>.from(json['metadata'] as Map)
+        : null;
+    return LocalLecturesCompanion(
+      id: Value(json['id'] as String),
+      userId: Value(json['user_id'] as String),
+      courseId: Value(json['course_id'] as String?),
+      title: Value(json['title'] as String?),
+      titleGenerated: Value(json['title_generated'] as String?),
+      summary: Value(json['summary'] as String?),
+      audioPath: Value(json['audio_path'] as String?),
+      metadataJson: Value(metadata != null ? jsonEncode(metadata) : null),
+      lectureDatetime: Value(DateTime.tryParse(json['lecture_datetime'] ?? '')),
+      sortOrder: Value(json['sort_order'] as int?),
+      recordingLanguage: Value(json['recording_language'] as String?),
+      displayLanguage: Value(json['display_language'] as String?),
+      creditsUsed: Value((json['credits_used'] as num?)?.toInt()),
+      createdAt: Value(DateTime.parse(json['created_at'])),
+      updatedAt: Value(DateTime.parse(json['updated_at'])),
+      deletedAt: Value(
+        json['deleted_at'] == null ? null : DateTime.parse(json['deleted_at'] as String),
+      ),
+      syncStatus: const Value('synced'), // 同期直後なのでsynced
     );
   }
 }

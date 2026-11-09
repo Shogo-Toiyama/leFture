@@ -2,47 +2,26 @@
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:lefture/application/sync/deep_note_sync_service.dart';
-import 'package:lefture/application/sync/fun_fact_sync_service.dart';
-import 'package:lefture/application/sync/keyword_sync_service.dart';
-import 'package:lefture/application/sync/lecture_topic_sync_service.dart';
-import 'package:lefture/application/sync/review_card_sync_service.dart';
+import 'package:lefture/application/sync/lecture_content_sync.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 
-/// [LocalRetentionService.enforceCacheBudget]の1GB LRU削除は、講義の
-/// キャッシュファイルを削除する際に、Review Card/Deep Note/Fun Fact/Keyword/
-/// Topicのローカル行も一緒に削除する。これらは元々「サーバー生成コンテンツの
-/// 読み取り専用キャッシュ」でしかないため、ローカルから消えてもSupabase側には
-/// 残っている — しかし、通常のPull(`*SyncService.pull()`)は`updated_at`の
-/// 差分ベースなので、既に一度Pull済みとして扱われたこの講義の行は再取得
-/// されない。放置すると、キャッシュが剥がれた講義を二度と開けなくなる。
+/// 講義ページを開いた瞬間に呼ばれ、その講義(と左右にスワイプした先の講義)の
+/// 子データ(トピック/Deep Note/復習カード/キーワード/Fun Fact/お知らせ)を、
+/// 最後に取り直してから24時間を過ぎていればSupabaseから取り直す
+/// (詳細は[LectureContentSync])。
 ///
-/// この関数は講義ページを開いた瞬間に呼ばれ、ローカルにトピックが1件も
-/// 無ければ「キャッシュ剥がれ」とみなし、その講義IDだけを対象にSupabaseから
-/// 無条件で再取得する。画像本体は`imagePath`さえ戻れば
-/// `artifactFileProvider`が表示時に自動でR2から取り直すため、ここでは
-/// メタデータ(DB行)の復元だけを行う。
+/// 起動時の全件Pullは直近の講義だけなので、古い講義の中身はここで初めて
+/// 取られる。キャッシュ容量の上限([LocalRetentionService.enforceCacheBudget])
+/// で中身が消された講義も、消した時に取得記録も消しているのでここで戻る。
+/// 画像本体は`imagePath`さえ戻れば`artifactFileProvider`が表示時に自動で
+/// R2から取り直すため、ここではDB行だけを扱う。
 Future<void> ensureLectureContentAvailable(AppDatabase db, String lectureId) async {
-  final hasLocalTopics = await (db.select(db.localLectureTopics)
-        ..where((t) => t.lectureId.equals(lectureId) & t.deletedAt.isNull())
-        ..limit(1))
-      .get()
-      .then((rows) => rows.isNotEmpty);
-  if (hasLocalTopics) return;
-
-  DevLog.add('📥 [LectureContentRecovery] No local content for lecture $lectureId — re-pulling from Supabase.');
   try {
-    await Future.wait([
-      LectureTopicSyncService(db).pullForLecture(lectureId),
-      ReviewCardSyncService(db).pullForLecture(lectureId),
-      DeepNoteSyncService(db).pullForLecture(lectureId),
-      FunFactSyncService(db).pullForLecture(lectureId),
-      KeywordSyncService(db).pullForLecture(lectureId),
-    ]);
+    await LectureContentSync(db).ensureFreshWithNeighbors(lectureId);
   } catch (e, st) {
-    DevLog.add('🚨 [LectureContentRecovery] Failed to restore content for lecture $lectureId: $e\n$st');
+    DevLog.add('🚨 [LectureContentRecovery] Failed to refresh content for lecture $lectureId: $e\n$st');
   }
 }
 

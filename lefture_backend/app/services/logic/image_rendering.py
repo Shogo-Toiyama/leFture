@@ -1,7 +1,9 @@
+import io
 import os
 import base64
 import asyncio
 import httpx
+from PIL import Image
 from typing import Any, Dict, List
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential_jitter
 
@@ -32,6 +34,44 @@ async def _post_cloudflare_flux(client: httpx.AsyncClient, url: str, headers: di
     return response
 
 
+# トピック画像の縮小版。アプリは講義タイル(44pt)やコラージュの仮表示に使い、
+# 元の画像(384x512, 約170KB)を待たずにすぐ絵を出す。ファイル名にサイズを
+# 入れているのは、サイズを変えた時に端末の古いキャッシュを使い回さないため
+# (アプリ側の`topic_image_paths.dart`と同じ規則)。
+THUMBNAIL_SIZE = (192, 256)
+THUMBNAIL_QUALITY = 70
+THUMBNAIL_SUFFIX = "_thumb192.webp"
+
+
+def thumbnail_path_for(image_path: str) -> str:
+    """`.../images/topic_3.jpg` -> `.../images/topic_3_thumb192.webp`"""
+    base, _ext = os.path.splitext(image_path)
+    return f"{base}{THUMBNAIL_SUFFIX}"
+
+
+def make_thumbnail(image_bytes: bytes) -> bytes:
+    img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    thumb = img.resize(THUMBNAIL_SIZE, Image.LANCZOS)
+    buf = io.BytesIO()
+    thumb.save(buf, "WEBP", quality=THUMBNAIL_QUALITY)
+    return buf.getvalue()
+
+
+def ensure_thumbnail(image_path: str, image_bytes: bytes | None = None) -> str | None:
+    """[image_path]の縮小版がR2に無ければ作って保存し、そのパスを返す(同期処理)。
+    [image_bytes]が無ければR2から元画像を読む。失敗したらNone(元画像の表示には
+    影響しないので、呼び出し元はタスクを失敗させない)。"""
+    thumb_path = thumbnail_path_for(image_path)
+    try:
+        if storage_service.object_exists(thumb_path):
+            return thumb_path
+        data = image_bytes if image_bytes is not None else storage_service.download_binary(image_path)
+        storage_service.put_bytes(thumb_path, make_thumbnail(data), content_type="image/webp")
+        return thumb_path
+    except Exception:
+        return None
+
+
 class ImageRenderingService:
     def __init__(self, logger: TaskLogger, billing: BillingEngine):
         self.logger = logger
@@ -48,7 +88,8 @@ class ImageRenderingService:
         exists = await asyncio.to_thread(storage_service.object_exists, expected_r2_path)
         if exists:
             self.logger.log(f"   [Cache] Topic {topic_idx}: Image already exists in R2, skipping generation.")
-            return {"topic_idx": topic_idx, "image_path": expected_r2_path}
+            thumb_path = await asyncio.to_thread(ensure_thumbnail, expected_r2_path)
+            return {"topic_idx": topic_idx, "image_path": expected_r2_path, "thumb_path": thumb_path}
 
         # IMAGE_PROMPT_GENERATIONで生成されたプロンプトを取得
         prompt_text = (
@@ -105,7 +146,11 @@ class ImageRenderingService:
             r2_path = storage_service.save_binary(uid, lecture_id, file_name, image_bytes, content_type="image/jpeg")
 
             self.logger.log(f"   [Logic] ✅ Image for Topic {topic_idx} successfully generated and saved to R2!")
-            return {"topic_idx": topic_idx, "image_path": r2_path}
+
+            thumb_path = await asyncio.to_thread(ensure_thumbnail, r2_path, image_bytes)
+            if thumb_path is None:
+                self.logger.log(f"   [Logic] ⚠️ Thumbnail for Topic {topic_idx} could not be saved (full image is fine).")
+            return {"topic_idx": topic_idx, "image_path": r2_path, "thumb_path": thumb_path}
 
         except Exception as e:
             self.logger.log(f"   [Logic] ❌ Failed to generate image for Topic {topic_idx}: {e}")

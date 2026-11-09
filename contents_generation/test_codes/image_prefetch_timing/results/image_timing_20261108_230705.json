@@ -1,0 +1,234 @@
+{
+  "summary": {
+    "jobs_measured": 30,
+    "image_ready_before_finalize_s": {
+      "min": 3.0,
+      "median": 78.25,
+      "max": 169.8
+    },
+    "last_finalize_dependency_counts": {
+      "ANNOUNCEMENT_GENERATION": 0,
+      "IMAGE_RENDERING": 5,
+      "FUN_FACTS_GENERATION": 0,
+      "FIGURE_GENERATION": 25
+    },
+    "images_per_lecture_median": 5.0,
+    "image_kb": {
+      "min": 104.2,
+      "median": 168.0,
+      "max": 228.8
+    }
+  },
+  "jobs": [
+    {
+      "image_ready_before_finalize_s": 115.1,
+      "topics_ready_before_finalize_s": 16.9,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 5,
+      "image_kb_total": 792.8
+    },
+    {
+      "image_ready_before_finalize_s": 26.5,
+      "topics_ready_before_finalize_s": 6.1,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 3,
+      "image_kb_total": 529.2
+    },
+    {
+      "image_ready_before_finalize_s": 119.3,
+      "topics_ready_before_finalize_s": 23.3,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 5,
+      "image_kb_total": 1023.3
+    },
+    {
+      "image_ready_before_finalize_s": 104.8,
+      "topics_ready_before_finalize_s": 26.0,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 5,
+      "image_kb_total": 1043.2
+    },
+    {
+      "image_ready_before_finalize_s": 162.2,
+      "topics_ready_before_finalize_s": 30.7,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 6,
+      "image_kb_total": 920.2
+    },
+    {
+      "image_ready_before_finalize_s": 56.9,
+      "topics_ready_before_finalize_s": 6.4,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 5,
+      "image_kb_total": 601.3
+    },
+    {
+      "image_ready_before_finalize_s": 90.2,
+      "topics_ready_before_finalize_s": 32.4,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 3,
+      "image_kb_total": 433.3
+    },
+    {
+      "image_ready_before_finalize_s": 146.9,
+      "topics_ready_before_finalize_s": 29.6,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 6,
+      "image_kb_total": 885.4
+    },
+    {
+      "image_ready_before_finalize_s": 82.1,
+      "topics_ready_before_finalize_s": 6.9,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 4,
+      "image_kb_total": 691.1
+    },
+    {
+      "image_ready_before_finalize_s": 151.0,
+      "topics_ready_before_finalize_s": 29.6,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 6,
+      "image_kb_total": 1207.9
+    },
+    {
+      "image_ready_before_finalize_s": 102.9,
+      "topics_ready_before_finalize_s": 23.2,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 4,
+      "image_kb_total": 584.1
+    },
+    {
+      "image_ready_before_finalize_s": 96.8,
+      "topics_ready_before_finalize_s": 15.4,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 5,
+      "image_kb_total": 1004.8
+    },
+    {
+      "image_ready_before_finalize_s": 4.0,
+      "topics_ready_before_finalize_s": 19.4,
+      "last_finalize_dependency": "IMAGE_RENDERING",
+      "images": 5,
+      "image_kb_total": 624.4
+    },
+    {
+      "image_ready_before_finalize_s": 29.7,
+      "topics_ready_before_finalize_s": 4.4,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 3,
+      "image_kb_total": 586.8
+    },
+    {
+      "image_ready_before_finalize_s": 3.0,
+      "topics_ready_before_finalize_s": 199.0,
+      "last_finalize_dependency": "IMAGE_RENDERING",
+      "images": 4,
+      "image_kb_total": 575.1
+    },
+    {
+      "image_ready_before_finalize_s": 3.4,
+      "topics_ready_before_finalize_s": 7.8,
+      "last_finalize_dependency": "IMAGE_RENDERING",
+      "images": 5,
+      "image_kb_total": 813.8
+    },
+    {
+      "image_ready_before_finalize_s": 154.3,
+      "topics_ready_before_finalize_s": 35.1,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 6,
+      "image_kb_total": 823.9
+    },
+    {
+      "image_ready_before_finalize_s": 142.8,
+      "topics_ready_before_finalize_s": 25.3,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 5,
+      "image_kb_total": 1004.8
+    },
+    {
+      "image_ready_before_finalize_s": 169.8,
+      "topics_ready_before_finalize_s": 37.4,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 7,
+      "image_kb_total": 938.1
+    },
+    {
+      "image_ready_before_finalize_s": 12.4,
+      "topics_ready_before_finalize_s": 17.4,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 5,
+      "image_kb_total": 1015.5
+    },
+    {
+      "image_ready_before_finalize_s": 99.3,
+      "topics_ready_before_finalize_s": 23.6,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 5,
+      "image_kb_total": 1070.6
+    },
+    {
+      "image_ready_before_finalize_s": 17.4,
+      "topics_ready_before_finalize_s": 15.4,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 2,
+      "image_kb_total": 351.0
+    },
+    {
+      "image_ready_before_finalize_s": 43.0,
+      "topics_ready_before_finalize_s": 4.6,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 4,
+      "image_kb_total": 593.5
+    },
+    {
+      "image_ready_before_finalize_s": 101.6,
+      "topics_ready_before_finalize_s": 21.4,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 4,
+      "image_kb_total": 662.6
+    },
+    {
+      "image_ready_before_finalize_s": 4.3,
+      "topics_ready_before_finalize_s": 101.6,
+      "last_finalize_dependency": "IMAGE_RENDERING",
+      "images": 3,
+      "image_kb_total": 543.0
+    },
+    {
+      "image_ready_before_finalize_s": 53.0,
+      "topics_ready_before_finalize_s": 15.5,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 6,
+      "image_kb_total": 1195.4
+    },
+    {
+      "image_ready_before_finalize_s": 74.4,
+      "topics_ready_before_finalize_s": 17.4,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 4,
+      "image_kb_total": 510.7
+    },
+    {
+      "image_ready_before_finalize_s": 3.2,
+      "topics_ready_before_finalize_s": 79.5,
+      "last_finalize_dependency": "IMAGE_RENDERING",
+      "images": 5,
+      "image_kb_total": 560.4
+    },
+    {
+      "image_ready_before_finalize_s": 53.7,
+      "topics_ready_before_finalize_s": 16.0,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 5,
+      "image_kb_total": 1047.5
+    },
+    {
+      "image_ready_before_finalize_s": 71.8,
+      "topics_ready_before_finalize_s": 4.8,
+      "last_finalize_dependency": "FIGURE_GENERATION",
+      "images": 5,
+      "image_kb_total": 876.0
+    }
+  ]
+}

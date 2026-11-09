@@ -10,6 +10,9 @@ import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
+import 'package:lefture/application/sync/announcement_sync_service.dart';
+import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:lefture/domain/entities/announcement.dart';
 import 'package:lefture/domain/plan_features.dart' as plan_features;
 import 'package:lefture/infrastructure/local_db/repositories/announcement_repository_drift.dart';
@@ -92,6 +95,25 @@ class AnnouncementsSheet extends HookConsumerWidget {
         ),
       );
     }
+
+    // 全体/コースのシートには古い講義の完了済みお知らせも出るが、起動時は
+    // 「未完了+直近講義の分」しか取っていない。開いた時に、前回から24時間を
+    // 過ぎていればユーザーの全お知らせを取る(講義単位のシートは講義ページを
+    // 開いた時点で取得済み)。
+    useEffect(() {
+      if (lectureId != null) return null;
+      final db = ref.read(appDatabaseProvider);
+      AnnouncementSyncService(db).pullAllIfStale().then((pulled) {
+        // 全体スコープはページ単位の1回きりの取得でストリームではないため、
+        // 取り直した時だけ読み直させる(コーススコープはストリームなので自動で反映)。
+        if (pulled && isGlobalScope && context.mounted) {
+          ref.invalidate(announcementsPageProvider);
+        }
+      }).catchError((Object e, StackTrace st) {
+        DevLog.add('⚠️ [AnnouncementsSheet] pullAllIfStale failed: $e\n$st');
+      });
+      return null;
+    }, const []);
 
     final sheetScrollControllerRef = useRef<ScrollController?>(null);
 

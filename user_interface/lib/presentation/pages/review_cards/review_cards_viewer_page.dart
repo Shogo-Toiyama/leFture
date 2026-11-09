@@ -3,6 +3,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:lefture/application/sync/lecture_content_sync.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -125,6 +127,13 @@ class ReviewCardsViewerPage extends HookConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final topicsAsync = ref.watch(lectureTopicsProvider(lectureId));
     final cardsAsync = ref.watch(reviewCardsProvider(lectureId));
+
+    // 講義ページを経由せずに開かれた場合(記録ページ等から)にも、古い講義の
+    // 中身を取る(前回から24時間以内ならローカルのまま)。
+    useEffect(() {
+      LectureContentSync(ref.read(appDatabaseProvider)).ensureFresh([lectureId]);
+      return null;
+    }, [lectureId]);
 
     final groups = useMemoized(() {
       final topics = topicsAsync.asData?.value ?? <LectureTopic>[];

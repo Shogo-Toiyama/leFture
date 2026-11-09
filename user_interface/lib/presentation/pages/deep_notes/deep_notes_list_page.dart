@@ -1,5 +1,7 @@
 // lib/presentation/pages/deep_notes/deep_notes_list_page.dart
 
+import 'package:lefture/application/sync/lecture_content_sync.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -71,6 +73,13 @@ class DeepNotesListPage extends HookConsumerWidget {
     final lectureAsync = ref.watch(lectureProvider(lectureId));
     final lecture = lectureAsync.asData?.value;
     final courseId = lecture?.courseId ?? 'N/A';
+
+    // 講義ページを経由せずに開かれた場合(記録ページ等から)にも、古い講義の
+    // 中身を取る(前回から24時間以内ならローカルのまま)。
+    useEffect(() {
+      LectureContentSync(ref.read(appDatabaseProvider)).ensureFresh([lectureId]);
+      return null;
+    }, [lectureId]);
 
     final isTutorial = lecture?.metadata?['is_tutorial'] == true;
 

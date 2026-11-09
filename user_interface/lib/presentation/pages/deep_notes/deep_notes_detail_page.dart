@@ -1,3 +1,5 @@
+import 'package:lefture/application/sync/lecture_content_sync.dart';
+import 'package:lefture/infrastructure/local_db/app_database_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -77,6 +79,13 @@ class DeepNotesDetailPage extends HookConsumerWidget {
         : ref.watch(deepNotesProvider(lectureId));
     final figuresAsync = ref.watch(deepNoteFiguresProvider(lectureId));
     final figures = figuresAsync.asData?.value ?? const <DeepNoteFigure>[];
+
+    // 講義ページを経由せずに開かれた場合(記録ページ等から)にも、古い講義の
+    // 中身を取る(前回から24時間以内ならローカルのまま)。
+    useEffect(() {
+      LectureContentSync(ref.read(appDatabaseProvider)).ensureFresh([lectureId]);
+      return null;
+    }, [lectureId]);
 
     // ページを開いた瞬間に裏で全図解のWebKitロードとAuto Height計測を実行し、
     // スクロール中のレイアウトシフトとスクロール位置ズレを完全に排除する
