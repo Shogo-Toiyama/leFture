@@ -39,7 +39,7 @@ export const TopicsModal: React.FC<TopicsModalProps> = ({
                 <div className="topic-tile-upper">
                   {/* Left: Thumbnail image */}
                   <div className="topic-tile-thumbnail">
-                    <TopicImage imagePath={topic.image_path} alt={topic.topic_title} />
+                    <TopicImage imagePath={topic.image_path} alt={topic.topic_title} progressive />
                   </div>
 
                   {/* Right: Content Info */}

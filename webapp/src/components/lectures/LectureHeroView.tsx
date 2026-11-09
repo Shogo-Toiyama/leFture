@@ -53,7 +53,7 @@ export const LectureHeroView: React.FC<LectureHeroViewProps> = ({
           <div className={`hero-slit-container slit-count-${heroTopics.length}`}>
             {heroTopics.map((topic) => (
               <div key={topic.id} className="hero-slit-item">
-                <TopicImage imagePath={topic.image_path} alt={topic.topic_title} className="hero-slit-img" />
+                <TopicImage imagePath={topic.image_path} alt={topic.topic_title} className="hero-slit-img" progressive />
                 <div className="hero-slit-topic-tag">
                   <span>{topic.topic_title}</span>
                 </div>

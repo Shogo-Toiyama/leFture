@@ -1,14 +1,21 @@
 import React from 'react';
 import { useArtifactImage } from '../hooks/useArtifactImage';
+import { thumbnailPathFor } from '../lib/topicImagePaths';
 
 interface TopicImageProps {
   imagePath: string | null;
   alt: string;
   className?: string;
+  /** trueなら、元の画像(約170KB)が届くまで縮小版(192x256, 約9KB)を先に出す。 */
+  progressive?: boolean;
 }
 
-export const TopicImage: React.FC<TopicImageProps> = ({ imagePath, alt, className }) => {
+export const TopicImage: React.FC<TopicImageProps> = ({ imagePath, alt, className, progressive }) => {
   const url = useArtifactImage(imagePath);
-  if (!url) return <div className={`topic-image topic-image-placeholder ${className ?? ''}`} aria-hidden="true" />;
-  return <img src={url} alt={alt} className={`topic-image ${className ?? ''}`} loading="lazy" />;
+  // 元の画像が届いたら縮小版は要らないので、パスをnullにして取得をやめる
+  // (届いていた縮小版のobject URLはフックが解放する)。
+  const thumbUrl = useArtifactImage(progressive && !url ? thumbnailPathFor(imagePath) : null);
+  const shown = url ?? thumbUrl;
+  if (!shown) return <div className={`topic-image topic-image-placeholder ${className ?? ''}`} aria-hidden="true" />;
+  return <img src={shown} alt={alt} className={`topic-image ${className ?? ''}`} loading="lazy" />;
 };

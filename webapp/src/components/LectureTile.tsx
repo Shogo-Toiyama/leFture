@@ -5,6 +5,7 @@ import type { Lecture } from '../types/lecture';
 import { lectureDisplayTitle } from '../types/lecture';
 import { TopicImage } from './TopicImage';
 import { useFirstTopicImagePath } from '../hooks/useFirstTopicImagePath';
+import { coverThumbPathOf } from '../lib/topicImagePaths';
 import { useLanguage } from '../i18n/LanguageContext';
 
 export interface LectureTileProps {
@@ -27,7 +28,11 @@ export const LectureTile: React.FC<LectureTileProps> = ({
   const { t, locale } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const firstTopicImagePath = useFirstTopicImagePath(lecture.id);
+  // 表紙は講義の行に記録された縮小版(192x256, 約9KB)を優先する。それがあれば
+  // トピックへの問い合わせもしない。記録が無い講義は従来通り1番目のトピックの画像。
+  const coverThumbPath = coverThumbPathOf(lecture.metadata);
+  const firstTopicImagePath = useFirstTopicImagePath(coverThumbPath ? null : lecture.id);
+  const tileImagePath = coverThumbPath ?? firstTopicImagePath;
   const targetUrl = to || `/lectures/${lecture.id}`;
   const accent = courseColor || '#FFB300';
   const title = lectureDisplayTitle(lecture, t('lectureUntitled'));
@@ -64,9 +69,9 @@ export const LectureTile: React.FC<LectureTileProps> = ({
       <Link to={targetUrl} className="lecture-tile-card">
         {/* Left: Thumbnail Image or Icon */}
         <div className="lecture-tile-thumb-box">
-          {firstTopicImagePath ? (
+          {tileImagePath ? (
             <TopicImage
-              imagePath={firstTopicImagePath}
+              imagePath={tileImagePath}
               alt={title}
               className="lecture-tile-thumb-img"
             />
