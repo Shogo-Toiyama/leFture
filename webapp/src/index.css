@@ -6823,8 +6823,11 @@ button.glass-row:hover,
 }
 
 /* ── 選択メニュー(ハイライト / ノート)をライトテーマへ ───────────── */
+/* .annotation-toolbar.is-paper は、bodyへ出したチャットの「Ask / Copy」メニュー
+   (SelectionAskArea)が紙テーマの画面の上で出るとき用。.pv-rootの中と同じ見た目にする。 */
 
 .pv-root .annotation-toolbar,
+.annotation-toolbar.is-paper,
 .pv-root .annotation-note-editor {
   background: var(--paper-surface);
   border-color: rgba(62, 50, 40, 0.12);
@@ -6832,12 +6835,14 @@ button.glass-row:hover,
   color: var(--ink);
 }
 
-.pv-root .annotation-toolbar-row button {
+.pv-root .annotation-toolbar-row button,
+.annotation-toolbar.is-paper .annotation-toolbar-row button {
   color: var(--ink);
   background: none;
 }
 
-.pv-root .annotation-toolbar-row button:hover:not(:disabled) {
+.pv-root .annotation-toolbar-row button:hover:not(:disabled),
+.annotation-toolbar.is-paper .annotation-toolbar-row button:hover:not(:disabled) {
   background: rgba(62, 50, 40, 0.07);
 }
 
@@ -6879,20 +6884,27 @@ button.glass-row:hover,
   outline: none;
 }
 
+/*
+ * 全体のbutton.ghost / button.dangerは暗いテーマ向けに「白文字」を!importantで指定している
+ * (index.css冒頭)。!importantは詳細度に関係なく勝つため、紙のメモ画面では白い面に白文字の
+ * キャンセルボタンになり見えなかった。ここも!importantにして、詳細度の高いこちらを効かせる。
+ */
 .pv-root .annotation-note-actions button.ghost {
-  background: rgba(62, 50, 40, 0.06);
-  border-color: var(--paper-line);
-  color: var(--ink);
+  background: rgba(62, 50, 40, 0.06) !important;
+  border: 1px solid var(--paper-line) !important;
+  color: var(--ink) !important;
 }
 
 .pv-root .annotation-note-actions button.ghost:hover:not(:disabled) {
-  background: rgba(62, 50, 40, 0.11);
+  background: rgba(62, 50, 40, 0.11) !important;
+  border-color: rgba(62, 50, 40, 0.22) !important;
+  color: var(--ink) !important;
 }
 
 .pv-root .annotation-note-actions button.danger {
-  color: #c0392f;
-  background: rgba(229, 72, 77, 0.1);
-  border-color: rgba(229, 72, 77, 0.35);
+  color: #c0392f !important;
+  background: rgba(229, 72, 77, 0.1) !important;
+  border-color: rgba(229, 72, 77, 0.35) !important;
 }
 
 /* ── 空/読込 ─────────────────────────────────────────────────────── */
@@ -15376,6 +15388,30 @@ a.lecture-tile-card:hover {
   transition: width 0.15s ease, background-color 0.15s ease;
 }
 
+/*
+ * ポップアップが開いている間は、幅を変える持ち手を消す。
+ * 紙テーマの全画面(.pv-root: position fixed + z-index 60)の中で開くポップアップは、
+ * 自分のz-indexが大きくても.pv-rootの重なり(60)に閉じ込められ、持ち手(71)の下になる。
+ * そのため持ち手だけがポップアップの上に出て、カーソルが変わり幅を変えられてしまっていた。
+ * .pv-rootのz-indexを上げると持ち手がページの下に隠れてふだん使えなくなるので、
+ * 「どこかでポップアップの背景が出ている間」だけ持ち手を外す。
+ */
+body:has(
+    .lecture-modal-backdrop,
+    .adaptive-sheet-portal,
+    .upload-modal-backdrop,
+    .upgrade-required-backdrop,
+    .credit-rate-backdrop,
+    .custom-color-dialog-backdrop,
+    .plan-celebration-backdrop,
+    .citation-modal-backdrop,
+    [aria-modal='true']
+  )
+  .chat-dock-resizer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* 真ん中の持ち手(縦の丸い棒)。ホバーしたときだけ出る */
 .chat-dock-resizer::after {
   content: '';
@@ -17301,7 +17337,8 @@ body.is-resizing-chat iframe {
 }
 
 /* 文章選択ツールバーの「Ask」(.pv-root .annotation-toolbar-row button と同じ詳細度で、後に書いて勝たせる) */
-.annotation-toolbar-row button.annotation-ask-btn {
+.annotation-toolbar-row button.annotation-ask-btn,
+.annotation-toolbar.is-paper .annotation-toolbar-row button.annotation-ask-btn {
   color: var(--deep-gold);
   font-weight: 700;
 }

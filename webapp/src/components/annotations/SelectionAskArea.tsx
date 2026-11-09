@@ -146,14 +146,17 @@ export const SelectionAskArea: React.FC<SelectionAskAreaProps> = ({ screen, onAs
   };
 
   // ツールバーはbodyへ出す(カードのtransform等でfixed配置がずれないように。また、
-  // 領域の中に置くとtextContentに「Ask」「Copy」が混ざり、選択の前後の文字が狂う)
+  // 領域の中に置くとtextContentに「Ask」「Copy」が混ざり、選択の前後の文字が狂う)。
+  // bodyへ出すと紙テーマ(チャットの.is-paper / 読書画面の.pv-root)の指定が届かず、
+  // 白い画面の上でも黒いメニューになるので、選んだ文章が紙テーマの中なら自分で紙の見た目にする。
+  const onPaper = Boolean(selection && containerRef.current?.closest('.is-paper, .pv-root'));
   return (
     <div ref={containerRef} className={className}>
       {children}
       {selection && createPortal(
         <div
           data-selection-ask-ui
-          className="annotation-toolbar"
+          className={`annotation-toolbar ${onPaper ? 'is-paper' : ''}`}
           style={floatingStyle(selection.rect, 160)}
           onMouseDown={(e) => e.preventDefault()}
         >
