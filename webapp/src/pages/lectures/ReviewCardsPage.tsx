@@ -24,6 +24,7 @@ import { TranscriptSheet } from '../../components/transcript/TranscriptSheet';
 import type { ReviewFlatItem, ReviewTopicGroup } from '../../components/reviewCards/types';
 import { ReviewCardsSkeleton } from '../../components/reviewCards/ReviewCardsSkeleton';
 import { useChatScreen } from '../../context/ChatPanelContext';
+import { AppTopbar } from '../../components/AppTopbar';
 
 const TYPE_LABEL_KEY: Record<string, TranslationKey> = {
   hook: 'reviewCardTypeHook',
@@ -197,6 +198,7 @@ export const ReviewCardsPage: React.FC = () => {
   if (error || flat.length === 0) {
     return (
       <div className="pv-root" style={rootStyle}>
+        <AppTopbar variant="light" />
         <div className="pv-top">
           <div className="pv-top-row">
             <button type="button" className="pv-icon-btn" onClick={close} aria-label={t('close')}>
@@ -277,6 +279,7 @@ export const ReviewCardsPage: React.FC = () => {
 
   return (
     <div className="pv-root" style={rootStyle}>
+      <AppTopbar variant="light" />
       <div className="pv-split">
         {sourceSids && (
           <TranscriptSheet lectureId={lectureId!} sids={sourceSids} onClose={() => setSourceSids(null)} />

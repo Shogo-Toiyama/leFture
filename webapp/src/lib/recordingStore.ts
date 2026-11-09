@@ -17,6 +17,19 @@ const DB_VERSION = 1;
 const SESSIONS = 'sessions';
 const CHUNKS = 'chunks';
 
+/**
+ * 録音中のリアクション/メモ。Supabaseの`lecture_moments`に入れる値と同じ形
+ * (講義はアップロード時に作るので、それまではここに持っておく)。
+ * timestampSecは録音した時間(一時停止中は進まない)で、音声ファイル上の位置と一致する。
+ */
+export interface RecordingMoment {
+  id: string;
+  momentType: string;
+  noteText: string | null;
+  timestampSec: number;
+  createdAt: string;
+}
+
 export interface RecordingSessionMeta {
   id: string;
   /** 録音開始時刻(ISO文字列) */
@@ -26,6 +39,7 @@ export interface RecordingSessionMeta {
   mimeType: string;
   bytes: number;
   chunks: number;
+  moments?: RecordingMoment[];
 }
 
 interface ChunkRow {
@@ -97,6 +111,15 @@ export async function appendRecordingChunk(sessionId: string, seq: number, blob:
       chunks: meta.chunks + 1,
     });
   }
+  await done(tx);
+}
+
+export async function updateRecordingSessionMoments(id: string, moments: RecordingMoment[]): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction(SESSIONS, 'readwrite');
+  const sessions = tx.objectStore(SESSIONS);
+  const meta = await request<RecordingSessionMeta | undefined>(sessions.get(id));
+  if (meta) sessions.put({ ...meta, moments });
   await done(tx);
 }
 

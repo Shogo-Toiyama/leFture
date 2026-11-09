@@ -13,6 +13,8 @@
  * - 映像トラックは開始直後に止めてよい(60分録音で音声は最後まで途切れなかった)。
  * - 64kbpsを明示する。未指定だと約123kbps(60分で57MB)になる。
  * - 10秒区切り。タブが裏に回るとデータの届く間隔が最大20秒に延びるが、欠落はしない。
+ * - pause()/resume()で一時停止しても1本のm4aになり、止めていた時間はファイルから抜ける
+ *   (6秒録音→6秒停止→6秒録音で12秒のファイル。ffprobe 4.4〜7.1で確認)。
  * - 「システム音声を共有」トグルは初期状態OFFで、ページ側からONにはできない。
  *   そのため共有直後に音声トラックの有無を確かめ、無ければNoSystemAudioErrorにする。
  */
@@ -77,8 +79,11 @@ export class ScreenPermissionError extends Error {
 export interface SystemAudioCapture {
   readonly sessionId: string;
   readonly startedAt: Date;
-  /** 現在の音量(dBFS)。無音は-Infinity。 */
-  levelDb(): number;
+  /** 現在の音量のRMS(0〜1)。0は無音。 */
+  rms(): number;
+  /** 録音を一時停止する。一時停止中の音はファイルに入らない(止めていた時間はファイルから抜ける)。 */
+  pause(): void;
+  resume(): void;
   /** 録音を止め、ここまでの音声をFileとして返す。 */
   stop(): Promise<File>;
   /** 録音を止めて捨てる。ブラウザ内のバックアップも消す。 */
@@ -198,12 +203,17 @@ export async function startSystemAudioCapture(onEnded: () => void): Promise<Syst
   return {
     sessionId,
     startedAt,
-    levelDb() {
+    rms() {
       analyser.getFloatTimeDomainData(buf);
       let sum = 0;
       for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
-      const rms = Math.sqrt(sum / buf.length);
-      return rms > 0 ? 20 * Math.log10(rms) : -Infinity;
+      return Math.sqrt(sum / buf.length);
+    },
+    pause() {
+      if (recorder.state === 'recording') recorder.pause();
+    },
+    resume() {
+      if (recorder.state === 'paused') recorder.resume();
     },
     async stop() {
       finished = true;
@@ -230,4 +240,42 @@ export async function startSystemAudioCapture(onEnded: () => void): Promise<Syst
       cleanup();
     },
   };
+}
+
+/**
+ * Flutter版(recording_controller.dart の _calculatePcmAudioLevel)と同じ音量の数値(0〜1)。
+ * 講義の声に自然に反応するよう、RMSの平方根を持ち上げている。
+ */
+export function displayLevelFromRms(rms: number): number {
+  if (rms <= 0.0003) return 0;
+  return Math.min(1, Math.sqrt(rms) * 2.8);
+}
+
+// ---- 初回のMac設定の案内用 ----
+// ページからはmacOSの「画面収録」の許可状態を事前に知る方法が無い
+// (navigator.permissions.query({name:'display-capture'})は許可済みのMacでも"prompt"を返す。
+// contents_generation/test_codes/system_audio_capture/permission_probe.html で確認)。
+// そこで「このブラウザで一度も録音に成功していないMac」には、先に設定の案内を出す。
+const CAPTURE_SUCCEEDED_KEY = 'lefture.systemAudio.succeededOnce';
+
+export function isMacPlatform(): boolean {
+  const uaData = (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData;
+  if (uaData?.platform) return uaData.platform === 'macOS';
+  return /Mac OS X/.test(navigator.userAgent);
+}
+
+export function hasCaptureSucceededBefore(): boolean {
+  try {
+    return localStorage.getItem(CAPTURE_SUCCEEDED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function markCaptureSucceeded(): void {
+  try {
+    localStorage.setItem(CAPTURE_SUCCEEDED_KEY, '1');
+  } catch {
+    // 保存できなければ、次回も案内が出るだけ
+  }
 }

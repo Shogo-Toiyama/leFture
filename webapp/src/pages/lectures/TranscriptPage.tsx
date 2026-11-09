@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { TranscriptView } from '../../components/transcript/TranscriptView';
+import { AppTopbar } from '../../components/AppTopbar';
 
 /**
  * 文字起こし＆音声の全画面ページ。
@@ -20,6 +21,7 @@ export const TranscriptPage: React.FC = () => {
 
   return (
     <div className="pv-root is-gold">
+      <AppTopbar variant="light" />
       <div className="pv-split">
         <div className="pv-column">
           <TranscriptView

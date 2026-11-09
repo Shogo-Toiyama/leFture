@@ -9,6 +9,7 @@ import { PageState } from './components/PageState';
 import { ChatHost } from './components/chat/ChatHost';
 
 import { UploadModalProvider } from './context/UploadModalContext';
+import { SystemRecordingProvider } from './context/SystemRecordingContext';
 
 // ルート単位でchunk分割する(vite buildが「1チャンクが500kB超」と警告していた
 // 単一index.jsを、ページごとの動的importに割る)。ページコンポーネントは
@@ -83,6 +84,8 @@ export const App: React.FC = () => {
       <AuthProvider>
         <UploadModalProvider>
           <BrowserRouter>
+            {/* PCの音の録音はページをまたいで続くので、ルートの外側で持つ */}
+            <SystemRecordingProvider>
             <Suspense fallback={<PageState kind="loading" />}>
               <Routes>
                 <Route path="/sign-in" element={<SignInPage />} />
@@ -138,6 +141,7 @@ export const App: React.FC = () => {
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
+            </SystemRecordingProvider>
           </BrowserRouter>
         </UploadModalProvider>
       </AuthProvider>

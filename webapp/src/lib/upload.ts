@@ -58,8 +58,9 @@ function putToR2(uploadUrl: string, file: File, onRatio: (ratio: number) => void
 export async function uploadRecordingAndAnalyze(
   lectureId: string,
   file: File,
-  onProgress?: (progress: UploadProgress) => void
-): Promise<string> {
+  onProgress?: (progress: UploadProgress) => void,
+  options: { startAnalysis?: boolean } = {}
+): Promise<string | null> {
   onProgress?.({ step: 'requesting-url' });
   const { upload_url } = await apiFetch<RequestUploadUrlResponse>(
     '/worker/request-master-audio-upload-url',
@@ -74,6 +75,13 @@ export async function uploadRecordingAndAnalyze(
     method: 'POST',
     body: JSON.stringify({ lecture_id: lectureId }),
   });
+
+  // 録音ページの「解析を自動開始」がOFFのときは、アップロードだけで止める
+  // (講義ページの "Start analysis" ボタンから後で始められる)
+  if (options.startAnalysis === false) {
+    onProgress?.({ step: 'done' });
+    return null;
+  }
 
   onProgress?.({ step: 'starting-analysis' });
   const jobId = await startAnalysis(lectureId);

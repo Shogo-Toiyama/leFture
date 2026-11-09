@@ -11,6 +11,7 @@ import { ChatThreadList } from '../../components/chat/ChatThreadList';
 import { ChatPlanNotice } from '../../components/chat/ChatPlanNotice';
 import { AiSettingsSheet } from '../../components/chat/AiSettingsSheet';
 import { ChatHeaderMenu } from '../../components/chat/ChatHeaderMenu';
+import { AppTopbar } from '../../components/AppTopbar';
 
 /**
  * 会話の置き場(専用ページ)。
@@ -82,6 +83,7 @@ const ChatListView: React.FC = () => {
 
   return (
     <div className="chat-fullscreen is-paper">
+      <AppTopbar variant="light" />
       <header className="chat-fullscreen-topbar">
         <div className="chat-fullscreen-topbar-left">
           <button
@@ -175,6 +177,7 @@ const ChatThreadView: React.FC<{ threadId: string | null }> = ({ threadId }) => 
 
   return (
     <div className="chat-fullscreen is-thread is-paper">
+      <AppTopbar variant="light" />
       <header className="chat-fullscreen-topbar">
         <div className="chat-fullscreen-topbar-left">
           <Link to="/chat" className="chat-fullscreen-back-link" aria-label={t('chatHistory')}>

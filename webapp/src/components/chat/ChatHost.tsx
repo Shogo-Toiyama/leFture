@@ -12,6 +12,8 @@ import {
   saveDockWidth,
 } from '../../lib/chatDockWidth';
 import { ChatDockResizer } from './ChatDockResizer';
+import { useUploadModal } from '../../context/UploadModalContext';
+import { UploadModal } from '../modals/UploadModal';
 
 // パネルの中身は重い(Markdown表示を含む)ので、初めて開いたときに読み込む
 const ChatPanel = lazy(() => import('./ChatPanel').then((m) => ({ default: m.ChatPanel })));
@@ -31,9 +33,19 @@ export const ChatHost: React.FC = () => (
     <ChatPanelProvider>
       <Outlet />
       <ChatDock />
+      <GlobalUploadModal />
     </ChatPanelProvider>
   </AiConsentProvider>
 );
+
+/**
+ * 「Upload a Recording」。Layoutの外のページ(チャット・Deep Notes等)のヘッダーにある
+ * 録音中のタイマー(RecordingChip)からも開き直せるよう、Layoutではなくここに置く。
+ */
+const GlobalUploadModal: React.FC = () => {
+  const { isOpen, targetCourseId, closeUploadModal } = useUploadModal();
+  return <UploadModal open={isOpen} onClose={closeUploadModal} initialCourseId={targetCourseId} />;
+};
 
 /** 画面(ウィンドウ)の幅。パネルの幅を、画面に収まるよう丸めるのに使う。 */
 function useViewportWidth(): number {

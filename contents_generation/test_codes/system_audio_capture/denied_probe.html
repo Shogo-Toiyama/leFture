@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Denied Probe</title>
+<style>
+  :root { --bg: #f7f7f5; --fg: #1d1d1f; --muted: #6b6b70; --card: #fff; --line: #e2e2e0; --accent: #2f6fed; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161618; --fg: #ececee; --muted: #9a9aa2; --card: #1f1f22; --line: #333338; --accent: #6f9bff; }
+  }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.6 -apple-system, "Hiragino Sans", sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+  button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; }
+  input[type=text] { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); width: 100%; max-width: 360px; }
+  pre { white-space: pre-wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font-size: 12.5px; }
+  ol { padding-left: 20px; margin: 0; }
+  p.muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1 style="font-size:20px">macOS の画面収録の許可がないときのエラー確認</h1>
+  <p class="muted">webapp の録音と同じ設定で getDisplayMedia() を呼び、失敗したときのエラー名・文言・失敗までの時間を results/ に保存します。</p>
+
+  <section>
+    <ol>
+      <li>システム設定 → プライバシーとセキュリティ → 画面収録とシステムオーディオ録音 で Google Chrome を OFF</li>
+      <li>Chrome を ⌘Q で終了して開き直し、このページを開く</li>
+      <li>シナリオ名を確認して「共有ダイアログを開く」を押す（ダイアログが出たら、そのまま何もせず様子を見る）</li>
+      <li>比較用に、許可を ON に戻して再起動したあと、ダイアログを自分で「キャンセル」した場合も1回記録する</li>
+    </ol>
+  </section>
+
+  <section>
+    <label>シナリオ名<br><input type="text" id="label" value="mac-permission-off"></label>
+    <p><button id="go">共有ダイアログを開く</button></p>
+    <pre id="out">待機中</pre>
+  </section>
+</main>
+<script>
+const out = document.getElementById('out');
+document.getElementById('go').addEventListener('click', async () => {
+  const label = (document.getElementById('label').value.trim() || 'unlabeled').replace(/[^A-Za-z0-9_-]+/g, '-');
+  const options = {
+    video: { displaySurface: 'monitor', frameRate: 1, width: { max: 640 }, height: { max: 360 } },
+    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, suppressLocalAudioPlayback: false },
+    systemAudio: 'include', selfBrowserSurface: 'exclude', surfaceSwitching: 'exclude', monitorTypeSurfaces: 'include',
+  };
+  const result = { scenario: label, at: new Date().toISOString(), userAgent: navigator.userAgent };
+  try {
+    const hi = await navigator.userAgentData?.getHighEntropyValues(['platformVersion', 'fullVersionList']);
+    result.platformVersion = hi?.platformVersion;
+    result.browsers = hi?.fullVersionList?.map((b) => `${b.brand} ${b.version}`).join(', ');
+  } catch (e) { /* not needed for the result */ }
+  out.textContent = 'ダイアログ待ち…';
+  const t0 = performance.now();
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia(options);
+    result.outcome = 'granted';
+    result.audioTracks = stream.getAudioTracks().map((t) => t.label);
+    result.displaySurface = stream.getVideoTracks()[0]?.getSettings().displaySurface ?? null;
+    stream.getTracks().forEach((t) => t.stop());
+  } catch (e) {
+    result.outcome = 'rejected';
+    result.errorName = e.name;
+    result.errorMessage = e.message;
+    result.isDOMException = e instanceof DOMException;
+  }
+  result.msUntilSettled = Math.round(performance.now() - t0);
+  out.textContent = JSON.stringify(result, null, 2);
+  try {
+    const res = await fetch(`/save?name=denied_probe_${label}_${Date.now()}.json`, { method: 'POST', body: JSON.stringify(result, null, 2) });
+    out.textContent += res.ok ? '\n\n保存しました (results/)' : `\n\n保存に失敗しました (${res.status})`;
+  } catch (e) {
+    out.textContent += '\n\n保存に失敗しました（serve.py が起動しているか確認してください）';
+  }
+});
+</script>
+</body>
+</html>

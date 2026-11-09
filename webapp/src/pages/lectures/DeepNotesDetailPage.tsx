@@ -31,6 +31,7 @@ import { tierAccent } from '../../lib/planTheme';
 import { useChatScreen } from '../../context/ChatPanelContext';
 
 import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { AppTopbar } from '../../components/AppTopbar';
 
 /**
  * 詳細ノートビューア。deep_notes_detail_page.dart と同じ紙面(ライトテーマ)の
@@ -167,6 +168,7 @@ const DeepNotesDetailPageContent: React.FC = () => {
   if (error || !current) {
     return (
       <div className="pv-root" style={rootStyle}>
+        <AppTopbar variant="light" />
         <div className="pv-top">
           <div className="pv-top-row">
             <button type="button" className="pv-icon-btn" onClick={close} aria-label={t('close')}>
@@ -198,6 +200,7 @@ const DeepNotesDetailPageContent: React.FC = () => {
 
   return (
     <div className="pv-root" style={rootStyle}>
+      <AppTopbar variant="light" />
       <div className="pv-split">
         {sourceSids && (
           <TranscriptSheet lectureId={lectureId!} sids={sourceSids} onClose={() => setSourceSids(null)} />
