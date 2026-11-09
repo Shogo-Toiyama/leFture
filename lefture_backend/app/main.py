@@ -246,6 +246,11 @@ class CleanupAudioChunksPayload(BaseModel):
     user_id: str
     lecture_id: str
 
+class NormalizeMasterAudioPayload(BaseModel):
+    """Cloud Tasks から /worker/normalize-master-audio に渡されるデータ"""
+    user_id: str
+    lecture_id: str
+
 class ChatSummaryPayload(BaseModel):
     """Cloud Tasks から /worker/chat-summary に渡されるデータ"""
     thread_id: str
@@ -3258,6 +3263,15 @@ async def worker_complete_master_audio_upload(payload: MasterAudioUploadComplete
         }).eq("id", payload.lecture_id).execute()
     )
 
+    # 再生位置の周りだけを取るストリーミング再生のために、音声を「索引が先頭の
+    # AAC/MP4」に揃える(アプリでの作り直しが失敗した細切れ形式、MP3など)。
+    # 数秒〜数十秒かかりうるので別タスクにする。積めなくてもアップロードは成功扱い
+    # (再生は遅くなるが聞ける。バックフィルスクリプトで後から揃えられる)。
+    try:
+        await enqueue_normalize_master_audio_task(uid, payload.lecture_id)
+    except Exception as e:
+        print(f"⚠️ Could not enqueue master audio normalization for {payload.lecture_id}: {e}")
+
     return {"status": "success", "message": f"Master audio path recorded: {storage_path}"}
 
 
@@ -3536,6 +3550,40 @@ async def enqueue_cleanup_audio_chunks_task(user_id: str, lecture_id: str) -> No
         print(f"⏭️ Cleanup for lecture {lecture_id} already enqueued today (duplicate request ignored).")
 
 
+async def enqueue_normalize_master_audio_task(user_id: str, lecture_id: str) -> None:
+    """
+    /worker/normalize-master-audio を叩くCloud Tasksタスクをenqueueする。
+    マスター音声のアップロード完了時に呼ぶ。同じ講義で何度積まれても、
+    既に揃っていれば先頭の数バイトを読むだけで終わるので安全。
+    """
+    if not (PROJECT_ID and CLOUD_RUN_URL and SERVICE_ACCOUNT_EMAIL):
+        raise RuntimeError("❌ Missing Environment Variables for Cloud Tasks enqueue!")
+
+    parent = client.queue_path(PROJECT_ID, REGION, CLEANUP_QUEUE_NAME)
+    worker_payload = {"user_id": user_id, "lecture_id": lecture_id}
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+
+    task = {
+        "name": client.task_path(PROJECT_ID, REGION, CLEANUP_QUEUE_NAME, f"normalize-audio-{lecture_id}-{stamp}"),
+        "http_request": {
+            "http_method": tasks_v2.HttpMethod.POST,
+            "url": f"{CLOUD_RUN_URL}/worker/normalize-master-audio",
+            "headers": {"Content-Type": "application/json", **internal_task_headers()},
+            "body": json.dumps(worker_payload).encode(),
+            "oidc_token": {
+                "service_account_email": SERVICE_ACCOUNT_EMAIL,
+                "audience": CLOUD_RUN_URL,
+            }
+        }
+    }
+
+    try:
+        response = await asyncio.to_thread(client.create_task, request={"parent": parent, "task": task})
+        print(f"✅ Enqueued normalize_master_audio for lecture {lecture_id} to Cloud Tasks: {response.name}")
+    except AlreadyExists:
+        print(f"⏭️ Normalization for lecture {lecture_id} already enqueued (duplicate request ignored).")
+
+
 async def enqueue_chat_summary_task(thread_id: str, next_block_index: int) -> None:
     """
     /worker/chat-summary を叩くCloud Tasksタスクをenqueueする(スレッド要約、
@@ -3760,6 +3808,22 @@ async def worker_profile_consolidate(payload: ProfileConsolidatePayload, request
             print(f"❌ [profile-consolidate] giving up on user {payload.user_id} after {retry_count + 1} attempts: {e}")
             return {"status": "gave_up"}
         raise
+
+
+@app.post("/worker/normalize-master-audio", dependencies=[Depends(require_internal_caller)])
+async def worker_normalize_master_audio(payload: NormalizeMasterAudioPayload):
+    """
+    enqueue_normalize_master_audio_task がenqueueしたタスクを実際に処理する。
+    マスター音声を、途中から再生できる「索引が先頭のAAC/MP4」に揃える
+    (詳細は app/services/logic/audio_normalization.py)。検証に失敗した場合は
+    上書きせず、200で結果を返す(同じ入力で再試行しても結果は変わらないため)。
+    """
+    from app.services.logic.audio_normalization import normalize_master_audio
+
+    key = f"{payload.user_id}/{payload.lecture_id}/master_audio.m4a"
+    result = await asyncio.to_thread(normalize_master_audio, key)
+    print(f"🎧 normalize_master_audio {payload.lecture_id}: {json.dumps(result, ensure_ascii=False)}")
+    return result
 
 
 @app.post("/worker/cleanup-audio-chunks", dependencies=[Depends(require_internal_caller)])

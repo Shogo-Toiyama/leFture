@@ -378,7 +378,9 @@ class AudioRecorderService {
     }
 
     // 16kHz, 16-bit signed little-endian, mono raw pcm を aac 64kbps にエンコードするコマンド
-    final command = '-y -f s16le -ar 16000 -ac 1 -i "$rawPath" -c:a aac -b:a 64k "$m4aPath"';
+    // -movflags +faststart: 索引(moov)を先頭に置き、再生側が途中から
+    // ストリーミング再生できる形にする(サーバー側でも揃えるが、最初から揃えておく)。
+    final command = '-y -f s16le -ar 16000 -ac 1 -i "$rawPath" -c:a aac -b:a 64k -movflags +faststart "$m4aPath"';
     
     final session = await FFmpegKit.execute(command);
     final returnCode = await session.getReturnCode();
@@ -717,7 +719,9 @@ class AudioRecorderService {
       await m4aFile.delete();
     }
 
-    final command = '-y -f s16le -ar 16000 -ac 1 -i "$rawPath" -c:a aac -b:a 64k "$m4aPath"';
+    // -movflags +faststart: 索引(moov)を先頭に置き、再生側が途中から
+    // ストリーミング再生できる形にする(サーバー側でも揃えるが、最初から揃えておく)。
+    final command = '-y -f s16le -ar 16000 -ac 1 -i "$rawPath" -c:a aac -b:a 64k -movflags +faststart "$m4aPath"';
 
     final completer = Completer<FFmpegSession>();
     Timer? watchdog;

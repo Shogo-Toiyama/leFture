@@ -1,0 +1,3540 @@
+{
+  "summary": {
+    "lectures": 245,
+    "layout_counts": {
+      "faststart": 133,
+      "fragmented": 51,
+      "mp3": 5,
+      "moov_at_end": 56
+    },
+    "mb": {
+      "median": 31.7,
+      "max": 172.0
+    },
+    "moov_kb": {
+      "median": 201.5,
+      "max": 1661
+    },
+    "minutes_median": 68.7,
+    "mb_per_min_median": 0.4611872146118722
+  },
+  "lectures": [
+    {
+      "mb": 14.3,
+      "minutes": 30.6,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 113,
+      "source_hint": null
+    },
+    {
+      "mb": 23.7,
+      "minutes": 49.3,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 182,
+      "source_hint": null
+    },
+    {
+      "mb": 41.3,
+      "minutes": 91.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 338,
+      "source_hint": null
+    },
+    {
+      "mb": 37.9,
+      "minutes": 80.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 298,
+      "source_hint": null
+    },
+    {
+      "mb": 58.5,
+      "minutes": 139.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 511,
+      "source_hint": null
+    },
+    {
+      "mb": 43.8,
+      "minutes": 99.1,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 364,
+      "source_hint": null
+    },
+    {
+      "mb": 18.1,
+      "minutes": 39.5,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 24.4,
+      "minutes": 54.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 202,
+      "source_hint": null
+    },
+    {
+      "mb": 38.2,
+      "minutes": 83.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 308,
+      "source_hint": null
+    },
+    {
+      "mb": 35.6,
+      "minutes": 77.3,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 284,
+      "source_hint": null
+    },
+    {
+      "mb": 49.7,
+      "minutes": 101.8,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 374,
+      "source_hint": null
+    },
+    {
+      "mb": 21.9,
+      "minutes": 45.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 169,
+      "source_hint": null
+    },
+    {
+      "mb": 20.2,
+      "minutes": 43.8,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 26.4,
+      "minutes": null,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 209,
+      "source_hint": null
+    },
+    {
+      "mb": 1.7,
+      "minutes": 3.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 14,
+      "source_hint": null
+    },
+    {
+      "mb": 37.8,
+      "minutes": 100.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 1130,
+      "source_hint": null
+    },
+    {
+      "mb": 35.5,
+      "minutes": 73.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 269,
+      "source_hint": null
+    },
+    {
+      "mb": 45.8,
+      "minutes": 108.3,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 49.8,
+      "minutes": 112.5,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 41.0,
+      "minutes": 87.6,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 322,
+      "source_hint": null
+    },
+    {
+      "mb": 3.5,
+      "minutes": 7.1,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 27,
+      "source_hint": null
+    },
+    {
+      "mb": 21.5,
+      "minutes": 49.1,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 181,
+      "source_hint": null
+    },
+    {
+      "mb": 9.9,
+      "minutes": 21.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 80,
+      "source_hint": null
+    },
+    {
+      "mb": 24.6,
+      "minutes": 54.7,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 201,
+      "source_hint": null
+    },
+    {
+      "mb": 29.3,
+      "minutes": 63.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 233,
+      "source_hint": null
+    },
+    {
+      "mb": 38.1,
+      "minutes": 100.7,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 1141,
+      "source_hint": null
+    },
+    {
+      "mb": 41.4,
+      "minutes": 88.7,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 326,
+      "source_hint": null
+    },
+    {
+      "mb": 34.3,
+      "minutes": 75.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 276,
+      "source_hint": null
+    },
+    {
+      "mb": 16.4,
+      "minutes": 35.3,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 130,
+      "source_hint": null
+    },
+    {
+      "mb": 31.9,
+      "minutes": 68.7,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 253,
+      "source_hint": null
+    },
+    {
+      "mb": 3.0,
+      "minutes": 6.4,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 24,
+      "source_hint": null
+    },
+    {
+      "mb": 59.5,
+      "minutes": 62.0,
+      "layout": "mp3",
+      "top_boxes": [
+        "\u0000\u0000\u0000\u0000"
+      ],
+      "box_count": 1,
+      "moov_kb": null,
+      "source_hint": null
+    },
+    {
+      "mb": 29.7,
+      "minutes": 65.6,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 241,
+      "source_hint": null
+    },
+    {
+      "mb": 32.0,
+      "minutes": 69.4,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 256,
+      "source_hint": null
+    },
+    {
+      "mb": 61.4,
+      "minutes": 127.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 470,
+      "source_hint": null
+    },
+    {
+      "mb": 21.0,
+      "minutes": 45.7,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 169,
+      "source_hint": null
+    },
+    {
+      "mb": 19.3,
+      "minutes": 45.3,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 167,
+      "source_hint": null
+    },
+    {
+      "mb": 48.5,
+      "minutes": 109.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 403,
+      "source_hint": null
+    },
+    {
+      "mb": 1.3,
+      "minutes": 2.7,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 11,
+      "source_hint": null
+    },
+    {
+      "mb": 10.4,
+      "minutes": 21.3,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 79,
+      "source_hint": null
+    },
+    {
+      "mb": 3.6,
+      "minutes": 7.4,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 28,
+      "source_hint": null
+    },
+    {
+      "mb": 6.5,
+      "minutes": 14.4,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 54,
+      "source_hint": null
+    },
+    {
+      "mb": 29.6,
+      "minutes": 64.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 236,
+      "source_hint": null
+    },
+    {
+      "mb": 172.0,
+      "minutes": 91.9,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "mdat",
+        "moov",
+        "free"
+      ],
+      "box_count": 4,
+      "moov_kb": 1661,
+      "source_hint": null
+    },
+    {
+      "mb": 39.6,
+      "minutes": 104.7,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 1185,
+      "source_hint": null
+    },
+    {
+      "mb": 0.0,
+      "minutes": 1.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 5,
+      "source_hint": null
+    },
+    {
+      "mb": 0.0,
+      "minutes": 0.1,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 72.4,
+      "minutes": 157.5,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 32.6,
+      "minutes": 73.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 269,
+      "source_hint": null
+    },
+    {
+      "mb": 31.4,
+      "minutes": 70.1,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 258,
+      "source_hint": null
+    },
+    {
+      "mb": 32.0,
+      "minutes": 71.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 262,
+      "source_hint": null
+    },
+    {
+      "mb": 7.0,
+      "minutes": 14.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 56,
+      "source_hint": null
+    },
+    {
+      "mb": 36.5,
+      "minutes": 79.4,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 292,
+      "source_hint": null
+    },
+    {
+      "mb": 30.5,
+      "minutes": 63.7,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 44.9,
+      "minutes": 96.3,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 354,
+      "source_hint": null
+    },
+    {
+      "mb": 28.7,
+      "minutes": 63.3,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 233,
+      "source_hint": null
+    },
+    {
+      "mb": 37.6,
+      "minutes": 83.8,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 308,
+      "source_hint": null
+    },
+    {
+      "mb": 22.4,
+      "minutes": 46.8,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 173,
+      "source_hint": null
+    },
+    {
+      "mb": 45.5,
+      "minutes": 100.6,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 370,
+      "source_hint": null
+    },
+    {
+      "mb": 65.5,
+      "minutes": 135.7,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 499,
+      "source_hint": null
+    },
+    {
+      "mb": 36.1,
+      "minutes": 76.3,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 281,
+      "source_hint": null
+    },
+    {
+      "mb": 50.1,
+      "minutes": 106.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 390,
+      "source_hint": null
+    },
+    {
+      "mb": 37.0,
+      "minutes": 82.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 303,
+      "source_hint": null
+    },
+    {
+      "mb": 23.4,
+      "minutes": 55.4,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 204,
+      "source_hint": null
+    },
+    {
+      "mb": 34.4,
+      "minutes": 79.7,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 293,
+      "source_hint": null
+    },
+    {
+      "mb": 30.4,
+      "minutes": 65.8,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 45.2,
+      "minutes": 98.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 361,
+      "source_hint": null
+    },
+    {
+      "mb": 33.6,
+      "minutes": 73.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 270,
+      "source_hint": null
+    },
+    {
+      "mb": 49.7,
+      "minutes": 104.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 384,
+      "source_hint": null
+    },
+    {
+      "mb": 31.9,
+      "minutes": 76.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 279,
+      "source_hint": null
+    },
+    {
+      "mb": 28.6,
+      "minutes": 60.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 223,
+      "source_hint": null
+    },
+    {
+      "mb": 23.5,
+      "minutes": 49.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 182,
+      "source_hint": null
+    },
+    {
+      "mb": 43.1,
+      "minutes": 93.6,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 344,
+      "source_hint": null
+    },
+    {
+      "mb": 67.9,
+      "minutes": 140.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 518,
+      "source_hint": null
+    },
+    {
+      "mb": 37.0,
+      "minutes": 76.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 282,
+      "source_hint": null
+    },
+    {
+      "mb": 50.4,
+      "minutes": 104.3,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 383,
+      "source_hint": null
+    },
+    {
+      "mb": 45.0,
+      "minutes": 97.6,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 359,
+      "source_hint": null
+    },
+    {
+      "mb": 19.3,
+      "minutes": 44.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 166,
+      "source_hint": null
+    },
+    {
+      "mb": 27.3,
+      "minutes": 64.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 236,
+      "source_hint": null
+    },
+    {
+      "mb": 26.6,
+      "minutes": 60.8,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 224,
+      "source_hint": null
+    },
+    {
+      "mb": 16.5,
+      "minutes": 37.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 137,
+      "source_hint": null
+    },
+    {
+      "mb": 47.0,
+      "minutes": 91.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 338,
+      "source_hint": null
+    },
+    {
+      "mb": 33.8,
+      "minutes": 71.4,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 263,
+      "source_hint": null
+    },
+    {
+      "mb": 49.3,
+      "minutes": 104.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 382,
+      "source_hint": null
+    },
+    {
+      "mb": 33.3,
+      "minutes": 71.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 264,
+      "source_hint": null
+    },
+    {
+      "mb": 21.3,
+      "minutes": 46.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 171,
+      "source_hint": null
+    },
+    {
+      "mb": 72.8,
+      "minutes": 149.8,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 550,
+      "source_hint": null
+    },
+    {
+      "mb": 33.7,
+      "minutes": 75.6,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 278,
+      "source_hint": null
+    },
+    {
+      "mb": 31.3,
+      "minutes": 68.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 251,
+      "source_hint": null
+    },
+    {
+      "mb": 31.4,
+      "minutes": 69.8,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 257,
+      "source_hint": null
+    },
+    {
+      "mb": 30.3,
+      "minutes": 63.1,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 232,
+      "source_hint": null
+    },
+    {
+      "mb": 23.1,
+      "minutes": 52.7,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 194,
+      "source_hint": null
+    },
+    {
+      "mb": 19.9,
+      "minutes": 42.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 158,
+      "source_hint": null
+    },
+    {
+      "mb": 10.3,
+      "minutes": 22.9,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 23.6,
+      "minutes": 50.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 184,
+      "source_hint": null
+    },
+    {
+      "mb": 16.8,
+      "minutes": 36.9,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 0.0,
+      "minutes": 0.1,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 19.6,
+      "minutes": 39.3,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 145,
+      "source_hint": null
+    },
+    {
+      "mb": 3.2,
+      "minutes": 7.7,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 29,
+      "source_hint": null
+    },
+    {
+      "mb": 39.8,
+      "minutes": 87.4,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 322,
+      "source_hint": null
+    },
+    {
+      "mb": 34.6,
+      "minutes": 72.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 268,
+      "source_hint": null
+    },
+    {
+      "mb": 47.2,
+      "minutes": 97.1,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 357,
+      "source_hint": null
+    },
+    {
+      "mb": 27.2,
+      "minutes": 56.4,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 15.9,
+      "minutes": 33.4,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 123,
+      "source_hint": null
+    },
+    {
+      "mb": 34.3,
+      "minutes": null,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 255,
+      "source_hint": null
+    },
+    {
+      "mb": 26.8,
+      "minutes": 59.1,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 43.7,
+      "minutes": 98.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 361,
+      "source_hint": null
+    },
+    {
+      "mb": 47.5,
+      "minutes": 98.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 361,
+      "source_hint": null
+    },
+    {
+      "mb": 31.5,
+      "minutes": 68.8,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 253,
+      "source_hint": null
+    },
+    {
+      "mb": 8.6,
+      "minutes": 19.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 70,
+      "source_hint": null
+    },
+    {
+      "mb": 6.5,
+      "minutes": 13.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 49,
+      "source_hint": null
+    },
+    {
+      "mb": 35.2,
+      "minutes": 75.1,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 276,
+      "source_hint": null
+    },
+    {
+      "mb": 35.7,
+      "minutes": 75.7,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 279,
+      "source_hint": null
+    },
+    {
+      "mb": 7.8,
+      "minutes": null,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 58,
+      "source_hint": null
+    },
+    {
+      "mb": 36.6,
+      "minutes": 85.8,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 316,
+      "source_hint": null
+    },
+    {
+      "mb": 21.0,
+      "minutes": 46.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 169,
+      "source_hint": null
+    },
+    {
+      "mb": 35.1,
+      "minutes": 76.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 282,
+      "source_hint": null
+    },
+    {
+      "mb": 2.5,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 41.5,
+      "minutes": 89.6,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 329,
+      "source_hint": null
+    },
+    {
+      "mb": 16.2,
+      "minutes": 35.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 130,
+      "source_hint": null
+    },
+    {
+      "mb": 0.1,
+      "minutes": 0.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 0.4,
+      "minutes": 0.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 4,
+      "source_hint": null
+    },
+    {
+      "mb": 23.1,
+      "minutes": 49.8,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 184,
+      "source_hint": null
+    },
+    {
+      "mb": 1.5,
+      "minutes": 3.3,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 12,
+      "source_hint": null
+    },
+    {
+      "mb": 0.3,
+      "minutes": 0.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 3,
+      "source_hint": null
+    },
+    {
+      "mb": 0.2,
+      "minutes": 0.3,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 2,
+      "source_hint": null
+    },
+    {
+      "mb": 0.5,
+      "minutes": 1.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 4,
+      "source_hint": null
+    },
+    {
+      "mb": 57.4,
+      "minutes": 118.8,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 437,
+      "source_hint": null
+    },
+    {
+      "mb": 34.1,
+      "minutes": 73.1,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 269,
+      "source_hint": null
+    },
+    {
+      "mb": 43.9,
+      "minutes": 91.2,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 336,
+      "source_hint": null
+    },
+    {
+      "mb": 44.1,
+      "minutes": 96.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 355,
+      "source_hint": null
+    },
+    {
+      "mb": 10.3,
+      "minutes": 23.4,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 86,
+      "source_hint": null
+    },
+    {
+      "mb": 33.4,
+      "minutes": 77.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 283,
+      "source_hint": null
+    },
+    {
+      "mb": 33.6,
+      "minutes": 68.8,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 253,
+      "source_hint": null
+    },
+    {
+      "mb": 24.4,
+      "minutes": 55.4,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 204,
+      "source_hint": null
+    },
+    {
+      "mb": 35.7,
+      "minutes": 75.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 279,
+      "source_hint": null
+    },
+    {
+      "mb": 32.7,
+      "minutes": 70.5,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 259,
+      "source_hint": null
+    },
+    {
+      "mb": 25.7,
+      "minutes": 57.9,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 213,
+      "source_hint": null
+    },
+    {
+      "mb": 23.3,
+      "minutes": 52.0,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 192,
+      "source_hint": null
+    },
+    {
+      "mb": 20.2,
+      "minutes": null,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 166,
+      "source_hint": null
+    },
+    {
+      "mb": 49.3,
+      "minutes": 95.5,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 57.5,
+      "minutes": 117.7,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 36.0,
+      "minutes": 76.1,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 34.5,
+      "minutes": 74.1,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 36.9,
+      "minutes": 82.8,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 4.6,
+      "minutes": 10.3,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 5.6,
+      "minutes": 11.5,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 2.5,
+      "minutes": 4.9,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 13.3,
+      "minutes": 26.8,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 31.7,
+      "minutes": 65.8,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 32.0,
+      "minutes": 69.4,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 12.4,
+      "minutes": 8.6,
+      "layout": "mp3",
+      "top_boxes": [
+        "\u0000\u0000\u0000\u0000"
+      ],
+      "box_count": 1,
+      "moov_kb": null,
+      "source_hint": null
+    },
+    {
+      "mb": 30.7,
+      "minutes": 67.6,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 38.0,
+      "minutes": 82.5,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 3.7,
+      "minutes": 8.2,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 12.4,
+      "minutes": 8.6,
+      "layout": "mp3",
+      "top_boxes": [
+        "\u0000\u0000\u0000\u0000"
+      ],
+      "box_count": 1,
+      "moov_kb": null,
+      "source_hint": null
+    },
+    {
+      "mb": 34.1,
+      "minutes": 70.8,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 14.7,
+      "minutes": 10.2,
+      "layout": "mp3",
+      "top_boxes": [
+        "\u0000\u0000\u0000\u0000"
+      ],
+      "box_count": 1,
+      "moov_kb": null,
+      "source_hint": null
+    },
+    {
+      "mb": 35.5,
+      "minutes": 73.8,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 14.8,
+      "minutes": 10.3,
+      "layout": "mp3",
+      "top_boxes": [
+        "\u0000\u0000\u0000\u0000"
+      ],
+      "box_count": 1,
+      "moov_kb": null,
+      "source_hint": null
+    },
+    {
+      "mb": 29.2,
+      "minutes": 64.1,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 14.5,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 34.7,
+      "minutes": 70.2,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 26.8,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 40.0,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 32.9,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 34.4,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 68.6,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 24.9,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 34.1,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 35.5,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 65.4,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 28.3,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 7.9,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 31.6,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 23.7,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 75.1,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 18.8,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 7.1,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 35.8,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 32.6,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 31.1,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 30.1,
+      "minutes": null,
+      "layout": "fragmented",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "moof",
+        "mdat",
+        "moof",
+        "mdat"
+      ],
+      "box_count": 64,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 29.0,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 219,
+      "source_hint": null
+    },
+    {
+      "mb": 36.1,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 280,
+      "source_hint": null
+    },
+    {
+      "mb": 38.5,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 305,
+      "source_hint": null
+    },
+    {
+      "mb": 38.3,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 296,
+      "source_hint": null
+    },
+    {
+      "mb": 36.9,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 282,
+      "source_hint": null
+    },
+    {
+      "mb": 16.6,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 124,
+      "source_hint": null
+    },
+    {
+      "mb": 0.7,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 7,
+      "source_hint": null
+    },
+    {
+      "mb": 40.3,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 304,
+      "source_hint": null
+    },
+    {
+      "mb": 17.3,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 129,
+      "source_hint": null
+    },
+    {
+      "mb": 52.3,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 395,
+      "source_hint": null
+    },
+    {
+      "mb": 18.8,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 150,
+      "source_hint": null
+    },
+    {
+      "mb": 26.5,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 216,
+      "source_hint": null
+    },
+    {
+      "mb": 25.2,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 203,
+      "source_hint": null
+    },
+    {
+      "mb": 36.4,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 277,
+      "source_hint": null
+    },
+    {
+      "mb": 34.2,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 268,
+      "source_hint": null
+    },
+    {
+      "mb": 0.1,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 39.0,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 294,
+      "source_hint": null
+    },
+    {
+      "mb": 23.1,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 173,
+      "source_hint": null
+    },
+    {
+      "mb": 30.9,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 253,
+      "source_hint": null
+    },
+    {
+      "mb": 21.7,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 174,
+      "source_hint": null
+    },
+    {
+      "mb": 10.7,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 78,
+      "source_hint": null
+    },
+    {
+      "mb": 24.5,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 178,
+      "source_hint": null
+    },
+    {
+      "mb": 35.9,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 274,
+      "source_hint": null
+    },
+    {
+      "mb": 35.2,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 276,
+      "source_hint": null
+    },
+    {
+      "mb": 37.7,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 285,
+      "source_hint": null
+    },
+    {
+      "mb": 13.3,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 108,
+      "source_hint": null
+    },
+    {
+      "mb": 32.4,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 263,
+      "source_hint": null
+    },
+    {
+      "mb": 0.1,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 2,
+      "source_hint": null
+    },
+    {
+      "mb": 38.6,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 298,
+      "source_hint": null
+    },
+    {
+      "mb": 0.1,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 2,
+      "source_hint": null
+    },
+    {
+      "mb": 37.9,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 339,
+      "source_hint": null
+    },
+    {
+      "mb": 31.7,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 241,
+      "source_hint": null
+    },
+    {
+      "mb": 36.3,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 280,
+      "source_hint": null
+    },
+    {
+      "mb": 40.2,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 313,
+      "source_hint": null
+    },
+    {
+      "mb": 35.5,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 283,
+      "source_hint": null
+    },
+    {
+      "mb": 4.4,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 31,
+      "source_hint": null
+    },
+    {
+      "mb": 4.6,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 38,
+      "source_hint": null
+    },
+    {
+      "mb": 0.1,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 1,
+      "source_hint": null
+    },
+    {
+      "mb": 9.1,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 67,
+      "source_hint": null
+    },
+    {
+      "mb": 11.0,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 81,
+      "source_hint": null
+    },
+    {
+      "mb": 4.6,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 39,
+      "source_hint": null
+    },
+    {
+      "mb": 6.0,
+      "minutes": null,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 182,
+      "source_hint": null
+    },
+    {
+      "mb": 39.7,
+      "minutes": null,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 1188,
+      "source_hint": null
+    },
+    {
+      "mb": 1.6,
+      "minutes": null,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 50,
+      "source_hint": null
+    },
+    {
+      "mb": 1.6,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 12,
+      "source_hint": null
+    },
+    {
+      "mb": 37.9,
+      "minutes": null,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 1137,
+      "source_hint": null
+    },
+    {
+      "mb": 35.7,
+      "minutes": null,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 1074,
+      "source_hint": null
+    },
+    {
+      "mb": 35.4,
+      "minutes": null,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 1062,
+      "source_hint": null
+    },
+    {
+      "mb": 2.9,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 26,
+      "source_hint": null
+    },
+    {
+      "mb": 9.8,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 70,
+      "source_hint": null
+    },
+    {
+      "mb": 47.2,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 361,
+      "source_hint": null
+    },
+    {
+      "mb": 14.8,
+      "minutes": null,
+      "layout": "faststart",
+      "top_boxes": [
+        "ftyp",
+        "moov",
+        "free",
+        "mdat"
+      ],
+      "box_count": 4,
+      "moov_kb": 446,
+      "source_hint": null
+    },
+    {
+      "mb": 46.5,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 374,
+      "source_hint": null
+    },
+    {
+      "mb": 46.5,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 374,
+      "source_hint": null
+    },
+    {
+      "mb": 47.1,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 385,
+      "source_hint": null
+    },
+    {
+      "mb": 47.1,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 379,
+      "source_hint": null
+    },
+    {
+      "mb": 47.0,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 378,
+      "source_hint": null
+    },
+    {
+      "mb": 46.9,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 382,
+      "source_hint": null
+    },
+    {
+      "mb": 47.2,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 382,
+      "source_hint": null
+    },
+    {
+      "mb": 46.7,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 373,
+      "source_hint": null
+    },
+    {
+      "mb": 45.1,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 367,
+      "source_hint": null
+    },
+    {
+      "mb": 37.7,
+      "minutes": null,
+      "layout": "moov_at_end",
+      "top_boxes": [
+        "ftyp",
+        "free",
+        "mdat",
+        "moov"
+      ],
+      "box_count": 4,
+      "moov_kb": 292,
+      "source_hint": null
+    }
+  ]
+}

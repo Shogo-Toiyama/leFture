@@ -1,13 +1,13 @@
 // lib/presentation/widgets/transcript_modal.dart
 
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 import 'package:lefture/application/credit/credit_providers.dart';
+import 'package:lefture/application/lecture/lecture_audio_source.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/application/recording/lecture_moments_provider.dart';
@@ -586,24 +586,42 @@ class TranscriptModal extends HookConsumerWidget {
 
         final hasAudioPath =
             lecture.audioPath != null && lecture.audioPath!.isNotEmpty;
-        final r2FileAsync = hasAudioPath
-            ? ref.watch(artifactFileProvider(lecture.audioPath!))
-            : const AsyncValue<File?>.data(null);
+        // 端末にファイルがあればそれを、無ければ署名付きURLでストリーミング再生する
+        // (再生位置の周りだけを取る)。詳細は[lectureAudioSourceProvider]。
+        final LectureAudioKey? audioKey = hasAudioPath
+            ? (lectureId: lecture.id, storagePath: lecture.audioPath!)
+            : null;
+        final audioSourceAsync = audioKey != null
+            ? ref.watch(lectureAudioSourceProvider(audioKey))
+            : const AsyncValue<LectureAudioSource?>.data(null);
 
         useEffect(() {
-          if (r2FileAsync.hasValue && r2FileAsync.value != null) {
-            final file = r2FileAsync.value!;
-            player
-                .setReleaseMode(ReleaseMode.stop)
-                .then((_) {
-                  return player.setSource(DeviceFileSource(file.path));
-                })
-                .then((_) {
-                  isAudioLoaded.value = true;
-                });
-          }
+          final audioSource = audioSourceAsync.value;
+          if (audioSource == null) return null;
+          // 署名付きURLの取り直しで差し替える時は、同じ位置・同じ再生状態から続ける。
+          final resumeAt = position.value;
+          final wasPlaying = playerState.value == PlayerState.playing;
+          player
+              .setReleaseMode(ReleaseMode.stop)
+              .then((_) => player.setSource(audioSource.source))
+              .then((_) async {
+                isAudioLoaded.value = true;
+                if (resumeAt > Duration.zero) await player.seek(resumeAt);
+                if (wasPlaying) await player.resume();
+              });
           return null;
-        }, [r2FileAsync.value, player]);
+        }, [audioSourceAsync.value, player]);
+
+        // 署名付きURLは期限付きなので、切れる前に取り直す(上のeffectが位置を保って差し替える)。
+        useEffect(() {
+          final refreshAfter = audioSourceAsync.value?.refreshAfter;
+          if (refreshAfter == null || audioKey == null) return null;
+          final wait = refreshAfter.difference(DateTime.now());
+          final timer = Timer(wait.isNegative ? Duration.zero : wait, () {
+            ref.invalidate(lectureAudioSourceProvider(audioKey));
+          });
+          return timer.cancel;
+        }, [audioSourceAsync.value]);
 
         useEffect(
           () {
@@ -1377,13 +1395,13 @@ class TranscriptModal extends HookConsumerWidget {
                       isPlaying: isPlaying,
                       playbackSpeed: playbackSpeed.value,
                       isAudioLoaded: isAudioLoaded.value,
-                      isLoading: r2FileAsync.isLoading,
-                      errorMessage: r2FileAsync.hasError
-                          ? (r2FileAsync.error is ArtifactOfflineException
+                      isLoading: audioSourceAsync.isLoading && !isAudioLoaded.value,
+                      errorMessage: audioSourceAsync.hasError
+                          ? (audioSourceAsync.error is ArtifactOfflineException
                                 ? l10n.announcementTranscriptModalOfflineErrorShort
                                 : safeErrorText(
                                     l10n,
-                                    r2FileAsync.error!,
+                                    audioSourceAsync.error!,
                                     'transcript_modal.audio',
                                   ))
                           : null,

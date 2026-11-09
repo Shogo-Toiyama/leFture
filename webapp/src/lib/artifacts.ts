@@ -30,6 +30,28 @@ export async function fetchArtifactJson<T>(storagePath: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+/**
+ * 講義音声(`{uid}/{lectureId}/master_audio.m4a`)の署名付きURLをWorkerに発行してもらう。
+ * <audio src>はAuthorizationヘッダーを付けられないので、署名をURLに含める。ブラウザは
+ * このURLにRangeリクエストを出し、再生位置の周りだけを取りに行く。
+ * Workerが対応していない(秘密鍵が未設定など)場合はnull(呼び出し側は全体ダウンロードへ)。
+ */
+export async function fetchSignedAudioUrl(storagePath: string): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new ArtifactFetchError('Not signed in', storagePath);
+  try {
+    const response = await fetch(`${ARTIFACT_WORKER_URL}/sign/${storagePath}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) return null;
+    const body = (await response.json()) as { url?: unknown };
+    return typeof body.url === 'string' ? body.url : null;
+  } catch {
+    return null;
+  }
+}
+
 /** 画像などバイナリ成果物用。呼び出し側でURL.revokeObjectURLすること。 */
 export async function fetchArtifactObjectUrl(storagePath: string): Promise<string> {
   const response = await fetchArtifact(storagePath);

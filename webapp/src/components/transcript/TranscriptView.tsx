@@ -58,6 +58,9 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
   const suppressAutoScroll = useRef(false);
   const didJumpToHighlight = useRef(false);
   const pendingSeek = useRef<number | null>(null);
+  // 署名付きURLの期限切れで再生が止まったら、URLを取り直して同じ位置から続ける。
+  const resumePlaybackAfterRefresh = useRef(false);
+  const lastAudioRefreshAt = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -215,6 +218,26 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
     pendingSeek.current = null;
   }, [player.ready, player]);
 
+  // URLを取り直した後、止まる前に再生中だったなら再生を再開する(上の頭出しの後)。
+  useEffect(() => {
+    if (!player.ready || !resumePlaybackAfterRefresh.current) return;
+    resumePlaybackAfterRefresh.current = false;
+    void player.ref.current?.play().catch(() => {});
+  }, [player.ready, player]);
+
+  // ストリーミング中の読み込みエラー(主に署名付きURLの期限切れ)。1分に1回までに
+  // 限って取り直す(本当に読めないファイルで取り直しを繰り返さないため)。
+  const handleAudioError = useCallback(() => {
+    const element = player.ref.current;
+    if (!audio.streaming || !element) return;
+    const now = Date.now();
+    if (now - lastAudioRefreshAt.current < 60_000) return;
+    lastAudioRefreshAt.current = now;
+    pendingSeek.current = element.currentTime;
+    resumePlaybackAfterRefresh.current = player.playing;
+    audio.refresh();
+  }, [audio, player]);
+
   const hasAudio = Boolean(lecture?.audio_path);
 
   return (
@@ -298,7 +321,7 @@ export const TranscriptView: React.FC<TranscriptViewProps> = ({
 
       {hasAudio && (
         <>
-          <audio ref={player.ref} src={audio.url ?? undefined} preload="metadata" />
+          <audio ref={player.ref} src={audio.url ?? undefined} preload="metadata" onError={handleAudioError} />
           <AudioPlayerBar
             position={player.position}
             duration={player.duration}

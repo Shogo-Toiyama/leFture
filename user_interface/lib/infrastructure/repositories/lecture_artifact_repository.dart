@@ -140,6 +140,47 @@ class LectureArtifactRepository {
     return file;
   }
 
+  /// 端末のキャッシュに既にある成果物(空でないもの)を返す。無ければnull。
+  /// 通信はしない(音声を丸ごとダウンロードせずにストリーミングするかを決めるため)。
+  Future<File?> cachedArtifactFile(String storagePath) async {
+    final file = await _localCacheFile(storagePath);
+    if (file.existsSync() && file.lengthSync() > 0) {
+      await _registerCacheEntry(storagePath, file);
+      return file;
+    }
+    return null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // 講義音声のストリーミング再生
+  // ---------------------------------------------------------------------------
+
+  /// 講義音声(`{uid}/{lectureId}/master_audio.m4a`)の署名付きURLをWorkerに
+  /// 発行してもらう。プレイヤーはこのURLにRangeリクエストを出し、再生位置の
+  /// 周りだけを取りに行く(Authorizationヘッダーを付けられないため署名をURLに含める)。
+  ///
+  /// Workerが署名付きURLに対応していない(古いWorker、秘密鍵が未設定など)場合は
+  /// nullを返す。呼び出し元は従来の全体ダウンロード([getArtifactFile])に切り替える。
+  Future<Uri?> signedAudioUrl(String storagePath) async {
+    if (!await isDeviceOnline()) {
+      throw ArtifactOfflineException(storagePath: storagePath);
+    }
+    try {
+      final response = await AuthedHttpClient(_supabase)
+          .get(Uri.parse('$_workerBaseUrl/sign/$storagePath'));
+      if (response.statusCode != 200) {
+        debugPrint('Audio sign ${response.statusCode}: $storagePath');
+        return null;
+      }
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final url = body['url'];
+      return url is String ? Uri.parse(url) : null;
+    } catch (e) {
+      debugPrint('Audio sign error: $e');
+      return null;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // トランスクリプト
   // ---------------------------------------------------------------------------
