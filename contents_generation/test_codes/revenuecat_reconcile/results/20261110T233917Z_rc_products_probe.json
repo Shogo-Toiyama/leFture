@@ -1,0 +1,106 @@
+{
+ "list_status": 200,
+ "products": [
+  {
+   "id": "prod0371c8554c",
+   "store_identifier": "price_1UGZqZJ0KiP32P3Am4zv1Af3",
+   "type": "subscription",
+   "app_id": "app93cfe3a73b",
+   "display_name": "Max Plan US$19.99 monthly"
+  },
+  {
+   "id": "prod22d3c87f15",
+   "store_identifier": "price_1UGZplJ0KiP32P3AdoEOhHEW",
+   "type": "subscription",
+   "app_id": "app93cfe3a73b",
+   "display_name": "Lite Plan US$5.99 monthly"
+  },
+  {
+   "id": "prod2d8312e933",
+   "store_identifier": "com.lefture.app.credits.500",
+   "type": "consumable",
+   "app_id": "appdbcfdef8bd",
+   "display_name": "500 Credits"
+  },
+  {
+   "id": "prod3075954747",
+   "store_identifier": "com.lefture.app.credits.100",
+   "type": "consumable",
+   "app_id": "appdbcfdef8bd",
+   "display_name": "100 Credits"
+  },
+  {
+   "id": "prod5332289709",
+   "store_identifier": "price_1UGZloQylf53GNncphyE1ZUg",
+   "type": "subscription",
+   "app_id": "app6cd9c82533",
+   "display_name": "Lite Plan US$5.99 monthly"
+  },
+  {
+   "id": "prod61c65a81de",
+   "store_identifier": "com.lefture.app.sub.premium",
+   "type": "subscription",
+   "app_id": "appdbcfdef8bd",
+   "display_name": "Premium Plan"
+  },
+  {
+   "id": "prod7ffa1ee788",
+   "store_identifier": "com.lefture.app.sub.starter",
+   "type": "subscription",
+   "app_id": "appdbcfdef8bd",
+   "display_name": "Starter Plan"
+  },
+  {
+   "id": "prod84f19e422f",
+   "store_identifier": "price_1UGZmQQylf53GNnc2CM0H4TL",
+   "type": "subscription",
+   "app_id": "app6cd9c82533",
+   "display_name": "Max Plan US$19.99 monthly"
+  },
+  {
+   "id": "prod938f693071",
+   "store_identifier": "com.lefture.app.sub.standard",
+   "type": "subscription",
+   "app_id": "appdbcfdef8bd",
+   "display_name": "Standard Plan"
+  },
+  {
+   "id": "prod9584b50f62",
+   "store_identifier": "price_1UGZm6Qylf53GNncUbqTKvTV",
+   "type": "subscription",
+   "app_id": "app6cd9c82533",
+   "display_name": "Core Plan US$12.99 monthly"
+  },
+  {
+   "id": "proda5e03ba623",
+   "store_identifier": "price_1UGZqBJ0KiP32P3AtEHpSOzP",
+   "type": "subscription",
+   "app_id": "app93cfe3a73b",
+   "display_name": "Core Plan US$12.99 monthly"
+  },
+  {
+   "id": "prodde4c9f6f17",
+   "store_identifier": "com.lefture.app.credits.2000",
+   "type": "consumable",
+   "app_id": "appdbcfdef8bd",
+   "display_name": "2000 Credits"
+  }
+ ],
+ "single_status": 200,
+ "single": {
+  "app_id": "appdbcfdef8bd",
+  "created_at": 1789080149869,
+  "display_name": "Premium Plan",
+  "id": "prod61c65a81de",
+  "object": "product",
+  "one_time": null,
+  "state": "active",
+  "store_identifier": "com.lefture.app.sub.premium",
+  "subscription": {
+   "duration": "P1M",
+   "grace_period_duration": null,
+   "trial_duration": "P1M"
+  },
+  "type": "subscription"
+ }
+}

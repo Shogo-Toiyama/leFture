@@ -1,0 +1,62 @@
+{
+ "friend_before_install": {
+  "store_ids": {
+   "prod61c65a81de": "com.lefture.app.sub.premium"
+  },
+  "action": "none",
+  "reason": "in_sync",
+  "unmapped": null
+ },
+ "friend_after_install": {
+  "store_ids": {
+   "prod61c65a81de": "com.lefture.app.sub.premium"
+  },
+  "action": "none",
+  "reason": "in_sync",
+  "unmapped": null
+ },
+ "lefture_app": {
+  "store_ids": {
+   "prod61c65a81de": "com.lefture.app.sub.premium"
+  },
+  "action": "none",
+  "reason": "in_sync",
+  "unmapped": null
+ },
+ "sandbox_tester": {
+  "store_ids": {
+   "prod61c65a81de": "com.lefture.app.sub.premium"
+  },
+  "action": "none",
+  "reason": "in_sync",
+  "unmapped": null
+ },
+ "production_max": {
+  "store_ids": {
+   "prod61c65a81de": "com.lefture.app.sub.premium"
+  },
+  "action": "none",
+  "reason": "in_sync",
+  "unmapped": null
+ },
+ "stale_stripe_max": {
+  "store_ids": {
+   "prod0371c8554c": "price_1UGZqZJ0KiP32P3Am4zv1Af3"
+  },
+  "action": "expire",
+  "reason": "stale_plan_without_active_subscription",
+  "unmapped": null
+ },
+ "reviewer_10y": {
+  "store_ids": {},
+  "action": "none",
+  "reason": "db_plan_not_expired_yet",
+  "unmapped": null
+ },
+ "shogo": {
+  "store_ids": {},
+  "action": "none",
+  "reason": "no_active_subscription",
+  "unmapped": null
+ }
+}

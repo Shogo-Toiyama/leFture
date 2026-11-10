@@ -142,4 +142,21 @@ class CreditRepository {
     final body = jsonDecode(response.body) as Map<String, dynamic>;
     return body['status'] as String? ?? 'unknown';
   }
+
+  /// 「購入を復元」/ syncPurchases の直後に呼ぶ。バックエンドがRevenueCatの
+  /// 実際の契約を問い合わせ、webhookで届いていない契約(アカウント作成前に
+  /// 匿名で成立した購入がaliasされただけ等)をDBに反映する。
+  /// 戻り値はバックエンドの判定(例: 'grant' / 'none')。失敗しても例外は投げない
+  /// (6時間ごとの自動突き合わせとパトロールが後から拾うため)。
+  Future<String> syncStoreSubscription() async {
+    try {
+      final response = await _http
+          .post(Uri.parse('$_cloudRunBaseUrl/billing/sync-store-subscription'));
+      if (response.statusCode != 200) return 'http_${response.statusCode}';
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      return body['action'] as String? ?? 'unknown';
+    } catch (_) {
+      return 'error';
+    }
+  }
 }

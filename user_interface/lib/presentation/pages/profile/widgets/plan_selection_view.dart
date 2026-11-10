@@ -373,6 +373,10 @@ class PlanSelectionView extends HookConsumerWidget {
         final customerInfo = await Purchases.restorePurchases();
         final hasActive = customerInfo.entitlements.active.isNotEmpty;
         if (hasActive) {
+          // 復元で有効になった契約がwebhookで届かない場合(alias等)に備え、
+          // バックエンドにRevenueCatとの突き合わせを依頼してから再取得する。
+          final syncAction = await ref.read(creditRepositoryProvider).syncStoreSubscription();
+          DevLog.add('💳 [Plans] restore -> backend store sync action=$syncAction');
           ref.read(creditPollingProvider).invalidateCreditData();
           ref.invalidate(claimablePlansProvider);
           ref.invalidate(creditSummaryProvider);

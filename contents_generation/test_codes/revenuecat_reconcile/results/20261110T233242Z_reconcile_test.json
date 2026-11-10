@@ -1,0 +1,229 @@
+{
+  "run_at": "20261110T233242Z",
+  "prod_writes": 0,
+  "revenuecat_calls": "GET only",
+  "cost_usd": 0,
+  "all_passed": true,
+  "cases": [
+    {
+      "case": "s1_security_revoke",
+      "ok": true,
+      "ms": 60,
+      "detail": {
+        "grant_store_subscription_credits": {
+          "anon": false,
+          "authenticated": false,
+          "service_role": true
+        },
+        "grant_credits": {
+          "anon": false,
+          "authenticated": false,
+          "service_role": true
+        },
+        "transfer_store_subscription": {
+          "anon": false,
+          "authenticated": false,
+          "service_role": true
+        },
+        "claim_store_sync_slot": {
+          "anon": false,
+          "authenticated": false,
+          "service_role": true
+        },
+        "get_my_tier_level": {
+          "anon": false,
+          "authenticated": true,
+          "service_role": true
+        },
+        "touch_activity": {
+          "anon": false,
+          "authenticated": true,
+          "service_role": true
+        },
+        "search_knowledge_chunks": {
+          "anon": false,
+          "authenticated": true,
+          "service_role": true
+        },
+        "anon_call": "permission denied for function grant_credits",
+        "future_fn": {
+          "anon": false,
+          "authenticated": false,
+          "service_role": true
+        }
+      }
+    },
+    {
+      "case": "s2_claim_slot_throttle",
+      "ok": true,
+      "ms": 1206,
+      "detail": [
+        true,
+        false,
+        true
+      ]
+    },
+    {
+      "case": "s3_decide_on_real_revenuecat_and_db",
+      "ok": true,
+      "ms": 3066,
+      "detail": {
+        "friend_offer_code_before_install": {
+          "rc_fetch_ms": 180,
+          "rc_subs": 1,
+          "decision": "none",
+          "reason": "in_sync",
+          "unmapped": null
+        },
+        "friend_offer_code_after_install": {
+          "rc_fetch_ms": 138,
+          "rc_subs": 2,
+          "decision": "none",
+          "reason": "in_sync",
+          "unmapped": null
+        },
+        "lefture_app_sandbox": {
+          "rc_fetch_ms": 395,
+          "rc_subs": 23,
+          "decision": "none",
+          "reason": "in_sync",
+          "unmapped": null
+        },
+        "sandbox_tester": {
+          "rc_fetch_ms": 142,
+          "rc_subs": 4,
+          "decision": "none",
+          "reason": "in_sync",
+          "unmapped": null
+        },
+        "production_max": {
+          "rc_fetch_ms": 139,
+          "rc_subs": 1,
+          "decision": "none",
+          "reason": "in_sync",
+          "unmapped": null
+        },
+        "stale_stripe_sandbox_max": {
+          "rc_fetch_ms": 137,
+          "rc_subs": 1,
+          "decision": "expire",
+          "reason": "stale_plan_without_active_subscription",
+          "unmapped": null
+        },
+        "reviewer_manual_10y": {
+          "rc_fetch_ms": 142,
+          "rc_subs": 0,
+          "decision": "none",
+          "reason": "db_plan_not_expired_yet",
+          "unmapped": null
+        },
+        "shogo_free_after_transfer": {
+          "rc_fetch_ms": 133,
+          "rc_subs": 0,
+          "decision": "none",
+          "reason": "no_active_subscription",
+          "unmapped": null
+        }
+      }
+    },
+    {
+      "case": "s4a_friend_before_manual_fix_gets_max_once",
+      "ok": true,
+      "ms": 46,
+      "detail": {
+        "first": {
+          "action": "grant",
+          "reason": "missing_plan",
+          "event_type": "INITIAL_PURCHASE",
+          "event_id": "reconcile:subAap76ec599947c82bdab9e4bd7a4a6d4f68:1793423654000",
+          "auto_renew_disabled": true,
+          "cancel_event_id": "reconcile-cancel:subAap76ec599947c82bdab9e4bd7a4a6d4f68:1793423654000",
+          "plan_id": "cda28090-b33a-42f7-aced-5743e6046d9a",
+          "plan_name": "Max",
+          "product_id": "com.lefture.app.sub.premium",
+          "period_end": "2027-10-31T05:14:14+00:00",
+          "rc_subscription_id": "subAap76ec599947c82bdab9e4bd7a4a6d4f68",
+          "environment": "production",
+          "store": "app_store",
+          "trigger": "test"
+        },
+        "after": [
+          [
+            "Max",
+            "APP_STORE",
+            "2027-10-31T05:14:14",
+            true
+          ]
+        ],
+        "balance": 4000,
+        "second": "in_sync"
+      }
+    },
+    {
+      "case": "s4b_stale_plan_expires_to_free",
+      "ok": true,
+      "ms": 30,
+      "detail": {
+        "result": {
+          "action": "expire",
+          "reason": "stale_plan_without_active_subscription",
+          "plan_id": "cda28090-b33a-42f7-aced-5743e6046d9a",
+          "event_id": "reconcile-expire:4264a552-1e2b-42d9-80a0-c39d6b481b3f:2026-10-19T14:24:41-07:00",
+          "db_period_end": "2026-10-19T14:24:41-07:00",
+          "trigger": "test"
+        },
+        "after": [
+          [
+            "Free",
+            null,
+            "2026-12-10T23:32:42",
+            false
+          ]
+        ],
+        "balance": 1400
+      }
+    },
+    {
+      "case": "s4c_missed_renewal_refills_not_doubles",
+      "ok": true,
+      "ms": 23,
+      "detail": {
+        "result": "missed_renewal",
+        "balance": 4000
+      }
+    },
+    {
+      "case": "s4d_recent_purchase_waits_for_webhook",
+      "ok": true,
+      "ms": 19,
+      "detail": "recent_purchase_wait_for_webhook"
+    },
+    {
+      "case": "s4e_incomplete_or_unmapped_never_touches_db",
+      "ok": true,
+      "ms": 19,
+      "detail": [
+        "incomplete_subscription_list",
+        "unmapped_active_products"
+      ]
+    },
+    {
+      "case": "s4f_throttle_blocks_second_call",
+      "ok": true,
+      "ms": 2,
+      "detail": [
+        "no_active_subscription",
+        "throttled"
+      ]
+    },
+    {
+      "case": "s5_webhook_anonymous_app_user_id",
+      "ok": true,
+      "ms": 40,
+      "detail": {
+        "anonymous": "anonymous_app_user_id",
+        "alias_resolved_to": "fdae3630-75e5-4304-8b13-356254ec1f2f"
+      }
+    }
+  ]
+}

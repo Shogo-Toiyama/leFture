@@ -79,6 +79,7 @@ from app.services.helpers.credits import (
 )
 from app.services.helpers.helpers import _get_audio_duration_seconds
 from app.services.helpers import billing_webhook_log
+from app.services.helpers import store_reconcile
 from app.services.helpers.plan_features import get_user_tier_level, has_feature, is_gating_disabled_for_user, FEATURE_REALTIME_TRANSCRIBE
 from app.services.tutorial_content import get_tutorial_content
 from app.services.knowledge_index import drain_knowledge_index_queue
@@ -1146,6 +1147,32 @@ async def billing_credit_packs(request: Request):
     return {"packs": available}
 
 
+STORE_RECONCILE_SUMMARY_INTERVAL_SECONDS = 6 * 3600
+STORE_RECONCILE_SUMMARY_TIMEOUT_SECONDS = 5.0
+STORE_RECONCILE_MANUAL_INTERVAL_SECONDS = 30
+STORE_RECONCILE_PATROL_BATCH = 25
+
+
+@app.post("/billing/sync-store-subscription")
+async def billing_sync_store_subscription(request: Request):
+    """「購入を復元」/ syncPurchases の直後にアプリから呼ぶ、即時の突き合わせ。
+
+    RevenueCatで有効になった契約がwebhookで届かない場合(匿名IDでの購入がaliasされた
+    だけ等)でも、ここでDBに反映する。30秒に1回まで(連打しても RevenueCat API を
+    叩き続けない)。付与は1請求期間につき最大1回(event_idで冪等)。
+    """
+    user_id = await _get_authenticated_user_id(request)
+    admin_client = get_supabase_client()
+    await _reject_if_suspended(admin_client, user_id)
+    result = await store_reconcile.reconcile_user(
+        admin_client, user_id,
+        min_interval_seconds=STORE_RECONCILE_MANUAL_INTERVAL_SECONDS,
+        reason="manual",
+    )
+    # クライアントには結果の種類だけ返す(内部のevent_id等は返さない)。
+    return {"action": result.get("action"), "reason": result.get("reason")}
+
+
 @app.get("/billing/summary")
 async def billing_summary(request: Request):
     """
@@ -1159,6 +1186,22 @@ async def billing_summary(request: Request):
     user_id = await _get_authenticated_user_id(request)
 
     admin_client = get_supabase_client()
+
+    # RevenueCatの実際の契約とDBの突き合わせ(6時間に1回)。webhookが届かない
+    # ケース(アカウント作成前の匿名購入など)を、アプリの更新なしで拾うための入口。
+    # このエンドポイントはアプリからほぼ常時呼ばれるので、間引きはインスタンス内
+    # (10分)→DB(6時間)の2段。RevenueCat API が遅くても summary 自体は待たせ過ぎない。
+    try:
+        await asyncio.wait_for(
+            store_reconcile.reconcile_user(
+                admin_client, user_id,
+                min_interval_seconds=STORE_RECONCILE_SUMMARY_INTERVAL_SECONDS,
+                reason="summary", use_local_skip=True,
+            ),
+            timeout=STORE_RECONCILE_SUMMARY_TIMEOUT_SECONDS,
+        )
+    except Exception as e:
+        logger.warning(f"store reconcile (summary) skipped for {user_id}: {type(e).__name__}: {e}")
 
     try:
         summary_res = await asyncio.to_thread(
@@ -1457,6 +1500,20 @@ async def _handle_revenuecat_event(body: dict, admin_client) -> dict:
         # リトライしても直らない不正なペイロード。ログだけ残して200で終わらせる。
         logger.error(f"Malformed RevenueCat webhook payload: {body}")
         return {"status": "ignored", "reason": "malformed_payload"}
+
+    # app_user_idがSupabaseのuuidでない($RCAnonymousID)場合、aliases /
+    # original_app_user_id の中のuuidを使う(RevenueCat公式も「両方を検索する
+    # こと」としている)。どれもuuidでない = アカウント作成前の匿名ユーザーの購入で、
+    # こちらには紐付け先が無い。以前はここでSQL関数のuuidキャストが失敗して500を
+    # 返し、RevenueCatが同じ失敗を何度も再送していた。リトライしても直らないので
+    # 記録だけして200で終える(ログイン後の突き合わせ=store_reconcileが拾う)。
+    resolved_user_id = (_uuid_strings([app_user_id])
+                        or _uuid_strings(event.get("aliases"))
+                        or _uuid_strings([event.get("original_app_user_id")]))
+    if not resolved_user_id:
+        logger.info(f"RevenueCat {event_type} {event_id}: anonymous app_user_id only; left to store reconcile")
+        return {"status": "ignored", "event_type": event_type, "reason": "anonymous_app_user_id"}
+    app_user_id = resolved_user_id[0]
 
     # CANCELLATION(自動更新オフになっただけで期間終了までは有効)は、ここで
     # マッピングを失効させてもクレジットを取り消してもいけない。TRANSFER等も
@@ -4793,6 +4850,39 @@ async def _patrol_renew_subscriptions() -> dict:
     return {"due": len(due_mappings), "enqueued": enqueued, "failed": failed}
 
 
+async def _patrol_reconcile_stale_store_subscriptions() -> dict:
+    """
+    期限が6時間以上過ぎたのにactiveのまま残っている課金プラン(store_purchase)を
+    RevenueCatの実際の契約と突き合わせる。EXPIRATION/RENEWALの取りこぼしで
+    「期限切れのMaxが残り続ける」「更新が反映されない」状態を、本人がアプリを
+    開かなくても直す。1ユーザー6時間に1回まで(claim_store_sync_slotで間引き)、
+    1回のパトロールで最大STORE_RECONCILE_PATROL_BATCH人。
+    """
+    if not store_reconcile.revenuecat_api.is_configured():
+        return {"skipped": "revenuecat_api_not_configured"}
+    admin_client = get_supabase_client()
+    cutoff = (datetime.now(timezone.utc) - store_reconcile.STALE_EXPIRE_AFTER).isoformat()
+    due_res = await asyncio.to_thread(
+        lambda: admin_client.table("user_subscription_mappings")
+            .select("user_id, subscription_plans!user_subscription_mappings_plan_id_fkey!inner(claim_mode)")
+            .eq("status", "active")
+            .eq("subscription_plans.claim_mode", "store_purchase")
+            .lt("current_period_end", cutoff)
+            .limit(STORE_RECONCILE_PATROL_BATCH)
+            .execute()
+    )
+    actions = {}
+    for row in due_res.data or []:
+        result = await store_reconcile.reconcile_user(
+            admin_client, row["user_id"],
+            min_interval_seconds=STORE_RECONCILE_SUMMARY_INTERVAL_SECONDS,
+            reason="patrol",
+        )
+        key = f"{result.get('action')}:{result.get('reason')}"
+        actions[key] = actions.get(key, 0) + 1
+    return {"candidates": len(due_res.data or []), "results": actions}
+
+
 async def _patrol_reconcile_cross_platform_subscriptions() -> dict:
     """
     Stripe→Apple乗り換え(Apple購入成功後にStripeを即時解約+返金する設計、
@@ -5004,6 +5094,7 @@ PATROL_CHECKS = [
     ("hard_delete_expired_chat_threads", _patrol_hard_delete_expired_chat_threads),
     ("materialize_dormant_expired_grants", _patrol_materialize_dormant_expired_grants),
     ("renew_subscriptions", _patrol_renew_subscriptions),
+    ("reconcile_stale_store_subscriptions", _patrol_reconcile_stale_store_subscriptions),
     ("reconcile_cross_platform_subscriptions", _patrol_reconcile_cross_platform_subscriptions),
     ("fail_stale_chat_messages", _patrol_fail_stale_chat_messages),
     ("enqueue_profile_extraction", _patrol_enqueue_profile_extraction),

@@ -8,6 +8,7 @@ import 'package:lefture/core/utils/dev_log.dart';
 
 import '../auth/auth_provider.dart';
 import '../credit/credit_polling_provider.dart';
+import '../credit/credit_providers.dart';
 
 part 'purchases_identity_provider.g.dart';
 
@@ -58,8 +59,11 @@ class PurchasesIdentityService {
       if (info.entitlements.active.isEmpty) return;
 
       DevLog.add('💳 [Purchases] syncPurchases found an active entitlement; refreshing credit data');
-      // バックエンドへの反映はRevenueCat webhook経由で非同期なので、直後と
-      // 少し後の2回だけ再取得する(restore時と同じinvalidateの仕組みを使う)。
+      // webhookが届かないケース(匿名IDでの購入がaliasされただけ等)に備えて、
+      // バックエンドにRevenueCatとの突き合わせを依頼してから再取得する。
+      final action = await _ref.read(creditRepositoryProvider).syncStoreSubscription();
+      DevLog.add('💳 [Purchases] backend store sync action=$action');
+      // webhook経由の反映は非同期なので、直後と少し後の2回だけ再取得する。
       final polling = _ref.read(creditPollingProvider);
       await polling.invalidateCreditData();
       await Future<void>.delayed(const Duration(seconds: 5));
