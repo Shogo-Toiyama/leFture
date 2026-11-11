@@ -1578,14 +1578,18 @@ async def _handle_revenuecat_event(body: dict, admin_client) -> dict:
                 except Exception as e:
                     logger.warning(f"Cross-platform Stripe cleanup failed for user {app_user_id}: {e}")
         elif event_type == "BILLING_ISSUE":
-            # Grace Period中は決済がまだ成功していないため新規クレジットの
-            # 積み増しは行わず、既存クレジットをGrace Period終了日
-            # (expiration_at_ms、Apple/StoreKitがGrace Period分延長した値)まで
-            # 維持する。冪等性・実際のロジックはhandle_billing_issue() SQL関数側で行う。
-            if not product_id or expiration_at_ms is None:
-                logger.error(f"RevenueCat BILLING_ISSUE missing product_id/expiration_at_ms: {event}")
+            # Grace Period中は決済がまだ成功していないため、クレジットの増減は一切しない
+            # (ゼロ化も再付与もしない)。既存クレジットの期限(保険)を、ストアが報告した
+            # Grace Period終了日まで延ばすだけ。決済が回復すればRENEWAL、回復しなければ
+            # EXPIRATIONが来る。冪等性・実際のロジックはhandle_billing_issue() SQL関数側。
+            # expiration_at_msは取引自体の期限でGrace Period分は延びない(RevenueCat公式)。
+            # Grace Periodの終了日は grace_period_expiration_at_ms(BILLING_ISSUEのみ・Stripeはnull)。
+            grace_end_ms = event.get("grace_period_expiration_at_ms")
+            billing_issue_end_ms = grace_end_ms if grace_end_ms is not None else expiration_at_ms
+            if not product_id or billing_issue_end_ms is None:
+                logger.error(f"RevenueCat BILLING_ISSUE missing product_id/expiration: {event}")
                 return {"status": "ignored", "reason": "missing_fields"}
-            period_end_iso = datetime.fromtimestamp(expiration_at_ms / 1000, tz=timezone.utc).isoformat()
+            period_end_iso = datetime.fromtimestamp(billing_issue_end_ms / 1000, tz=timezone.utc).isoformat()
             await asyncio.to_thread(
                 lambda: admin_client.rpc("handle_billing_issue", {
                     "p_user_id": app_user_id,
@@ -4883,6 +4887,19 @@ async def _patrol_reconcile_stale_store_subscriptions() -> dict:
     return {"candidates": len(due_res.data or []), "results": actions}
 
 
+async def _patrol_refill_long_period_store_credits() -> dict:
+    """
+    契約期間が1か月より長いストア課金(1年のオファーコード等)に、毎月クレジットを補充する。
+    判定・冪等性・付与はすべて refill_long_period_store_credits() SQL関数側
+    (補充日 = 最後の通常付与日の1か月ごと。繰り越しなし。billing_webhook_logに残る)。
+    """
+    admin_client = get_supabase_client()
+    res = await asyncio.to_thread(
+        lambda: admin_client.rpc("refill_long_period_store_credits", {"p_limit": 50}).execute()
+    )
+    return res.data or {}
+
+
 async def _patrol_reconcile_cross_platform_subscriptions() -> dict:
     """
     Stripe→Apple乗り換え(Apple購入成功後にStripeを即時解約+返金する設計、
@@ -5095,6 +5112,7 @@ PATROL_CHECKS = [
     ("materialize_dormant_expired_grants", _patrol_materialize_dormant_expired_grants),
     ("renew_subscriptions", _patrol_renew_subscriptions),
     ("reconcile_stale_store_subscriptions", _patrol_reconcile_stale_store_subscriptions),
+    ("refill_long_period_store_credits", _patrol_refill_long_period_store_credits),
     ("reconcile_cross_platform_subscriptions", _patrol_reconcile_cross_platform_subscriptions),
     ("fail_stale_chat_messages", _patrol_fail_stale_chat_messages),
     ("enqueue_profile_extraction", _patrol_enqueue_profile_extraction),

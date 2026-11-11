@@ -81,6 +81,16 @@ def decide(
     if subs is None:
         return {"action": "none", "reason": "incomplete_subscription_list"}
 
+    # Billing Grace Period中(決済失敗の再試行中だがストアはまだ有効扱い)は、
+    # RevenueCat側のcurrent_period_ends_atが過去のまま・古いままのことがあり、
+    # 下の「期限切れ」判定で無効と誤認してプランを消しかねない。この間は何もしない
+    # (回復すればRENEWAL、回復しなければEXPIRATIONがwebhookで届く)。
+    for s in subs:
+        if (s.get("status") == "in_grace_period" and s.get("gives_access")
+                and s.get("store") in SUPPORTED_RC_STORES):
+            return {"action": "none", "reason": "in_grace_period",
+                    "rc_subscription_id": s.get("id")}
+
     by_store = plans_by_store_id(plans)
     candidates, unmapped = [], []
     for s in subs:

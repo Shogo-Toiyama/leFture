@@ -1,0 +1,83 @@
+{
+  "run_at": "20261111T010741Z",
+  "prod_writes": 0,
+  "revenuecat_calls": 0,
+  "cost_usd": 0,
+  "all_passed": false,
+  "cases": [
+    {
+      "case": "t1_old_billing_issue_bug_reproduced",
+      "ok": true,
+      "ms": 62,
+      "detail": {
+        "balance_before": 0,
+        "balance_after_old_handle_billing_issue": 4000
+      }
+    },
+    {
+      "case": "t2_new_billing_issue_keeps_balance_and_extends_expiry",
+      "ok": false,
+      "error": "AssertionError((0, [RealDictRow([('source', 'subscription_initial_store'), ('rem', 0), ('expires_at', datetime.datetime(2026, 11, 10, 22, 7, 41, 336503, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=57600)))), ('created_at', datetime.datetime(2026, 11, 10, 17, 7, 41, 335031, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=57600)))), ('metadata', None)])], [RealDictRow([('reason', 'subscription_initial_store'), ('d', 4000)])]))"
+    },
+    {
+      "case": "t3_recovery_and_no_recovery",
+      "ok": true,
+      "ms": 19,
+      "detail": {
+        "recovered_balance": 4000,
+        "after_expiration": {
+          "max_credits_left": 0,
+          "active_plan": "Free",
+          "balance": 400
+        }
+      }
+    },
+    {
+      "case": "t4_backstop_is_30_days_and_survives_missed_billing_issue",
+      "ok": true,
+      "ms": 17,
+      "detail": {
+        "expires_in_days_for_end_plus_10": 40.0,
+        "balance_27d_after_period_end": 4000,
+        "balance_31d_after_period_end": 0
+      }
+    },
+    {
+      "case": "t5_monthly_refill",
+      "ok": false,
+      "error": "AssertionError()"
+    },
+    {
+      "case": "t6_not_eligible",
+      "ok": false,
+      "error": "AssertionError((10, 10, 0))"
+    },
+    {
+      "case": "t7_renewal_after_refill_does_not_stack",
+      "ok": true,
+      "ms": 20,
+      "detail": {
+        "balance_after_renewal": 4000,
+        "refill_after_short_renewal": []
+      }
+    },
+    {
+      "case": "t8_main_billing_issue_branch",
+      "ok": true,
+      "ms": 41,
+      "detail": {
+        "uses_grace_end_when_present": true,
+        "falls_back_to_expiration_at_ms": true
+      }
+    },
+    {
+      "case": "t9_reconcile_does_not_expire_during_grace",
+      "ok": true,
+      "ms": 0,
+      "detail": {
+        "in_grace_period": "in_grace_period",
+        "stale_active_control": "expire"
+      }
+    }
+  ]
+}

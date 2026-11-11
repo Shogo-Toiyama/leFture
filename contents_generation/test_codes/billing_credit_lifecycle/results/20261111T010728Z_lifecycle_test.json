@@ -1,0 +1,78 @@
+{
+  "run_at": "20261111T010728Z",
+  "prod_writes": 0,
+  "revenuecat_calls": 0,
+  "cost_usd": 0,
+  "all_passed": false,
+  "cases": [
+    {
+      "case": "t1_old_billing_issue_bug_reproduced",
+      "ok": true,
+      "ms": 49,
+      "detail": {
+        "balance_before": 0,
+        "balance_after_old_handle_billing_issue": 4000
+      }
+    },
+    {
+      "case": "t2_new_billing_issue_keeps_balance_and_extends_expiry",
+      "ok": false,
+      "error": "UndefinedFunction('operator does not exist: bigint // integer\\nLINE 1: select source, remaining_amount//1000000 as rem, expires_at,...\\n                                       ^\\nHINT:  No operator matches the given name and argument types. You might need to add explicit type casts.\\n')"
+    },
+    {
+      "case": "t3_recovery_and_no_recovery",
+      "ok": true,
+      "ms": 21,
+      "detail": {
+        "recovered_balance": 4000,
+        "after_expiration": {
+          "max_credits_left": 0,
+          "active_plan": "Free",
+          "balance": 400
+        }
+      }
+    },
+    {
+      "case": "t4_backstop_is_30_days_and_survives_missed_billing_issue",
+      "ok": false,
+      "error": "UndefinedFunction('operator does not exist: bigint // integer\\nLINE 1: select source, remaining_amount//1000000 as rem, expires_at,...\\n                                       ^\\nHINT:  No operator matches the given name and argument types. You might need to add explicit type casts.\\n')"
+    },
+    {
+      "case": "t5_monthly_refill",
+      "ok": false,
+      "error": "UndefinedFunction('operator does not exist: bigint // integer\\nLINE 1: select source, remaining_amount//1000000 as rem, expires_at,...\\n                                       ^\\nHINT:  No operator matches the given name and argument types. You might need to add explicit type casts.\\n')"
+    },
+    {
+      "case": "t6_not_eligible",
+      "ok": false,
+      "error": "AssertionError({'refilled': [{'plan': 'Max', 'user_id': 'b0b9f445-ad29-42aa-84d7-0f3e59f5116c', 'refill_month': 1}], 'candidates': 1})"
+    },
+    {
+      "case": "t7_renewal_after_refill_does_not_stack",
+      "ok": true,
+      "ms": 20,
+      "detail": {
+        "balance_after_renewal": 4000,
+        "refill_after_short_renewal": []
+      }
+    },
+    {
+      "case": "t8_main_billing_issue_branch",
+      "ok": true,
+      "ms": 41,
+      "detail": {
+        "uses_grace_end_when_present": true,
+        "falls_back_to_expiration_at_ms": true
+      }
+    },
+    {
+      "case": "t9_reconcile_does_not_expire_during_grace",
+      "ok": true,
+      "ms": 0,
+      "detail": {
+        "in_grace_period": "in_grace_period",
+        "stale_active_control": "expire"
+      }
+    }
+  ]
+}

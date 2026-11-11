@@ -1,0 +1,117 @@
+{
+  "run_at": "20261111T010816Z",
+  "prod_writes": 0,
+  "revenuecat_calls": 0,
+  "cost_usd": 0,
+  "all_passed": true,
+  "cases": [
+    {
+      "case": "t1_old_billing_issue_bug_reproduced",
+      "ok": true,
+      "ms": 48,
+      "detail": {
+        "balance_before": 0,
+        "balance_after_old_handle_billing_issue": 4000
+      }
+    },
+    {
+      "case": "t2_new_billing_issue_keeps_balance_and_extends_expiry",
+      "ok": true,
+      "ms": 30,
+      "detail": {
+        "spent_all": {
+          "balance": 0,
+          "grants": 1,
+          "new_ledger_rows": 0
+        },
+        "remaining_700": {
+          "balance": 700,
+          "expires_in_days": 30.0
+        },
+        "never_shortens": true,
+        "idempotent": true
+      }
+    },
+    {
+      "case": "t3_recovery_and_no_recovery",
+      "ok": true,
+      "ms": 23,
+      "detail": {
+        "recovered_balance": 4000,
+        "after_expiration": {
+          "max_credits_left": 0,
+          "active_plan": "Free",
+          "balance": 400
+        }
+      }
+    },
+    {
+      "case": "t4_backstop_is_30_days_and_survives_missed_billing_issue",
+      "ok": true,
+      "ms": 18,
+      "detail": {
+        "expires_in_days_for_end_plus_10": 40.0,
+        "balance_27d_after_period_end": 4000,
+        "balance_31d_after_period_end": 0
+      }
+    },
+    {
+      "case": "t5_monthly_refill",
+      "ok": true,
+      "ms": 21,
+      "detail": {
+        "month1": {
+          "plan": "Max",
+          "user_id": "6c1e3120-c012-40dc-be8d-a9acda06265a",
+          "refill_month": 1
+        },
+        "balance_after_month1": 4000,
+        "month2": {
+          "plan": "Max",
+          "user_id": "6c1e3120-c012-40dc-be8d-a9acda06265a",
+          "refill_month": 2
+        },
+        "ledger": 5
+      }
+    },
+    {
+      "case": "t6_not_eligible",
+      "ok": true,
+      "ms": 24,
+      "detail": {
+        "monthly_untouched": true,
+        "ended_untouched": true,
+        "young_untouched": true,
+        "boundary": "ok",
+        "default_refilled": []
+      }
+    },
+    {
+      "case": "t7_renewal_after_refill_does_not_stack",
+      "ok": true,
+      "ms": 20,
+      "detail": {
+        "balance_after_renewal": 4000,
+        "refill_after_short_renewal": []
+      }
+    },
+    {
+      "case": "t8_main_billing_issue_branch",
+      "ok": true,
+      "ms": 46,
+      "detail": {
+        "uses_grace_end_when_present": true,
+        "falls_back_to_expiration_at_ms": true
+      }
+    },
+    {
+      "case": "t9_reconcile_does_not_expire_during_grace",
+      "ok": true,
+      "ms": 0,
+      "detail": {
+        "in_grace_period": "in_grace_period",
+        "stale_active_control": "expire"
+      }
+    }
+  ]
+}
