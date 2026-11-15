@@ -10,6 +10,8 @@ import 'package:lefture/core/services/plan_entitlement_cache.dart';
 import 'package:lefture/application/recording/recovery/recording_finalize.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/application/errors/error_reporter.dart';
+import 'package:lefture/application/recording/upload_trace.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/application/job/job_providers.dart';
 import 'package:lefture/application/recording/recovery/recovery_providers.dart';
@@ -807,6 +809,13 @@ class RecordingController extends _$RecordingController {
       // 保存された場合、まだ1件もチャンクが来ておらず、ここが「実際に
       // アップロードするかどうか」を初めて確定させる機会になりうる。
       if (await _confirmRealtimeBeforeFirstUpload()) {
+        // Realtime録音のアップロードは、完了までの全ログを成功・失敗を問わず
+        // 開発者へ送る(詳細はupload_trace.dart)。直前のDevLogも前置きに含める。
+        final recent = DevLog.diagnosticLines;
+        await UploadTrace.begin(
+          lecture.id,
+          preamble: recent.length <= 150 ? recent : recent.sublist(recent.length - 150),
+        );
         final finalFlushed = _chunker?.flush();
         if (finalFlushed != null && finalFlushed.data.isNotEmpty) {
           DevLog.add('[Chunker] Final chunk is ready! Size: ${finalFlushed.data.length} bytes (Start: ${finalFlushed.startTimeSec}s)');
@@ -853,7 +862,9 @@ class RecordingController extends _$RecordingController {
 
       _enterQueuedPhase();
 
-    } catch (e) {
+    } catch (e, st) {
+      DevLog.add('🔴 [Upload] Save failed: $e\n$st');
+      reportRawError(e, origin: 'recording_controller.upload', stack: st);
       state = state.copyWith(
         phase: RecordingPhase.error,
         errorMessage: 'Save failed: $e'

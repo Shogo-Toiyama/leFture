@@ -12,6 +12,8 @@
 // RecordingRepositoryDrift.finishLectureRecordingの呼び出し元コメントを参照。
 
 import 'package:lefture/application/recording/upload_manager.dart';
+import 'package:lefture/application/recording/upload_trace.dart';
+import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
 import 'package:lefture/infrastructure/local_db/repositories/recording_repository_drift.dart';
 
@@ -42,11 +44,22 @@ Future<void> finalizeRecordingUpload({
     'finalChunkPathを渡す場合はfinalChunkStartTime/nextChunkSequenceIndexも必須。',
   );
 
+  if (lecture.isRealtime == true) {
+    // Idempotent for normal saves; starts a trace for recovery confirmations.
+    await UploadTrace.begin(lecture.id, preamble: DevLog.diagnosticLines);
+  }
+
+  DevLog.add(
+    '[Finalize] begin lecture=${lecture.id} totalChunks=$totalChunks '
+    'finalChunk=${finalChunkPath != null} master=$masterM4aPath',
+  );
+
   // 1. expectedChunksを、最終チャンクのアップロードジョブを登録するより先に確定させる。
   await repo.finishLectureRecording(
     lectureId: lecture.id,
     expectedChunks: totalChunks,
   );
+  DevLog.add('[Finalize] 1/4 expectedChunks=$totalChunks committed');
 
   // 2. 最後のチャンクのアップロードジョブを登録(あれば)
   if (finalChunkPath != null) {
@@ -58,6 +71,7 @@ Future<void> finalizeRecordingUpload({
       startTime: finalChunkStartTime!,
       endTime: finalChunkEndTime,
     );
+    DevLog.add('[Finalize] 2/4 final chunk #$nextChunkSequenceIndex upload job enqueued');
   }
 
   // 3. マスターオーディオのアップロードジョブを登録
@@ -66,10 +80,12 @@ Future<void> finalizeRecordingUpload({
     lectureId: lecture.id,
     localPath: masterM4aPath,
   );
+  DevLog.add('[Finalize] 3/4 master audio upload job enqueued');
 
   // 4. リアルタイム収録の自動分析を、確定したこの瞬間に予約する
   // (プレレコーデッドはマスター音声のアップロード完了時にUploadManagerが発火する)。
   await repo.maybeEnqueueStartAnalysisForRealtimeLecture(lecture.id);
+  DevLog.add('[Finalize] 4/4 auto start_analysis reservation checked; kicking upload queue');
 
   uploadManager.tryProcessQueue();
 }

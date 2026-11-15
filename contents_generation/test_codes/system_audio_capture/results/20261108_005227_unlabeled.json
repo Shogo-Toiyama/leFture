@@ -1,0 +1,57 @@
+{
+  "timestamp": "2026-11-08T08:52:27.810Z",
+  "scenario": "",
+  "env": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "secureContext": true,
+    "hasGetDisplayMedia": true,
+    "mediaRecorder": true,
+    "mimeSupport": {
+      "audio/webm;codecs=opus": true,
+      "audio/webm": true,
+      "audio/mp4;codecs=mp4a.40.2": true,
+      "audio/mp4;codecs=opus": true,
+      "audio/mp4": true,
+      "audio/ogg;codecs=opus": false
+    },
+    "platform": "macOS",
+    "platformVersion": "27.2.0",
+    "browsers": "Not:A-Brand 8.0.0.0, Chromium 156.0.8078.80, Google Chrome 156.0.8078.80",
+    "supportedConstraints": [
+      "suppressLocalAudioPlayback",
+      "restrictOwnAudio",
+      "displaySurface",
+      "echoCancellation",
+      "noiseSuppression",
+      "autoGainControl"
+    ]
+  },
+  "request": {
+    "video": {
+      "displaySurface": "monitor",
+      "frameRate": 1,
+      "width": {
+        "max": 640
+      },
+      "height": {
+        "max": 360
+      }
+    },
+    "audio": {
+      "echoCancellation": false,
+      "noiseSuppression": false,
+      "autoGainControl": false,
+      "suppressLocalAudioPlayback": false
+    },
+    "systemAudio": "include",
+    "selfBrowserSurface": "include",
+    "surfaceSwitching": "exclude",
+    "monitorTypeSurfaces": "include"
+  },
+  "outcome": "no_audio_track",
+  "events": [
+    "[0.00s] env {\"userAgent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36\",\"secureContext\":true,\"hasGetDisplayMedia\":true,\"mediaRecorder\":true,\"mimeSupport\":{\"audio/webm;codecs=opus\":true,\"audio/webm\":true,\"audio/mp4;codecs=mp4a.40.2\":true,\"audio/mp4;codecs=opus\":true,\"audio/mp4\":true,\"audio/ogg;codecs=opus\":false},\"platform\":\"macOS\",\"platformVersion\":\"27.2.0\",\"browsers\":\"Not:A-Brand 8.0.0.0, Chromium 156.0.8078.80, Google Chrome 156.0.8078.80\",\"supportedConstraints\":[\"suppressLocalAudioPlayback\",\"restrictOwnAudio\",\"displaySurface\",\"echoCancellation\",\"noiseSuppression\",\"autoGainControl\"]}",
+    "[1.74s] getDisplayMedia request {\"video\":{\"displaySurface\":\"monitor\",\"frameRate\":1,\"width\":{\"max\":640},\"height\":{\"max\":360}},\"audio\":{\"echoCancellation\":false,\"noiseSuppression\":false,\"autoGainControl\":false,\"suppressLocalAudioPlayback\":false},\"systemAudio\":\"include\",\"selfBrowserSurface\":\"include\",\"surfaceSwitching\":\"exclude\",\"monitorTypeSurfaces\":\"include\"}",
+    "[8.01s] stream acquired {\"displaySurface\":\"monitor\",\"videoLabel\":\"screen:1:0\",\"audioTracks\":[]}"
+  ]
+}

@@ -1,0 +1,25 @@
+## 1. Variant cases: 79/79 passed
+
+## 2. Production handles unchanged by normalization: 248/248
+
+## 3. Production dropped ops (20)
+- 2026-11-06 handle_not_openable: 'C4/L6-L7' -> 'C4/L6-7' (lecture_range)
+- 2026-11-05 transcript_range_too_long: 'C7/L18/s1-74' -> 'C7/L18/s1-74' (transcript)
+- 2026-10-20 handle_not_openable: 'C5/L7/s914-958' -> 'C5/L7/s914-958' (transcript)
+- 2026-10-16 handle_not_openable: 'C4/L5/T5' -> 'C4/L5/T5' (topic)
+- 2026-10-09 outside_fetch_from: {"op": "attachment.search", "query": "OpenSSL 3 macOS Homebrew /usr/local/include/openssl link or symlink setup instructions", "target": "attachment.search"} (no handle)
+- 2026-10-09 outside_fetch_from: {"op": "attachment.search", "query": "“/opt/homebrew/Cellar/openssl@3/3.3.2/include/openssl” “/usr/local/include/openssl” link OpenSSL 3 macOS", "target": "attachment.search"} (no handle)
+- 2026-10-05 transcript_range_too_long: 'C6/L2/s37-98' -> 'C6/L2/s37-98' (transcript)
+- 2026-10-05 transcript_range_too_long: 'C6/L2/s37-98' -> 'C6/L2/s37-98' (transcript)
+- 2026-10-04 transcript_range_too_long: 'C5/L5/s851-916' -> 'C5/L5/s851-916' (transcript)
+- 2026-10-04 transcript_range_too_long: 'C5/L5/s851-916' -> 'C5/L5/s851-916' (transcript)
+- 2026-10-03 transcript_range_too_long: 'C5/L4/s756-821' -> 'C5/L4/s756-821' (transcript)
+- 2026-10-03 handle_not_openable: 'C4/L3/s1287-1323' -> 'C4/L3/s1287-1323' (transcript)
+- 2026-10-03 transcript_range_too_long: 'C4/L3/s1131-1193' -> 'C4/L3/s1131-1193' (transcript)
+- 2026-10-03 transcript_range_too_long: 'C4/L3/s1131-1193' -> 'C4/L3/s1131-1193' (transcript)
+- 2026-10-02 transcript_range_too_long: 'C5/L4/s110-174' -> 'C5/L4/s110-174' (transcript)
+- 2026-10-02 transcript_range_too_long: 'C5/L4/s170-230' -> 'C5/L4/s170-230' (transcript)
+- 2026-10-01 transcript_range_too_long: 'C5/L3/s398-476' -> 'C5/L3/s398-476' (transcript)
+- 2026-10-01 transcript_range_too_long: 'C5/L3/s398-476' -> 'C5/L3/s398-476' (transcript)
+- 2026-10-01 transcript_range_too_long: 'C5/L3/s102-163' -> 'C5/L3/s102-163' (transcript)
+- 2026-10-01 transcript_range_too_long: 'C5/L3/s102-163' -> 'C5/L3/s102-163' (transcript)

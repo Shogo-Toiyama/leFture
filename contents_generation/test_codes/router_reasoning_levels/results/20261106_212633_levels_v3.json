@@ -1,0 +1,210 @@
+{
+  "model": "gemini/gemini-3.1-flash-lite",
+  "prompt": "router_levels_v3",
+  "pass": 5,
+  "total": 6,
+  "levels": {
+    "none": 1,
+    "low": 1,
+    "medium": 4,
+    "high": 0
+  },
+  "cases": [
+    "7acf61c0",
+    "26472a8f",
+    "c431a100",
+    "fc388cec",
+    "f24d94bd",
+    "4ea6a277"
+  ],
+  "total_cost_usd": 0.008831803651271503,
+  "rows": [
+    {
+      "thread": "6a3080e4",
+      "message": "7acf61c0",
+      "note": "今何時かわかる？",
+      "acceptable": [
+        "none"
+      ],
+      "got": "none",
+      "pass": true,
+      "production_needs_reasoning": false,
+      "production_answer_output_tokens": 635,
+      "latency_s": 1.12,
+      "tokens": {
+        "in": 2704,
+        "out": 98
+      },
+      "cost_usd": 0.000857,
+      "intent": "chitchat",
+      "needs_retrieval": false,
+      "reply_language": "ja",
+      "user_goal": "The student is asking for the current time.",
+      "meta": {
+        "history": 2,
+        "summary_blocks": 0,
+        "lecture": null,
+        "selected_text": "",
+        "page": null,
+        "attachments": 0,
+        "input_chars": 1113
+      }
+    },
+    {
+      "thread": "886879bc",
+      "message": "26472a8f",
+      "note": "ここでのBindingってどう言う意味？",
+      "acceptable": [
+        "low"
+      ],
+      "got": "low",
+      "pass": true,
+      "production_needs_reasoning": false,
+      "production_answer_output_tokens": 549,
+      "latency_s": 1.25,
+      "tokens": {
+        "in": 3016,
+        "out": 147
+      },
+      "cost_usd": 0.001012,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "reply_language": "ja",
+      "user_goal": "Define 'binding' in the context of programming languages, specifically relating to variables and storage, while acknowledging the student's preparation for their test and indicating readiness to review further concepts together.",
+      "meta": {
+        "history": 2,
+        "summary_blocks": 0,
+        "lecture": "Programming Language / 不変データ構造とプログラミング言語の型システム",
+        "selected_text": "バインディング",
+        "page": "Review Cards for topic \"変数・値・記憶域の基本的な意味\" (all of its cards)",
+        "attachments": 0,
+        "input_chars": 1941
+      }
+    },
+    {
+      "thread": "4b0ff0b6",
+      "message": "c431a100",
+      "note": "80%取るにはあと2回で何点？(最低点除外)",
+      "acceptable": [
+        "medium"
+      ],
+      "got": "medium",
+      "pass": true,
+      "production_needs_reasoning": true,
+      "production_answer_output_tokens": 3549,
+      "latency_s": 1.4,
+      "tokens": {
+        "in": 4102,
+        "out": 139
+      },
+      "cost_usd": 0.001276,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "reply_language": "ja",
+      "user_goal": "Calculate the required scores for the remaining two tests in the 'Formal logic' course to achieve a total course grade of 80%, under the assumption that the lowest of the four tests is dropped and total possible points are 40 per test.",
+      "meta": {
+        "history": 6,
+        "summary_blocks": 0,
+        "lecture": "Formal logic / 命題論理の自然演繹と証明構成",
+        "selected_text": "",
+        "page": null,
+        "attachments": 0,
+        "input_chars": 3477
+      }
+    },
+    {
+      "thread": "931543fd",
+      "message": "fc388cec",
+      "note": "クロックリカバリ: 8%遅い送信で10ビットのサンプリング時刻とlagを計算",
+      "acceptable": [
+        "high"
+      ],
+      "got": "medium",
+      "pass": false,
+      "production_needs_reasoning": null,
+      "production_answer_output_tokens": 968,
+      "latency_s": 1.17,
+      "tokens": {
+        "in": 6739,
+        "out": 184
+      },
+      "cost_usd": 0.001996,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "reply_language": "ja",
+      "user_goal": "Understand how to trace the 'Clock Recovery' pseudocode step-by-step, specifically how the lag is calculated and applied to the sampling instants when the sender's clock is 8% slower than the receiver's nominal bit time (T=1μs) for the sequence '10011 11010'.",
+      "meta": {
+        "history": 18,
+        "summary_blocks": 0,
+        "lecture": null,
+        "selected_text": "",
+        "page": null,
+        "attachments": 0,
+        "input_chars": 9032
+      }
+    },
+    {
+      "thread": "399aab7f",
+      "message": "f24d94bd",
+      "note": "株の売買の最大利益をO(N)で解くには",
+      "acceptable": [
+        "medium"
+      ],
+      "got": "medium",
+      "pass": true,
+      "production_needs_reasoning": true,
+      "production_answer_output_tokens": 262,
+      "latency_s": 1.13,
+      "tokens": {
+        "in": 2982,
+        "out": 176
+      },
+      "cost_usd": 0.001043,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "reply_language": "ja",
+      "user_goal": "The student is working on the 'Best Time to Buy and Sell Stock' LeetCode problem and understands that buying on the minimum price before the selling day yields the maximum profit, but they are struggling to implement this in O(N) time complexity instead of O(N^2). They need a hint or guidance on how to track the minimum price efficiently as they iterate through the array.",
+      "meta": {
+        "history": 2,
+        "summary_blocks": 0,
+        "lecture": null,
+        "selected_text": "",
+        "page": null,
+        "attachments": 0,
+        "input_chars": 1906
+      }
+    },
+    {
+      "thread": "aca016f4",
+      "message": "4ea6a277",
+      "note": "OCamlのwhileループの出力と純粋性、JaneStreet(一問目から)",
+      "acceptable": [
+        "low",
+        "medium"
+      ],
+      "got": "medium",
+      "pass": true,
+      "production_needs_reasoning": true,
+      "production_answer_output_tokens": 1756,
+      "latency_s": 1.21,
+      "tokens": {
+        "in": 9606,
+        "out": 140
+      },
+      "cost_usd": 0.002648,
+      "intent": "learning",
+      "needs_retrieval": true,
+      "reply_language": "ja",
+      "user_goal": "Understand if OCaml is a pure functional language by analyzing a provided code snippet, and research why JaneStreet uses OCaml over Haskell.",
+      "meta": {
+        "history": 18,
+        "summary_blocks": 1,
+        "lecture": "Programming Language / Haskellのリスト処理とパターンマッチング",
+        "selected_text": "",
+        "page": null,
+        "attachments": 0,
+        "input_chars": 15628
+      }
+    }
+  ]
+}

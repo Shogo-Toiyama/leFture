@@ -10,6 +10,7 @@ import 'package:lefture/application/auth/auth_provider.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/application/errors/error_reporter.dart';
+import 'package:lefture/application/recording/upload_trace.dart';
 import 'package:lefture/domain/errors/app_error.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -104,6 +105,8 @@ Future<void> main() async {
     installErrorReporter(container.read(errorReporterProvider));
     // 前回起動時にオフラインで送れずキューに残った分を、起動直後に流す。
     unawaited(container.read(errorReporterProvider).flush());
+    // Realtime録音のアップロード診断ログ(前回起動から残っているものを拾い直す)。
+    unawaited(UploadTrace.init());
 
     runApp(
       UncontrolledProviderScope(

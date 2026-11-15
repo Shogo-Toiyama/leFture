@@ -1,0 +1,121 @@
+{
+  "model": "gemini/gemini-2.5-flash-lite",
+  "effort": null,
+  "summary": {
+    "v1": {
+      "pass": 0,
+      "total": 5,
+      "avg_latency_s": 0.04,
+      "cost_usd": 0
+    }
+  },
+  "total_cost_usd": 0,
+  "rows": [
+    {
+      "prompt": "v1",
+      "case": "real_coercion",
+      "expected": "ja",
+      "got": null,
+      "pass": false,
+      "latency_s": 0.11,
+      "tokens": {},
+      "cost_usd": 0,
+      "intent": null,
+      "needs_retrieval": null,
+      "needs_reasoning": null,
+      "thread_title": null,
+      "diff_vs_production_router": {
+        "intent": [
+          "learning",
+          null
+        ],
+        "needs_retrieval": [
+          false,
+          null
+        ],
+        "needs_reasoning": [
+          true,
+          null
+        ]
+      },
+      "error": "LiteLLM Error with model gemini/gemini-2.5-flash-lite: litellm.APIConnectionError: Missing Gemini API key. Set the GEMINI_API_KEY or GOOGLE_API_KEY environment variable.\nTraceback (most recent call last):\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/main.py\", line 658, in acompletion\n    response = await _resolve_dispatched_chat_response(init_response)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/main.py\", line 723, in _resolve_dispatched_chat_response\n    return await pending\n           ^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/llms/vertex_ai/gemini/vertex_and_google_ai_studio_gemini.py\", line 2789, in async_completion\n    auth_header, api_base = self._get_token_and_url(\n                            ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/llms/vertex_ai/vertex_llm_base.py\", line 726, in _get_token_and_url\n    raise ValueError(\nValueError: Missing Gemini API key. Set the GEMINI_API_KEY or GOOGLE_API_KEY environment variable.\n\nThis looks like a bug in LiteLLM rather than in your request. File it with one click (prefilled, no request data or error text, review before submitting): https://github.com/BerriAI/litellm/issues/new?template=bug_report.yml&labels=bug&title=%5BBug%5D%3A+ValueError+in+litellm%2Fllms%2Fvertex_ai%2Fvertex_llm_base.py&version=1.104.2&domain=Python+SDK%3A+the+litellm+package+itself&description=Auto-generated+by+LiteLLM%27s+bug+report+link.+It+carries+no+request+data+or+error+text.+Please+describe+what+you+were+doing%2C+and+paste+the+error+message+from+your+log+below+if+it+contains+nothing+sensitive.%0A%0A%60%60%60%0A%0A%60%60%60%0A%0AException%3A+%60ValueError%60%0A%0ALiteLLM+frames%3A%0A%60%60%60%0Alitellm%2Fmain.py%3A658+in+acompletion%0Alitellm%2Fmain.py%3A723+in+_resolve_dispatched_chat_response%0Alitellm%2Fllms%2Fvertex_ai%2Fgemini%2Fvertex_and_google_ai_studio_gemini.py%3A2789+in+async_completion%0Alitellm%2Fllms%2Fvertex_ai%2Fvertex_llm_base.py%3A726+in+_get_token_and_url%0A%60%60%60%0A%0ASurface%3A+sdk%0AEndpoint+%2F+call%3A+unknown%0AProvider%3A+gemini%0ALiteLLM%3A+1.104.2%0APython%3A+3.11.18%0A&deployment=pip+%2F+Python+SDK LiteLLM Retried: 3 times"
+    },
+    {
+      "prompt": "v1",
+      "case": "real_paste_fib",
+      "expected": "ja",
+      "got": null,
+      "pass": false,
+      "latency_s": 0.02,
+      "tokens": {},
+      "cost_usd": 0,
+      "intent": null,
+      "needs_retrieval": null,
+      "needs_reasoning": null,
+      "thread_title": null,
+      "diff_vs_production_router": {
+        "intent": [
+          "learning",
+          null
+        ],
+        "needs_retrieval": [
+          false,
+          null
+        ],
+        "needs_reasoning": [
+          true,
+          null
+        ]
+      },
+      "error": "LiteLLM Error with model gemini/gemini-2.5-flash-lite: litellm.APIConnectionError: Missing Gemini API key. Set the GEMINI_API_KEY or GOOGLE_API_KEY environment variable.\nTraceback (most recent call last):\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/main.py\", line 658, in acompletion\n    response = await _resolve_dispatched_chat_response(init_response)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/main.py\", line 723, in _resolve_dispatched_chat_response\n    return await pending\n           ^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/llms/vertex_ai/gemini/vertex_and_google_ai_studio_gemini.py\", line 2789, in async_completion\n    auth_header, api_base = self._get_token_and_url(\n                            ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/llms/vertex_ai/vertex_llm_base.py\", line 726, in _get_token_and_url\n    raise ValueError(\nValueError: Missing Gemini API key. Set the GEMINI_API_KEY or GOOGLE_API_KEY environment variable.\n\nThis looks like a bug in LiteLLM rather than in your request. File it with one click (prefilled, no request data or error text, review before submitting): https://github.com/BerriAI/litellm/issues/new?template=bug_report.yml&labels=bug&title=%5BBug%5D%3A+ValueError+in+litellm%2Fllms%2Fvertex_ai%2Fvertex_llm_base.py&version=1.104.2&domain=Python+SDK%3A+the+litellm+package+itself&description=Auto-generated+by+LiteLLM%27s+bug+report+link.+It+carries+no+request+data+or+error+text.+Please+describe+what+you+were+doing%2C+and+paste+the+error+message+from+your+log+below+if+it+contains+nothing+sensitive.%0A%0A%60%60%60%0A%0A%60%60%60%0A%0AException%3A+%60ValueError%60%0A%0ALiteLLM+frames%3A%0A%60%60%60%0Alitellm%2Fmain.py%3A658+in+acompletion%0Alitellm%2Fmain.py%3A723+in+_resolve_dispatched_chat_response%0Alitellm%2Fllms%2Fvertex_ai%2Fgemini%2Fvertex_and_google_ai_studio_gemini.py%3A2789+in+async_completion%0Alitellm%2Fllms%2Fvertex_ai%2Fvertex_llm_base.py%3A726+in+_get_token_and_url%0A%60%60%60%0A%0ASurface%3A+sdk%0AEndpoint+%2F+call%3A+unknown%0AProvider%3A+gemini%0ALiteLLM%3A+1.104.2%0APython%3A+3.11.18%0A&deployment=pip+%2F+Python+SDK LiteLLM Retried: 3 times"
+    },
+    {
+      "prompt": "v1",
+      "case": "syn_english_word_answer",
+      "expected": "ja",
+      "got": null,
+      "pass": false,
+      "latency_s": 0.02,
+      "tokens": {},
+      "cost_usd": 0,
+      "intent": null,
+      "needs_retrieval": null,
+      "needs_reasoning": null,
+      "thread_title": null,
+      "diff_vs_production_router": {},
+      "error": "LiteLLM Error with model gemini/gemini-2.5-flash-lite: litellm.APIConnectionError: Missing Gemini API key. Set the GEMINI_API_KEY or GOOGLE_API_KEY environment variable.\nTraceback (most recent call last):\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/main.py\", line 658, in acompletion\n    response = await _resolve_dispatched_chat_response(init_response)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/main.py\", line 723, in _resolve_dispatched_chat_response\n    return await pending\n           ^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/llms/vertex_ai/gemini/vertex_and_google_ai_studio_gemini.py\", line 2789, in async_completion\n    auth_header, api_base = self._get_token_and_url(\n                            ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/llms/vertex_ai/vertex_llm_base.py\", line 726, in _get_token_and_url\n    raise ValueError(\nValueError: Missing Gemini API key. Set the GEMINI_API_KEY or GOOGLE_API_KEY environment variable.\n\nThis looks like a bug in LiteLLM rather than in your request. File it with one click (prefilled, no request data or error text, review before submitting): https://github.com/BerriAI/litellm/issues/new?template=bug_report.yml&labels=bug&title=%5BBug%5D%3A+ValueError+in+litellm%2Fllms%2Fvertex_ai%2Fvertex_llm_base.py&version=1.104.2&domain=Python+SDK%3A+the+litellm+package+itself&description=Auto-generated+by+LiteLLM%27s+bug+report+link.+It+carries+no+request+data+or+error+text.+Please+describe+what+you+were+doing%2C+and+paste+the+error+message+from+your+log+below+if+it+contains+nothing+sensitive.%0A%0A%60%60%60%0A%0A%60%60%60%0A%0AException%3A+%60ValueError%60%0A%0ALiteLLM+frames%3A%0A%60%60%60%0Alitellm%2Fmain.py%3A658+in+acompletion%0Alitellm%2Fmain.py%3A723+in+_resolve_dispatched_chat_response%0Alitellm%2Fllms%2Fvertex_ai%2Fgemini%2Fvertex_and_google_ai_studio_gemini.py%3A2789+in+async_completion%0Alitellm%2Fllms%2Fvertex_ai%2Fvertex_llm_base.py%3A726+in+_get_token_and_url%0A%60%60%60%0A%0ASurface%3A+sdk%0AEndpoint+%2F+call%3A+unknown%0AProvider%3A+gemini%0ALiteLLM%3A+1.104.2%0APython%3A+3.11.18%0A&deployment=pip+%2F+Python+SDK LiteLLM Retried: 3 times"
+    },
+    {
+      "prompt": "v1",
+      "case": "syn_explicit_en",
+      "expected": "en",
+      "got": null,
+      "pass": false,
+      "latency_s": 0.02,
+      "tokens": {},
+      "cost_usd": 0,
+      "intent": null,
+      "needs_retrieval": null,
+      "needs_reasoning": null,
+      "thread_title": null,
+      "diff_vs_production_router": {},
+      "error": "LiteLLM Error with model gemini/gemini-2.5-flash-lite: litellm.APIConnectionError: Missing Gemini API key. Set the GEMINI_API_KEY or GOOGLE_API_KEY environment variable.\nTraceback (most recent call last):\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/main.py\", line 658, in acompletion\n    response = await _resolve_dispatched_chat_response(init_response)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/main.py\", line 723, in _resolve_dispatched_chat_response\n    return await pending\n           ^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/llms/vertex_ai/gemini/vertex_and_google_ai_studio_gemini.py\", line 2789, in async_completion\n    auth_header, api_base = self._get_token_and_url(\n                            ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/llms/vertex_ai/vertex_llm_base.py\", line 726, in _get_token_and_url\n    raise ValueError(\nValueError: Missing Gemini API key. Set the GEMINI_API_KEY or GOOGLE_API_KEY environment variable.\n\nThis looks like a bug in LiteLLM rather than in your request. File it with one click (prefilled, no request data or error text, review before submitting): https://github.com/BerriAI/litellm/issues/new?template=bug_report.yml&labels=bug&title=%5BBug%5D%3A+ValueError+in+litellm%2Fllms%2Fvertex_ai%2Fvertex_llm_base.py&version=1.104.2&domain=Python+SDK%3A+the+litellm+package+itself&description=Auto-generated+by+LiteLLM%27s+bug+report+link.+It+carries+no+request+data+or+error+text.+Please+describe+what+you+were+doing%2C+and+paste+the+error+message+from+your+log+below+if+it+contains+nothing+sensitive.%0A%0A%60%60%60%0A%0A%60%60%60%0A%0AException%3A+%60ValueError%60%0A%0ALiteLLM+frames%3A%0A%60%60%60%0Alitellm%2Fmain.py%3A658+in+acompletion%0Alitellm%2Fmain.py%3A723+in+_resolve_dispatched_chat_response%0Alitellm%2Fllms%2Fvertex_ai%2Fgemini%2Fvertex_and_google_ai_studio_gemini.py%3A2789+in+async_completion%0Alitellm%2Fllms%2Fvertex_ai%2Fvertex_llm_base.py%3A726+in+_get_token_and_url%0A%60%60%60%0A%0ASurface%3A+sdk%0AEndpoint+%2F+call%3A+unknown%0AProvider%3A+gemini%0ALiteLLM%3A+1.104.2%0APython%3A+3.11.18%0A&deployment=pip+%2F+Python+SDK LiteLLM Retried: 3 times"
+    },
+    {
+      "prompt": "v1",
+      "case": "first_mixed",
+      "expected": "ja",
+      "got": null,
+      "pass": false,
+      "latency_s": 0.02,
+      "tokens": {},
+      "cost_usd": 0,
+      "intent": null,
+      "needs_retrieval": null,
+      "needs_reasoning": null,
+      "thread_title": null,
+      "diff_vs_production_router": {},
+      "error": "LiteLLM Error with model gemini/gemini-2.5-flash-lite: litellm.APIConnectionError: Missing Gemini API key. Set the GEMINI_API_KEY or GOOGLE_API_KEY environment variable.\nTraceback (most recent call last):\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/main.py\", line 658, in acompletion\n    response = await _resolve_dispatched_chat_response(init_response)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/main.py\", line 723, in _resolve_dispatched_chat_response\n    return await pending\n           ^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/llms/vertex_ai/gemini/vertex_and_google_ai_studio_gemini.py\", line 2789, in async_completion\n    auth_header, api_base = self._get_token_and_url(\n                            ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/shogotoiyama/Programming/leFture/.venv/lib/python3.11/site-packages/litellm/llms/vertex_ai/vertex_llm_base.py\", line 726, in _get_token_and_url\n    raise ValueError(\nValueError: Missing Gemini API key. Set the GEMINI_API_KEY or GOOGLE_API_KEY environment variable.\n\nThis looks like a bug in LiteLLM rather than in your request. File it with one click (prefilled, no request data or error text, review before submitting): https://github.com/BerriAI/litellm/issues/new?template=bug_report.yml&labels=bug&title=%5BBug%5D%3A+ValueError+in+litellm%2Fllms%2Fvertex_ai%2Fvertex_llm_base.py&version=1.104.2&domain=Python+SDK%3A+the+litellm+package+itself&description=Auto-generated+by+LiteLLM%27s+bug+report+link.+It+carries+no+request+data+or+error+text.+Please+describe+what+you+were+doing%2C+and+paste+the+error+message+from+your+log+below+if+it+contains+nothing+sensitive.%0A%0A%60%60%60%0A%0A%60%60%60%0A%0AException%3A+%60ValueError%60%0A%0ALiteLLM+frames%3A%0A%60%60%60%0Alitellm%2Fmain.py%3A658+in+acompletion%0Alitellm%2Fmain.py%3A723+in+_resolve_dispatched_chat_response%0Alitellm%2Fllms%2Fvertex_ai%2Fgemini%2Fvertex_and_google_ai_studio_gemini.py%3A2789+in+async_completion%0Alitellm%2Fllms%2Fvertex_ai%2Fvertex_llm_base.py%3A726+in+_get_token_and_url%0A%60%60%60%0A%0ASurface%3A+sdk%0AEndpoint+%2F+call%3A+unknown%0AProvider%3A+gemini%0ALiteLLM%3A+1.104.2%0APython%3A+3.11.18%0A&deployment=pip+%2F+Python+SDK LiteLLM Retried: 3 times"
+    }
+  ]
+}

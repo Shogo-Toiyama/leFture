@@ -1,0 +1,59 @@
+{
+  "rows": [
+    {
+      "message": "ありがとう。TYPING8に進みたい。A1なんだけど",
+      "production": true,
+      "runs": [
+        true,
+        true,
+        true
+      ],
+      "meta": {
+        "history": 18,
+        "summary_blocks": 3,
+        "lecture": "Programming Language / 不変データ構造とプログラミング言語の型システム",
+        "selected_text": "",
+        "page": null,
+        "attachments": 1,
+        "input_chars": 15308
+      }
+    },
+    {
+      "message": "じゃあコードと出力を見て「これは強い型付けの言語だ」って判断するのは不可能じゃない？",
+      "production": true,
+      "runs": [
+        true,
+        true,
+        true
+      ],
+      "meta": {
+        "history": 20,
+        "summary_blocks": 3,
+        "lecture": "Programming Language / 不変データ構造とプログラミング言語の型システム",
+        "selected_text": "",
+        "page": null,
+        "attachments": 1,
+        "input_chars": 16678
+      }
+    },
+    {
+      "message": "じゃあTYPING8のB1はTrueで、B2はFalseなのか。合ってる？",
+      "production": true,
+      "runs": [
+        true,
+        true,
+        true
+      ],
+      "meta": {
+        "history": 22,
+        "summary_blocks": 3,
+        "lecture": "Programming Language / 不変データ構造とプログラミング言語の型システム",
+        "selected_text": "",
+        "page": null,
+        "attachments": 1,
+        "input_chars": 16658
+      }
+    }
+  ],
+  "total_cost_usd": 0.01301238878001147
+}

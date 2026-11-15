@@ -1,0 +1,115 @@
+{
+  "model": "gemini/gemini-3.1-flash-lite",
+  "effort": "none",
+  "summary": {
+    "v1": {
+      "pass": 5,
+      "total": 5,
+      "avg_latency_s": 1.13,
+      "cost_usd": 0.007452
+    }
+  },
+  "total_cost_usd": 0.00745217529497923,
+  "rows": [
+    {
+      "prompt": "v1",
+      "case": "real_coercion",
+      "expected": "ja",
+      "got": "ja",
+      "pass": true,
+      "latency_s": 1.61,
+      "tokens": {
+        "in": 8336,
+        "out": 117,
+        "cache": 0
+      },
+      "cost_usd": 0.002308,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": true,
+      "thread_title": null,
+      "diff_vs_production_router": {},
+      "error": null
+    },
+    {
+      "prompt": "v1",
+      "case": "real_paste_fib",
+      "expected": "ja",
+      "got": "ja",
+      "pass": true,
+      "latency_s": 1.13,
+      "tokens": {
+        "in": 5478,
+        "out": 181,
+        "cache": 0
+      },
+      "cost_usd": 0.001675,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": true,
+      "thread_title": null,
+      "diff_vs_production_router": {},
+      "error": null
+    },
+    {
+      "prompt": "v1",
+      "case": "syn_english_word_answer",
+      "expected": "ja",
+      "got": "ja",
+      "pass": true,
+      "latency_s": 1.16,
+      "tokens": {
+        "in": 5421,
+        "out": 144,
+        "cache": 0
+      },
+      "cost_usd": 0.001606,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "thread_title": null,
+      "diff_vs_production_router": {},
+      "error": null
+    },
+    {
+      "prompt": "v1",
+      "case": "syn_explicit_en",
+      "expected": "en",
+      "got": "en",
+      "pass": true,
+      "latency_s": 0.97,
+      "tokens": {
+        "in": 5416,
+        "out": 104,
+        "cache": 1898
+      },
+      "cost_usd": 0.001112,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "thread_title": null,
+      "diff_vs_production_router": {},
+      "error": null
+    },
+    {
+      "prompt": "v1",
+      "case": "first_mixed",
+      "expected": "ja",
+      "got": "ja",
+      "pass": true,
+      "latency_s": 0.8,
+      "tokens": {
+        "in": 2220,
+        "out": 115,
+        "cache": 0
+      },
+      "cost_usd": 0.000751,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": true,
+      "thread_title": "暗黙の型変換とCoercion",
+      "diff_vs_production_router": {},
+      "error": null
+    }
+  ]
+}

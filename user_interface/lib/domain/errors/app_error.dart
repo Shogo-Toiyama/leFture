@@ -55,6 +55,10 @@ class AppErrorCode {
   /// バックエンドが4xx/5xxを返したが、error_codeが未知 or 構造化されていない。
   static const backendRejected = 'BACKEND_REJECTED';
 
+  /// 失敗ではなく、Realtime Transcribe録音のアップロード全工程のログを
+  /// 成功・失敗を問わず送るための診断レポート(UploadTrace)。
+  static const uploadTrace = 'UPLOAD_TRACE';
+
   /// どれにも当てはまらない。**報告対象の本命はこれ。**
   static const unknown = 'UNKNOWN';
 

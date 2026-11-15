@@ -1,0 +1,642 @@
+{
+  "run_at": "2026-11-08T00:32:07.111462",
+  "latency_ms_per_request": 40.0,
+  "versions": [
+    "4.4 (Modal: ubuntu22.04)",
+    "5.1 (Debian bookworm)",
+    "7.1 (Debian trixie)",
+    "9.0 (latest)"
+  ],
+  "files": {
+    "20261108_001417_zoom-app_screen_bt_mic-off.m4a": {
+      "layout": {
+        "top_level": {
+          "ftyp": 1,
+          "moov": 1,
+          "moof": 30,
+          "mdat": 30
+        },
+        "mvhd": {
+          "timescale": 1000,
+          "duration": 0
+        },
+        "bytes": 361983
+      },
+      "by_version": {
+        "4.4 (Modal: ubuntu22.04)": {
+          "probe_local": {
+            "duration": 29.759229,
+            "error": null,
+            "seconds": 0.13
+          },
+          "probe_http": {
+            "duration": 29.759229,
+            "error": null,
+            "seconds": 0.16,
+            "requests": 2,
+            "bytes_read": 722815,
+            "file_fraction_read": 1.997
+          },
+          "clips": [
+            {
+              "offset": 0.0,
+              "ok": true,
+              "clip_seconds": 29.76,
+              "seconds": 0.32
+            }
+          ]
+        },
+        "5.1 (Debian bookworm)": {
+          "probe_local": {
+            "duration": 29.759229,
+            "error": null,
+            "seconds": 0.09
+          },
+          "probe_http": {
+            "duration": 29.759229,
+            "error": null,
+            "seconds": 0.16,
+            "requests": 2,
+            "bytes_read": 722815,
+            "file_fraction_read": 1.997
+          },
+          "clips": [
+            {
+              "offset": 0.0,
+              "ok": true,
+              "clip_seconds": 29.76,
+              "seconds": 0.26
+            }
+          ]
+        },
+        "7.1 (Debian trixie)": {
+          "probe_local": {
+            "duration": 29.759229,
+            "error": null,
+            "seconds": 0.09
+          },
+          "probe_http": {
+            "duration": 29.759229,
+            "error": null,
+            "seconds": 0.17,
+            "requests": 2,
+            "bytes_read": 722815,
+            "file_fraction_read": 1.997
+          },
+          "clips": [
+            {
+              "offset": 0.0,
+              "ok": true,
+              "clip_seconds": 29.76,
+              "seconds": 0.25
+            }
+          ]
+        },
+        "9.0 (latest)": {
+          "probe_local": {
+            "duration": 29.759229,
+            "error": null,
+            "seconds": 0.04
+          },
+          "probe_http": {
+            "duration": 29.759229,
+            "error": null,
+            "seconds": 0.12,
+            "requests": 2,
+            "bytes_read": 722815,
+            "file_fraction_read": 1.997
+          },
+          "clips": [
+            {
+              "offset": 0.0,
+              "ok": true,
+              "clip_seconds": 29.76,
+              "seconds": 0.07
+            }
+          ]
+        }
+      }
+    },
+    "20261108_001521_zoom-app_screen_bt_mic-on.m4a": {
+      "layout": {
+        "top_level": {
+          "ftyp": 1,
+          "moov": 1,
+          "moof": 43,
+          "mdat": 43
+        },
+        "mvhd": {
+          "timescale": 1000,
+          "duration": 0
+        },
+        "bytes": 525414
+      },
+      "by_version": {
+        "4.4 (Modal: ubuntu22.04)": {
+          "probe_local": {
+            "duration": 42.474104,
+            "error": null,
+            "seconds": 0.07
+          },
+          "probe_http": {
+            "duration": 42.474104,
+            "error": null,
+            "seconds": 0.16,
+            "requests": 2,
+            "bytes_read": 1049677,
+            "file_fraction_read": 1.998
+          },
+          "clips": [
+            {
+              "offset": 0.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.12
+            }
+          ]
+        },
+        "5.1 (Debian bookworm)": {
+          "probe_local": {
+            "duration": 42.474104,
+            "error": null,
+            "seconds": 0.07
+          },
+          "probe_http": {
+            "duration": 42.474104,
+            "error": null,
+            "seconds": 0.17,
+            "requests": 2,
+            "bytes_read": 1049677,
+            "file_fraction_read": 1.998
+          },
+          "clips": [
+            {
+              "offset": 0.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            }
+          ]
+        },
+        "7.1 (Debian trixie)": {
+          "probe_local": {
+            "duration": 42.474104,
+            "error": null,
+            "seconds": 0.08
+          },
+          "probe_http": {
+            "duration": 42.474104,
+            "error": null,
+            "seconds": 0.17,
+            "requests": 2,
+            "bytes_read": 1049677,
+            "file_fraction_read": 1.998
+          },
+          "clips": [
+            {
+              "offset": 0.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            }
+          ]
+        },
+        "9.0 (latest)": {
+          "probe_local": {
+            "duration": 42.474104,
+            "error": null,
+            "seconds": 0.03
+          },
+          "probe_http": {
+            "duration": 42.474104,
+            "error": null,
+            "seconds": 0.12,
+            "requests": 2,
+            "bytes_read": 1049677,
+            "file_fraction_read": 1.998
+          },
+          "clips": [
+            {
+              "offset": 0.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.07
+            }
+          ]
+        }
+      }
+    },
+    "synthetic_90min_frag1s.m4a": {
+      "layout": {
+        "top_level": {
+          "ftyp": 1,
+          "moov": 1,
+          "moof": 5386,
+          "mdat": 5386,
+          "mfra": 1
+        },
+        "mvhd": {
+          "timescale": 48000,
+          "duration": 0
+        },
+        "bytes": 45122158
+      },
+      "by_version": {
+        "4.4 (Modal: ubuntu22.04)": {
+          "probe_local": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.1
+          },
+          "probe_http": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.2,
+            "requests": 2,
+            "bytes_read": 46105198,
+            "file_fraction_read": 1.022
+          },
+          "clips": [
+            {
+              "offset": 540.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.14
+            },
+            {
+              "offset": 1620.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.13
+            },
+            {
+              "offset": 2700.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.13
+            },
+            {
+              "offset": 3780.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.13
+            },
+            {
+              "offset": 4860.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.13
+            }
+          ]
+        },
+        "5.1 (Debian bookworm)": {
+          "probe_local": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.1
+          },
+          "probe_http": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.2,
+            "requests": 2,
+            "bytes_read": 45908590,
+            "file_fraction_read": 1.017
+          },
+          "clips": [
+            {
+              "offset": 540.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.14
+            },
+            {
+              "offset": 1620.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.13
+            },
+            {
+              "offset": 2700.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.13
+            },
+            {
+              "offset": 3780.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.13
+            },
+            {
+              "offset": 4860.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.13
+            }
+          ]
+        },
+        "7.1 (Debian trixie)": {
+          "probe_local": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.11
+          },
+          "probe_http": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.2,
+            "requests": 2,
+            "bytes_read": 46039662,
+            "file_fraction_read": 1.02
+          },
+          "clips": [
+            {
+              "offset": 540.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.14
+            },
+            {
+              "offset": 1620.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.13
+            },
+            {
+              "offset": 2700.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.13
+            },
+            {
+              "offset": 3780.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.13
+            },
+            {
+              "offset": 4860.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.13
+            }
+          ]
+        },
+        "9.0 (latest)": {
+          "probe_local": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.07
+          },
+          "probe_http": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.16,
+            "requests": 2,
+            "bytes_read": 46105198,
+            "file_fraction_read": 1.022
+          },
+          "clips": [
+            {
+              "offset": 540.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.1
+            },
+            {
+              "offset": 1620.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.09
+            },
+            {
+              "offset": 2700.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.09
+            },
+            {
+              "offset": 3780.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.09
+            },
+            {
+              "offset": 4860.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.09
+            }
+          ]
+        }
+      }
+    },
+    "synthetic_90min_frag10s.m4a": {
+      "layout": {
+        "top_level": {
+          "ftyp": 1,
+          "moov": 1,
+          "moof": 540,
+          "mdat": 540,
+          "mfra": 1
+        },
+        "mvhd": {
+          "timescale": 48000,
+          "duration": 0
+        },
+        "bytes": 44506716
+      },
+      "by_version": {
+        "4.4 (Modal: ubuntu22.04)": {
+          "probe_local": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.08
+          },
+          "probe_http": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.18,
+            "requests": 2,
+            "bytes_read": 45227612,
+            "file_fraction_read": 1.016
+          },
+          "clips": [
+            {
+              "offset": 540.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            },
+            {
+              "offset": 1620.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            },
+            {
+              "offset": 2700.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            },
+            {
+              "offset": 3780.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            },
+            {
+              "offset": 4860.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            }
+          ]
+        },
+        "5.1 (Debian bookworm)": {
+          "probe_local": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.08
+          },
+          "probe_http": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.2,
+            "requests": 2,
+            "bytes_read": 45620828,
+            "file_fraction_read": 1.025
+          },
+          "clips": [
+            {
+              "offset": 540.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.12
+            },
+            {
+              "offset": 1620.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            },
+            {
+              "offset": 2700.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.12
+            },
+            {
+              "offset": 3780.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.12
+            },
+            {
+              "offset": 4860.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            }
+          ]
+        },
+        "7.1 (Debian trixie)": {
+          "probe_local": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.09
+          },
+          "probe_http": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.18,
+            "requests": 2,
+            "bytes_read": 45555292,
+            "file_fraction_read": 1.024
+          },
+          "clips": [
+            {
+              "offset": 540.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            },
+            {
+              "offset": 1620.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            },
+            {
+              "offset": 2700.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            },
+            {
+              "offset": 3780.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.11
+            },
+            {
+              "offset": 4860.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.1
+            }
+          ]
+        },
+        "9.0 (latest)": {
+          "probe_local": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.04
+          },
+          "probe_http": {
+            "duration": 5400.021333,
+            "error": null,
+            "seconds": 0.14,
+            "requests": 2,
+            "bytes_read": 45293148,
+            "file_fraction_read": 1.018
+          },
+          "clips": [
+            {
+              "offset": 540.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.07
+            },
+            {
+              "offset": 1620.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.07
+            },
+            {
+              "offset": 2700.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.06
+            },
+            {
+              "offset": 3780.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.07
+            },
+            {
+              "offset": 4860.0,
+              "ok": true,
+              "clip_seconds": 30.0,
+              "seconds": 0.06
+            }
+          ]
+        }
+      }
+    }
+  }
+}

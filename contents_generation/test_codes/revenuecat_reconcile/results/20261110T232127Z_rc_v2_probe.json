@@ -1,0 +1,1273 @@
+{
+  "friend_offer_code_alias": [
+    {
+      "path": "/customers/fdae3630-75e5-4304-8b13-356254ec1f2f",
+      "status": 200,
+      "ms": 308,
+      "rate_limit_headers": {},
+      "body": {
+        "active_entitlements": {
+          "items": [
+            {
+              "entitlement_id": "entl965497c4d2",
+              "expires_at": 1824959654000,
+              "object": "customer.active_entitlement"
+            }
+          ],
+          "next_page": null,
+          "object": "list",
+          "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/fdae3630-75e5-4304-8b13-356254ec1f2f/active_entitlements"
+        },
+        "experiment": null,
+        "first_seen_at": 1793423650796,
+        "id": "fdae3630-75e5-4304-8b13-356254ec1f2f",
+        "last_seen_app_version": "1.1.1",
+        "last_seen_at": 1794348100660,
+        "last_seen_country": "US",
+        "last_seen_platform": "iOS",
+        "last_seen_platform_version": "Version 26.6.1 (Build 23G83)",
+        "object": "customer",
+        "project_id": "proj37dae9e1"
+      }
+    },
+    {
+      "path": "/customers/fdae3630-75e5-4304-8b13-356254ec1f2f/subscriptions",
+      "status": 200,
+      "ms": 122,
+      "rate_limit_headers": {},
+      "body": {
+        "items": [
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "JP",
+            "current_period_ends_at": 1824959654000,
+            "current_period_starts_at": 1793423654000,
+            "customer_id": "fdae3630-75e5-4304-8b13-356254ec1f2f",
+            "ends_at": 1824959654000,
+            "entitlements": {
+              "items": [
+                {
+                  "created_at": 1788996489861,
+                  "display_name": "Active Subscription",
+                  "id": "entl965497c4d2",
+                  "lookup_key": "active_subscription",
+                  "object": "entitlement",
+                  "project_id": "proj37dae9e1",
+                  "state": "active"
+                }
+              ],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAap76ec599947c82bdab9e4bd7a4a6d4f68/entitlements"
+            },
+            "environment": "production",
+            "gives_access": true,
+            "id": "subAap76ec599947c82bdab9e4bd7a4a6d4f68",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "$RCAnonymousID:7e65b60fbfb54f4a8629fa6446be01fe",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": null,
+            "product_id": "prod61c65a81de",
+            "starts_at": 1793423654000,
+            "status": "trialing",
+            "store": "app_store",
+            "store_subscription_identifier": "510002946245726",
+            "total_revenue_in_usd": {
+              "commission": 0.0,
+              "currency": "USD",
+              "gross": 0.0,
+              "proceeds": 0.0,
+              "tax": 0.0
+            }
+          }
+        ],
+        "next_page": null,
+        "object": "list",
+        "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/fdae3630-75e5-4304-8b13-356254ec1f2f/subscriptions"
+      }
+    },
+    {
+      "path": "/customers/fdae3630-75e5-4304-8b13-356254ec1f2f/active_entitlements",
+      "status": 200,
+      "ms": 120,
+      "rate_limit_headers": {},
+      "body": {
+        "items": [
+          {
+            "entitlement_id": "entl965497c4d2",
+            "expires_at": 1824959654000,
+            "object": "customer.active_entitlement"
+          }
+        ],
+        "next_page": null,
+        "object": "list",
+        "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/fdae3630-75e5-4304-8b13-356254ec1f2f/active_entitlements"
+      }
+    },
+    {
+      "path": "/customers/fdae3630-75e5-4304-8b13-356254ec1f2f/aliases",
+      "status": 200,
+      "ms": 126,
+      "rate_limit_headers": {},
+      "body": {
+        "items": [
+          {
+            "created_at": 1793423700109,
+            "id": "fdae3630-75e5-4304-8b13-356254ec1f2f",
+            "object": "customer.alias"
+          },
+          {
+            "created_at": 1793423670216,
+            "id": "$RCAnonymousID:7e65b60fbfb54f4a8629fa6446be01fe",
+            "object": "customer.alias"
+          }
+        ],
+        "next_page": null,
+        "object": "list",
+        "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/fdae3630-75e5-4304-8b13-356254ec1f2f/aliases"
+      }
+    },
+    {
+      "path": "/customers/fdae3630-75e5-4304-8b13-356254ec1f2f/purchases",
+      "status": 403,
+      "ms": 108,
+      "rate_limit_headers": {},
+      "body": {
+        "doc_url": "https://errors.rev.cat/authorization-error",
+        "message": "The API key needs at least the customer_information:purchases:read permission defined",
+        "object": "error",
+        "retryable": false,
+        "type": "authorization_error"
+      }
+    }
+  ],
+  "friend_offer_code_installed": [
+    {
+      "path": "/customers/a29fe924-9adf-4baa-b84a-7c8906944d7b",
+      "status": 200,
+      "ms": 226,
+      "rate_limit_headers": {},
+      "body": {
+        "active_entitlements": {
+          "items": [
+            {
+              "entitlement_id": "entl965497c4d2",
+              "expires_at": 1824572325000,
+              "object": "customer.active_entitlement"
+            }
+          ],
+          "next_page": null,
+          "object": "list",
+          "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/a29fe924-9adf-4baa-b84a-7c8906944d7b/active_entitlements"
+        },
+        "experiment": null,
+        "first_seen_at": 1789535276078,
+        "id": "a29fe924-9adf-4baa-b84a-7c8906944d7b",
+        "last_seen_app_version": "1.1.1",
+        "last_seen_at": 1794342083448,
+        "last_seen_country": "US",
+        "last_seen_platform": "iOS",
+        "last_seen_platform_version": "Version 26.6.2 (Build 23G90)",
+        "object": "customer",
+        "project_id": "proj37dae9e1"
+      }
+    },
+    {
+      "path": "/customers/a29fe924-9adf-4baa-b84a-7c8906944d7b/subscriptions",
+      "status": 200,
+      "ms": 129,
+      "rate_limit_headers": {},
+      "body": {
+        "items": [
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1824572325000,
+            "current_period_starts_at": 1793036325000,
+            "customer_id": "a29fe924-9adf-4baa-b84a-7c8906944d7b",
+            "ends_at": 1824572325000,
+            "entitlements": {
+              "items": [
+                {
+                  "created_at": 1788996489861,
+                  "display_name": "Active Subscription",
+                  "id": "entl965497c4d2",
+                  "lookup_key": "active_subscription",
+                  "object": "entitlement",
+                  "project_id": "proj37dae9e1",
+                  "state": "active"
+                }
+              ],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAap4796fec05f9cbbccb4582f3a066c7361/entitlements"
+            },
+            "environment": "production",
+            "gives_access": true,
+            "id": "subAap4796fec05f9cbbccb4582f3a066c7361",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "a29fe924-9adf-4baa-b84a-7c8906944d7b",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": null,
+            "product_id": "prod61c65a81de",
+            "starts_at": 1793036325000,
+            "status": "trialing",
+            "store": "app_store",
+            "store_subscription_identifier": "320003319410443",
+            "total_revenue_in_usd": {
+              "commission": 0.0,
+              "currency": "USD",
+              "gross": 0.0,
+              "proceeds": 0.0,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1790572423000,
+            "current_period_starts_at": 1790486023000,
+            "customer_id": "a29fe924-9adf-4baa-b84a-7c8906944d7b",
+            "ends_at": 1790572423000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAapb23725ac31a53ed9cc055b90e74d7b77/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAapb23725ac31a53ed9cc055b90e74d7b77",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "a29fe924-9adf-4baa-b84a-7c8906944d7b",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod938f693071",
+            "starts_at": 1789535551000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001242868497",
+            "total_revenue_in_usd": {
+              "commission": 46.76,
+              "currency": "USD",
+              "gross": 155.88,
+              "proceeds": 109.12,
+              "tax": 0.0
+            }
+          }
+        ],
+        "next_page": null,
+        "object": "list",
+        "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/a29fe924-9adf-4baa-b84a-7c8906944d7b/subscriptions"
+      }
+    },
+    {
+      "path": "/customers/a29fe924-9adf-4baa-b84a-7c8906944d7b/active_entitlements",
+      "status": 200,
+      "ms": 143,
+      "rate_limit_headers": {},
+      "body": {
+        "items": [
+          {
+            "entitlement_id": "entl965497c4d2",
+            "expires_at": 1824572325000,
+            "object": "customer.active_entitlement"
+          }
+        ],
+        "next_page": null,
+        "object": "list",
+        "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/a29fe924-9adf-4baa-b84a-7c8906944d7b/active_entitlements"
+      }
+    },
+    {
+      "path": "/customers/a29fe924-9adf-4baa-b84a-7c8906944d7b/aliases",
+      "status": 200,
+      "ms": 115,
+      "rate_limit_headers": {},
+      "body": {
+        "items": [
+          {
+            "created_at": 1789535276091,
+            "id": "a29fe924-9adf-4baa-b84a-7c8906944d7b",
+            "object": "customer.alias"
+          },
+          {
+            "created_at": 1789669964795,
+            "id": "$RCAnonymousID:3cd885c0702a4490a3cfbfe00abc9cf7",
+            "object": "customer.alias"
+          }
+        ],
+        "next_page": null,
+        "object": "list",
+        "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/a29fe924-9adf-4baa-b84a-7c8906944d7b/aliases"
+      }
+    },
+    {
+      "path": "/customers/a29fe924-9adf-4baa-b84a-7c8906944d7b/purchases",
+      "status": 403,
+      "ms": 115,
+      "rate_limit_headers": {},
+      "body": {
+        "doc_url": "https://errors.rev.cat/authorization-error",
+        "message": "The API key needs at least the customer_information:purchases:read permission defined",
+        "object": "error",
+        "retryable": false,
+        "type": "authorization_error"
+      }
+    }
+  ],
+  "lefture_app_sandbox": [
+    {
+      "path": "/customers/5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+      "status": 200,
+      "ms": 492,
+      "rate_limit_headers": {},
+      "body": {
+        "active_entitlements": {
+          "items": [
+            {
+              "entitlement_id": "entl965497c4d2",
+              "expires_at": 1794381030000,
+              "object": "customer.active_entitlement"
+            }
+          ],
+          "next_page": null,
+          "object": "list",
+          "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/5be0566d-9b7a-499f-b7d2-f1c736fd5082/active_entitlements"
+        },
+        "experiment": null,
+        "first_seen_at": 1375340400000,
+        "id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+        "last_seen_app_version": "1.1.0",
+        "last_seen_at": 1794294796570,
+        "last_seen_country": "US",
+        "last_seen_platform": "android",
+        "last_seen_platform_version": "37",
+        "object": "customer",
+        "project_id": "proj37dae9e1"
+      }
+    },
+    {
+      "path": "/customers/5be0566d-9b7a-499f-b7d2-f1c736fd5082/subscriptions",
+      "status": 200,
+      "ms": 298,
+      "rate_limit_headers": {},
+      "body": {
+        "items": [
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1793152942000,
+            "current_period_starts_at": 1793066542000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1793152942000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAap0b026e5e589da7cb638ba15d0b43297f/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAap0b026e5e589da7cb638ba15d0b43297f",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod61c65a81de",
+            "starts_at": 1792116074000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001257623092",
+            "total_revenue_in_usd": {
+              "commission": 71.96,
+              "currency": "USD",
+              "gross": 239.88,
+              "proceeds": 167.92,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789454936000,
+            "current_period_starts_at": 1789454636000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789454936000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAap30f8a3d3e6857e20768c8206b3ace463/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAap30f8a3d3e6857e20768c8206b3ace463",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod7ffa1ee788",
+            "starts_at": 1789454636000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001236403839",
+            "total_revenue_in_usd": {
+              "commission": 1.8,
+              "currency": "USD",
+              "gross": 5.99,
+              "proceeds": 4.19,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789440914000,
+            "current_period_starts_at": 1789440614000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789440914000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAap32e37587bb56aa8b03f6536f064fc57d/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAap32e37587bb56aa8b03f6536f064fc57d",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod7ffa1ee788",
+            "starts_at": 1789439072000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001236311717",
+            "total_revenue_in_usd": {
+              "commission": 10.78,
+              "currency": "USD",
+              "gross": 35.94,
+              "proceeds": 25.16,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789168601000,
+            "current_period_starts_at": 1789168301000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789168601000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAap384d4f1c6bbce9d075a28de39d52193e/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAap384d4f1c6bbce9d075a28de39d52193e",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod938f693071",
+            "starts_at": 1789168301000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001235178300",
+            "total_revenue_in_usd": {
+              "commission": 4.2,
+              "currency": "USD",
+              "gross": 13.99,
+              "proceeds": 9.79,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789125121000,
+            "current_period_starts_at": 1789124821000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789125121000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAap4abfc2b71447157f24750b9aea46285c/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAap4abfc2b71447157f24750b9aea46285c",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod938f693071",
+            "starts_at": 1789123621000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001234930410",
+            "total_revenue_in_usd": {
+              "commission": 20.99,
+              "currency": "USD",
+              "gross": 69.95,
+              "proceeds": 48.96,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789442821000,
+            "current_period_starts_at": 1789442521000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789442821000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAap6f624f0f6b9c41fbca8982b68641a814/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAap6f624f0f6b9c41fbca8982b68641a814",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod938f693071",
+            "starts_at": 1789440907000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001236322891",
+            "total_revenue_in_usd": {
+              "commission": 25.18,
+              "currency": "USD",
+              "gross": 83.94,
+              "proceeds": 58.76,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1790626063000,
+            "current_period_starts_at": 1790539663000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1790626063000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAap70af40b6de1925744dbf0f40c0819c61/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAap70af40b6de1925744dbf0f40c0819c61",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod938f693071",
+            "starts_at": 1789589263000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001243087686",
+            "total_revenue_in_usd": {
+              "commission": 46.76,
+              "currency": "USD",
+              "gross": 155.88,
+              "proceeds": 109.12,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789166725000,
+            "current_period_starts_at": 1789166476000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789166725000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAap7314c75535e5392f1700c90c7e03ae73/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAap7314c75535e5392f1700c90c7e03ae73",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod938f693071",
+            "starts_at": 1789165576000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001235173868",
+            "total_revenue_in_usd": {
+              "commission": 16.07,
+              "currency": "USD",
+              "gross": 53.58,
+              "proceeds": 37.51,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789168850000,
+            "current_period_starts_at": 1789168712000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789168850000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAapa42dee240ef7acd361b61f492aa3127b/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAapa42dee240ef7acd361b61f492aa3127b",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod938f693071",
+            "starts_at": 1789168712000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001235180093",
+            "total_revenue_in_usd": {
+              "commission": 1.93,
+              "currency": "USD",
+              "gross": 6.44,
+              "proceeds": 4.51,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1791922936000,
+            "current_period_starts_at": 1791836536000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1791922936000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAapacdabbea172bf1e293c8fe538c263cf0/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAapacdabbea172bf1e293c8fe538c263cf0",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod61c65a81de",
+            "starts_at": 1790886115000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001250031808",
+            "total_revenue_in_usd": {
+              "commission": 65.97,
+              "currency": "USD",
+              "gross": 219.89,
+              "proceeds": 153.92,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789207745000,
+            "current_period_starts_at": 1789207445000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789207745000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAapb0f912936d25ff478b54e25872d3077c/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAapb0f912936d25ff478b54e25872d3077c",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod61c65a81de",
+            "starts_at": 1789204145000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001235302911",
+            "total_revenue_in_usd": {
+              "commission": 71.96,
+              "currency": "USD",
+              "gross": 239.88,
+              "proceeds": 167.92,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789167925000,
+            "current_period_starts_at": 1789167625000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789167925000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAapb58259355fc22a13400348ff912e6cff/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAapb58259355fc22a13400348ff912e6cff",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod61c65a81de",
+            "starts_at": 1789166725000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001235176766",
+            "total_revenue_in_usd": {
+              "commission": 23.99,
+              "currency": "USD",
+              "gross": 79.96,
+              "proceeds": 55.97,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789172317000,
+            "current_period_starts_at": 1789172017000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789172317000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAapbdab9942879a221fe6e35c1ad2614587/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAapbdab9942879a221fe6e35c1ad2614587",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod7ffa1ee788",
+            "starts_at": 1789169917000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001235187935",
+            "total_revenue_in_usd": {
+              "commission": 14.38,
+              "currency": "USD",
+              "gross": 47.92,
+              "proceeds": 33.54,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789123621000,
+            "current_period_starts_at": 1789123492000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789123621000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAapc00a123ae6adf2e7f16bc95406d7aa07/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAapc00a123ae6adf2e7f16bc95406d7aa07",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod7ffa1ee788",
+            "starts_at": 1789121392000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001234917090",
+            "total_revenue_in_usd": {
+              "commission": 13.35,
+              "currency": "USD",
+              "gross": 44.51,
+              "proceeds": 31.16,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789157074000,
+            "current_period_starts_at": 1789156774000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789157074000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAapc6af3e6d8a90f7d0de4591f7ffe2d5a2/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAapc6af3e6d8a90f7d0de4591f7ffe2d5a2",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod938f693071",
+            "starts_at": 1789156774000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001235144994",
+            "total_revenue_in_usd": {
+              "commission": 4.2,
+              "currency": "USD",
+              "gross": 13.99,
+              "proceeds": 9.79,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_renew",
+            "country": "US",
+            "current_period_ends_at": 1794381030000,
+            "current_period_starts_at": 1794294630000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1794381030000,
+            "entitlements": {
+              "items": [
+                {
+                  "created_at": 1788996489861,
+                  "display_name": "Active Subscription",
+                  "id": "entl965497c4d2",
+                  "lookup_key": "active_subscription",
+                  "object": "entitlement",
+                  "project_id": "proj37dae9e1",
+                  "state": "active"
+                }
+              ],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAapc7f1e3a108a95534d12cb185fb28f2c0/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": true,
+            "id": "subAapc7f1e3a108a95534d12cb185fb28f2c0",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod61c65a81de",
+            "starts_at": 1793516575000,
+            "status": "active",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001263772379",
+            "total_revenue_in_usd": {
+              "commission": 59.97,
+              "currency": "USD",
+              "gross": 199.9,
+              "proceeds": 139.93,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1793341123000,
+            "current_period_starts_at": 1793254723000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1793341123000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAapcf914bac6341740b3b4a0c0aebd1e0ce/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAapcf914bac6341740b3b4a0c0aebd1e0ce",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod61c65a81de",
+            "starts_at": 1793168323000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001258835101",
+            "total_revenue_in_usd": {
+              "commission": 11.99,
+              "currency": "USD",
+              "gross": 39.98,
+              "proceeds": 27.99,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789168712000,
+            "current_period_starts_at": 1789168601000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789168712000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAapd19cabccc8e01864fa51a070e4caeff8/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAapd19cabccc8e01864fa51a070e4caeff8",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod7ffa1ee788",
+            "starts_at": 1789168601000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001235178926",
+            "total_revenue_in_usd": {
+              "commission": 0.66,
+              "currency": "USD",
+              "gross": 2.22,
+              "proceeds": 1.56,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789895931000,
+            "current_period_starts_at": 1789895631000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789895931000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAapde1c15df6ec40fa3f2b1c04c8e7c1fcc/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAapde1c15df6ec40fa3f2b1c04c8e7c1fcc",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod61c65a81de",
+            "starts_at": 1789891884000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001239045125",
+            "total_revenue_in_usd": {
+              "commission": 71.96,
+              "currency": "USD",
+              "gross": 239.88,
+              "proceeds": 167.92,
+              "tax": 0.0
+            }
+          },
+          {
+            "auto_renewal_status": "will_not_renew",
+            "country": "US",
+            "current_period_ends_at": 1789160074000,
+            "current_period_starts_at": 1789159774000,
+            "customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ends_at": 1789160074000,
+            "entitlements": {
+              "items": [],
+              "next_page": null,
+              "object": "list",
+              "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/subscriptions/subAape0926f55e49d6083ac57715f35a7de3f/entitlements"
+            },
+            "environment": "sandbox",
+            "gives_access": false,
+            "id": "subAape0926f55e49d6083ac57715f35a7de3f",
+            "management_url": "https://apps.apple.com/account/subscriptions",
+            "object": "subscription",
+            "original_customer_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "ownership": "purchased",
+            "pending_changes": null,
+            "pending_payment": false,
+            "presented_offering_id": "ofrngb202bde694",
+            "product_id": "prod7ffa1ee788",
+            "starts_at": 1789157074000,
+            "status": "expired",
+            "store": "app_store",
+            "store_subscription_identifier": "2000001235154708",
+            "total_revenue_in_usd": {
+              "commission": 17.97,
+              "currency": "USD",
+              "gross": 59.9,
+              "proceeds": 41.93,
+              "tax": 0.0
+            }
+          }
+        ],
+        "next_page": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/5be0566d-9b7a-499f-b7d2-f1c736fd5082/subscriptions?starting_after=subAape0926f55e49d6083ac57715f35a7de3f&limit=20",
+        "object": "list",
+        "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/5be0566d-9b7a-499f-b7d2-f1c736fd5082/subscriptions"
+      }
+    },
+    {
+      "path": "/customers/5be0566d-9b7a-499f-b7d2-f1c736fd5082/active_entitlements",
+      "status": 200,
+      "ms": 567,
+      "rate_limit_headers": {},
+      "body": {
+        "items": [
+          {
+            "entitlement_id": "entl965497c4d2",
+            "expires_at": 1794381030000,
+            "object": "customer.active_entitlement"
+          }
+        ],
+        "next_page": null,
+        "object": "list",
+        "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/5be0566d-9b7a-499f-b7d2-f1c736fd5082/active_entitlements"
+      }
+    },
+    {
+      "path": "/customers/5be0566d-9b7a-499f-b7d2-f1c736fd5082/aliases",
+      "status": 200,
+      "ms": 119,
+      "rate_limit_headers": {},
+      "body": {
+        "items": [
+          {
+            "created_at": 1789083929399,
+            "id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082",
+            "object": "customer.alias"
+          },
+          {
+            "created_at": 1789083796017,
+            "id": "$RCAnonymousID:2520423269ee4cdf90d6f9edb823d412",
+            "object": "customer.alias"
+          }
+        ],
+        "next_page": null,
+        "object": "list",
+        "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/5be0566d-9b7a-499f-b7d2-f1c736fd5082/aliases"
+      }
+    },
+    {
+      "path": "/customers/5be0566d-9b7a-499f-b7d2-f1c736fd5082/purchases",
+      "status": 403,
+      "ms": 114,
+      "rate_limit_headers": {},
+      "body": {
+        "doc_url": "https://errors.rev.cat/authorization-error",
+        "message": "The API key needs at least the customer_information:purchases:read permission defined",
+        "object": "error",
+        "retryable": false,
+        "type": "authorization_error"
+      }
+    }
+  ],
+  "shogo_after_transfer": [
+    {
+      "path": "/customers/a0368beb-867a-48ce-a9a1-c1421a72fc65",
+      "status": 200,
+      "ms": 210,
+      "rate_limit_headers": {},
+      "body": {
+        "active_entitlements": {
+          "items": [],
+          "next_page": null,
+          "object": "list",
+          "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/a0368beb-867a-48ce-a9a1-c1421a72fc65/active_entitlements"
+        },
+        "experiment": null,
+        "first_seen_at": 1789589263000,
+        "id": "a0368beb-867a-48ce-a9a1-c1421a72fc65",
+        "last_seen_app_version": "1.1.1",
+        "last_seen_at": 1793776226901,
+        "last_seen_country": "US",
+        "last_seen_platform": "iOS",
+        "last_seen_platform_version": "Version 27.0.1 (Build 24A446)",
+        "object": "customer",
+        "project_id": "proj37dae9e1"
+      }
+    },
+    {
+      "path": "/customers/a0368beb-867a-48ce-a9a1-c1421a72fc65/subscriptions",
+      "status": 200,
+      "ms": 130,
+      "rate_limit_headers": {},
+      "body": {
+        "items": [],
+        "next_page": null,
+        "object": "list",
+        "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/a0368beb-867a-48ce-a9a1-c1421a72fc65/subscriptions"
+      }
+    },
+    {
+      "path": "/customers/a0368beb-867a-48ce-a9a1-c1421a72fc65/active_entitlements",
+      "status": 200,
+      "ms": 120,
+      "rate_limit_headers": {},
+      "body": {
+        "items": [],
+        "next_page": null,
+        "object": "list",
+        "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/a0368beb-867a-48ce-a9a1-c1421a72fc65/active_entitlements"
+      }
+    },
+    {
+      "path": "/customers/a0368beb-867a-48ce-a9a1-c1421a72fc65/aliases",
+      "status": 200,
+      "ms": 125,
+      "rate_limit_headers": {},
+      "body": {
+        "items": [
+          {
+            "created_at": 1791275399214,
+            "id": "a0368beb-867a-48ce-a9a1-c1421a72fc65",
+            "object": "customer.alias"
+          },
+          {
+            "created_at": 1791275393079,
+            "id": "$RCAnonymousID:2a2ac4cd72f24ffba6932291494007a6",
+            "object": "customer.alias"
+          }
+        ],
+        "next_page": null,
+        "object": "list",
+        "url": "https://api.revenuecat.com/v2/projects/proj37dae9e1/customers/a0368beb-867a-48ce-a9a1-c1421a72fc65/aliases"
+      }
+    },
+    {
+      "path": "/customers/a0368beb-867a-48ce-a9a1-c1421a72fc65/purchases",
+      "status": 403,
+      "ms": 112,
+      "rate_limit_headers": {},
+      "body": {
+        "doc_url": "https://errors.rev.cat/authorization-error",
+        "message": "The API key needs at least the customer_information:purchases:read permission defined",
+        "object": "error",
+        "retryable": false,
+        "type": "authorization_error"
+      }
+    }
+  ],
+  "nonexistent": [
+    {
+      "path": "/customers/00000000-0000-4000-8000-00000000dead",
+      "status": 404,
+      "ms": 130,
+      "rate_limit_headers": {},
+      "body": {
+        "doc_url": "https://errors.rev.cat/resource-missing",
+        "message": "Could not find customer ID associated with this project",
+        "object": "error",
+        "retryable": false,
+        "type": "resource_missing"
+      }
+    }
+  ],
+  "nonexistent_second_lookup": [
+    {
+      "path": "/customers/00000000-0000-4000-8000-00000000dead",
+      "status": 404,
+      "ms": 130,
+      "rate_limit_headers": {},
+      "body": {
+        "doc_url": "https://errors.rev.cat/resource-missing",
+        "message": "Could not find customer ID associated with this project",
+        "object": "error",
+        "retryable": false,
+        "type": "resource_missing"
+      }
+    }
+  ]
+}

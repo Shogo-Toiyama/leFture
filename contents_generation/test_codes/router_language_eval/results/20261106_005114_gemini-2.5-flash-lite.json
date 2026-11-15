@@ -1,0 +1,115 @@
+{
+  "model": "gemini/gemini-2.5-flash-lite",
+  "effort": null,
+  "summary": {
+    "v1": {
+      "pass": 4,
+      "total": 5,
+      "avg_latency_s": 0.83,
+      "cost_usd": 0.002829
+    }
+  },
+  "total_cost_usd": 0.0028295113712901625,
+  "rows": [
+    {
+      "prompt": "v1",
+      "case": "real_coercion",
+      "expected": "ja",
+      "got": "ja",
+      "pass": true,
+      "latency_s": 1.0,
+      "tokens": {
+        "in": 8336,
+        "out": 134,
+        "cache": 957
+      },
+      "cost_usd": 0.000831,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": true,
+      "thread_title": "型変換のまとめ",
+      "diff_vs_production_router": {},
+      "error": null
+    },
+    {
+      "prompt": "v1",
+      "case": "real_paste_fib",
+      "expected": "ja",
+      "got": "ja",
+      "pass": true,
+      "latency_s": 0.89,
+      "tokens": {
+        "in": 5478,
+        "out": 156,
+        "cache": 0
+      },
+      "cost_usd": 0.000637,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": true,
+      "thread_title": "Helper functions in recursion",
+      "diff_vs_production_router": {},
+      "error": null
+    },
+    {
+      "prompt": "v1",
+      "case": "syn_english_word_answer",
+      "expected": "ja",
+      "got": "en",
+      "pass": false,
+      "latency_s": 0.79,
+      "tokens": {
+        "in": 5421,
+        "out": 128,
+        "cache": 0
+      },
+      "cost_usd": 0.000617,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "thread_title": "Type Conversion",
+      "diff_vs_production_router": {},
+      "error": null
+    },
+    {
+      "prompt": "v1",
+      "case": "syn_explicit_en",
+      "expected": "en",
+      "got": "en",
+      "pass": true,
+      "latency_s": 0.74,
+      "tokens": {
+        "in": 5416,
+        "out": 134,
+        "cache": 1849
+      },
+      "cost_usd": 0.000451,
+      "intent": "learning",
+      "needs_retrieval": true,
+      "needs_reasoning": false,
+      "thread_title": "Upcasting",
+      "diff_vs_production_router": {},
+      "error": null
+    },
+    {
+      "prompt": "v1",
+      "case": "first_mixed",
+      "expected": "ja",
+      "got": "ja",
+      "pass": true,
+      "latency_s": 0.75,
+      "tokens": {
+        "in": 2220,
+        "out": 122,
+        "cache": 0
+      },
+      "cost_usd": 0.000293,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "thread_title": "Implicit Conversion vs Coercion",
+      "diff_vs_production_router": {},
+      "error": null
+    }
+  ]
+}

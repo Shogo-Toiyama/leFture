@@ -1,0 +1,22 @@
+00:00 +0: loading /Users/shogotoiyama/Programming/leFture/contents_generation/test_codes/upload_trace_reliability_20261110/reliability_test.dart
+00:00 +0: four same-outcome traces retain four independent payloads
+00:00 +0 -1: four same-outcome traces retain four independent payloads [E]
+  Expected: an object with length of <4>
+    Actual: [
+              LocalErrorReport:LocalErrorReport(id: 1, fingerprint: 817620bdb7430d3a, refCode: ERR-RPW6TX, code: UPLOAD_TRACE, origin: upload_trace.realtime, payloadJson: {"error":{"v":1,"code":"UPLOAD_TRACE","origin":"upload_trace.realtime","raw":"Realtime upload trace: completed (lecture abcdef12, 10 lines, 0m1s since stop)","at":"2026-11-10T17:45:11.561400"},"route":null,"breadcrumbs":["trace-2"]}, occurrenceCount: 3, firstSeenAt: 2026-11-10 17:45:11.000, lastSeenAt: 2026-11-10 17:45:11.000, attemptCount: 0, nextRetryAt: null, givenUp: false)
+            ]
+     Which: has length of <1>
+  
+  package:matcher                                                                                 expect
+  package:flutter_test/src/widget_tester.dart 473:18                                              expect
+  ../contents_generation/test_codes/upload_trace_reliability_20261110/reliability_test.dart 36:5  main.<fn>
+  
+Warning: At least one test in this suite creates an HttpClient. When running a test suite that uses
+TestWidgetsFlutterBinding, all HTTP requests will return status code 400, and no network request
+will actually be made. Any test expecting a real network connection and status code will fail.
+To test code that needs an HttpClient, provide your own HttpClient implementation to the code under
+test, so that your test can consistently provide a testable response to the code under test.
+00:00 +0 -1: Some tests failed.
+
+Failing tests:
+  /Users/shogotoiyama/Programming/leFture/contents_generation/test_codes/upload_trace_reliability_20261110/reliability_test.dart: four same-outcome traces retain four independent payloads

@@ -836,8 +836,9 @@ class AppDatabase extends _$AppDatabase {
     required String code,
     required String origin,
     required String payloadJson,
+    bool coalesce = true,
   }) async {
-    final existing = await (select(localErrorReports)
+    final existing = !coalesce ? null : await (select(localErrorReports)
           ..where((t) => t.fingerprint.equals(fingerprint) & t.givenUp.equals(false))
           ..limit(1))
         .getSingleOrNull();

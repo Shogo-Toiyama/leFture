@@ -20,6 +20,15 @@ class DevLog {
 
   static final ValueNotifier<List<String>> lines = ValueNotifier<List<String>>([]);
 
+  /// 整形済みの1行を同期的に受け取るフック。リングバッファと違い、
+  /// アプリが止められても残したいログ(UploadTrace)をディスクへ流すために使う。
+  /// フック側が例外を投げてもログ呼び出し元には影響させない。
+  static void Function(String line)? tap;
+
+  // Keep useful pre-upload context even during hours of per-second timer logs.
+  static final List<String> _diagnosticLines = [];
+  static List<String> get diagnosticLines => List.unmodifiable(_diagnosticLines);
+
   static void add(String message) {
     final now = DateTime.now();
     String two(int n) => n.toString().padLeft(2, '0');
@@ -33,6 +42,15 @@ class DevLog {
       developer.log(message);
       debugPrint('[DevLog] $line');
     }
+
+    if (!line.contains('[Timer] Tick')) {
+      _diagnosticLines.add(line);
+      if (_diagnosticLines.length > maxLines) _diagnosticLines.removeAt(0);
+    }
+
+    try {
+      tap?.call(line);
+    } catch (_) {}
 
     // Widgetツリーのbuildフェーズ中にDevLog.addが呼ばれても
     // setState() or markNeedsBuild() during build例外が起きないよう、

@@ -1,6 +1,7 @@
 // lib/application/lecture/lecture_controller.dart
 
 import 'dart:io';
+import 'package:lefture/application/recording/upload_trace.dart';
 
 import 'package:lefture/application/app_config/app_config_provider.dart';
 import 'package:lefture/application/lecture/lecture_list_provider.dart';
@@ -580,6 +581,7 @@ class LectureController extends _$LectureController {
       await ref
           .read(recordingRepositoryDriftProvider)
           .cancelPendingUploadsForLecture(lectureId);
+      await UploadTrace.finish(lectureId, outcome: 'cancelled');
       try {
         await ref
             .read(jobRepositoryProvider)
@@ -608,6 +610,8 @@ class LectureController extends _$LectureController {
       await ref
           .read(recordingRepositoryDriftProvider)
           .resumePendingUploadsForLecture(lectureId);
+      final lecture = await ref.read(recordingRepositoryDriftProvider).getLecture(lectureId);
+      if (lecture?.isRealtime == true) await UploadTrace.begin(lectureId);
       ref.read(uploadManagerProvider).tryProcessQueue();
     });
     link.close();
@@ -623,6 +627,7 @@ class LectureController extends _$LectureController {
     try {
       final localPaths = await repo.getLectureAssetLocalPaths(lectureId);
       await repo.deleteLectureJobsAndAssets(lectureId);
+      await UploadTrace.finish(lectureId, outcome: 'deleted');
       DevLog.add(
         '🛑 [LectureController] Local upload jobs cancelled: $lectureId',
       );
