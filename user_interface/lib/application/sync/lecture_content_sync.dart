@@ -7,6 +7,7 @@ import 'package:lefture/application/sync/lecture_topic_sync_service.dart';
 import 'package:lefture/application/sync/review_card_sync_service.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/core/utils/topic_image_paths.dart';
 import 'package:lefture/infrastructure/local_db/app_database.dart';
 import 'package:lefture/infrastructure/repositories/lecture_artifact_repository.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
@@ -159,7 +160,7 @@ class LectureContentSync {
   /// 講義ページを開いた時用。その講義と、左右にスワイプした先の講義
   /// (同じコースで授業日が隣の講義)の中身を、古ければ取り直す。
   /// 開いている講義を先に取り、隣はその後に取る。隣の講義はコラージュの
-  /// 画像(元の画像)も先に落としておき、スワイプした瞬間に出るようにする
+  /// 画像の縮小版も先に落としておき、スワイプした瞬間に出るようにする
   /// (開いている講義の画像はコラージュ自身が取りに行く)。
   Future<void> ensureFreshWithNeighbors(String lectureId) async {
     await ensureFresh([lectureId]);
@@ -173,10 +174,10 @@ class LectureContentSync {
     }
   }
 
-  /// コラージュに出る画像(トピック番号順に最大[_collageImageCount]枚)を
+  /// 隣の講義の縮小版(最大[_neighborThumbnailPrefetchLimit]枚)を
   /// 端末のキャッシュへ落としておく。既にキャッシュにあれば通信しない。
   /// 失敗(未生成・オフライン等)は無視する — 表示時にもう一度取りに行くため。
-  static const int _collageImageCount = 6;
+  static const int _neighborThumbnailPrefetchLimit = 6;
 
   Future<void> _prefetchCollageImages(List<String> lectureIds) async {
     final rows = await (_db.select(_db.localLectureTopics)
@@ -188,10 +189,10 @@ class LectureContentSync {
         .get();
     final byLecture = <String, List<String>>{};
     for (final r in rows) {
-      final path = r.imagePath!;
-      if (path.trim().isEmpty || path.startsWith('assets/')) continue;
+      final path = thumbnailPathFor(r.imagePath!);
+      if (path == null) continue;
       final list = byLecture.putIfAbsent(r.lectureId, () => []);
-      if (list.length < _collageImageCount) list.add(path);
+      if (list.length < _neighborThumbnailPrefetchLimit) list.add(path);
     }
     final repo = LectureArtifactRepository(supabase, _db);
     for (final paths in byLecture.values) {

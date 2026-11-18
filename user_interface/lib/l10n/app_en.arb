@@ -3016,6 +3016,7 @@
   "@reviewCardsViewerNoCardsYet": {
     "description": "Body text shown on the Review Cards viewer (full-screen flashcard page) when a lecture has no topics/groups to build cards from at all (distinct from an individual card still being generated)."
   },
+  "reviewCardsViewerRetryImageTooltip": "Retry image download",
   "reviewCardsViewerViewListTooltip": "View List",
   "@reviewCardsViewerViewListTooltip": {
     "description": "Tooltip for the grid-view icon button in the Review Cards viewer's header row, which opens a bottom sheet listing all cards grouped by topic so the user can jump directly to one."

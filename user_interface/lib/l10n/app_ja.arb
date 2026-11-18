@@ -649,6 +649,7 @@
   "cardSelectionToolbarSourceNotFoundMessage": "選択範囲に対応する出典が見つかりませんでした。",
   "cardSelectionToolbarCopiedToClipboardMessage": "クリップボードにコピーしました",
   "reviewCardsViewerNoCardsYet": "復習カードはまだありません",
+  "reviewCardsViewerRetryImageTooltip": "画像の読み込みを再試行",
   "reviewCardsViewerViewListTooltip": "一覧を表示",
   "reviewCardsViewerPageCounter": "{current} / {total}",
   "reviewCardsViewerListSheetTitle": "復習カード一覧",

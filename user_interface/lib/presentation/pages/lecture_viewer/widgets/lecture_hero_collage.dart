@@ -1,10 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lefture/core/utils/topic_image_paths.dart';
-import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture_viewer/lecture_viewer_data_provider.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
+import 'package:lefture/presentation/widgets/topic_image.dart';
 
 class LectureHeroCollage extends ConsumerWidget {
   const LectureHeroCollage({
@@ -12,22 +11,22 @@ class LectureHeroCollage extends ConsumerWidget {
     required this.lectureId,
     this.slantWidth = 24.0,
     this.onTap,
+    this.isActive = true,
   });
 
   final String lectureId;
   final double slantWidth;
   final VoidCallback? onTap;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final topicsAsync = ref.watch(lectureTopicsProvider(lectureId));
-    
+
     return topicsAsync.when(
       loading: () => const SizedBox(
         height: 180,
-        child: Center(
-          child: CircularProgressIndicator(color: Colors.amber),
-        ),
+        child: Center(child: CircularProgressIndicator(color: Colors.amber)),
       ),
       error: (err, stack) => const SizedBox.shrink(),
       data: (topics) {
@@ -42,8 +41,12 @@ class LectureHeroCollage extends ConsumerWidget {
           return const SizedBox.shrink();
         }
 
-        final displayPaths = imagePaths.take(6).toList();
-        final count = displayPaths.length;
+        final count = imagePaths.length;
+        final images = watchTopicImages(
+          ref,
+          imagePaths,
+          startRequests: isActive && ModalRoute.isCurrentOf(context) != false,
+        );
 
         final collageWidget = Container(
           height: 180.0,
@@ -55,62 +58,68 @@ class LectureHeroCollage extends ConsumerWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: LayoutBuilder(
-            builder: (context, constraints) {
-              final w = constraints.maxWidth;
-              final h = constraints.maxHeight;
-              final segmentWidth = w / count;
-              final delta = slantWidth / 2;
+              builder: (context, constraints) {
+                final w = constraints.maxWidth;
+                final h = constraints.maxHeight;
+                final segmentWidth = w / count;
+                final slotSlant = count == 1
+                    ? 0.0
+                    : slantWidth.clamp(0.0, segmentWidth);
+                final delta = slotSlant / 2;
 
-              return Stack(
-                children: [
-                  // Draw each slanted image slot
-                  ...List.generate(count, (index) {
-                    final path = displayPaths[index];
-                    
-                    // Calculate X bounds of slot index
-                    final double xStart = index == 0 ? 0.0 : (index * segmentWidth) - delta;
-                    final double slotWidth = index == 0
-                        ? segmentWidth + delta
-                        : (index == count - 1
-                            ? segmentWidth + delta
-                            : segmentWidth + slantWidth);
+                return Stack(
+                  children: [
+                    // Draw each slanted image slot
+                    ...List.generate(count, (index) {
+                      final path = imagePaths[index];
 
-                    return Positioned(
-                      left: xStart,
-                      top: 0,
-                      bottom: 0,
-                      child: _SlantedImageSlot(
-                        imagePath: path,
-                        index: index,
-                        totalCount: count,
-                        segmentWidth: segmentWidth,
-                        slantWidth: slantWidth,
-                        slotWidth: slotWidth,
-                        height: h,
-                      ),
-                    );
-                  }),
-                  
-                  // Draw premium divider lines overlay
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: SlantedDividerPainter(
+                      // Calculate X bounds of slot index
+                      final double xStart = index == 0
+                          ? 0.0
+                          : (index * segmentWidth) - delta;
+                      final double slotWidth = index == 0
+                          ? segmentWidth + delta
+                          : (index == count - 1
+                                ? segmentWidth + delta
+                                : segmentWidth + slotSlant);
+
+                      return Positioned(
+                        left: xStart,
+                        top: 0,
+                        bottom: 0,
+                        child: _SlantedImageSlot(
+                          imagePath: path,
+                          images: images,
+                          index: index,
                           totalCount: count,
                           segmentWidth: segmentWidth,
-                          slantWidth: slantWidth,
-                          color: Colors.white.withValues(alpha: 0.25),
-                          strokeWidth: 2.0,
+                          slantWidth: slotSlant,
+                          slotWidth: slotWidth,
+                          height: h,
+                        ),
+                      );
+                    }),
+
+                    // Draw premium divider lines overlay
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: SlantedDividerPainter(
+                            totalCount: count,
+                            segmentWidth: segmentWidth,
+                            slantWidth: slotSlant,
+                            color: Colors.white.withValues(alpha: 0.25),
+                            strokeWidth: 2.0,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
-        ),
-      );
+        );
 
         if (onTap != null) {
           return GestureDetector(
@@ -126,9 +135,10 @@ class LectureHeroCollage extends ConsumerWidget {
   }
 }
 
-class _SlantedImageSlot extends ConsumerWidget {
+class _SlantedImageSlot extends StatelessWidget {
   const _SlantedImageSlot({
     required this.imagePath,
+    required this.images,
     required this.index,
     required this.totalCount,
     required this.segmentWidth,
@@ -138,6 +148,7 @@ class _SlantedImageSlot extends ConsumerWidget {
   });
 
   final String imagePath;
+  final Map<String, AsyncValue<File>> images;
   final int index;
   final int totalCount;
   final double segmentWidth;
@@ -146,63 +157,12 @@ class _SlantedImageSlot extends ConsumerWidget {
   final double height;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    Widget child;
-    if (imagePath.startsWith('assets/')) {
-      child = Image.asset(
-        imagePath,
-        fit: BoxFit.cover,
-      );
-    } else {
-      final fileAsync = ref.watch(artifactFileProvider(imagePath));
-      final File? file = fileAsync.asData?.value;
-      // 元の画像(約170KB)が届くまでは縮小版(192x256, 約9KB)を先に出す。
-      // 元の画像が既に手元にあれば縮小版は取りに行かない。
-      final thumbPath = file == null ? thumbnailPathFor(imagePath) : null;
-      final File? thumbFile = thumbPath == null
-          ? null
-          : ref.watch(artifactFileProvider(thumbPath)).asData?.value;
-
-      if (file == null && thumbFile != null) {
-        child = Image.file(
-          thumbFile,
-          key: const ValueKey('thumb'),
-          fit: BoxFit.cover,
-          filterQuality: FilterQuality.medium,
-        );
-      } else if (file == null) {
-        child = Container(
-          color: Colors.white.withValues(alpha: 0.05),
-          child: const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white24,
-              ),
-            ),
-          ),
-        );
-      } else {
-        child = Image.file(
-          file,
-          key: const ValueKey('full'),
-          fit: BoxFit.cover,
-        );
-      }
-      // 縮小版→元の画像の差し替えをふわっと見せる。
-      // 既定のlayoutBuilderはStackで子の制約をゆるめ、BoxFit.coverが枠いっぱいに
-      // 広がらなくなるため、StackFit.expandで枠の大きさを子に渡す。
-      child = AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        layoutBuilder: (currentChild, previousChildren) => Stack(
-          fit: StackFit.expand,
-          children: [...previousChildren, ?currentChild],
-        ),
-        child: child,
-      );
-    }
+  Widget build(BuildContext context) {
+    final child = TopicImage(
+      path: imagePath,
+      images: images,
+      placeholder: ColoredBox(color: Colors.white.withValues(alpha: 0.05)),
+    );
 
     return ClipPath(
       clipper: SlantedSlotClipper(
@@ -211,11 +171,7 @@ class _SlantedImageSlot extends ConsumerWidget {
         segmentWidth: segmentWidth,
         slantWidth: slantWidth,
       ),
-      child: SizedBox(
-        width: slotWidth,
-        height: height,
-        child: child,
-      ),
+      child: SizedBox(width: slotWidth, height: height, child: child),
     );
   }
 }
@@ -245,7 +201,9 @@ class SlantedSlotClipper extends CustomClipper<Path> {
 
     final double xTl = 0;
     final double xTr = (index == totalCount - 1) ? w : segmentWidth;
-    final double xBr = (index == totalCount - 1) ? w : (index == 0 ? segmentWidth + delta : segmentWidth + slantWidth);
+    final double xBr = (index == totalCount - 1)
+        ? w
+        : (index == 0 ? segmentWidth + delta : segmentWidth + slantWidth);
     final double xBl = (index == 0) ? 0 : slantWidth;
 
     return Path()

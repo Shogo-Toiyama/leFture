@@ -42,6 +42,7 @@ import 'package:lefture/presentation/widgets/markdown_annotation_builder.dart';
 import 'package:lefture/presentation/widgets/note_sub_toolbar.dart';
 import 'package:lefture/presentation/widgets/broad_selection_sheet.dart';
 import 'package:lefture/presentation/widgets/transcript_modal.dart';
+import 'package:lefture/presentation/widgets/topic_image.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:lefture/core/utils/chat_markdown_text.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
@@ -281,6 +282,8 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     // めくられているカード、小数部がめくれ具合になるので、指の速さに関わらず
     // 前後どちらへも途切れずにパラパラめくれる。
     final scrubPos = useState<double>(initialIndex.toDouble());
+    final scrubStartX = useRef<double>(0.0);
+    final scrubStartPos = useRef<double>(initialIndex.toDouble());
     final isDragging = useState<bool>(false);
     final isScrubbing = useState<bool>(false);
     // isAnimating: 確定へ向けた着地アニメーション(タップ, またはドラッグ/
@@ -385,15 +388,32 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
 
     final totalCards = flatItems.length;
 
-    // Preload image files per group
-    final imageFiles = <int, File?>{};
-    for (var gi = 0; gi < groups.length; gi++) {
-      final path = groups[gi].imagePath;
-      final isAsset = path != null && path.startsWith('assets/');
-      imageFiles[gi] = (path == null || isAsset)
-          ? null
-          : widgetRef.watch(artifactFileProvider(path)).asData?.value;
-    }
+    final index = committedIndex.value.clamp(0, totalCards - 1);
+    final displayIndex = isScrubbing.value
+        ? scrubPos.value.round().clamp(0, totalCards - 1)
+        : index;
+    final currentGroup = flatItems[displayIndex].groupIndex;
+    final topic = groups[currentGroup];
+    final imagePaths = [
+      for (final groupIndex in [
+        currentGroup,
+        currentGroup - 1,
+        currentGroup + 1,
+      ])
+        if (groupIndex >= 0 && groupIndex < groups.length)
+          groups[groupIndex].imagePath,
+      for (var i = 0; i < groups.length; i++)
+        if ((i - currentGroup).abs() > 1) groups[i].imagePath,
+    ].nonNulls;
+    final images = watchTopicImages(
+      widgetRef,
+      imagePaths,
+      startRequests: true,
+      prioritizeFirst: true,
+    );
+    final originalImage = images[topic.imagePath];
+    final canRetryImage =
+        originalImage?.hasError == true && originalImage?.retrying == false;
 
     // Bumped whenever a new gesture or navigation takes ownership of the
     // animation, so a superseded transition's completion callback can tell it
@@ -641,19 +661,18 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
 
     Widget buildCard(int cardIdx) {
       final item = flatItems[cardIdx.clamp(0, totalCards - 1)];
-      final imageFile = imageFiles[item.groupIndex];
       final imagePath = groups[item.groupIndex].imagePath;
       if (item.isCover) {
         return _CoverCard(
           title: groups[item.groupIndex].title,
-          imageFile: imageFile,
+          images: images,
           imagePath: imagePath,
           borderRadius: 24,
         );
       }
       return _ContentCard(
         card: item.card!,
-        imageFile: imageFile,
+        images: images,
         imagePath: imagePath,
         themeColor: textThemeColor,
         bodySwipeRecognizer: bodySwipeRecognizer,
@@ -727,22 +746,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       );
     }
 
-    final index = committedIndex.value.clamp(0, totalCards - 1);
-
-    // 進捗バー上のx座標を、全トピックを通した小数付きカード位置に変換する。
+    // タップしたx座標をカード番号に変換する。
     // バーはトピックごとに等幅で分割され、その中をカード枚数で等分している。
     final progressBarKey = useMemoized(() => GlobalKey(), const []);
-    double scrubPosFromDx(double dx, double width) {
-      if (width <= 0) return 0.0;
-      final slot = (dx / width).clamp(0.0, 1.0) * groups.length;
-      final topicIdx = slot.floor().clamp(0, groups.length - 1);
-      final within = (slot - topicIdx).clamp(0.0, 1.0);
-      final pos =
-          groupStartIndex[topicIdx] +
-          within * (groups[topicIdx].cards.length + 1);
-      return pos.clamp(0.0, (totalCards - 1).toDouble());
-    }
-
     int cardIndexFromDx(double dx, double width) {
       if (width <= 0 || groups.isEmpty) return 0;
       final slot = (dx / width).clamp(0.0, 0.999999) * groups.length;
@@ -757,11 +763,13 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     void updateScrub(Offset globalPosition) {
       final box =
           progressBarKey.currentContext?.findRenderObject() as RenderBox?;
-      if (box == null) return;
-      scrubPos.value = scrubPosFromDx(
-        box.globalToLocal(globalPosition).dx,
-        box.size.width,
-      );
+      if (box == null || box.size.width <= 0) return;
+      final delta = box.globalToLocal(globalPosition).dx - scrubStartX.value;
+      scrubPos.value =
+          (scrubStartPos.value + delta / box.size.width * totalCards).clamp(
+            0.0,
+            (totalCards - 1).toDouble(),
+          );
     }
 
     // 端でのタップに、ドラッグのラバーバンドと同じ「行こうとして戻る」動きを
@@ -778,12 +786,17 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     }
 
     void beginScrub(Offset globalPosition) {
+      final box =
+          progressBarKey.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null) return;
+      scrubStartX.value = box.globalToLocal(globalPosition).dx;
+      scrubStartPos.value = displayIndex.toDouble();
+      scrubPos.value = scrubStartPos.value;
       animToken.value++;
       animationController.stop();
       isAnimating.value = false;
       isDragging.value = false;
       isScrubbing.value = true;
-      updateScrub(globalPosition);
     }
 
     void endScrub() {
@@ -792,13 +805,6 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       final frac = (scrubPos.value - anchor).clamp(0.0, 1.0);
       settle(anchor: anchor, dir: 1, fromProgress: frac, toDest: frac >= 0.5);
     }
-
-    // スクラブ中は、指がどこを指しているかを見出しとカウンターにも反映する
-    // (どこに着地するのか分からないと、なぞり操作の意味が薄いため)。
-    final displayIndex = isScrubbing.value
-        ? scrubPos.value.round().clamp(0, totalCards - 1)
-        : index;
-    final topic = groups[flatItems[displayIndex].groupIndex];
 
     // 現在選択中の範囲が、現在のカードのどのブロックの何文字目〜何文字目に
     // あたるかを求める。SelectableRegion.getSelection()はタイトル/絵文字を
@@ -1285,10 +1291,8 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                       ),
                       onPressed: () => _showCardsListSheet(
                         context,
-                        widgetRef,
                         groups,
                         groupStartIndex,
-                        imageFiles,
                         flatItems,
                         navigateTo,
                         textThemeColor,
@@ -1370,6 +1374,14 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                     },
                             ),
                     ),
+                    if (canRetryImage)
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        tooltip: l10n.reviewCardsViewerRetryImageTooltip,
+                        onPressed: () => widgetRef.invalidate(
+                          artifactFileProvider(topic.imagePath!),
+                        ),
+                      ),
                     const SizedBox(width: 8),
                     Text(
                       l10n.reviewCardsViewerPageCounter(
@@ -1403,6 +1415,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                     navigateTo(target);
                   }
                 },
+                dragStartBehavior: DragStartBehavior.down,
                 onHorizontalDragStart: (d) => beginScrub(d.globalPosition),
                 onHorizontalDragUpdate: (d) {
                   if (!isScrubbing.value) return;
@@ -1597,7 +1610,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                     // drivers: the settle/tap animation reads the
                                     // controller, a card drag reads the finger's
                                     // offset, and a progress-bar scrub reads the
-                                    // fractional card position under the finger.
+                                    // fractional card position relative to the drag start.
                                     final int oldIndex;
                                     final int newIndex;
                                     final double progress;
@@ -1934,10 +1947,8 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
 
   void _showCardsListSheet(
     BuildContext context,
-    WidgetRef ref,
     List<_ReviewTopicGroup> groups,
     List<int> groupStartIndex,
-    Map<int, File?> imageFiles,
     List<_ReviewCardItem> flatItems,
     void Function(int) navigateTo,
     Color themeColor,
@@ -2012,7 +2023,6 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                       itemBuilder: (context, idx) {
                         final group = groups[idx];
                         final groupStart = groupStartIndex[idx];
-                        final imageFile = imageFiles[idx];
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2043,10 +2053,19 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                                       },
                                       child: SizedBox(
                                         width: 115,
-                                        child: _CoverCardTile(
-                                          title: group.title,
-                                          imageFile: imageFile,
-                                          imagePath: group.imagePath,
+                                        child: Consumer(
+                                          builder: (context, ref, _) {
+                                            final images = watchTopicImages(
+                                              ref,
+                                              [group.imagePath].nonNulls,
+                                              startRequests: false,
+                                            );
+                                            return _CoverCardTile(
+                                              title: group.title,
+                                              images: images,
+                                              imagePath: group.imagePath,
+                                            );
+                                          },
                                         ),
                                       ),
                                     );
@@ -2160,19 +2179,18 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
 class _CoverCard extends StatelessWidget {
   const _CoverCard({
     required this.title,
-    required this.imageFile,
+    required this.images,
     this.imagePath,
     required this.borderRadius,
   });
 
   final String title;
-  final File? imageFile;
+  final Map<String, AsyncValue<File>> images;
   final String? imagePath;
   final double borderRadius;
 
   @override
   Widget build(BuildContext context) {
-    final bool isAsset = imagePath != null && imagePath!.startsWith('assets/');
     final titleStyle = TextStyle(
       color: Colors.black,
       fontSize: 22,
@@ -2207,20 +2225,17 @@ class _CoverCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              if (isAsset)
-                Image.asset(imagePath!, fit: BoxFit.cover)
-              else if (imageFile != null)
-                Image.file(imageFile!, fit: BoxFit.cover)
-              else
-                Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFFFFE0B2), Color(0xFFFFF8E1)],
-                    ),
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFFFE0B2), Color(0xFFFFF8E1)],
                   ),
                 ),
+              ),
+              if (imagePath case final path?)
+                TopicImage(path: path, images: images),
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Container(
@@ -2284,7 +2299,7 @@ String reviewCardTypeLabel(BuildContext context, String? cardType) {
 class _ContentCard extends StatelessWidget {
   const _ContentCard({
     required this.card,
-    required this.imageFile,
+    required this.images,
     this.imagePath,
     required this.themeColor,
     this.bodySwipeRecognizer,
@@ -2298,7 +2313,7 @@ class _ContentCard extends StatelessWidget {
   });
 
   final ReviewCard card;
-  final File? imageFile;
+  final Map<String, AsyncValue<File>> images;
   final String? imagePath;
   final Color themeColor;
   // 本文のSelectionAreaの内側からポインタを流し込むめくりスワイプ認識器。
@@ -2318,11 +2333,7 @@ class _ContentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAsset = imagePath != null && imagePath!.startsWith('assets/');
-    final hasImage = isAsset || imageFile != null;
-    final ImageProvider? imageProvider = isAsset
-        ? AssetImage(imagePath!)
-        : (imageFile != null ? FileImage(imageFile!) : null);
+    final hasImage = TopicImage.hasFile(imagePath, images);
 
     final typeColor = reviewCardTypeColor(card.cardType);
     final typeLabel = reviewCardTypeLabel(context, card.cardType);
@@ -2489,67 +2500,54 @@ class _ContentCard extends StatelessWidget {
       );
     }
 
-    if (!hasImage) {
-      return Container(
-        decoration: BoxDecoration(
-          color: AppColors.paper.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: Colors.black.withValues(alpha: 0.08),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.16),
-              blurRadius: 36,
-              spreadRadius: 4,
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.10),
-              blurRadius: 10,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [content, buildFooterDecoration(24)],
-          ),
-        ),
-      );
-    }
-
     return Container(
       decoration: BoxDecoration(
+        color: AppColors.paper.surface,
         borderRadius: BorderRadius.circular(24),
-        image: DecorationImage(image: imageProvider!, fit: BoxFit.cover),
+        border: hasImage
+            ? null
+            : Border.all(color: Colors.black.withValues(alpha: 0.08), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
+            color: Colors.black.withValues(alpha: hasImage ? 0.18 : 0.16),
             blurRadius: 36,
             spreadRadius: 4,
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
+            color: Colors.black.withValues(alpha: hasImage ? 0.12 : 0.10),
             blurRadius: 10,
             offset: const Offset(0, 6),
           ),
         ],
       ),
-      padding: const EdgeInsets.all(10),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.paper.surface.withValues(alpha: 0.94),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [content, buildFooterDecoration(16)],
-          ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (imagePath case final path?)
+              TopicImage(path: path, images: images)
+            else
+              const SizedBox.shrink(),
+            Padding(
+              padding: EdgeInsets.all(hasImage ? 10 : 0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(hasImage ? 16 : 24),
+                child: ColoredBox(
+                  color: AppColors.paper.surface.withValues(
+                    alpha: hasImage ? 0.94 : 1.0,
+                  ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      content,
+                      buildFooterDecoration(hasImage ? 16 : 24),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -2820,38 +2818,33 @@ class _ReviewCardBlockView extends HookWidget {
 class _CoverCardTile extends StatelessWidget {
   const _CoverCardTile({
     required this.title,
-    required this.imageFile,
+    required this.images,
     this.imagePath,
   });
 
   final String title;
-  final File? imageFile;
+  final Map<String, AsyncValue<File>> images;
   final String? imagePath;
 
   @override
   Widget build(BuildContext context) {
-    final bool isAsset = imagePath != null && imagePath!.startsWith('assets/');
-
     return SelectionContainer.disabled(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (isAsset)
-              Image.asset(imagePath!, fit: BoxFit.cover)
-            else if (imageFile != null)
-              Image.file(imageFile!, fit: BoxFit.cover)
-            else
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFFFFE0B2), Color(0xFFFFF8E1)],
-                  ),
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFFFE0B2), Color(0xFFFFF8E1)],
                 ),
               ),
+            ),
+            if (imagePath case final path?)
+              TopicImage(path: path, images: images),
             Align(
               alignment: Alignment.bottomCenter,
               child: Container(

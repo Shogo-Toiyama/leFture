@@ -317,6 +317,7 @@ class _LecturePageContent extends ConsumerWidget {
         data: (uiState) => _LectureViewerBody(
           lecture: lecture,
           uiState: uiState,
+          isActive: isActive,
           initialOpenAnnouncementId: initialOpenAnnouncementId,
           initialScrollTo: initialScrollTo,
         ),
@@ -329,11 +330,13 @@ class _LectureViewerBody extends HookConsumerWidget {
   const _LectureViewerBody({
     required this.lecture,
     required this.uiState,
+    this.isActive = true,
     this.initialOpenAnnouncementId,
     this.initialScrollTo,
   });
 
   final Lecture lecture;
+  final bool isActive;
 
   /// 講義全体の粗いステータス(lectureStateProvider由来)。何も生成物が
   /// まだ無い間([FullScreenRevealBlur]が有効な間)の中央カードの中身選びに
@@ -595,6 +598,7 @@ class _LectureViewerBody extends HookConsumerWidget {
                       locked: const ShimmerBox(height: 180, borderRadius: 20),
                       ready: LectureHeroCollage(
                         lectureId: lecture.id,
+                        isActive: isActive,
                         onTap: topics.isNotEmpty
                             ? () => _showTopicsSheet(
                                 context,

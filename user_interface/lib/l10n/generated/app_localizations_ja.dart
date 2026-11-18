@@ -2193,6 +2193,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reviewCardsViewerNoCardsYet => '復習カードはまだありません';
 
   @override
+  String get reviewCardsViewerRetryImageTooltip => '画像の読み込みを再試行';
+
+  @override
   String get reviewCardsViewerViewListTooltip => '一覧を表示';
 
   @override

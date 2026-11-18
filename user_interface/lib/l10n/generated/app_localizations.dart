@@ -3998,6 +3998,12 @@ abstract class AppLocalizations {
   /// **'No review cards yet'**
   String get reviewCardsViewerNoCardsYet;
 
+  /// No description provided for @reviewCardsViewerRetryImageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry image download'**
+  String get reviewCardsViewerRetryImageTooltip;
+
   /// Tooltip for the grid-view icon button in the Review Cards viewer's header row, which opens a bottom sheet listing all cards grouped by topic so the user can jump directly to one.
   ///
   /// In en, this message translates to:

@@ -345,7 +345,12 @@ class LectureController extends _$LectureController {
         final uid = supabase.auth.currentUser?.id;
         if (uid != null) {
           final db = ref.read(appDatabaseProvider);
-          await LocalRetentionService(db).runMaintenance(uid);
+          await LocalRetentionService(db).runMaintenance(
+            uid,
+            onCacheFileEvicted: (path) {
+              if (ref.mounted) ref.invalidate(artifactFileProvider(path));
+            },
+          );
         }
       } catch (e, st) {
         DevLog.add(

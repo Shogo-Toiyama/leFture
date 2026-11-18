@@ -1,0 +1,4 @@
+Flutter dry run before production edits
+PASS: Relative movement from two starting coordinates, reversing direction, and absolute tap coordinates.
+PASS: Production thumbnail path convention for topic 10 and bundled assets.
+Network calls: 0. Model tokens and API cost: 0.

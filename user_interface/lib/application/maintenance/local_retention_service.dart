@@ -26,7 +26,10 @@ class LocalRetentionService {
   /// 増やしてまで厳密化する必要はない。
   static const int defaultCacheBudgetBytes = 1 * 1024 * 1024 * 1024; // 1GB
 
-  Future<void> runMaintenance(String userId) async {
+  Future<void> runMaintenance(
+    String userId, {
+    void Function(String storagePath)? onCacheFileEvicted,
+  }) async {
     try {
       await purgeExpiredSoftDeletes(userId);
     } catch (e, st) {
@@ -34,7 +37,10 @@ class LocalRetentionService {
     }
 
     try {
-      await enforceCacheBudget(userId);
+      await enforceCacheBudget(
+        userId,
+        onCacheFileEvicted: onCacheFileEvicted,
+      );
     } catch (e, st) {
       dev.log('⚠️ enforceCacheBudget failed: $e', error: e, stackTrace: st);
     }
@@ -65,6 +71,7 @@ class LocalRetentionService {
   Future<void> enforceCacheBudget(
     String userId, {
     int budgetBytes = defaultCacheBudgetBytes,
+      void Function(String storagePath)? onCacheFileEvicted,
   }) async {
     final pinnedIds = (await _db.getPinnedLectureIds(userId)).toSet();
 
@@ -98,8 +105,14 @@ class LocalRetentionService {
       final freed = sizeByLecture[lecture.id] ?? 0;
       if (freed == 0) continue;
 
-      await _deleteCacheFilesOnDisk(userId: userId, lectureId: lecture.id);
+      final removed = await _deleteCacheFilesOnDisk(
+        userId: userId,
+        lectureId: lecture.id,
+      );
       await _db.deleteCacheEntriesForLecture(userId: userId, lectureId: lecture.id);
+      for (final path in removed) {
+        onCacheFileEvicted?.call(path);
+      }
       totalBytes -= freed;
       evictedCount++;
     }
@@ -110,18 +123,24 @@ class LocalRetentionService {
     }
   }
 
-  Future<void> _deleteCacheFilesOnDisk({required String userId, required String lectureId}) async {
+  Future<List<String>> _deleteCacheFilesOnDisk({
+    required String userId,
+    required String lectureId,
+  }) async {
     final entries = await _db.getCacheEntriesForLecture(userId, lectureId);
+    final removed = <String>[];
     for (final entry in entries) {
       try {
         final file = File(entry.localFilePath);
         if (await file.exists()) {
           await file.delete();
         }
+        removed.add(entry.id);
       } catch (e) {
         dev.log('⚠️ [Retention] Failed to delete cache file ${entry.localFilePath}: $e');
       }
     }
+    return removed;
   }
 
   /// 講義を完全に消す前に、R2キャッシュファイルと、まだ端末に残っている

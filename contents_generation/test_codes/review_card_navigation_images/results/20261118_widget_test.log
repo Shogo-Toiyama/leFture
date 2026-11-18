@@ -1,0 +1,10 @@
+Flutter widget validation, 2026-11-18
+Result: 6 passed. Flutter reporter elapsed time: under one second for the test run after loading.
+- Review Cards on-screen counter follows the same relative drag from two starting points, reverses direction, and jumps to an absolute tap target.
+- Review Cards requests the thumbnail first, retains it when the original fails, and shows a retry control.
+- Thumbnail paths follow the production naming convention and omit bundled assets.
+- A 10-topic collage renders 10 slots, attempts every thumbnail before requesting originals, and advances when a thumbnail is missing.
+- The current topic starts while prior collage requests are still pending.
+- The two existing collage tests confirm that full and thumbnail images fill their slots.
+Artifacts and HTTP responses were simulated through provider overrides. Production R2 download latency was not measured. Network requests: 0. LLM usage and API cost: 0.
+Targeted Dart analysis: no errors or warnings. Three deprecation notices for existing Flutter Material imports.

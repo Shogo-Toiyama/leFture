@@ -2289,6 +2289,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reviewCardsViewerNoCardsYet => 'No review cards yet';
 
   @override
+  String get reviewCardsViewerRetryImageTooltip => 'Retry image download';
+
+  @override
   String get reviewCardsViewerViewListTooltip => 'View List';
 
   @override
