@@ -1,0 +1,97 @@
+{
+  "timestamp": "2026-11-08T03:10:50.728Z",
+  "scenario": "",
+  "env": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "secureContext": true,
+    "hasGetDisplayMedia": true,
+    "mediaRecorder": true,
+    "mimeSupport": {
+      "audio/webm;codecs=opus": true,
+      "audio/webm": true,
+      "audio/mp4;codecs=mp4a.40.2": true,
+      "audio/mp4;codecs=opus": true,
+      "audio/mp4": true,
+      "audio/ogg;codecs=opus": false
+    },
+    "platform": "macOS",
+    "platformVersion": "27.2.0",
+    "browsers": "Not:A-Brand 8.0.0.0, Chromium 156.0.8078.80, Google Chrome 156.0.8078.80",
+    "supportedConstraints": [
+      "suppressLocalAudioPlayback",
+      "restrictOwnAudio",
+      "displaySurface",
+      "echoCancellation",
+      "noiseSuppression",
+      "autoGainControl"
+    ]
+  },
+  "request": {
+    "video": {
+      "frameRate": 1,
+      "width": {
+        "max": 640
+      },
+      "height": {
+        "max": 360
+      }
+    },
+    "audio": {
+      "echoCancellation": false,
+      "noiseSuppression": false,
+      "autoGainControl": false,
+      "suppressLocalAudioPlayback": false
+    },
+    "systemAudio": "include",
+    "selfBrowserSurface": "include",
+    "surfaceSwitching": "exclude",
+    "monitorTypeSurfaces": "include"
+  },
+  "outcome": "audio_captured",
+  "endedBy": "user_stop",
+  "displaySurface": "monitor",
+  "audioTrackLabel": "System Audio",
+  "audioSettings": {
+    "autoGainControl": false,
+    "channelCount": 2,
+    "deviceId": "loopback",
+    "echoCancellation": false,
+    "latency": 0.02,
+    "noiseSuppression": false,
+    "restrictOwnAudio": false,
+    "sampleRate": 48000,
+    "sampleSize": 16,
+    "suppressLocalAudioPlayback": false,
+    "voiceIsolation": false
+  },
+  "videoStoppedEarly": false,
+  "mimeType": "audio/webm;codecs=opus",
+  "wallSeconds": 31.54,
+  "bytes": 507791,
+  "kbps": 128.8,
+  "meter": {
+    "maxDbfs": -12.7,
+    "silentRatio": 0.745
+  },
+  "decoded": {
+    "ok": true,
+    "duration": 31.5,
+    "sampleRate": 48000,
+    "channels": 2,
+    "peakDbfs": -3.2899675795588084
+  },
+  "serverSave": {
+    "saved": "results/20261107_191050_unlabeled.webm",
+    "bytes": 507791,
+    "ffprobe": {
+      "available": false
+    }
+  },
+  "events": [
+    "[0.04s] env {\"userAgent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36\",\"secureContext\":true,\"hasGetDisplayMedia\":true,\"mediaRecorder\":true,\"mimeSupport\":{\"audio/webm;codecs=opus\":true,\"audio/webm\":true,\"audio/mp4;codecs=mp4a.40.2\":true,\"audio/mp4;codecs=opus\":true,\"audio/mp4\":true,\"audio/ogg;codecs=opus\":false},\"platform\":\"macOS\",\"platformVersion\":\"27.2.0\",\"browsers\":\"Not:A-Brand 8.0.0.0, Chromium 156.0.8078.80, Google Chrome 156.0.8078.80\",\"supportedConstraints\":[\"suppressLocalAudioPlayback\",\"restrictOwnAudio\",\"displaySurface\",\"echoCancellation\",\"noiseSuppression\",\"autoGainControl\"]}",
+    "[1.62s] getDisplayMedia request {\"video\":{\"frameRate\":1,\"width\":{\"max\":640},\"height\":{\"max\":360}},\"audio\":{\"echoCancellation\":false,\"noiseSuppression\":false,\"autoGainControl\":false,\"suppressLocalAudioPlayback\":false},\"systemAudio\":\"include\",\"selfBrowserSurface\":\"include\",\"surfaceSwitching\":\"exclude\",\"monitorTypeSurfaces\":\"include\"}",
+    "[7.82s] stream acquired {\"displaySurface\":\"monitor\",\"videoLabel\":\"screen:1:0\",\"audioTracks\":[{\"label\":\"System Audio\",\"settings\":{\"autoGainControl\":false,\"channelCount\":2,\"deviceId\":\"loopback\",\"echoCancellation\":false,\"latency\":0.02,\"noiseSuppression\":false,\"restrictOwnAudio\":false,\"sampleRate\":48000,\"sampleSize\":16,\"suppressLocalAudioPlayback\":false,\"voiceIsolation\":false}}]}",
+    "[7.82s] recording {\"mimeType\":\"audio/webm;codecs=opus\"}",
+    "[39.45s] saved 20261107_191050_unlabeled.webm {\"saved\":\"results/20261107_191050_unlabeled.webm\",\"bytes\":507791,\"ffprobe\":{\"available\":false}}"
+  ]
+}

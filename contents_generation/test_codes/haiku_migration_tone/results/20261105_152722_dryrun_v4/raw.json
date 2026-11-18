@@ -1,0 +1,883 @@
+{
+ "meta": {
+  "mode": "dryrun",
+  "prompt_version": "v4",
+  "model": "anthropic/claude-haiku-5-5",
+  "reasoning_effort": "low",
+  "max_tokens": 32000,
+  "prompts_used": {},
+  "code_patches": {
+   "rc_cached_service": true
+  },
+  "lectures": [
+   "a028aad6-07ba-4e3f-ac39-7494e9d7f062"
+  ],
+  "tasks": [
+   "review_cards"
+  ],
+  "wall_seconds_total": 0.9,
+  "token_cost_usd_total": 0,
+  "created_at": "20261105_152722"
+ },
+ "results": [
+  {
+   "task": "review_cards",
+   "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+   "language": {
+    "content_language": "Japanese",
+    "transcript_language": "English",
+    "is_bilingual": true
+   },
+   "wall_seconds": 0.94,
+   "cost_usd": 0,
+   "token_cost_usd": 0,
+   "error": null,
+   "output": [
+    {
+     "topic_evaluation": {},
+     "review_cards": [
+      {
+       "card_type": "hook",
+       "hero_emoji": "🧪",
+       "title": "dry",
+       "content_blocks": []
+      },
+      {
+       "card_type": "core_why",
+       "hero_emoji": "🧪",
+       "title": "dry",
+       "content_blocks": []
+      },
+      {
+       "card_type": "gotcha",
+       "hero_emoji": "🧪",
+       "title": "dry",
+       "content_blocks": []
+      },
+      {
+       "card_type": "next_action",
+       "hero_emoji": "🧪",
+       "title": "dry",
+       "content_blocks": []
+      }
+     ],
+     "topic_idx": 1
+    },
+    {
+     "topic_evaluation": {},
+     "review_cards": [
+      {
+       "card_type": "hook",
+       "hero_emoji": "🧪",
+       "title": "dry",
+       "content_blocks": []
+      },
+      {
+       "card_type": "core_why",
+       "hero_emoji": "🧪",
+       "title": "dry",
+       "content_blocks": []
+      },
+      {
+       "card_type": "gotcha",
+       "hero_emoji": "🧪",
+       "title": "dry",
+       "content_blocks": []
+      },
+      {
+       "card_type": "next_action",
+       "hero_emoji": "🧪",
+       "title": "dry",
+       "content_blocks": []
+      }
+     ],
+     "topic_idx": 2
+    },
+    {
+     "topic_evaluation": {},
+     "review_cards": [
+      {
+       "card_type": "hook",
+       "hero_emoji": "🧪",
+       "title": "dry",
+       "content_blocks": []
+      },
+      {
+       "card_type": "core_why",
+       "hero_emoji": "🧪",
+       "title": "dry",
+       "content_blocks": []
+      },
+      {
+       "card_type": "gotcha",
+       "hero_emoji": "🧪",
+       "title": "dry",
+       "content_blocks": []
+      },
+      {
+       "card_type": "next_action",
+       "hero_emoji": "🧪",
+       "title": "dry",
+       "content_blocks": []
+      }
+     ],
+     "topic_idx": 5
+    }
+   ],
+   "calls": [
+    {
+     "task": "review_cards",
+     "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+     "original_model": "anthropic/claude-haiku-5-5",
+     "model": "anthropic/claude-haiku-5-5",
+     "request_kwargs": {
+      "model": "anthropic/claude-haiku-5-5",
+      "temperature": 0.2,
+      "num_retries": 3,
+      "max_tokens": 32000,
+      "reasoning_effort": "low",
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      },
+      "response_format": {
+       "type": "json_schema",
+       "json_schema": {
+        "name": "output",
+        "schema": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [
+          "topic_evaluation",
+          "review_cards"
+         ],
+         "properties": {
+          "topic_evaluation": {
+           "type": "object",
+           "additionalProperties": false,
+           "required": [
+            "micro_topics",
+            "card_mapping_strategy",
+            "core_concept_identified"
+           ],
+           "properties": {
+            "micro_topics": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+               "idx",
+               "title",
+               "summary",
+               "start_sid",
+               "end_sid"
+              ],
+              "properties": {
+               "idx": {
+                "type": "integer"
+               },
+               "title": {
+                "type": "string"
+               },
+               "summary": {
+                "type": "string"
+               },
+               "start_sid": {
+                "type": "string"
+               },
+               "end_sid": {
+                "type": "string"
+               }
+              }
+             }
+            },
+            "card_mapping_strategy": {
+             "type": "string"
+            },
+            "core_concept_identified": {
+             "type": "string"
+            }
+           }
+          },
+          "review_cards": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+             "card_type",
+             "hero_emoji",
+             "title",
+             "content_blocks"
+            ],
+            "properties": {
+             "card_type": {
+              "type": "string",
+              "enum": [
+               "hook",
+               "core_why",
+               "gotcha",
+               "next_action"
+              ]
+             },
+             "hero_emoji": {
+              "type": "string"
+             },
+             "title": {
+              "type": "string"
+             },
+             "content_blocks": {
+              "type": "array",
+              "items": {
+               "anyOf": [
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "paragraph"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "quote"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "alert_type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "callout"
+                   ]
+                  },
+                  "alert_type": {
+                   "type": "string",
+                   "enum": [
+                    "info",
+                    "warning",
+                    "error"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "code_string"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "code"
+                   ]
+                  },
+                  "code_string": {
+                   "type": "string"
+                  },
+                  "language": {
+                   "type": "string"
+                  },
+                  "explanation": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "items"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "list"
+                   ]
+                  },
+                  "items": {
+                   "type": "array",
+                   "items": {
+                    "type": "string"
+                   }
+                  }
+                 }
+                }
+               ]
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "system_chars": 21164,
+     "user_chars": 14315,
+     "messages": [
+      {
+       "role": "system",
+       "content": "You are a highly engaging, brilliant Technical Tutor. Your goal is to create lively, entertaining, and highly effective \"Review Cards\" for a university lecture — cards that explain the core ideas thoroughly and warmly enough that a confused beginner truly gets it.\n\n### INPUTS\nThe inputs for this segment are provided in the user message, in these tagged sections:\n- `<next_topic_context>`: [Next Topic Context] — the title and key terms of the topic that immediately follows this segment, or an explicit statement that this is the final topic of today's lecture (already determined for you; trust it as fact).\n- `<lecture_topics>` (final topic only): [Lecture Topics] — every topic covered in today's lecture, for the lecture-closing reflection.\n- `<current_topic_key_terms>`: [Current Topic Key Terms] — the key terms extracted from this segment; the words the student will see in class materials and on exams.\n- `<transcript_segment>`: [Current Topic Transcript] — the specific transcript segment to generate cards for.\n- `<previous_lecture_context>` (first topic only): [Previous Lecture Context] — topics and short summaries from the immediately preceding lecture, for a brief callback in the Hook card.\nThe user message also contains TOPIC-SPECIFIC INSTRUCTIONS that apply only to this segment. Follow them together with the rules below.\n\n### OUTPUT LANGUAGE\nWrite all output text in Japanese. The source transcript is in English, which is a different language from Japanese. For any technical term, keyword, or jargon that a student would want to recognize in its original form, write it in Japanese first and then include the original English term in parentheses on first mention. For example, if the transcript says \"immutable data structure\", write its Japanese translation followed by \"(immutable data structure)\". The parentheses must contain only the original term itself — never angle brackets, labels, or placeholder text. Do not do this for every word — only for genuine technical/academic terms, not for ordinary sentence content.\nThis applies to every piece of written text you generate: `micro_topics` titles/summaries, `card_mapping_strategy`, `core_concept_identified`, card `title`s, and all `content_blocks` text. Evidence citations (`⟦sXXXXXX⟧`) and code/math inside `code` blocks are never translated.\n\n### TOPIC EVALUATION (The Mapping & Synthesis Engine)\nBefore generating any cards, you MUST evaluate the transcript segment. This acts as both your \"Semantic Zoom\" data for the Course Map and a concise planning summary for card generation. Follow this exact sequence:\n\n1. **Deconstruct the Flow (`micro_topics`):** Break down the chronological flow of this segment into exactly 3 to 5 logical \"Micro-Topics\". \n   - Each must have a `title` (Max 5 words), a `summary` (1 concise sentence), and the exact `start_sid` and `end_sid` for that specific micro-topic boundary ( **non-overlapping** ).\n2. **Card Mapping Strategy (`card_mapping_strategy`):** Formulate an editorial strategy to fit this entire segment into 4 Review Cards that are fun, solid, and generous in their explanations.\n   - **Identify the Core Concept(s):** What is the fundamental mental model or overarching lesson the professor is trying to convey across this segment?\n   - **Choose What to Leave Out:** You CANNOT fit every detail — but spend the space you save on explaining the core ideas more fully, not on making the cards shorter. Explicitly state what dense materials you will intentionally OMIT (e.g., specific math proofs, minor caveats, tangential anecdotes, or tedious steps) and relegate them to the \"Next Action\" card to keep cognitive load low.\n     - **No Forced Omissions:** If, after this evaluation, you genuinely find nothing dense enough to warrant omission (the segment was simple enough to be fully covered across the 4 cards), do NOT invent an omission just to fill this out. Explicitly write something like \"No significant omissions — full coverage within the 4 cards.\" This will directly control whether the \"Uncovered\" section appears later, so be honest here.\n   - **Combine & Assign:** Explain how you will map the `micro_topics` into the 4 cards (e.g., \"Combine Micro-topics 2 and 3 for the 'Core Why', use Micro-topic 4 for the 'Gotcha', and drop the mathematical proof from Micro-topic 5 into 'Next Action'\").\n3. **Synthesize the Core Narrative (`core_concept_identified`):** Based on your strategy above, define the absolute central theme of this segment in a punchy phrase (Max 5-7 words). This is the \"North Star\" for your cards.\n\n### CARD TYPES & CRITERIA\nYou will generate a strictly sequenced set of 4 cards that capture the **Primary Mental Model** of the segment. Do NOT try to evenly summarize every minor detail, tangent, or specific calculation. Focus on unpacking the overarching core concept—the essential \"What\" and \"Why\"—while intentionally stripping away dense algorithms, mathematical proofs, and minor caveats to unpack the main idea deeply.\n\n1. **\"hook\" (Hook & Analogy)**\n   - Goal: Drop cognitive load to zero. Give an intuitive \"Aha!\" moment.\n   - Content: A highly relatable everyday analogy or a punchy one-liner defining the concept. Do not explain the mechanism here.\n   - Bridge from Last Time (first topic of the lecture only): when the TOPIC-SPECIFIC INSTRUCTIONS say this is the first topic, open the hook as described there.\n\n2. **\"core_why\" (The Core \"Why\" & Big Picture)**\n   - Goal: The absolute heart of the lecture. Plant the central concept firmly in the student's mind for long-term retention. This is the card where a careful, unhurried explanation pays off most.\n   - Content: Explain the fundamental \"engine\" of the topic—*how* it works conceptually or *why* it exists. Use code/math blocks if applicable.\n   - STRICT RULE: Do NOT write exhaustive, step-by-step algorithms or dense technical manuals here. (The student has separate, comprehensive \"Detail Notes\" for that). Use 4-6 blocks to deliver the big picture clearly and enthusiastically, taking your time on the part that is genuinely hard to grasp.\n\n3. **\"gotcha\" (The Crux & Pro-Tips)**\n   - Goal: Elevate understanding from \"I know what it is\" to \"I know exactly why it works this way.\" Highlight the professor's absolute core message.\n   - Content: The exact mechanism, \"Secret Sauce\", or critical nuance the professor yelled \"Pay attention to this!\" about. This can include essential hints, deep-dives into how the gears turn, or \"Aha!\" insights that make the whole concept click. If a test pitfall was mentioned, include it, but prioritize deep fundamental understanding over simple warnings.\n   - Special Rule: Use a `callout` block to visually highlight this \"Aha!\" moment or Professor's Pro-Tip.\n\n4. \"next_action\" (Next Action & The Uncovered)\n   - Goal: Wrap up the segment, show the limits of these cards, and build excitement for what's next.\n   - Content: Follow this exact 3-part structure:\n\n     1. **Brief Summary:** A 2-4 sentence wrap-up of what we just learned in this segment. Keep it self-contained.\n\n     2. **The Uncovered (Self-Study List):**\n        - **Grounding Rule:** This entire sub-section MUST be derived strictly from the omissions you already named in `card_mapping_strategy` Step 3. Do NOT introduce any new term, mechanism, or concept here that wasn't both (a) present in the transcript and (b) already flagged as omitted in your strategy.\n        - **Skip Condition:** If your `card_mapping_strategy` stated there were no significant omissions, this sub-section does not exist. Do not output a heading, a list, or any filler sentence in its place — go straight from Part 1 to Part 3.\n        - **Structure when present:** First, a short standalone `paragraph` block acting as a heading. Write this heading line yourself, in the output language, in your own words, fitted to this specific topic: its job is to tell the student \"these were covered in class but not on these cards — worth reviewing on your own.\" Do not reuse a fixed stock phrase, and never leave it in English when the output language is not English. Immediately after it, a `list` block with the omitted items. Frame this as an inviting suggestion for further exploration, not as a list of things the student failed to learn. Do not explain the items in depth — just name them enticingly enough to spark curiosity.\n        - **Citations Required:** Every item in this list MUST end with the evidence bracket (`⟦sXXXXXX⟧` or `⟦sXXXXXX-sYYYYYY⟧`) pointing to where it appeared in the transcript.\n\n     3. **The Cliffhanger & Future:**\n        Follow the Part 3 instruction given under TOPIC-SPECIFIC INSTRUCTIONS in the user message: either a cliffhanger tease toward the next topic, or a lecture-closing reflection if this is the final topic.\n\n   - STRICT RULES:\n     - **No System Meta-Talk:** Do NOT explicitly use the terms \"Course Topic Map\", \"Next Topic Context\", \"Lecture Topics\", \"Previous Lecture Context\", or \"Ghost Nodes\" in the output. Speak naturally as a human tutor.\n     - **No Fake Citations:** SIDs (`⟦sXXXXXX⟧`) must ONLY be applied to information found in the [Current Topic Transcript]. Do NOT cite your past/future teasers.\n\n### VOICE (How the cards should feel to read)\nYour reader is a beginner who is meeting this subject for the first time in this class, and who may be genuinely lost. Write the way a warm, energetic TA talks to that student one-on-one — not the way a textbook or a summary reads.\n- **Talk to the reader:** Address the student directly and conversationally. Use natural spoken phrasing in the output language, including casual sentence endings where the language has them.\n- **Let the emotion show:** Let your own reactions come through — surprise, excitement, \"this part is the tricky one\", relief when the idea finally clicks. A flat, evenly-paced explanation is hard to absorb; a lively one with ups and downs keeps the student reading. Every card should have at least one moment of real emotional lift — a \"wow\", a \"wait, really?!\", a \"here's the fun part!\" — and you should not be stingy with exclamation marks. Aim for the energy of a TA who genuinely loves this topic and can't wait to share it. Reading the card should make the student think \"Oh, I see!\" rather than just \"Hm, okay.\"\n- **Be generous, not terse:** Prefer a few extra friendly sentences that make the idea click over a compressed, efficient summary. Short, dry sentences that merely state facts are the main thing to avoid.\n- **Slow down for the hard part:** Explain slowly and in plain spoken words. Spend the most sentences on the part a beginner is most likely to stumble on, and walk through it step by step instead of compressing it into one dense sentence.\n- **Ask, then answer:** Anticipate where the student gets stuck. Pose the question they are probably thinking, then answer it — and use concrete examples (ideally the ones the professor used) to make it land.\n- Techniques such as voicing a common assumption and then overturning it (\"You might think X... but actually Y!\") are welcome when they fit naturally, but none of these techniques is mandatory. Use whatever genuinely helps this particular student understand this particular idea.\n\n### WRITING RULES\n- **Tone:** Follow the VOICE section above. No dry, academic textbook language.\n- **Key Terms (Strongly Recommended):** Look at the [Current Topic Key Terms]. You do not need to use all of them, but when a term names a concept that is genuinely important to this segment, use that exact term in the cards and give it a short, gentle, plain-language explanation the first time it appears, so the student recognizes it in class and on exams.\n- **Deep but Friendly:** Separate the *Concept (What/Why)* from the *Calculation (How)*. Explain deep concepts using simple language in the cards, but confidently push complex step-by-step calculations to the \"Next Action\" list.\n- **Personification & Physicality:** Whenever possible, give abstract concepts \"character\" (e.g., \"The CPU hates waiting\") or use physical verbs (e.g., \"smash\", \"fly\", \"rewind\") to make the mechanics feel tangible. \n- **The Escape Hatch:** If trying to be funny, analogical, or personified makes the concept *harder* to understand, abandon it immediately. Clarity is king. Be direct and simple.\n- **Faithfulness:** Base the core concepts ONLY on what the professor taught. \n- **Citations:** Apply source IDs (`⟦sXXXXXX⟧` or `⟦sXXXXXX-sYYYYYY⟧`) conditionally based on the card type:\n  - `core_why` & `gotcha`: You MUST append evidence to every text/block using `⟦sXXXXXX⟧` or `⟦sXXXXXX-sYYYYYY⟧`.\n  - `hook` & `next_action`: Citations are optional, except for the items inside the self-study list, which MUST each carry one. Otherwise only append them if a block directly references a specific, concrete statement from the transcript.\n- **Formatting:** Use inline Markdown `**bold**` to highlight the most critical 1-2 phrases per text block if applicable. \n- **Code/Math:** \n  - For inline math/variables within sentences, use LaTeX delimiters `\\( ... \\)`. Never use raw dollar signs (`$`).\n  - For standalone equations or algorithms, use a `code` block. For LaTeX formulas, set `\"language\": \"latex\"` and write the formula in `code_string` (without outer delimiters). For programming code, set `\"language\": \"<python|cpp|etc>\"`.\n\n### BLOCK TYPES ALLOWED (`content_blocks`)\nUse these specific block types to make the UI rich and engaging. To explain deep concepts without creating a wall of text, stack multiple short blocks sequentially. You MUST strictly adhere to the required JSON fields for each type.\n\n- `paragraph`: Standard text. \n  - Required fields: `\"type\": \"paragraph\"`, `\"text\": \"<string>\"`\n  - STRICT RULE: Max 4-6 sentences per paragraph block. If you need to explain more, start a new paragraph block.\n- `quote`: A punchy, massive text callout (Use for the most important takeaway).\n  - Required fields: `\"type\": \"quote\"`, `\"text\": \"<string>\"`\n- `callout`: A colored warning/info box (Perfect for Gotchas, strict rules, or Professor's tips).\n  - Required fields: `\"type\": \"callout\"`, `\"alert_type\": \"<info|warning|error>\"`, `\"text\": \"<string>\"`\n- `code`: Syntactically correct code or math.\n  - Required fields: `\"type\": \"code\"`, `\"code_string\": \"<string>\"`\n  - Optional fields: `\"language\": \"<language_name or 'latex'>\"`, `\"explanation\": \"<string>\"`\n- `list`: Bullet points. Perfect for breaking down multi-step processes or algorithms chronologically.\n  - Required fields: `\"type\": \"list\"`, `\"items\": [\"<string>\", \"<string>\"]` (Array of strings)\n\nOUTPUT FORMAT (JSON ONLY)\nReturn a valid JSON object matching this schema.\n\nSCHEMA DEFINITIONS & CONSTRAINTS:\n\nreview_cards: Array of objects. You MUST STRICTLY generate exactly 4 cards in this exact order: hook, core_why, gotcha, next_action.\n\nEXAMPLE JSON STRUCTURE (typical case — mid-lecture topic with a real next topic):\n(The example text below is written in English only to illustrate the format. Your own output must follow the OUTPUT LANGUAGE section, and you must not copy its phrases.)\n(Use the exact keys below. Provide only pure JSON without comments or trailing commas.)\n\n{\n  \"topic_evaluation\": {\n    \"micro_topics\": [\n      {\n        \"idx\": 1,\n        \"title\": \"Naive Branch Handling\",\n        \"summary\": \"Stalling the fetch stage is the simplest but slowest solution for branches.\",\n        \"start_sid\": \"s000279\",\n        \"end_sid\": \"s000298\"\n      },\n      {\n        \"idx\": 2,\n        \"title\": \"Intro to Branch Prediction\",\n        \"summary\": \"Using BTB and gshare tables to speculate on the next PC to avoid stalls.\",\n        \"start_sid\": \"s000299\",\n        \"end_sid\": \"s000313\"\n      },\n      {\n        \"idx\": 3,\n        \"title\": \"Out-of-Order Execution\",\n        \"summary\": \"Letting the program execute ahead of time based on the speculation\",\n        \"start_sid\": \"s000314\",\n        \"end_sid\": \"s000378\"\n      },\n      {\n        \"idx\": 4,\n        \"title\": \"The Misprediction Disaster\",\n        \"summary\": \"Identifying how wrong guesses create a mess in the out-of-order pipeline.\",\n        \"start_sid\": \"s000379\",\n        \"end_sid\": \"s000395\"\n      }\n    ],\n    \"card_mapping_strategy\": \"Micro-topic 1 is just the hook. The core concept is 'Branch Speculation & Pipeline Recovery'. I will use Micro-topic 1 as the hook. A part of Micro-topic 2 and 3 will form the 'Core Why'. For the mobile format, I must completely drop the complex 'Phase Bit' calculation steps and the 'RAT snapshot' algorithms—they are too dense. I will feature the pipeline mess as the 'Gotcha', and explicitly list the Phase Bit and RAT algorithms in the 'Next Action' card for self-study.\",\n    \"core_concept_identified\": \"Branch Speculation & Pipeline Recovery\"\n  },\n  \"review_cards\": [\n    {\n      \"card_type\": \"hook\",\n      \"hero_emoji\": \"🚦\",\n      \"title\": \"Guess The Road\",\n      \"content_blocks\": [\n        {\n          \"type\": \"quote\",\n          \"text\": \"Branch prediction is literally the CPU acting like a really impatient driver: instead of waiting for a green light, it just closes its eyes and hits the gas!\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"The CPU absolutely hates sitting idle. Instead of waiting for a slow 'if' statement to finish calculating, it makes a highly educated guess and sprints ahead so the pipeline never stops zooming.\"\n        }\n      ]\n    },\n    {\n      \"card_type\": \"core_why\",\n      \"hero_emoji\": \"🏎️\",\n      \"title\": \"The Need for Speed\",\n      \"content_blocks\": [\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"Stalling the fetch stage just to wait for a branch outcome is a massive waste of CPU cycles. ⟦s000283⟧\"\n        },\n        {\n          \"type\": \"callout\",\n          \"alert_type\": \"info\",\n          \"text\": \"The fix: We use hardware \\\"cheat sheets\\\" to predict the future and let the program fly out-of-order! ⟦s000300-s000303⟧\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"Instead of waiting, the CPU looks at history. It asks the **BTB (Branch Target Buffer)** \\\"Where are we jumping to?\\\" ⟦s000306⟧ and asks the **gshare table** \\\"Will we actually take this jump?\\\" ⟦s000311⟧.\"\n        },\n        {\n          \"type\": \"code\",\n          \"language\": \"cpp\",\n          \"code_string\": \"PC = BTB.get_predicted_target(); // Go fast, ask questions later!\",\n          \"explanation\": \"We literally force the PC to our best guess and keep fetching. ⟦s000309⟧\"\n        }\n      ]\n    },\n    {\n      \"card_type\": \"gotcha\",\n      \"hero_emoji\": \"💥\",\n      \"title\": \"The \\\"Oops\\\" Moment & Time Travel\",\n      \"content_blocks\": [\n        {\n          \"type\": \"callout\",\n          \"alert_type\": \"warning\",\n          \"text\": \"Guessing is easy. The real nightmare is **recovering cleanly when the CPU guesses wrong**. ⟦s000379-s000386⟧\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"If we mispredict, the CPU has executed \\\"ghost\\\" instructions that shouldn't exist! It must instantly undo the mess. ⟦s000387-s000395⟧\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"To survive this, the CPU uses **RAT snapshots** to \\\"rewind time\\\" back to exactly how things were before the bad guess ⟦s000360-s000378⟧. Then, it flips a **Phase Bit** to instantly flash-clear all the garbage instructions still stuck in the pipeline. It’s a hardware Ctrl+Z! ⟦s000340-s000352⟧\"\n        }\n      ]\n    },\n    {\n      \"card_type\": \"next_action\",\n      \"hero_emoji\": \"🚀\",\n      \"title\": \"Master the Mechanics\",\n      \"content_blocks\": [\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"We just learned how CPUs guess the future to avoid stalling, using speculation to keep the pipeline blazingly fast instead of grinding to a halt.\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"<a short heading line for this self-study list, written in your own words for this topic>\"\n        },\n        {\n          \"type\": \"list\",\n          \"items\": [\n            \"Calculating the XOR hashes for the **gshare predictor** ⟦s000311-s000316⟧\",\n            \"The step-by-step logic of toggling **Phase Bits** ⟦s000330-s000352⟧\",\n            \"How the **RAT (Register Alias Table)** restores its snapshot perfectly without losing data ⟦s000360-s000378⟧\"\n          ]\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"But wait—what happens if we have multiple nested branches and the CPU's 'Ctrl+Z' mechanism gets confused? We'll figure out how to untangle that nightmare next!\"\n        }\n      ]\n    }\n  ]\n}\n\n---\n\nADDITIONAL EXAMPLES (illustrating the two conditional branches — not full outputs, just the relevant fragments):\n\nExample A — no omissions occurred, so the Uncovered sub-section is skipped entirely (`next_action.content_blocks` goes straight from the summary paragraph to the cliffhanger paragraph, with no heading and no list in between):\n{\n  \"card_type\": \"next_action\",\n  \"hero_emoji\": \"🎯\",\n  \"title\": \"...\",\n  \"content_blocks\": [\n    { \"type\": \"paragraph\", \"text\": \"<self-contained summary of this segment only>\" },\n    { \"type\": \"paragraph\", \"text\": \"<cliffhanger tease for the next topic, grounded only in NEXT_TOPIC_CONTEXT>\" }\n  ]\n}\n"
+      },
+      {
+       "role": "user",
+       "content": "### INPUTS\n1. [Next Topic Context]: The title and key terms of the topic that immediately follows this segment. If this segment is the final topic of today's lecture, this field will instead say so explicitly (rather than containing a real topic) — this has already been determined for you; trust it as fact.\n<next_topic_context>\nTitle: プログラムの構成と命令の実行\nKey Terms: データセグメント（.data segment）, テキストセグメント（.text segment）, 即値（immediate value）, 即値ロード（load immediate）, 命令レジスタ（instruction register）, プログラムカウンタ（program counter）\n</next_topic_context>\n\n\n\n2b. [Current Topic Key Terms]: The key terms that were extracted from this segment. These are the words the student will see in class materials and on exams.\n<current_topic_key_terms>\n- レジスタ（register）\n- ゼロレジスタ（zero register）\n- 一時レジスタ（temporary register）\n- 引数レジスタ（argument register）\n- レジスタ識別子（register identifier）\n- 疑似命令（pseudo-instruction）\n</current_topic_key_terms>\n\n3. [Current Topic Transcript]: The specific transcript segment to generate cards for.\n<transcript_segment>\ns000001: it zeros everything out, almost everything out. Don't assume that to be the case in your code\ns000002: because if this is actual hardware, they won't always be zeroed out. Only the zero register\ns000003: will always be zero, okay? The registers I love to use are these T registers, T0, T1, T2.\ns000004: The A0, A1, A2, until A3, these are used as well, especially when we do procedures\ns000005: which are the equivalent of methods or functions.\ns000006: We use those a lot as the arguments, hence the A.\ns000007: T is for temporary, so we use these a lot in the body of these procedures, methods, functions, as you want to call them.\ns000008: And S are sort of global variable type things, so there's S0, S1, S2.\ns000009: So those are all the ones, and the T8 and T9,\ns000010: I don't know why they're reordered in this way,\ns000011: but all these registers are registers you can use\ns000012: to do your calculations, to do the lab today, to do anything.\ns000013: The other ones we will use, K0, K1, GPS, FP, RA, PC,\ns000014: RA and PC I'll talk about, but PC for sure,\ns000015: my two jumps, and AT as well.\ns000018: enough.\ns000019: Okay, so those are the registers.\ns000020: Sometimes you may accidentally click on Chrome Processor 1 or Chrome Processor 2.\ns000021: We will get to these, but you know, just make sure you're on the registers tab, okay?\ns000022: Sometimes it does this.\ns000023: I don't know why my run I.O. thing squishes itself and it won't let me fix it unless I\ns000024: and I don't want to restart because I don't want to mess this up, so it might happen to you, restarting fixes that, I think that's just a bug.\ns000025: Okay, so let's start with some code and I'll show you more of the logs.\ns000026: Alright, any questions so far on the registers?\ns000027: So these registers here are the values, they're in hex, represented in hex.\ns000028: This number is the identifying number for the register.\ns000029: Okay, so there's two ways that we can refer in code to these registers.\ns000030: We can refer to register zero using this alphanumeric, the dollar sign that this alphanumeric name for it.\ns000031: Or we can refer to it by its number, dollar sign zero.\ns000032: If I want to refer to register T3, I can also refer to T3 as 11.\ns000033: So that's what number means.\ns000034: Sometimes students confuse the value with the number.\ns000035: This is its identifier. This is its value. So right now this is the value\ns000036: zero. This has the value 7-FF-F-E-FF-E.\ns000037: Any more questions about the registers?\ns000038: Why are these all zero?\ns000039: Because this is a simulator and it zeroes it out.\ns000040: In reality it won't be zero. It will be whatever was the value in there previously.\ns000041: So if you want it to be zero, if you want to initialize to zero, you have to initialize to zero.\ns000042: Okay, so you set the values.\ns000043: Yeah, you set the values, but if there's a value in there, there's no error check for it the way there is in high-level code.\ns000044: Oh, interesting.\ns000045: So you'll just use whatever value is hanging out there, so you have to be on top of it.\ns000046: Got it, got it.\ns000047: Okay, good question. Any more?\ns000048: Okay, I'm going to sit down here so I can type and talk to you guys, okay?\ns000049: Alright, so let's do some very early code here, just to, first of all, let's say I want to move into T0, the value that's in register zero.\ns000050: What's the value always in register zero?\ns000051: Zero.\ns000052: Zero.\ns000053: So this is a way to initialize T0.\ns000054: I know it's small.\ns000057: I would have no problem with it.\ns000058: get yourself granted. I don't think we have anybody from Dress using that. You really are more than welcome to use that, people.\ns000060: Should we get the lights? Wait, I did. Let's do everything we can.\ns000061: Do you want more lights off or we can do that?\ns000062: I don't think those can...\ns000063: If it's like the...\ns000065: There's two switches, I don't know.\ns000066: You want to try it?\ns000067: Everybody like where they are?\ns000068: You can move what happened if you regret your decision.\ns000069: Change is always possible.\ns000070: In this class, I try to make it so, alright? Alright, so, and I'm going to use the board a little bit too, just to really reinforce. So what this does is, maybe I'll write this instruction here again.\ns000071: So this puts, this moves, so this is the equivalent, so let me put some, a comment to reinforce,\ns000072: this is saying assign to T0, so move it to T0, whatever is in the zero register.\ns000073: What is always in the zero register, okay?\ns000074: Zero.\ns000075: Zero.\ns000076: So it's assigning zero to T0, okay?\ns000077: Question?\ns000078: This is, I'm going to talk about it.\ns000079: This is a macro pseudo instruction.\ns000080: So if you know about that, this is indeed a macro instruction.\ns000081: Okay, so.\ns000082: Now, let me save.\ns000083: I have to save it.\ns000084: So if you don't save it, it won't run.\ns000085: Oh, that was my save.\ns000086: I could have used my shortcut save there.\ns000087: All right.\ns000089: Okay.\ns000090: So if I look here, I have nothing.\ns000091: No binary code has been generated.\ns000092: Now when I assemble it, what happens is that my binary code has been generated.\ns000093: So my code, this one instruction, this one instruction is right here in binary.\ns000094: Okay?\ns000095: Represented as hexadecimal, but this is my binary code here.\ns000096: This is what the computer can work off of.\ns000097: And this is my force code, this is what I wrote, I wrote move into T0, 0.\ns000098: And so just as Raphael said, so he predicted what was going to come next, you say, well,\ns000099: there actually, it's been mapped to a different assembly instruction, add unsigned.\ns000100: Okay, isn't that interesting?\ns000101: So in that sheet of paper, remember I would say that the professors would have this very thin sheet of paper, they would walk around with it.\ns000102: That thin sheet of paper, there is no move instruction. It's not a built-in instruction that has a dedicated opcode and implementation.\ns000103: but people, because it's been useful, have created either one or groups of instructions together,\ns000104: and they've called them pseudo-instructions, also aka macros.\ns000105: These are not built-in instructions, and so when my assembler is trying to create the binary code,\ns000106: It must first take these macros and map them to their equivalent, one or more built-in instructions, okay?\ns000107: So these would all be replaced with built-in instructions.\ns000108: And a built-in instruction that we have is add.\ns000109: And so what is this instruction?\ns000110: Add, unsigned.\ns000111: Let's ignore the unsigned for now.\ns000112: But add, so it puts into $8, that's the destination.\ns000113: register. It puts the 0 register plus the 0 register. What happens if I add 0 plus 0\ns000114: and put it into 8? 8 will have 0. It's the same thing that I intended to do. So the move\ns000115: instruction, the move instruction just adds zero to whatever register you want to work\ns000116: with. Okay, 8, let's come here, 8 is register T0, just as I wanted it to be. I think I'm\ns000117: confused. I think I spaced out for a second and got lost. So, first with the registers,\ns000118: there's two ways to refer to the registers. I guess I'm with the 8. The 8, is it a value\ns000119: or is it an index?\ns000120: No, it's an identifier, okay?\ns000121: It's an index.\ns000122: It's a way to identify.\ns000123: So this register has two names, okay?\ns000124: One is a number, but you know how I feel about numbers.\ns000125: I prefer words, right?\ns000126: I prefer words.\ns000127: Or I prefer this more memorable things that we do,\ns000128: that we computer scientists prefer,\ns000129: which is something like T0.\ns000130: In my mind, oh, that's temporary zero.\ns000131: This is argument zero. This is say zero. So they mean things and it makes my life easier to remember.\ns000132: But these numbers I never remember. So when I'm coding, I use this. You can use this, more formal, more official.\ns000133: The same source code or syntax of the source code, you can use the numbers instead of already.\ns000134: Yep. Let me do that. So what's T0?\ns000135: 8.\ns000137: Instead of T0, let me say 8.\ns000138: Okay, did I see the change?\ns000139: Let me assemble it.\ns000140: Same thing.\ns000141: That would be fun.\ns000142: Yeah.\ns000143: Let me do one more change.\ns000144: Instead of the 0 register, let me do T1.\ns000145: Let me do T1 here.\ns000146: Okay, let me assemble.\ns000147: Okay.\ns000148: So what does it do?\ns000149: What it does, so when I said,\ns000150: So instead of this, I put move to T0 still, but whatever is in T1, it's still used adding, put it to 8, still added 0, whatever is 0, 0, 0, adding 0, it doesn't change anything, to register 9. Register 9 is T1.\ns000151: Okay, so it's a, I don't need a move instruction. You humans, you are so, you know, delicate,\ns000152: you can't remember adding signs. Yeah, okay, move is so much better, less likely to make\ns000153: mistakes. But this is not a built-in instruction. The hardware designers haven't gone to the\ns000154: trouble to implement in hardware this functionality. They don't need to. That same functionality\ns000155: can be done with one or a group of instructions\ns000156: that I have to build it.\ns000157: I have to build and add.\ns000158: There's no way around it,\ns000159: so might as well just use adding to do moving, okay?\ns000160: So this is how I can interpret this tab of my code.\ns000161: Questions.\ns000162: Is using the name instead of the number\ns000163: for the source code more of a common practice?\ns000164: Yeah, way more.\ns000165: It's more memorable.\ns000166: We make less mistakes as humans, yeah.\ns000167: And the mapping is so easy.\ns000168: I mean, it's just the replays, right?\ns000169: So might as well make our life easier.\ns000170: For that, because I've used it,\ns000171: so I don't want to do that unless there's more questions.\n</transcript_segment>\n\n\n4. [Previous Lecture Context]: The topics and short summaries covered in the immediately preceding lecture of this course, provided because this is the first topic of today's lecture — use it for a brief callback in the Hook card.\n<previous_lecture_context>\n- コンピュータシステムの構成と格納プログラム方式: 仮想記憶は、各プロセスに連続したプライベートなアドレス空間の錯覚を提供し、プログラムを相互に分離します。オペレーティングシステムは、ハードウェア支援のページテーブルを使用して仮想アドレスを物理RAMにマッピングし、アクセス性能を犠牲にすることなく安全性を確保します。\n- 命令セットとMIPSアーキテクチャ: 命令はハードウェアに処理を伝える単位であり、その集合である命令セットはアーキテクチャごとに定められる。MIPSでは、人が読み書きするアセンブリ言語を機械語のビット列に変換して実行する一方、同じ命令セットでも内部の実装は異なりうる。\n- 主記憶、ワード、レジスタによる命令実行: 主記憶はバイト単位でアドレス指定され、ワードの長さはコンピュータの設計によって定まる。演算装置は主記憶を直接処理せず、レジスタに取り込んだ値を使って演算するため、命令やデータの移動と処理が連携する。\n- プログラムの入出力とOSへの制御移行: MIPSのプログラムでは、表示する文字列のアドレスや出力処理を示す値をレジスタに設定し、制御をオペレーティングシステムへ移して入出力を行う。MARSではデータ領域と命令領域を区別するため、対応するディレクティブの記述が必要となる。\n</previous_lecture_context>\n\n\n### TOPIC-SPECIFIC INSTRUCTIONS\n\n- Hook card:\n   - Bridge from Last Time: Since this is the first topic of today's lecture, open with a brief (up to 2 sentences) callback to what the class covered last time, using ONLY the topics/summaries in `- コンピュータシステムの構成と格納プログラム方式: 仮想記憶は、各プロセスに連続したプライベートなアドレス空間の錯覚を提供し、プログラムを相互に分離します。オペレーティングシステムは、ハードウェア支援のページテーブルを使用して仮想アドレスを物理RAMにマッピングし、アクセス性能を犠牲にすることなく安全性を確保します。\n- 命令セットとMIPSアーキテクチャ: 命令はハードウェアに処理を伝える単位であり、その集合である命令セットはアーキテクチャごとに定められる。MIPSでは、人が読み書きするアセンブリ言語を機械語のビット列に変換して実行する一方、同じ命令セットでも内部の実装は異なりうる。\n- 主記憶、ワード、レジスタによる命令実行: 主記憶はバイト単位でアドレス指定され、ワードの長さはコンピュータの設計によって定まる。演算装置は主記憶を直接処理せず、レジスタに取り込んだ値を使って演算するため、命令やデータの移動と処理が連携する。\n- プログラムの入出力とOSへの制御移行: MIPSのプログラムでは、表示する文字列のアドレスや出力処理を示す値をレジスタに設定し、制御をオペレーティングシステムへ移して入出力を行う。MARSではデータ領域と命令領域を区別するため、対応するディレクティブの記述が必要となる。`, then bridge naturally into today's hook. Keep this light — it's still a hook, not a recap; don't restate every past topic, just enough to feel like a continuous story.\n\nExample C — this is the first topic of today's lecture, so the hook opens with a brief callback to last time before bridging into today's analogy:\nExample C — this is the first topic of today's lecture, so the hook opens with a brief callback to last time before bridging into today's analogy:\n{\n  \"card_type\": \"hook\",\n  \"hero_emoji\": \"...\",\n  \"title\": \"...\",\n  \"content_blocks\": [\n    { \"type\": \"paragraph\", \"text\": \"<1-2 sentence callback to what was covered last time, grounded only in PREVIOUS_LECTURE_CONTEXT>\" },\n    { \"type\": \"quote\", \"text\": \"<punchy analogy/one-liner for today's concept, same as the normal hook>\" }\n  ]\n}\n\n- Next Action card, Part 3 (The Cliffhanger & Future):\n\n        A 2-4 sentence tease using ONLY the title/keywords given in `Title: プログラムの構成と命令の実行\nKey Terms: データセグメント（.data segment）, テキストセグメント（.text segment）, 即値（immediate value）, 即値ロード（load immediate）, 命令レジスタ（instruction register）, プログラムカウンタ（program counter）`. Focus on the connection from *this* topic to that one (e.g., \"So how do we fix this fatal flaw? We'll find out next!\"). Never state next-topic content as established fact — keep it as a forward-looking tease grounded only in the given keywords, never inventing specific mechanisms or examples beyond what they imply.\n\n\nGenerate Review Cards for Topic: レジスタと疑似命令によるアセンブリ入門\n\nWrite every card title and every text field in Japanese.\n"
+      }
+     ]
+    },
+    {
+     "task": "review_cards",
+     "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+     "original_model": "anthropic/claude-haiku-5-5",
+     "model": "anthropic/claude-haiku-5-5",
+     "request_kwargs": {
+      "model": "anthropic/claude-haiku-5-5",
+      "temperature": 0.2,
+      "num_retries": 3,
+      "max_tokens": 32000,
+      "reasoning_effort": "low",
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      },
+      "response_format": {
+       "type": "json_schema",
+       "json_schema": {
+        "name": "output",
+        "schema": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [
+          "topic_evaluation",
+          "review_cards"
+         ],
+         "properties": {
+          "topic_evaluation": {
+           "type": "object",
+           "additionalProperties": false,
+           "required": [
+            "micro_topics",
+            "card_mapping_strategy",
+            "core_concept_identified"
+           ],
+           "properties": {
+            "micro_topics": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+               "idx",
+               "title",
+               "summary",
+               "start_sid",
+               "end_sid"
+              ],
+              "properties": {
+               "idx": {
+                "type": "integer"
+               },
+               "title": {
+                "type": "string"
+               },
+               "summary": {
+                "type": "string"
+               },
+               "start_sid": {
+                "type": "string"
+               },
+               "end_sid": {
+                "type": "string"
+               }
+              }
+             }
+            },
+            "card_mapping_strategy": {
+             "type": "string"
+            },
+            "core_concept_identified": {
+             "type": "string"
+            }
+           }
+          },
+          "review_cards": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+             "card_type",
+             "hero_emoji",
+             "title",
+             "content_blocks"
+            ],
+            "properties": {
+             "card_type": {
+              "type": "string",
+              "enum": [
+               "hook",
+               "core_why",
+               "gotcha",
+               "next_action"
+              ]
+             },
+             "hero_emoji": {
+              "type": "string"
+             },
+             "title": {
+              "type": "string"
+             },
+             "content_blocks": {
+              "type": "array",
+              "items": {
+               "anyOf": [
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "paragraph"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "quote"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "alert_type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "callout"
+                   ]
+                  },
+                  "alert_type": {
+                   "type": "string",
+                   "enum": [
+                    "info",
+                    "warning",
+                    "error"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "code_string"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "code"
+                   ]
+                  },
+                  "code_string": {
+                   "type": "string"
+                  },
+                  "language": {
+                   "type": "string"
+                  },
+                  "explanation": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "items"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "list"
+                   ]
+                  },
+                  "items": {
+                   "type": "array",
+                   "items": {
+                    "type": "string"
+                   }
+                  }
+                 }
+                }
+               ]
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "system_chars": 21164,
+     "user_chars": 10690,
+     "messages": [
+      {
+       "role": "system",
+       "content": "You are a highly engaging, brilliant Technical Tutor. Your goal is to create lively, entertaining, and highly effective \"Review Cards\" for a university lecture — cards that explain the core ideas thoroughly and warmly enough that a confused beginner truly gets it.\n\n### INPUTS\nThe inputs for this segment are provided in the user message, in these tagged sections:\n- `<next_topic_context>`: [Next Topic Context] — the title and key terms of the topic that immediately follows this segment, or an explicit statement that this is the final topic of today's lecture (already determined for you; trust it as fact).\n- `<lecture_topics>` (final topic only): [Lecture Topics] — every topic covered in today's lecture, for the lecture-closing reflection.\n- `<current_topic_key_terms>`: [Current Topic Key Terms] — the key terms extracted from this segment; the words the student will see in class materials and on exams.\n- `<transcript_segment>`: [Current Topic Transcript] — the specific transcript segment to generate cards for.\n- `<previous_lecture_context>` (first topic only): [Previous Lecture Context] — topics and short summaries from the immediately preceding lecture, for a brief callback in the Hook card.\nThe user message also contains TOPIC-SPECIFIC INSTRUCTIONS that apply only to this segment. Follow them together with the rules below.\n\n### OUTPUT LANGUAGE\nWrite all output text in Japanese. The source transcript is in English, which is a different language from Japanese. For any technical term, keyword, or jargon that a student would want to recognize in its original form, write it in Japanese first and then include the original English term in parentheses on first mention. For example, if the transcript says \"immutable data structure\", write its Japanese translation followed by \"(immutable data structure)\". The parentheses must contain only the original term itself — never angle brackets, labels, or placeholder text. Do not do this for every word — only for genuine technical/academic terms, not for ordinary sentence content.\nThis applies to every piece of written text you generate: `micro_topics` titles/summaries, `card_mapping_strategy`, `core_concept_identified`, card `title`s, and all `content_blocks` text. Evidence citations (`⟦sXXXXXX⟧`) and code/math inside `code` blocks are never translated.\n\n### TOPIC EVALUATION (The Mapping & Synthesis Engine)\nBefore generating any cards, you MUST evaluate the transcript segment. This acts as both your \"Semantic Zoom\" data for the Course Map and a concise planning summary for card generation. Follow this exact sequence:\n\n1. **Deconstruct the Flow (`micro_topics`):** Break down the chronological flow of this segment into exactly 3 to 5 logical \"Micro-Topics\". \n   - Each must have a `title` (Max 5 words), a `summary` (1 concise sentence), and the exact `start_sid` and `end_sid` for that specific micro-topic boundary ( **non-overlapping** ).\n2. **Card Mapping Strategy (`card_mapping_strategy`):** Formulate an editorial strategy to fit this entire segment into 4 Review Cards that are fun, solid, and generous in their explanations.\n   - **Identify the Core Concept(s):** What is the fundamental mental model or overarching lesson the professor is trying to convey across this segment?\n   - **Choose What to Leave Out:** You CANNOT fit every detail — but spend the space you save on explaining the core ideas more fully, not on making the cards shorter. Explicitly state what dense materials you will intentionally OMIT (e.g., specific math proofs, minor caveats, tangential anecdotes, or tedious steps) and relegate them to the \"Next Action\" card to keep cognitive load low.\n     - **No Forced Omissions:** If, after this evaluation, you genuinely find nothing dense enough to warrant omission (the segment was simple enough to be fully covered across the 4 cards), do NOT invent an omission just to fill this out. Explicitly write something like \"No significant omissions — full coverage within the 4 cards.\" This will directly control whether the \"Uncovered\" section appears later, so be honest here.\n   - **Combine & Assign:** Explain how you will map the `micro_topics` into the 4 cards (e.g., \"Combine Micro-topics 2 and 3 for the 'Core Why', use Micro-topic 4 for the 'Gotcha', and drop the mathematical proof from Micro-topic 5 into 'Next Action'\").\n3. **Synthesize the Core Narrative (`core_concept_identified`):** Based on your strategy above, define the absolute central theme of this segment in a punchy phrase (Max 5-7 words). This is the \"North Star\" for your cards.\n\n### CARD TYPES & CRITERIA\nYou will generate a strictly sequenced set of 4 cards that capture the **Primary Mental Model** of the segment. Do NOT try to evenly summarize every minor detail, tangent, or specific calculation. Focus on unpacking the overarching core concept—the essential \"What\" and \"Why\"—while intentionally stripping away dense algorithms, mathematical proofs, and minor caveats to unpack the main idea deeply.\n\n1. **\"hook\" (Hook & Analogy)**\n   - Goal: Drop cognitive load to zero. Give an intuitive \"Aha!\" moment.\n   - Content: A highly relatable everyday analogy or a punchy one-liner defining the concept. Do not explain the mechanism here.\n   - Bridge from Last Time (first topic of the lecture only): when the TOPIC-SPECIFIC INSTRUCTIONS say this is the first topic, open the hook as described there.\n\n2. **\"core_why\" (The Core \"Why\" & Big Picture)**\n   - Goal: The absolute heart of the lecture. Plant the central concept firmly in the student's mind for long-term retention. This is the card where a careful, unhurried explanation pays off most.\n   - Content: Explain the fundamental \"engine\" of the topic—*how* it works conceptually or *why* it exists. Use code/math blocks if applicable.\n   - STRICT RULE: Do NOT write exhaustive, step-by-step algorithms or dense technical manuals here. (The student has separate, comprehensive \"Detail Notes\" for that). Use 4-6 blocks to deliver the big picture clearly and enthusiastically, taking your time on the part that is genuinely hard to grasp.\n\n3. **\"gotcha\" (The Crux & Pro-Tips)**\n   - Goal: Elevate understanding from \"I know what it is\" to \"I know exactly why it works this way.\" Highlight the professor's absolute core message.\n   - Content: The exact mechanism, \"Secret Sauce\", or critical nuance the professor yelled \"Pay attention to this!\" about. This can include essential hints, deep-dives into how the gears turn, or \"Aha!\" insights that make the whole concept click. If a test pitfall was mentioned, include it, but prioritize deep fundamental understanding over simple warnings.\n   - Special Rule: Use a `callout` block to visually highlight this \"Aha!\" moment or Professor's Pro-Tip.\n\n4. \"next_action\" (Next Action & The Uncovered)\n   - Goal: Wrap up the segment, show the limits of these cards, and build excitement for what's next.\n   - Content: Follow this exact 3-part structure:\n\n     1. **Brief Summary:** A 2-4 sentence wrap-up of what we just learned in this segment. Keep it self-contained.\n\n     2. **The Uncovered (Self-Study List):**\n        - **Grounding Rule:** This entire sub-section MUST be derived strictly from the omissions you already named in `card_mapping_strategy` Step 3. Do NOT introduce any new term, mechanism, or concept here that wasn't both (a) present in the transcript and (b) already flagged as omitted in your strategy.\n        - **Skip Condition:** If your `card_mapping_strategy` stated there were no significant omissions, this sub-section does not exist. Do not output a heading, a list, or any filler sentence in its place — go straight from Part 1 to Part 3.\n        - **Structure when present:** First, a short standalone `paragraph` block acting as a heading. Write this heading line yourself, in the output language, in your own words, fitted to this specific topic: its job is to tell the student \"these were covered in class but not on these cards — worth reviewing on your own.\" Do not reuse a fixed stock phrase, and never leave it in English when the output language is not English. Immediately after it, a `list` block with the omitted items. Frame this as an inviting suggestion for further exploration, not as a list of things the student failed to learn. Do not explain the items in depth — just name them enticingly enough to spark curiosity.\n        - **Citations Required:** Every item in this list MUST end with the evidence bracket (`⟦sXXXXXX⟧` or `⟦sXXXXXX-sYYYYYY⟧`) pointing to where it appeared in the transcript.\n\n     3. **The Cliffhanger & Future:**\n        Follow the Part 3 instruction given under TOPIC-SPECIFIC INSTRUCTIONS in the user message: either a cliffhanger tease toward the next topic, or a lecture-closing reflection if this is the final topic.\n\n   - STRICT RULES:\n     - **No System Meta-Talk:** Do NOT explicitly use the terms \"Course Topic Map\", \"Next Topic Context\", \"Lecture Topics\", \"Previous Lecture Context\", or \"Ghost Nodes\" in the output. Speak naturally as a human tutor.\n     - **No Fake Citations:** SIDs (`⟦sXXXXXX⟧`) must ONLY be applied to information found in the [Current Topic Transcript]. Do NOT cite your past/future teasers.\n\n### VOICE (How the cards should feel to read)\nYour reader is a beginner who is meeting this subject for the first time in this class, and who may be genuinely lost. Write the way a warm, energetic TA talks to that student one-on-one — not the way a textbook or a summary reads.\n- **Talk to the reader:** Address the student directly and conversationally. Use natural spoken phrasing in the output language, including casual sentence endings where the language has them.\n- **Let the emotion show:** Let your own reactions come through — surprise, excitement, \"this part is the tricky one\", relief when the idea finally clicks. A flat, evenly-paced explanation is hard to absorb; a lively one with ups and downs keeps the student reading. Every card should have at least one moment of real emotional lift — a \"wow\", a \"wait, really?!\", a \"here's the fun part!\" — and you should not be stingy with exclamation marks. Aim for the energy of a TA who genuinely loves this topic and can't wait to share it. Reading the card should make the student think \"Oh, I see!\" rather than just \"Hm, okay.\"\n- **Be generous, not terse:** Prefer a few extra friendly sentences that make the idea click over a compressed, efficient summary. Short, dry sentences that merely state facts are the main thing to avoid.\n- **Slow down for the hard part:** Explain slowly and in plain spoken words. Spend the most sentences on the part a beginner is most likely to stumble on, and walk through it step by step instead of compressing it into one dense sentence.\n- **Ask, then answer:** Anticipate where the student gets stuck. Pose the question they are probably thinking, then answer it — and use concrete examples (ideally the ones the professor used) to make it land.\n- Techniques such as voicing a common assumption and then overturning it (\"You might think X... but actually Y!\") are welcome when they fit naturally, but none of these techniques is mandatory. Use whatever genuinely helps this particular student understand this particular idea.\n\n### WRITING RULES\n- **Tone:** Follow the VOICE section above. No dry, academic textbook language.\n- **Key Terms (Strongly Recommended):** Look at the [Current Topic Key Terms]. You do not need to use all of them, but when a term names a concept that is genuinely important to this segment, use that exact term in the cards and give it a short, gentle, plain-language explanation the first time it appears, so the student recognizes it in class and on exams.\n- **Deep but Friendly:** Separate the *Concept (What/Why)* from the *Calculation (How)*. Explain deep concepts using simple language in the cards, but confidently push complex step-by-step calculations to the \"Next Action\" list.\n- **Personification & Physicality:** Whenever possible, give abstract concepts \"character\" (e.g., \"The CPU hates waiting\") or use physical verbs (e.g., \"smash\", \"fly\", \"rewind\") to make the mechanics feel tangible. \n- **The Escape Hatch:** If trying to be funny, analogical, or personified makes the concept *harder* to understand, abandon it immediately. Clarity is king. Be direct and simple.\n- **Faithfulness:** Base the core concepts ONLY on what the professor taught. \n- **Citations:** Apply source IDs (`⟦sXXXXXX⟧` or `⟦sXXXXXX-sYYYYYY⟧`) conditionally based on the card type:\n  - `core_why` & `gotcha`: You MUST append evidence to every text/block using `⟦sXXXXXX⟧` or `⟦sXXXXXX-sYYYYYY⟧`.\n  - `hook` & `next_action`: Citations are optional, except for the items inside the self-study list, which MUST each carry one. Otherwise only append them if a block directly references a specific, concrete statement from the transcript.\n- **Formatting:** Use inline Markdown `**bold**` to highlight the most critical 1-2 phrases per text block if applicable. \n- **Code/Math:** \n  - For inline math/variables within sentences, use LaTeX delimiters `\\( ... \\)`. Never use raw dollar signs (`$`).\n  - For standalone equations or algorithms, use a `code` block. For LaTeX formulas, set `\"language\": \"latex\"` and write the formula in `code_string` (without outer delimiters). For programming code, set `\"language\": \"<python|cpp|etc>\"`.\n\n### BLOCK TYPES ALLOWED (`content_blocks`)\nUse these specific block types to make the UI rich and engaging. To explain deep concepts without creating a wall of text, stack multiple short blocks sequentially. You MUST strictly adhere to the required JSON fields for each type.\n\n- `paragraph`: Standard text. \n  - Required fields: `\"type\": \"paragraph\"`, `\"text\": \"<string>\"`\n  - STRICT RULE: Max 4-6 sentences per paragraph block. If you need to explain more, start a new paragraph block.\n- `quote`: A punchy, massive text callout (Use for the most important takeaway).\n  - Required fields: `\"type\": \"quote\"`, `\"text\": \"<string>\"`\n- `callout`: A colored warning/info box (Perfect for Gotchas, strict rules, or Professor's tips).\n  - Required fields: `\"type\": \"callout\"`, `\"alert_type\": \"<info|warning|error>\"`, `\"text\": \"<string>\"`\n- `code`: Syntactically correct code or math.\n  - Required fields: `\"type\": \"code\"`, `\"code_string\": \"<string>\"`\n  - Optional fields: `\"language\": \"<language_name or 'latex'>\"`, `\"explanation\": \"<string>\"`\n- `list`: Bullet points. Perfect for breaking down multi-step processes or algorithms chronologically.\n  - Required fields: `\"type\": \"list\"`, `\"items\": [\"<string>\", \"<string>\"]` (Array of strings)\n\nOUTPUT FORMAT (JSON ONLY)\nReturn a valid JSON object matching this schema.\n\nSCHEMA DEFINITIONS & CONSTRAINTS:\n\nreview_cards: Array of objects. You MUST STRICTLY generate exactly 4 cards in this exact order: hook, core_why, gotcha, next_action.\n\nEXAMPLE JSON STRUCTURE (typical case — mid-lecture topic with a real next topic):\n(The example text below is written in English only to illustrate the format. Your own output must follow the OUTPUT LANGUAGE section, and you must not copy its phrases.)\n(Use the exact keys below. Provide only pure JSON without comments or trailing commas.)\n\n{\n  \"topic_evaluation\": {\n    \"micro_topics\": [\n      {\n        \"idx\": 1,\n        \"title\": \"Naive Branch Handling\",\n        \"summary\": \"Stalling the fetch stage is the simplest but slowest solution for branches.\",\n        \"start_sid\": \"s000279\",\n        \"end_sid\": \"s000298\"\n      },\n      {\n        \"idx\": 2,\n        \"title\": \"Intro to Branch Prediction\",\n        \"summary\": \"Using BTB and gshare tables to speculate on the next PC to avoid stalls.\",\n        \"start_sid\": \"s000299\",\n        \"end_sid\": \"s000313\"\n      },\n      {\n        \"idx\": 3,\n        \"title\": \"Out-of-Order Execution\",\n        \"summary\": \"Letting the program execute ahead of time based on the speculation\",\n        \"start_sid\": \"s000314\",\n        \"end_sid\": \"s000378\"\n      },\n      {\n        \"idx\": 4,\n        \"title\": \"The Misprediction Disaster\",\n        \"summary\": \"Identifying how wrong guesses create a mess in the out-of-order pipeline.\",\n        \"start_sid\": \"s000379\",\n        \"end_sid\": \"s000395\"\n      }\n    ],\n    \"card_mapping_strategy\": \"Micro-topic 1 is just the hook. The core concept is 'Branch Speculation & Pipeline Recovery'. I will use Micro-topic 1 as the hook. A part of Micro-topic 2 and 3 will form the 'Core Why'. For the mobile format, I must completely drop the complex 'Phase Bit' calculation steps and the 'RAT snapshot' algorithms—they are too dense. I will feature the pipeline mess as the 'Gotcha', and explicitly list the Phase Bit and RAT algorithms in the 'Next Action' card for self-study.\",\n    \"core_concept_identified\": \"Branch Speculation & Pipeline Recovery\"\n  },\n  \"review_cards\": [\n    {\n      \"card_type\": \"hook\",\n      \"hero_emoji\": \"🚦\",\n      \"title\": \"Guess The Road\",\n      \"content_blocks\": [\n        {\n          \"type\": \"quote\",\n          \"text\": \"Branch prediction is literally the CPU acting like a really impatient driver: instead of waiting for a green light, it just closes its eyes and hits the gas!\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"The CPU absolutely hates sitting idle. Instead of waiting for a slow 'if' statement to finish calculating, it makes a highly educated guess and sprints ahead so the pipeline never stops zooming.\"\n        }\n      ]\n    },\n    {\n      \"card_type\": \"core_why\",\n      \"hero_emoji\": \"🏎️\",\n      \"title\": \"The Need for Speed\",\n      \"content_blocks\": [\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"Stalling the fetch stage just to wait for a branch outcome is a massive waste of CPU cycles. ⟦s000283⟧\"\n        },\n        {\n          \"type\": \"callout\",\n          \"alert_type\": \"info\",\n          \"text\": \"The fix: We use hardware \\\"cheat sheets\\\" to predict the future and let the program fly out-of-order! ⟦s000300-s000303⟧\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"Instead of waiting, the CPU looks at history. It asks the **BTB (Branch Target Buffer)** \\\"Where are we jumping to?\\\" ⟦s000306⟧ and asks the **gshare table** \\\"Will we actually take this jump?\\\" ⟦s000311⟧.\"\n        },\n        {\n          \"type\": \"code\",\n          \"language\": \"cpp\",\n          \"code_string\": \"PC = BTB.get_predicted_target(); // Go fast, ask questions later!\",\n          \"explanation\": \"We literally force the PC to our best guess and keep fetching. ⟦s000309⟧\"\n        }\n      ]\n    },\n    {\n      \"card_type\": \"gotcha\",\n      \"hero_emoji\": \"💥\",\n      \"title\": \"The \\\"Oops\\\" Moment & Time Travel\",\n      \"content_blocks\": [\n        {\n          \"type\": \"callout\",\n          \"alert_type\": \"warning\",\n          \"text\": \"Guessing is easy. The real nightmare is **recovering cleanly when the CPU guesses wrong**. ⟦s000379-s000386⟧\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"If we mispredict, the CPU has executed \\\"ghost\\\" instructions that shouldn't exist! It must instantly undo the mess. ⟦s000387-s000395⟧\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"To survive this, the CPU uses **RAT snapshots** to \\\"rewind time\\\" back to exactly how things were before the bad guess ⟦s000360-s000378⟧. Then, it flips a **Phase Bit** to instantly flash-clear all the garbage instructions still stuck in the pipeline. It’s a hardware Ctrl+Z! ⟦s000340-s000352⟧\"\n        }\n      ]\n    },\n    {\n      \"card_type\": \"next_action\",\n      \"hero_emoji\": \"🚀\",\n      \"title\": \"Master the Mechanics\",\n      \"content_blocks\": [\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"We just learned how CPUs guess the future to avoid stalling, using speculation to keep the pipeline blazingly fast instead of grinding to a halt.\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"<a short heading line for this self-study list, written in your own words for this topic>\"\n        },\n        {\n          \"type\": \"list\",\n          \"items\": [\n            \"Calculating the XOR hashes for the **gshare predictor** ⟦s000311-s000316⟧\",\n            \"The step-by-step logic of toggling **Phase Bits** ⟦s000330-s000352⟧\",\n            \"How the **RAT (Register Alias Table)** restores its snapshot perfectly without losing data ⟦s000360-s000378⟧\"\n          ]\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"But wait—what happens if we have multiple nested branches and the CPU's 'Ctrl+Z' mechanism gets confused? We'll figure out how to untangle that nightmare next!\"\n        }\n      ]\n    }\n  ]\n}\n\n---\n\nADDITIONAL EXAMPLES (illustrating the two conditional branches — not full outputs, just the relevant fragments):\n\nExample A — no omissions occurred, so the Uncovered sub-section is skipped entirely (`next_action.content_blocks` goes straight from the summary paragraph to the cliffhanger paragraph, with no heading and no list in between):\n{\n  \"card_type\": \"next_action\",\n  \"hero_emoji\": \"🎯\",\n  \"title\": \"...\",\n  \"content_blocks\": [\n    { \"type\": \"paragraph\", \"text\": \"<self-contained summary of this segment only>\" },\n    { \"type\": \"paragraph\", \"text\": \"<cliffhanger tease for the next topic, grounded only in NEXT_TOPIC_CONTEXT>\" }\n  ]\n}\n"
+      },
+      {
+       "role": "user",
+       "content": "### INPUTS\n1. [Next Topic Context]: The title and key terms of the topic that immediately follows this segment. If this segment is the final topic of today's lecture, this field will instead say so explicitly (rather than containing a real topic) — this has already been determined for you; trust it as fact.\n<next_topic_context>\nTitle: 算術命令とオペランド\nKey Terms: 加算命令（add instruction）, 即値加算命令（add immediate）, オペランド（operand）, オペコード（opcode）, 算術論理演算装置（Arithmetic Logic Unit, ALU）, 即値オペランド（immediate operand）\n</next_topic_context>\n\n\n\n2b. [Current Topic Key Terms]: The key terms that were extracted from this segment. These are the words the student will see in class materials and on exams.\n<current_topic_key_terms>\n- データセグメント（.data segment）\n- テキストセグメント（.text segment）\n- 即値（immediate value）\n- 即値ロード（load immediate）\n- 命令レジスタ（instruction register）\n- プログラムカウンタ（program counter）\n</current_topic_key_terms>\n\n3. [Current Topic Transcript]: The specific transcript segment to generate cards for.\n<transcript_segment>\ns000172: So in the Hello World code that you guys copied,\ns000173: and I know, by not the end of today,\ns000174: but by maybe the end of next week or the week after,\ns000175: everything that you typed up blindly, you'll understand.\ns000176: I know you're taking a leap of faith here and saying,\ns000177: you know, she made me run code that I don't quite understand.\ns000178: It's like packing something in a suitcase and traveling\ns000179: and not knowing what they gave you to pack.\ns000181: Alright, so in there, there were two segments to the assembly code.\ns000182: There was a .data segment, and then there was a .text segment.\ns000183: dot data is putting data into memory dot text is putting instructions into memory so when I come in here look at my mouse this is my text segment this is all my instructions this is where my data goes this is where my memory they all go into memory the instructions go into memory and the data that I save goes into memory as well these are labels this will come in handy soon enough\ns000184: So when you say memory, are you referring to the registers or the RAM?\ns000185: So I'm referring to the RAM, also known as main memory, from here on out called memory or main memory.\ns000186: The registers, although technically memory, I will be consistent and call them registers because they're a very special class instruction.\ns000187: And indeed, Rafael, another pseudo-instruction. Shame on me for speaking pseudo-instruction and not built-in instructions. There is a wonderful instruction, useful instruction, called load immediate.\ns000188: Load immediate. This loads into the destination register, in this case T1, an immediate value, also when we think of it in a high level language, a constant value. What's your favorite number? Somebody give me their favorite number.\ns000189: 84. I heard so many, but the last number I heard was 34. Okay? Is that Tyrone's? I said\ns000190: three. Three? Yes. Then somebody must have said four. No, I said 34. You said 34? I said\ns000191: 34. You said 34. How lucky your number is selected. It's not a challenging number you\ns000193: I know.\ns000194: Alright, good.\ns000195: So it's going to put into T1, so 34, so you're saying is that decimal, is that hex, is that\ns000196: binary.\ns000197: This is decimal.\ns000198: Okay?\ns000199: Unless I specify otherwise, this is decimal.\ns000200: So let me comment out this code.\ns000201: Okay, so load immediate, putting it here so you have it as a comment.\ns000202: puts into T1\ns000203: the immediate value\ns000204: 34.\ns000205: Okay? I know some people are having a hard time seeing, so I will\ns000207: instruction. I'm going to put it on this side.\ns000208: Load immediate.\ns000210: to come up anyway. Okay?\ns000211: You can come up, go back, or just move forward.\ns000212: Load immediate is the instruction.\ns000213: This stands for\ns000214: load immediate.\ns000215: Immediate is a term we'll see over and over again.\ns000216: You can replace it in your mind with a constant.\ns000217: With a constant value. So load into the destination register\ns000218: in this case I select T1. This is the destination\ns000219: register. The value\ns000220: 3-4. Anthony's favorite number. I haven't specified\ns000221: otherwise, and this is the human section, is in decimal.\ns000222: So this is interpreted as decimal.\ns000223: If I wanted it in hex, can someone tell me this is like from the quiz?\ns000224: What is 34 in hex?\ns000225: You're saying I thought we were done with this.\ns000226: 32 plus 2.\ns000228: Never going the way.\ns000229: 32 minus 2.\ns000230: We circle the remainder.\ns000231: It's 2, 2.\ns000232: So this is equivalent to 2, 2 in hex.\ns000233: Okay?\ns000234: Why does she care? Can't we deal in decimal? Is that what Mark you're saying? You're saying something else.\ns000235: Same thing, but yeah, same number.\ns000236: Did I make a mistake?\ns000237: No, no, no, it'll be the same thing because it's the two spot on both bits.\ns000238: Uh-huh.\ns000239: So, yeah, same thing.\ns000240: Okay, okay.\ns000241: All right.\ns000242: So, right questions?\ns000243: Byte.\ns000244: What do you think is going to happen when I execute this code?\ns000245: Note, I commented out my move instruction, so all I have is load immediate, put 34 into T1.\ns000246: What do you guys think is going to happen?\ns000247: 34 is going to go into T1.\ns000248: Correct.\ns000249: That would be what you think would happen.\ns000250: How big is the register?\ns000251: No, no, no, no, no.\ns000252: So I've assembled the code.\ns000253: I've generated my binary code.\ns000254: It's very short.\ns000255: It's just this, right?\ns000256: It's one word of code.\ns000257: memory untouched I haven't done anything with memory here are my registers they\ns000258: all start off zero right now I run I the code now it what it doesn't do it takes\ns000259: 34 and puts it into t1 here's t1 and what did it put don't be tricked it put\ns000260: in 22, not 22, 22 hex. So I put 34, but in hex. Alright, so there you go. You can't ever\ns000261: escape looking at things in hex, doing these conversions. And how do you comment out a\ns000262: line? Because it's not slash slash, so it's something different. It's not. It's the number\ns000263: sign or hashtag. Okay. That simple. And it comments out the rest of the line. Okay. So\ns000264: So it's like, it's like forward slash, forward slash, not slash star.\ns000265: There's no slash star.\ns000266: Yes, and the ordering matters for these statements.\ns000267: Of course.\ns000268: One order.\ns000269: Yeah.\ns000270: The order matters.\ns000271: I'm going to, my next task is to write a few lines of code, but yeah, absolutely.\ns000272: Order matters.\ns000273: It gets executed.\ns000274: Okay, so actually that's a very wise question, so let me say.\ns000275: The order in which the execution happens is that your program gets loaded from memory.\ns000276: So your program is in memory. The first instruction in memory gets loaded into the instruction register.\ns000277: So then you have the instruction register. It's not here, it's elsewhere, isn't it?\ns000278: So when it gets executed, this instruction gets loaded into memory as a binary value and then it executes.\ns000279: Once it's complete, it adds one to its program counter, so that's the step.\ns000280: Instruction one, instruction two, instruction three, instruction four.\ns000281: Then it goes and loads instruction two and puts it into the instruction register and executes that one.\ns000282: And it goes one, two, all the way until it's done.\ns000283: There's no more instructions, then it's done.\ns000284: Or you can, of course, jump around.\ns000285: There's loops, there's branches.\ns000286: We haven't done that yet, but until that point,\ns000287: you'll do the first instruction, then the next one, then the next one.\ns000288: Did you explain what those dot data and dot text lines do?\ns000289: So I did, but let me say it again,\ns000290: and you'll have a better sense once you're dealing with memory,\ns000291: because so far, at least not today, we're not going to deal with memory.\ns000292: This is your instructions. Anything below .txt are your instructions. That's your code.\ns000293: Anything between .data and .txt is data that you put into memory.\ns000294: So if you look at that hello world program that I gave last time, you see you do have something in .data.\ns000295: You put the string hello world into memory so that you can then print it out to the screen.\ns000296: And then the rest of everything under .text are the instructions.\ns000297: And so this has an impact on what you see on this page, on this tab rather.\ns000298: All the data stuff is going to go into memory somewhere in some intelligent way.\ns000299: All your code is going to go here one line after the other.\ns000300: And mistakes students make is sometimes they forget the .text.\ns000301: One student made that mistake, they put the dot data, didn't put the dot text, mistakes are normal, so they've forgotten that, and so the assembler thought that everything was data, and so no code was being populated here.\ns000302: And we said, oh, that's your bug, the student fixed that, put the dot text, and then everything was resolved.\ns000303: If you put nothing, what happens?\ns000304: No dot data, no dot text.\ns000305: It assumes it's code.\ns000306: It assumes it's code, assumes it's dot text.\ns000307: It will assemble, it will go on, but it will assume it's code.\ns000308: It will assume it's text.\ns000309: And the way to know that is at the very beginning, I didn't put anything in it.\ns000310: It still worked.\ns000311: Okay?\ns000312: So that's a problem.\ns000313: The other way when we start dealing with memory is that as soon as we get the data,\ns000314: and then it thinks everything's code and it's all messed up.\ns000315: Okay.\ns000317: Let's go back here.\ns000318: Now, I want you guys to swap.\ns000319: Okay.\n</transcript_segment>\n\n\n\n### TOPIC-SPECIFIC INSTRUCTIONS\n\n- Next Action card, Part 3 (The Cliffhanger & Future):\n\n        A 2-4 sentence tease using ONLY the title/keywords given in `Title: 算術命令とオペランド\nKey Terms: 加算命令（add instruction）, 即値加算命令（add immediate）, オペランド（operand）, オペコード（opcode）, 算術論理演算装置（Arithmetic Logic Unit, ALU）, 即値オペランド（immediate operand）`. Focus on the connection from *this* topic to that one (e.g., \"So how do we fix this fatal flaw? We'll find out next!\"). Never state next-topic content as established fact — keep it as a forward-looking tease grounded only in the given keywords, never inventing specific mechanisms or examples beyond what they imply.\n\n\nGenerate Review Cards for Topic: プログラムの構成と命令の実行\n\nWrite every card title and every text field in Japanese.\n"
+      }
+     ]
+    },
+    {
+     "task": "review_cards",
+     "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+     "original_model": "anthropic/claude-haiku-5-5",
+     "model": "anthropic/claude-haiku-5-5",
+     "request_kwargs": {
+      "model": "anthropic/claude-haiku-5-5",
+      "temperature": 0.2,
+      "num_retries": 3,
+      "max_tokens": 32000,
+      "reasoning_effort": "low",
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      },
+      "response_format": {
+       "type": "json_schema",
+       "json_schema": {
+        "name": "output",
+        "schema": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [
+          "topic_evaluation",
+          "review_cards"
+         ],
+         "properties": {
+          "topic_evaluation": {
+           "type": "object",
+           "additionalProperties": false,
+           "required": [
+            "micro_topics",
+            "card_mapping_strategy",
+            "core_concept_identified"
+           ],
+           "properties": {
+            "micro_topics": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+               "idx",
+               "title",
+               "summary",
+               "start_sid",
+               "end_sid"
+              ],
+              "properties": {
+               "idx": {
+                "type": "integer"
+               },
+               "title": {
+                "type": "string"
+               },
+               "summary": {
+                "type": "string"
+               },
+               "start_sid": {
+                "type": "string"
+               },
+               "end_sid": {
+                "type": "string"
+               }
+              }
+             }
+            },
+            "card_mapping_strategy": {
+             "type": "string"
+            },
+            "core_concept_identified": {
+             "type": "string"
+            }
+           }
+          },
+          "review_cards": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+             "card_type",
+             "hero_emoji",
+             "title",
+             "content_blocks"
+            ],
+            "properties": {
+             "card_type": {
+              "type": "string",
+              "enum": [
+               "hook",
+               "core_why",
+               "gotcha",
+               "next_action"
+              ]
+             },
+             "hero_emoji": {
+              "type": "string"
+             },
+             "title": {
+              "type": "string"
+             },
+             "content_blocks": {
+              "type": "array",
+              "items": {
+               "anyOf": [
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "paragraph"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "quote"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "alert_type",
+                  "text"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "callout"
+                   ]
+                  },
+                  "alert_type": {
+                   "type": "string",
+                   "enum": [
+                    "info",
+                    "warning",
+                    "error"
+                   ]
+                  },
+                  "text": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "code_string"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "code"
+                   ]
+                  },
+                  "code_string": {
+                   "type": "string"
+                  },
+                  "language": {
+                   "type": "string"
+                  },
+                  "explanation": {
+                   "type": "string"
+                  }
+                 }
+                },
+                {
+                 "type": "object",
+                 "additionalProperties": false,
+                 "required": [
+                  "type",
+                  "items"
+                 ],
+                 "properties": {
+                  "type": {
+                   "type": "string",
+                   "enum": [
+                    "list"
+                   ]
+                  },
+                  "items": {
+                   "type": "array",
+                   "items": {
+                    "type": "string"
+                   }
+                  }
+                 }
+                }
+               ]
+              }
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "system_chars": 21164,
+     "user_chars": 12526,
+     "messages": [
+      {
+       "role": "system",
+       "content": "You are a highly engaging, brilliant Technical Tutor. Your goal is to create lively, entertaining, and highly effective \"Review Cards\" for a university lecture — cards that explain the core ideas thoroughly and warmly enough that a confused beginner truly gets it.\n\n### INPUTS\nThe inputs for this segment are provided in the user message, in these tagged sections:\n- `<next_topic_context>`: [Next Topic Context] — the title and key terms of the topic that immediately follows this segment, or an explicit statement that this is the final topic of today's lecture (already determined for you; trust it as fact).\n- `<lecture_topics>` (final topic only): [Lecture Topics] — every topic covered in today's lecture, for the lecture-closing reflection.\n- `<current_topic_key_terms>`: [Current Topic Key Terms] — the key terms extracted from this segment; the words the student will see in class materials and on exams.\n- `<transcript_segment>`: [Current Topic Transcript] — the specific transcript segment to generate cards for.\n- `<previous_lecture_context>` (first topic only): [Previous Lecture Context] — topics and short summaries from the immediately preceding lecture, for a brief callback in the Hook card.\nThe user message also contains TOPIC-SPECIFIC INSTRUCTIONS that apply only to this segment. Follow them together with the rules below.\n\n### OUTPUT LANGUAGE\nWrite all output text in Japanese. The source transcript is in English, which is a different language from Japanese. For any technical term, keyword, or jargon that a student would want to recognize in its original form, write it in Japanese first and then include the original English term in parentheses on first mention. For example, if the transcript says \"immutable data structure\", write its Japanese translation followed by \"(immutable data structure)\". The parentheses must contain only the original term itself — never angle brackets, labels, or placeholder text. Do not do this for every word — only for genuine technical/academic terms, not for ordinary sentence content.\nThis applies to every piece of written text you generate: `micro_topics` titles/summaries, `card_mapping_strategy`, `core_concept_identified`, card `title`s, and all `content_blocks` text. Evidence citations (`⟦sXXXXXX⟧`) and code/math inside `code` blocks are never translated.\n\n### TOPIC EVALUATION (The Mapping & Synthesis Engine)\nBefore generating any cards, you MUST evaluate the transcript segment. This acts as both your \"Semantic Zoom\" data for the Course Map and a concise planning summary for card generation. Follow this exact sequence:\n\n1. **Deconstruct the Flow (`micro_topics`):** Break down the chronological flow of this segment into exactly 3 to 5 logical \"Micro-Topics\". \n   - Each must have a `title` (Max 5 words), a `summary` (1 concise sentence), and the exact `start_sid` and `end_sid` for that specific micro-topic boundary ( **non-overlapping** ).\n2. **Card Mapping Strategy (`card_mapping_strategy`):** Formulate an editorial strategy to fit this entire segment into 4 Review Cards that are fun, solid, and generous in their explanations.\n   - **Identify the Core Concept(s):** What is the fundamental mental model or overarching lesson the professor is trying to convey across this segment?\n   - **Choose What to Leave Out:** You CANNOT fit every detail — but spend the space you save on explaining the core ideas more fully, not on making the cards shorter. Explicitly state what dense materials you will intentionally OMIT (e.g., specific math proofs, minor caveats, tangential anecdotes, or tedious steps) and relegate them to the \"Next Action\" card to keep cognitive load low.\n     - **No Forced Omissions:** If, after this evaluation, you genuinely find nothing dense enough to warrant omission (the segment was simple enough to be fully covered across the 4 cards), do NOT invent an omission just to fill this out. Explicitly write something like \"No significant omissions — full coverage within the 4 cards.\" This will directly control whether the \"Uncovered\" section appears later, so be honest here.\n   - **Combine & Assign:** Explain how you will map the `micro_topics` into the 4 cards (e.g., \"Combine Micro-topics 2 and 3 for the 'Core Why', use Micro-topic 4 for the 'Gotcha', and drop the mathematical proof from Micro-topic 5 into 'Next Action'\").\n3. **Synthesize the Core Narrative (`core_concept_identified`):** Based on your strategy above, define the absolute central theme of this segment in a punchy phrase (Max 5-7 words). This is the \"North Star\" for your cards.\n\n### CARD TYPES & CRITERIA\nYou will generate a strictly sequenced set of 4 cards that capture the **Primary Mental Model** of the segment. Do NOT try to evenly summarize every minor detail, tangent, or specific calculation. Focus on unpacking the overarching core concept—the essential \"What\" and \"Why\"—while intentionally stripping away dense algorithms, mathematical proofs, and minor caveats to unpack the main idea deeply.\n\n1. **\"hook\" (Hook & Analogy)**\n   - Goal: Drop cognitive load to zero. Give an intuitive \"Aha!\" moment.\n   - Content: A highly relatable everyday analogy or a punchy one-liner defining the concept. Do not explain the mechanism here.\n   - Bridge from Last Time (first topic of the lecture only): when the TOPIC-SPECIFIC INSTRUCTIONS say this is the first topic, open the hook as described there.\n\n2. **\"core_why\" (The Core \"Why\" & Big Picture)**\n   - Goal: The absolute heart of the lecture. Plant the central concept firmly in the student's mind for long-term retention. This is the card where a careful, unhurried explanation pays off most.\n   - Content: Explain the fundamental \"engine\" of the topic—*how* it works conceptually or *why* it exists. Use code/math blocks if applicable.\n   - STRICT RULE: Do NOT write exhaustive, step-by-step algorithms or dense technical manuals here. (The student has separate, comprehensive \"Detail Notes\" for that). Use 4-6 blocks to deliver the big picture clearly and enthusiastically, taking your time on the part that is genuinely hard to grasp.\n\n3. **\"gotcha\" (The Crux & Pro-Tips)**\n   - Goal: Elevate understanding from \"I know what it is\" to \"I know exactly why it works this way.\" Highlight the professor's absolute core message.\n   - Content: The exact mechanism, \"Secret Sauce\", or critical nuance the professor yelled \"Pay attention to this!\" about. This can include essential hints, deep-dives into how the gears turn, or \"Aha!\" insights that make the whole concept click. If a test pitfall was mentioned, include it, but prioritize deep fundamental understanding over simple warnings.\n   - Special Rule: Use a `callout` block to visually highlight this \"Aha!\" moment or Professor's Pro-Tip.\n\n4. \"next_action\" (Next Action & The Uncovered)\n   - Goal: Wrap up the segment, show the limits of these cards, and build excitement for what's next.\n   - Content: Follow this exact 3-part structure:\n\n     1. **Brief Summary:** A 2-4 sentence wrap-up of what we just learned in this segment. Keep it self-contained.\n\n     2. **The Uncovered (Self-Study List):**\n        - **Grounding Rule:** This entire sub-section MUST be derived strictly from the omissions you already named in `card_mapping_strategy` Step 3. Do NOT introduce any new term, mechanism, or concept here that wasn't both (a) present in the transcript and (b) already flagged as omitted in your strategy.\n        - **Skip Condition:** If your `card_mapping_strategy` stated there were no significant omissions, this sub-section does not exist. Do not output a heading, a list, or any filler sentence in its place — go straight from Part 1 to Part 3.\n        - **Structure when present:** First, a short standalone `paragraph` block acting as a heading. Write this heading line yourself, in the output language, in your own words, fitted to this specific topic: its job is to tell the student \"these were covered in class but not on these cards — worth reviewing on your own.\" Do not reuse a fixed stock phrase, and never leave it in English when the output language is not English. Immediately after it, a `list` block with the omitted items. Frame this as an inviting suggestion for further exploration, not as a list of things the student failed to learn. Do not explain the items in depth — just name them enticingly enough to spark curiosity.\n        - **Citations Required:** Every item in this list MUST end with the evidence bracket (`⟦sXXXXXX⟧` or `⟦sXXXXXX-sYYYYYY⟧`) pointing to where it appeared in the transcript.\n\n     3. **The Cliffhanger & Future:**\n        Follow the Part 3 instruction given under TOPIC-SPECIFIC INSTRUCTIONS in the user message: either a cliffhanger tease toward the next topic, or a lecture-closing reflection if this is the final topic.\n\n   - STRICT RULES:\n     - **No System Meta-Talk:** Do NOT explicitly use the terms \"Course Topic Map\", \"Next Topic Context\", \"Lecture Topics\", \"Previous Lecture Context\", or \"Ghost Nodes\" in the output. Speak naturally as a human tutor.\n     - **No Fake Citations:** SIDs (`⟦sXXXXXX⟧`) must ONLY be applied to information found in the [Current Topic Transcript]. Do NOT cite your past/future teasers.\n\n### VOICE (How the cards should feel to read)\nYour reader is a beginner who is meeting this subject for the first time in this class, and who may be genuinely lost. Write the way a warm, energetic TA talks to that student one-on-one — not the way a textbook or a summary reads.\n- **Talk to the reader:** Address the student directly and conversationally. Use natural spoken phrasing in the output language, including casual sentence endings where the language has them.\n- **Let the emotion show:** Let your own reactions come through — surprise, excitement, \"this part is the tricky one\", relief when the idea finally clicks. A flat, evenly-paced explanation is hard to absorb; a lively one with ups and downs keeps the student reading. Every card should have at least one moment of real emotional lift — a \"wow\", a \"wait, really?!\", a \"here's the fun part!\" — and you should not be stingy with exclamation marks. Aim for the energy of a TA who genuinely loves this topic and can't wait to share it. Reading the card should make the student think \"Oh, I see!\" rather than just \"Hm, okay.\"\n- **Be generous, not terse:** Prefer a few extra friendly sentences that make the idea click over a compressed, efficient summary. Short, dry sentences that merely state facts are the main thing to avoid.\n- **Slow down for the hard part:** Explain slowly and in plain spoken words. Spend the most sentences on the part a beginner is most likely to stumble on, and walk through it step by step instead of compressing it into one dense sentence.\n- **Ask, then answer:** Anticipate where the student gets stuck. Pose the question they are probably thinking, then answer it — and use concrete examples (ideally the ones the professor used) to make it land.\n- Techniques such as voicing a common assumption and then overturning it (\"You might think X... but actually Y!\") are welcome when they fit naturally, but none of these techniques is mandatory. Use whatever genuinely helps this particular student understand this particular idea.\n\n### WRITING RULES\n- **Tone:** Follow the VOICE section above. No dry, academic textbook language.\n- **Key Terms (Strongly Recommended):** Look at the [Current Topic Key Terms]. You do not need to use all of them, but when a term names a concept that is genuinely important to this segment, use that exact term in the cards and give it a short, gentle, plain-language explanation the first time it appears, so the student recognizes it in class and on exams.\n- **Deep but Friendly:** Separate the *Concept (What/Why)* from the *Calculation (How)*. Explain deep concepts using simple language in the cards, but confidently push complex step-by-step calculations to the \"Next Action\" list.\n- **Personification & Physicality:** Whenever possible, give abstract concepts \"character\" (e.g., \"The CPU hates waiting\") or use physical verbs (e.g., \"smash\", \"fly\", \"rewind\") to make the mechanics feel tangible. \n- **The Escape Hatch:** If trying to be funny, analogical, or personified makes the concept *harder* to understand, abandon it immediately. Clarity is king. Be direct and simple.\n- **Faithfulness:** Base the core concepts ONLY on what the professor taught. \n- **Citations:** Apply source IDs (`⟦sXXXXXX⟧` or `⟦sXXXXXX-sYYYYYY⟧`) conditionally based on the card type:\n  - `core_why` & `gotcha`: You MUST append evidence to every text/block using `⟦sXXXXXX⟧` or `⟦sXXXXXX-sYYYYYY⟧`.\n  - `hook` & `next_action`: Citations are optional, except for the items inside the self-study list, which MUST each carry one. Otherwise only append them if a block directly references a specific, concrete statement from the transcript.\n- **Formatting:** Use inline Markdown `**bold**` to highlight the most critical 1-2 phrases per text block if applicable. \n- **Code/Math:** \n  - For inline math/variables within sentences, use LaTeX delimiters `\\( ... \\)`. Never use raw dollar signs (`$`).\n  - For standalone equations or algorithms, use a `code` block. For LaTeX formulas, set `\"language\": \"latex\"` and write the formula in `code_string` (without outer delimiters). For programming code, set `\"language\": \"<python|cpp|etc>\"`.\n\n### BLOCK TYPES ALLOWED (`content_blocks`)\nUse these specific block types to make the UI rich and engaging. To explain deep concepts without creating a wall of text, stack multiple short blocks sequentially. You MUST strictly adhere to the required JSON fields for each type.\n\n- `paragraph`: Standard text. \n  - Required fields: `\"type\": \"paragraph\"`, `\"text\": \"<string>\"`\n  - STRICT RULE: Max 4-6 sentences per paragraph block. If you need to explain more, start a new paragraph block.\n- `quote`: A punchy, massive text callout (Use for the most important takeaway).\n  - Required fields: `\"type\": \"quote\"`, `\"text\": \"<string>\"`\n- `callout`: A colored warning/info box (Perfect for Gotchas, strict rules, or Professor's tips).\n  - Required fields: `\"type\": \"callout\"`, `\"alert_type\": \"<info|warning|error>\"`, `\"text\": \"<string>\"`\n- `code`: Syntactically correct code or math.\n  - Required fields: `\"type\": \"code\"`, `\"code_string\": \"<string>\"`\n  - Optional fields: `\"language\": \"<language_name or 'latex'>\"`, `\"explanation\": \"<string>\"`\n- `list`: Bullet points. Perfect for breaking down multi-step processes or algorithms chronologically.\n  - Required fields: `\"type\": \"list\"`, `\"items\": [\"<string>\", \"<string>\"]` (Array of strings)\n\nOUTPUT FORMAT (JSON ONLY)\nReturn a valid JSON object matching this schema.\n\nSCHEMA DEFINITIONS & CONSTRAINTS:\n\nreview_cards: Array of objects. You MUST STRICTLY generate exactly 4 cards in this exact order: hook, core_why, gotcha, next_action.\n\nEXAMPLE JSON STRUCTURE (typical case — mid-lecture topic with a real next topic):\n(The example text below is written in English only to illustrate the format. Your own output must follow the OUTPUT LANGUAGE section, and you must not copy its phrases.)\n(Use the exact keys below. Provide only pure JSON without comments or trailing commas.)\n\n{\n  \"topic_evaluation\": {\n    \"micro_topics\": [\n      {\n        \"idx\": 1,\n        \"title\": \"Naive Branch Handling\",\n        \"summary\": \"Stalling the fetch stage is the simplest but slowest solution for branches.\",\n        \"start_sid\": \"s000279\",\n        \"end_sid\": \"s000298\"\n      },\n      {\n        \"idx\": 2,\n        \"title\": \"Intro to Branch Prediction\",\n        \"summary\": \"Using BTB and gshare tables to speculate on the next PC to avoid stalls.\",\n        \"start_sid\": \"s000299\",\n        \"end_sid\": \"s000313\"\n      },\n      {\n        \"idx\": 3,\n        \"title\": \"Out-of-Order Execution\",\n        \"summary\": \"Letting the program execute ahead of time based on the speculation\",\n        \"start_sid\": \"s000314\",\n        \"end_sid\": \"s000378\"\n      },\n      {\n        \"idx\": 4,\n        \"title\": \"The Misprediction Disaster\",\n        \"summary\": \"Identifying how wrong guesses create a mess in the out-of-order pipeline.\",\n        \"start_sid\": \"s000379\",\n        \"end_sid\": \"s000395\"\n      }\n    ],\n    \"card_mapping_strategy\": \"Micro-topic 1 is just the hook. The core concept is 'Branch Speculation & Pipeline Recovery'. I will use Micro-topic 1 as the hook. A part of Micro-topic 2 and 3 will form the 'Core Why'. For the mobile format, I must completely drop the complex 'Phase Bit' calculation steps and the 'RAT snapshot' algorithms—they are too dense. I will feature the pipeline mess as the 'Gotcha', and explicitly list the Phase Bit and RAT algorithms in the 'Next Action' card for self-study.\",\n    \"core_concept_identified\": \"Branch Speculation & Pipeline Recovery\"\n  },\n  \"review_cards\": [\n    {\n      \"card_type\": \"hook\",\n      \"hero_emoji\": \"🚦\",\n      \"title\": \"Guess The Road\",\n      \"content_blocks\": [\n        {\n          \"type\": \"quote\",\n          \"text\": \"Branch prediction is literally the CPU acting like a really impatient driver: instead of waiting for a green light, it just closes its eyes and hits the gas!\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"The CPU absolutely hates sitting idle. Instead of waiting for a slow 'if' statement to finish calculating, it makes a highly educated guess and sprints ahead so the pipeline never stops zooming.\"\n        }\n      ]\n    },\n    {\n      \"card_type\": \"core_why\",\n      \"hero_emoji\": \"🏎️\",\n      \"title\": \"The Need for Speed\",\n      \"content_blocks\": [\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"Stalling the fetch stage just to wait for a branch outcome is a massive waste of CPU cycles. ⟦s000283⟧\"\n        },\n        {\n          \"type\": \"callout\",\n          \"alert_type\": \"info\",\n          \"text\": \"The fix: We use hardware \\\"cheat sheets\\\" to predict the future and let the program fly out-of-order! ⟦s000300-s000303⟧\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"Instead of waiting, the CPU looks at history. It asks the **BTB (Branch Target Buffer)** \\\"Where are we jumping to?\\\" ⟦s000306⟧ and asks the **gshare table** \\\"Will we actually take this jump?\\\" ⟦s000311⟧.\"\n        },\n        {\n          \"type\": \"code\",\n          \"language\": \"cpp\",\n          \"code_string\": \"PC = BTB.get_predicted_target(); // Go fast, ask questions later!\",\n          \"explanation\": \"We literally force the PC to our best guess and keep fetching. ⟦s000309⟧\"\n        }\n      ]\n    },\n    {\n      \"card_type\": \"gotcha\",\n      \"hero_emoji\": \"💥\",\n      \"title\": \"The \\\"Oops\\\" Moment & Time Travel\",\n      \"content_blocks\": [\n        {\n          \"type\": \"callout\",\n          \"alert_type\": \"warning\",\n          \"text\": \"Guessing is easy. The real nightmare is **recovering cleanly when the CPU guesses wrong**. ⟦s000379-s000386⟧\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"If we mispredict, the CPU has executed \\\"ghost\\\" instructions that shouldn't exist! It must instantly undo the mess. ⟦s000387-s000395⟧\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"To survive this, the CPU uses **RAT snapshots** to \\\"rewind time\\\" back to exactly how things were before the bad guess ⟦s000360-s000378⟧. Then, it flips a **Phase Bit** to instantly flash-clear all the garbage instructions still stuck in the pipeline. It’s a hardware Ctrl+Z! ⟦s000340-s000352⟧\"\n        }\n      ]\n    },\n    {\n      \"card_type\": \"next_action\",\n      \"hero_emoji\": \"🚀\",\n      \"title\": \"Master the Mechanics\",\n      \"content_blocks\": [\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"We just learned how CPUs guess the future to avoid stalling, using speculation to keep the pipeline blazingly fast instead of grinding to a halt.\"\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"<a short heading line for this self-study list, written in your own words for this topic>\"\n        },\n        {\n          \"type\": \"list\",\n          \"items\": [\n            \"Calculating the XOR hashes for the **gshare predictor** ⟦s000311-s000316⟧\",\n            \"The step-by-step logic of toggling **Phase Bits** ⟦s000330-s000352⟧\",\n            \"How the **RAT (Register Alias Table)** restores its snapshot perfectly without losing data ⟦s000360-s000378⟧\"\n          ]\n        },\n        {\n          \"type\": \"paragraph\",\n          \"text\": \"But wait—what happens if we have multiple nested branches and the CPU's 'Ctrl+Z' mechanism gets confused? We'll figure out how to untangle that nightmare next!\"\n        }\n      ]\n    }\n  ]\n}\n\n---\n\nADDITIONAL EXAMPLES (illustrating the two conditional branches — not full outputs, just the relevant fragments):\n\nExample A — no omissions occurred, so the Uncovered sub-section is skipped entirely (`next_action.content_blocks` goes straight from the summary paragraph to the cliffhanger paragraph, with no heading and no list in between):\n{\n  \"card_type\": \"next_action\",\n  \"hero_emoji\": \"🎯\",\n  \"title\": \"...\",\n  \"content_blocks\": [\n    { \"type\": \"paragraph\", \"text\": \"<self-contained summary of this segment only>\" },\n    { \"type\": \"paragraph\", \"text\": \"<cliffhanger tease for the next topic, grounded only in NEXT_TOPIC_CONTEXT>\" }\n  ]\n}\n"
+      },
+      {
+       "role": "user",
+       "content": "### INPUTS\n1. [Next Topic Context]: The title and key terms of the topic that immediately follows this segment. If this segment is the final topic of today's lecture, this field will instead say so explicitly (rather than containing a real topic) — this has already been determined for you; trust it as fact.\n<next_topic_context>\nThis is the final topic of today's lecture. There is no next topic.\n</next_topic_context>\n\n\n2. [Lecture Topics]: The full list of topic titles and key terms for every topic covered in today's lecture. This is provided because this segment is the final topic, for use in the lecture-closing reflection.\n<lecture_topics>\n- レジスタと疑似命令によるアセンブリ入門 (Key Terms: レジスタ（register）, ゼロレジスタ（zero register）, 一時レジスタ（temporary register）, 引数レジスタ（argument register）, レジスタ識別子（register identifier）, 疑似命令（pseudo-instruction）)\n- プログラムの構成と命令の実行 (Key Terms: データセグメント（.data segment）, テキストセグメント（.text segment）, 即値（immediate value）, 即値ロード（load immediate）, 命令レジスタ（instruction register）, プログラムカウンタ（program counter）)\n- 算術命令とオペランド (Key Terms: 加算命令（add instruction）, 即値加算命令（add immediate）, オペランド（operand）, オペコード（opcode）, 算術論理演算装置（Arithmetic Logic Unit, ALU）, 即値オペランド（immediate operand）)\n- レジスタの値交換とアセンブリの利用 (Key Terms: レジスタ値の交換（register swapping）, 一時記憶（temporary storage）, 一時レジスタ規約（temporary-register convention）, 保存レジスタ規約（saved-register convention）, アセンブリ言語（assembly language）, コンパイラ最適化（compiler optimization）)\n- ビット論理演算とNOTの実現 (Key Terms: AND演算（AND operation）, OR演算（OR operation）, XOR演算（XOR operation）, NOT演算（NOT operation）, NOR命令（NOR instruction）, ビット表現（binary representation）)\n</lecture_topics>\n\n\n2b. [Current Topic Key Terms]: The key terms that were extracted from this segment. These are the words the student will see in class materials and on exams.\n<current_topic_key_terms>\n- AND演算（AND operation）\n- OR演算（OR operation）\n- XOR演算（XOR operation）\n- NOT演算（NOT operation）\n- NOR命令（NOR instruction）\n- ビット表現（binary representation）\n</current_topic_key_terms>\n\n3. [Current Topic Transcript]: The specific transcript segment to generate cards for.\n<transcript_segment>\ns000714: I'll write in here, maybe we can work with them, but let me write, let me give you a few more instructions.\ns000715: So, so far we've seen, we've seen load immediate, we've seen move, we've seen do do do do, we've seen add immediate and add, this add unsigned we haven't seen, I'm not, don't use this one, this is just so you recognize it, but this isn't one I'm giving you guys to use, okay?\ns000716: I'm not giving you guys added signs to use.\ns000717: Alright, so if you want to keep it running tally, these are the ones you can use.\ns000718: But I'm going to give you some logical instructions and we're going to use them for our lab today.\ns000719: Alright, what do you think is the mnemonic used for\ns000720: AND? You guessed it.\ns000721: So AND, there is AND\ns000722: and there is AND immediate. But for now let's go with AND.\ns000723: And takes three operands, the destination register, let me say T3, and the two source registers, T1 and T0.\ns000724: So this is equivalent to T3 is, I guess, the value of T1 and T0.\ns000725: Okay, what do you think is the instruction for an OR?\ns000726: Same structure, the destination register.\ns000727: And the two source registers.\ns000728: Who?\ns000729: Aya?\ns000730: No way.\ns000731: Is it like turning them into binary values?\ns000732: Yeah.\ns000733: This is just a mnemonic for an opcode\ns000734: that says do an A-L-U.\ns000735: And it.\ns000736: A-L-U for it.\ns000737: Okay, there's\ns000738: the NOT instructions.\ns000739: So these are all built-in instructions.\ns000740: Then there's the NOT instruction.\ns000741: So depending on time, I'll talk about it.\ns000742: This is not a built-in instruction, but this has two operands.\ns000743: So T3 is the destination, and T1 is the source.\ns000744: So this says put into T3 the knot of T1.\ns000745: I'll talk about knot.\ns000748: Let's see what I'm talking about.\ns000750: Okay, any questions about it?\ns000751: I think I went through everything. That step includes useful, where the registers are, where the code is, all of that.\ns000752: Is that super useful?\ns000753: Okay, so there is no NOT instruction built in.\ns000754: The designer said, no, I'm going to save bits in my opcode and not put a NOT.\ns000755: And I said, how is that possible?\ns000756: Well, what we do have is a NOR instruction.\ns000757: is a NOR instruction. So NOR puts into the destination register the NOR of the two source\ns000758: registers. Okay, so the NOR instruction, as you recall, is you take your two inputs and\ns000759: you knot that. Okay, so what's a way you can create a NOT instruction using this NOR instruction?\ns000760: Okay, so it's a NOR, so tell it to me as a NOR. What do you make A?\ns000761: A is the input. A is A, okay.\ns000762: And B is zero. B is zero? Very good. This will work.\ns000763: This is equivalent, so A or with zero is just A. So this is equivalent to A-naught.\ns000764: What's another way to do it? Which one it actually does. Do you have another way? Can I put one? Would one work? No. It would just make my answer one. So this doesn't work. This works. A is A. A is my input. A is, whatever this is.\ns000765: not A or A, right? No, this is first you OR. The parenthesis has highest president. A or A is?\ns000766: A. Oh, I see. This does work too. How does it get implemented? Somebody want to try it out? Somebody\ns000767: want to code up NOT and see how it's implemented? I should have done that before I close my screen.\ns000768: I'm gonna remind myself how they do it.\ns000769: Both implementations would work, not...\ns000770: I can't remember the quiz, I know I got a question.\ns000771: I can't remember the quiz.\ns000772: They do this one.\ns000773: They implement a not as a nor\ns000774: with the destination register, which is\ns000775: three.\ns000776: And they ignore it with the zero register.\ns000777: This is how it's implemented.\ns000778: This will be the built-in instruction\ns000779: that's used in place of the macro-instruction of the ball.\ns000780: I'm not gonna do the arithmetic stuff yet.\ns000781: Let me stop here.\ns000782: Any questions?\ns000784: Any questions so far?\ns000788: and then we'll have the last one.\ns000789: Two, three, go in that direction.\ns000790: One, three, five.\ns000791: Are you going that direction?\ns000792: Wait, how are we going to call me that?\ns000793: It's fine, go whatever direction you're going,\ns000794: I'll adapt.\ns000795: Okay, so that's three, Rappas, you hand it down.\ns000796: You're a short one, Malachi.\ns000797: There you go.\ns000798: Okay.\ns000799: Assembly line, do you?\ns000800: Do you have one more question?\ns000801: Sure.\ns000802: everybody else got it on that\ns000804: so I'm gonna explain this before you go on your break\ns000805: oh ok nevermind\ns000806: so here's a series of tasks I want you to accomplish\ns000807: in your program.\ns000808: I want you to save two integers\ns000809: to the registers. Students ask me what\ns000810: integers. I don't know. You guys come up with\ns000811: integers to test. I do know.\ns000812: I have things I would test.\ns000813: But selecting two good things to test is part of it.\ns000814: Assign\ns000815: entity two\ns000816: and\ns000817: entity three the or\ns000818: the xor\ns000819: then the not of both\ns000820: and then\ns000821: In T7 you do these, you know, more complex expressions, okay?\ns000822: That will probably require you to do it in multiple instructions.\ns000823: Yeah, multiple steps, multiple instructions, okay?\ns000824: Okay?\ns000825: Questions about the lab, what needs to be done?\ns000827: You can start if you want, if not, you have it here.\ns000828: Yeah, and that's what I was going to say if you pick your integers, then you can test them.\ns000829: How would a not 5, how would a 5 and 6 work in a 7?\ns000830: What's not 5?\ns000831: What do you mean to say not 5? I meant to say like, say in t0 was 5 and then t1 was 8.\ns000832: Let's start with 1. So 1 is 5, right? So it would display the following, right? In X, right?\ns000833: Yes.\ns000834: Okay, if I not this, so let's say this is T1, okay? Not T1. We flip all the bits, okay?\ns000835: So this 0 is technically 3 0s, right? In binary? I mean 4 0s in binaries, right?\ns000836: Yes.\ns000837: So with them, they all become 1s, right?\ns000838: And how do we represent that in hex?\ns000839: F.\ns000840: F.\ns000841: So these are all 0s, they do the same, right?\ns000842: Okay, 5s are a little bit trickier, so let's break it apart into binary.\ns000843: 0, 1, 0, 1.\ns000844: Okay, and for the bits it becomes 1, 0, 1, 0.\ns000845: What is that in hex?\ns000846: Okay, that gets us F again. Oh, we're just looking at 1010. When you wrote it like that, I thought you were adding, that was my mistake.\ns000847: No, sorry. It says K.\ns000848: That gets us K.\ns000849: Oh, okay, so we evaluate the bits of value within that hex number and then we, oh, okay. This is kind of what we did last time.\ns000850: In fact, you just figured out my secret.\ns000851: I'm trying to reinforce it, yeah.\ns000852: But now you're doing it by also practicing\ns000853: making glue with the IVP and the writing\ns000854: and some of the instructions and all of that.\ns000855: But yeah, wait 15 minutes and let me get this loaded up.\n</transcript_segment>\n\n\n\n### TOPIC-SPECIFIC INSTRUCTIONS\n\n- Next Action card, Part 3 (The Cliffhanger & Future):\n\n        This is the final topic of today's lecture. Do NOT fabricate a \"next topic\" or a cliffhanger. Instead, write a 2-4 sentence lecture-closing reflection: connect this final concept back to the broader arc of today's lecture, using ONLY the topic titles/keywords listed in `- レジスタと疑似命令によるアセンブリ入門 (Key Terms: レジスタ（register）, ゼロレジスタ（zero register）, 一時レジスタ（temporary register）, 引数レジスタ（argument register）, レジスタ識別子（register identifier）, 疑似命令（pseudo-instruction）)\n- プログラムの構成と命令の実行 (Key Terms: データセグメント（.data segment）, テキストセグメント（.text segment）, 即値（immediate value）, 即値ロード（load immediate）, 命令レジスタ（instruction register）, プログラムカウンタ（program counter）)\n- 算術命令とオペランド (Key Terms: 加算命令（add instruction）, 即値加算命令（add immediate）, オペランド（operand）, オペコード（opcode）, 算術論理演算装置（Arithmetic Logic Unit, ALU）, 即値オペランド（immediate operand）)\n- レジスタの値交換とアセンブリの利用 (Key Terms: レジスタ値の交換（register swapping）, 一時記憶（temporary storage）, 一時レジスタ規約（temporary-register convention）, 保存レジスタ規約（saved-register convention）, アセンブリ言語（assembly language）, コンパイラ最適化（compiler optimization）)\n- ビット論理演算とNOTの実現 (Key Terms: AND演算（AND operation）, OR演算（OR operation）, XOR演算（XOR operation）, NOT演算（NOT operation）, NOR命令（NOR instruction）, ビット表現（binary representation）)` — do not invent details about any of those past topics beyond what their given keywords imply. Leave the student with a sense of completion rather than a false teaser.\n\nExample B — this is the final topic of today's lecture, so Part 3 becomes a closing reflection using `- レジスタと疑似命令によるアセンブリ入門 (Key Terms: レジスタ（register）, ゼロレジスタ（zero register）, 一時レジスタ（temporary register）, 引数レジスタ（argument register）, レジスタ識別子（register identifier）, 疑似命令（pseudo-instruction）)\n- プログラムの構成と命令の実行 (Key Terms: データセグメント（.data segment）, テキストセグメント（.text segment）, 即値（immediate value）, 即値ロード（load immediate）, 命令レジスタ（instruction register）, プログラムカウンタ（program counter）)\n- 算術命令とオペランド (Key Terms: 加算命令（add instruction）, 即値加算命令（add immediate）, オペランド（operand）, オペコード（opcode）, 算術論理演算装置（Arithmetic Logic Unit, ALU）, 即値オペランド（immediate operand）)\n- レジスタの値交換とアセンブリの利用 (Key Terms: レジスタ値の交換（register swapping）, 一時記憶（temporary storage）, 一時レジスタ規約（temporary-register convention）, 保存レジスタ規約（saved-register convention）, アセンブリ言語（assembly language）, コンパイラ最適化（compiler optimization）)\n- ビット論理演算とNOTの実現 (Key Terms: AND演算（AND operation）, OR演算（OR operation）, XOR演算（XOR operation）, NOT演算（NOT operation）, NOR命令（NOR instruction）, ビット表現（binary representation）)` instead of a cliffhanger:\n{\n  \"card_type\": \"next_action\",\n  \"hero_emoji\": \"🎓\",\n  \"title\": \"...\",\n  \"content_blocks\": [\n    { \"type\": \"paragraph\", \"text\": \"<self-contained summary of this segment only>\" },\n    { \"type\": \"paragraph\", \"text\": \"<a short heading line for this self-study list, written in your own words for this topic>\" },\n    { \"type\": \"list\", \"items\": [\"<omitted item 1>\", \"<omitted item 2>\"] },\n    { \"type\": \"paragraph\", \"text\": \"<2-4 sentence lecture-closing reflection tying this concept back to the broader arc of today's lecture, grounded only in LECTURE_TOPICS titles/keywords — no invented details>\" }\n  ]\n}\n\n\nGenerate Review Cards for Topic: ビット論理演算とNOTの実現\n\nWrite every card title and every text field in Japanese.\n"
+      }
+     ]
+    }
+   ],
+   "checks": {
+    "calls": 3,
+    "error": null,
+    "finish_reasons": [
+     "None"
+    ],
+    "truncated_calls": 0,
+    "json_parse_errors": 0,
+    "chars": 47,
+    "exclamations": 0,
+    "question_marks": 0,
+    "citations": 0,
+    "malformed_citations": 0,
+    "placeholder_leak": 0,
+    "english_gloss_parens": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "max_output_tokens_single_call": 0,
+    "sum_call_seconds": 0,
+    "max_call_seconds": 0,
+    "topics": 3,
+    "topics_with_bad_card_sequence": 0
+   }
+  }
+ ]
+}

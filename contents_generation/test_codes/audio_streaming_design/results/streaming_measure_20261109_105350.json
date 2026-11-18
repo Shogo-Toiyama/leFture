@@ -1,0 +1,59 @@
+{
+  "note": "from a Mac; before = whole-file download, after = sign + ffmpeg Range playback",
+  "lectures": [
+    {
+      "mb": 30.6,
+      "minutes": 62.0,
+      "before_full_download": {
+        "ms": 3763,
+        "bytes": 30625662
+      },
+      "sign_ms": 53,
+      "after_start_at_0pct": {
+        "ok": true,
+        "ms_median": 386,
+        "kb_median": 640.0,
+        "requests_median": 0
+      },
+      "after_start_at_50pct": {
+        "ok": true,
+        "ms_median": 650,
+        "kb_median": 643.4,
+        "requests_median": 2
+      },
+      "after_start_at_90pct": {
+        "ok": true,
+        "ms_median": 593,
+        "kb_median": 642.7,
+        "requests_median": 2
+      }
+    },
+    {
+      "mb": 171.3,
+      "minutes": 91.9,
+      "before_full_download": {
+        "ms": 11664,
+        "bytes": 171293405
+      },
+      "sign_ms": 54,
+      "after_start_at_0pct": {
+        "ok": true,
+        "ms_median": 397,
+        "kb_median": 1056.0,
+        "requests_median": 0
+      },
+      "after_start_at_50pct": {
+        "ok": true,
+        "ms_median": 701,
+        "kb_median": 1063.4,
+        "requests_median": 2
+      },
+      "after_start_at_90pct": {
+        "ok": true,
+        "ms_median": 572,
+        "kb_median": 1055.7,
+        "requests_median": 2
+      }
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"expectedActiveSeconds":12,"wallSeconds":18,"events":["0.52s start","6.52s paused state=paused","6.52s pause event","12.52s resumed state=recording","12.52s resume event","16.54s dataavailable 667","18.52s dataavailable 57646","18.52s stopped","18.54s browser decode duration=11.99s"]}

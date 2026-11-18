@@ -1,0 +1,101 @@
+{
+  "timestamp": "2026-11-08T03:01:45.608Z",
+  "scenario": "",
+  "env": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36",
+    "secureContext": true,
+    "hasGetDisplayMedia": true,
+    "mediaRecorder": true,
+    "mimeSupport": {
+      "audio/webm;codecs=opus": true,
+      "audio/webm": true,
+      "audio/mp4;codecs=mp4a.40.2": true,
+      "audio/mp4;codecs=opus": true,
+      "audio/mp4": true,
+      "audio/ogg;codecs=opus": false
+    },
+    "platform": "macOS",
+    "platformVersion": "27.2.0",
+    "browsers": "Not:A-Brand 8.0.0.0, Chromium 156.0.8078.80, Google Chrome 156.0.8078.80",
+    "supportedConstraints": [
+      "suppressLocalAudioPlayback",
+      "restrictOwnAudio",
+      "displaySurface",
+      "echoCancellation",
+      "noiseSuppression",
+      "autoGainControl"
+    ]
+  },
+  "request": {
+    "video": {
+      "frameRate": 1,
+      "width": {
+        "max": 640
+      },
+      "height": {
+        "max": 360
+      }
+    },
+    "audio": {
+      "echoCancellation": false,
+      "noiseSuppression": false,
+      "autoGainControl": false,
+      "suppressLocalAudioPlayback": false
+    },
+    "systemAudio": "include",
+    "selfBrowserSurface": "include",
+    "surfaceSwitching": "exclude",
+    "monitorTypeSurfaces": "include"
+  },
+  "outcome": "audio_captured",
+  "endedBy": "user_stop",
+  "displaySurface": "browser",
+  "audioTrackLabel": "Tab audio",
+  "audioSettings": {
+    "autoGainControl": false,
+    "channelCount": 2,
+    "deviceId": "web-contents-media-stream://7395:8",
+    "echoCancellation": false,
+    "latency": 0.002902,
+    "noiseSuppression": false,
+    "restrictOwnAudio": false,
+    "sampleRate": 44100,
+    "sampleSize": 16,
+    "suppressLocalAudioPlayback": false,
+    "voiceIsolation": false
+  },
+  "videoStoppedEarly": false,
+  "mimeType": "audio/webm;codecs=opus",
+  "wallSeconds": 44.26,
+  "bytes": 454168,
+  "kbps": 82.1,
+  "meter": {
+    "maxDbfs": -13.3,
+    "silentRatio": 0.411
+  },
+  "decoded": {
+    "ok": true,
+    "duration": 44.22,
+    "sampleRate": 48000,
+    "channels": 2,
+    "peakDbfs": -6.339547550684864
+  },
+  "serverSave": {
+    "saved": "results/20261107_190145_unlabeled.webm",
+    "bytes": 454168,
+    "ffprobe": {
+      "available": false
+    }
+  },
+  "events": [
+    "[0.05s] env {\"userAgent\":\"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36\",\"secureContext\":true,\"hasGetDisplayMedia\":true,\"mediaRecorder\":true,\"mimeSupport\":{\"audio/webm;codecs=opus\":true,\"audio/webm\":true,\"audio/mp4;codecs=mp4a.40.2\":true,\"audio/mp4;codecs=opus\":true,\"audio/mp4\":true,\"audio/ogg;codecs=opus\":false},\"platform\":\"macOS\",\"platformVersion\":\"27.2.0\",\"browsers\":\"Not:A-Brand 8.0.0.0, Chromium 156.0.8078.80, Google Chrome 156.0.8078.80\",\"supportedConstraints\":[\"suppressLocalAudioPlayback\",\"restrictOwnAudio\",\"displaySurface\",\"echoCancellation\",\"noiseSuppression\",\"autoGainControl\"]}",
+    "[23.99s] getDisplayMedia request {\"video\":{\"frameRate\":1,\"width\":{\"max\":640},\"height\":{\"max\":360}},\"audio\":{\"echoCancellation\":false,\"noiseSuppression\":false,\"autoGainControl\":false,\"suppressLocalAudioPlayback\":false},\"systemAudio\":\"include\",\"selfBrowserSurface\":\"include\",\"surfaceSwitching\":\"exclude\",\"monitorTypeSurfaces\":\"include\"}",
+    "[24.04s] getDisplayMedia rejected {\"name\":\"InvalidStateError\",\"message\":\"Invalid state\"}",
+    "[29.14s] test tone on (440 Hz, 1 beep/s)",
+    "[30.90s] test tone off",
+    "[35.37s] getDisplayMedia request {\"video\":{\"frameRate\":1,\"width\":{\"max\":640},\"height\":{\"max\":360}},\"audio\":{\"echoCancellation\":false,\"noiseSuppression\":false,\"autoGainControl\":false,\"suppressLocalAudioPlayback\":false},\"systemAudio\":\"include\",\"selfBrowserSurface\":\"include\",\"surfaceSwitching\":\"exclude\",\"monitorTypeSurfaces\":\"include\"}",
+    "[42.74s] stream acquired {\"displaySurface\":\"browser\",\"videoLabel\":\"web-contents-media-stream://3C27544174B364F70F7B116B2134BB0E\",\"audioTracks\":[{\"label\":\"Tab audio\",\"settings\":{\"autoGainControl\":false,\"channelCount\":2,\"deviceId\":\"web-contents-media-stream://7395:8\",\"echoCancellation\":false,\"latency\":0.002902,\"noiseSuppression\":false,\"restrictOwnAudio\":false,\"sampleRate\":44100,\"sampleSize\":16,\"suppressLocalAudioPlayback\":false,\"voiceIsolation\":false}}]}",
+    "[42.74s] recording {\"mimeType\":\"audio/webm;codecs=opus\"}",
+    "[87.13s] saved 20261107_190145_unlabeled.webm {\"saved\":\"results/20261107_190145_unlabeled.webm\",\"bytes\":454168,\"ffprobe\":{\"available\":false}}"
+  ]
+}

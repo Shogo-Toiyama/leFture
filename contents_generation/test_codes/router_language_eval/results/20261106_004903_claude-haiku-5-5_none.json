@@ -1,0 +1,115 @@
+{
+  "model": "anthropic/claude-haiku-5-5",
+  "effort": "none",
+  "summary": {
+    "v1": {
+      "pass": 5,
+      "total": 5,
+      "avg_latency_s": 2.67,
+      "cost_usd": 0.005269
+    }
+  },
+  "total_cost_usd": 0.005269546739990636,
+  "rows": [
+    {
+      "prompt": "v1",
+      "case": "real_coercion",
+      "expected": "ja",
+      "got": "ja",
+      "pass": true,
+      "latency_s": 3.17,
+      "tokens": {
+        "in": 13177,
+        "out": 181,
+        "cache": 0
+      },
+      "cost_usd": 0.001503,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": true,
+      "thread_title": null,
+      "diff_vs_production_router": {},
+      "error": null
+    },
+    {
+      "prompt": "v1",
+      "case": "real_paste_fib",
+      "expected": "ja",
+      "got": "ja",
+      "pass": true,
+      "latency_s": 2.86,
+      "tokens": {
+        "in": 8415,
+        "out": 283,
+        "cache": 0
+      },
+      "cost_usd": 0.001069,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": true,
+      "thread_title": null,
+      "diff_vs_production_router": {},
+      "error": null
+    },
+    {
+      "prompt": "v1",
+      "case": "syn_english_word_answer",
+      "expected": "ja",
+      "got": "ja",
+      "pass": true,
+      "latency_s": 1.77,
+      "tokens": {
+        "in": 8108,
+        "out": 197,
+        "cache": 0
+      },
+      "cost_usd": 0.000962,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "thread_title": null,
+      "diff_vs_production_router": {},
+      "error": null
+    },
+    {
+      "prompt": "v1",
+      "case": "syn_explicit_en",
+      "expected": "en",
+      "got": "en",
+      "pass": true,
+      "latency_s": 2.16,
+      "tokens": {
+        "in": 8091,
+        "out": 183,
+        "cache": 0
+      },
+      "cost_usd": 0.000965,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": false,
+      "thread_title": null,
+      "diff_vs_production_router": {},
+      "error": null
+    },
+    {
+      "prompt": "v1",
+      "case": "first_mixed",
+      "expected": "ja",
+      "got": "ja",
+      "pass": true,
+      "latency_s": 3.38,
+      "tokens": {
+        "in": 3671,
+        "out": 602,
+        "cache": 0
+      },
+      "cost_usd": 0.00077,
+      "intent": "learning",
+      "needs_retrieval": false,
+      "needs_reasoning": true,
+      "thread_title": "暗黙の型変換と型強制の違い",
+      "diff_vs_production_router": {},
+      "error": null
+    }
+  ]
+}
