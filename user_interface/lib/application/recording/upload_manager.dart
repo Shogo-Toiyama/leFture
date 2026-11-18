@@ -9,6 +9,7 @@ import 'package:lefture/core/config/app_config.dart';
 import 'package:lefture/core/services/background_task.dart';
 import 'package:lefture/core/utils/connectivity_utils.dart';
 import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/application/recording/upload_trace.dart';
 import 'package:lefture/core/utils/network_constants.dart';
 import 'package:lefture/domain/exceptions/account_suspended_exception.dart';
 import 'package:lefture/domain/errors/app_error.dart';
@@ -120,6 +121,7 @@ class UploadManager {
   bool _isProcessing = false;
 
   void initialize() {
+    UploadTrace.inspect = _repo.getUploadTraceStatus;
     // 診断用: initialize()自体が本当に呼ばれているかを切り分けるためのログ。
     // ここが1行も出ない場合、uploadManagerProviderがまだどこからもwatch/read
     // されていない(Providerが生成されていない)ことを意味する。
@@ -327,12 +329,22 @@ class UploadManager {
   /// 検知した経路([_handleMasterAudioTaskUpdate])の両方から呼ばれる共有ロジック
   /// (元は_processQueueの中にベタ書きされていたものを抽出した)。
   Future<void> _onJobSucceeded(LocalUploadJob job) async {
+    try {
+      await _completeJob(job);
+    } finally {
+      // Diagnostics must never affect upload success or retries.
+      unawaited(UploadTrace.sweep());
+    }
+  }
+
+  Future<void> _completeJob(LocalUploadJob job) async {
     // 成功！ -> Jobを完了にする
     await _repo.updateJobStatus(
       jobId: job.id,
       status: 'done',
       lastError: null,
     );
+    DevLog.add('✅ [UploadManager] ${job.kind}#${job.id.substring(0, 8)} succeeded (lecture ${job.lectureId})');
 
     // チャンク音声はアップロード完了後、ローカルの一時ファイルはもう不要。
     // マスター音声側は別経路(_performUpload/_handleMasterAudioTaskUpdate)で
@@ -861,7 +873,9 @@ class UploadManager {
       case TaskStatus.running:
       case TaskStatus.waitingToRetry:
       case TaskStatus.paused:
-        // 中間状態。何もしない。
+        // 中間状態。処理は何もしないが、「どこで止まっているか」の手掛かり
+        // として状態遷移だけは記録に残す(UploadTraceが拾う)。
+        DevLog.add('📡 [UploadManager] Master audio background transfer ${update.status} (job $jobId)');
         break;
     }
   }

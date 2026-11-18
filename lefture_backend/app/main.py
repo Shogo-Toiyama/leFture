@@ -4989,6 +4989,7 @@ async def _patrol_send_client_error_digest() -> dict:
         lambda: admin_client.table("client_error_groups")
             .select("*")
             .neq("status", "ignored")
+            .neq("code", "UPLOAD_TRACE")
             .order("total_count", desc=True)
             .limit(50)
             .execute()
@@ -5525,9 +5526,16 @@ class RegisterDeviceRequest(BaseModel):
 CLIENT_ERROR_RATE_LIMIT_PER_HOUR = 200
 CLIENT_ERROR_SAMPLES_PER_GROUP = 5
 CLIENT_ERROR_SAMPLE_WINDOW_HOURS = 12
+# Realtime録音のアップロード診断ログ(Flutter側 UploadTrace)。失敗ではなく
+# 成功・失敗の比較用に全文を送るコード。通常のエラーより多くのサンプルと
+# 長いbreadcrumbsを保持する(使う人が少ないので容量は問題にならない)。
+UPLOAD_TRACE_CODE = "UPLOAD_TRACE"
+UPLOAD_TRACE_SAMPLES_PER_GROUP = 100
+UPLOAD_TRACE_MAX_LINES = 3000
 
 
 class ClientErrorReport(BaseModel):
+    report_id: str | None = None
     fingerprint: str
     ref_code: str | None = None
     code: str
@@ -5617,6 +5625,7 @@ async def client_errors_report(payload: ClientErrorBatch, request: Request):
         print(f"⚠️ client-errors: rate limit check failed (accepting anyway): {e}")
 
     accepted = 0
+    accepted_report_ids = []
     for report in payload.reports:
         try:
             err = report.error or {}
@@ -5681,9 +5690,12 @@ async def client_errors_report(payload: ClientErrorBatch, request: Request):
                     .limit(1)
                     .execute()
             )
-            if (samples.count or 0) < CLIENT_ERROR_SAMPLES_PER_GROUP:
+            is_trace = report.code == UPLOAD_TRACE_CODE
+            sample_cap = UPLOAD_TRACE_SAMPLES_PER_GROUP if is_trace else CLIENT_ERROR_SAMPLES_PER_GROUP
+            crumb_cap = UPLOAD_TRACE_MAX_LINES if is_trace else 40
+            if (samples.count or 0) < sample_cap:
                 await asyncio.to_thread(
-                    lambda r=report, e=err, raw=raw, occ=occurrences:
+                    lambda r=report, e=err, raw=raw, occ=occurrences, cc=crumb_cap:
                         admin_client.table("client_error_events").insert({
                             "fingerprint": r.fingerprint,
                             "user_id": user_id,
@@ -5694,7 +5706,7 @@ async def client_errors_report(payload: ClientErrorBatch, request: Request):
                             "origin": r.origin,
                             "raw_message": raw,
                             "stack": _mask_error_text(e.get("stack")),
-                            "breadcrumbs": [_mask_error_text(b) for b in (r.breadcrumbs or [])][-40:],
+                            "breadcrumbs": [_mask_error_text(b) for b in (r.breadcrumbs or [])][-cc:],
                             "http_status": e.get("http"),
                             "backend_code": e.get("backend_code"),
                             "route": r.route,
@@ -5707,6 +5719,9 @@ async def client_errors_report(payload: ClientErrorBatch, request: Request):
                         }).execute()
                 )
 
+            # A trace is acknowledged only after its full event was stored.
+            if report.report_id is not None and (not is_trace or (samples.count or 0) < sample_cap):
+                accepted_report_ids.append(report.report_id)
             accepted += 1
         except Exception as e:
             # 1件の失敗で残りを落とさない。
@@ -5715,7 +5730,7 @@ async def client_errors_report(payload: ClientErrorBatch, request: Request):
     if payload.dropped_distinct:
         print(f"🚧 client-errors: device dropped {payload.dropped_distinct} distinct group(s) locally")
 
-    return {"accepted": accepted}
+    return {"accepted": accepted, "accepted_report_ids": accepted_report_ids}
 
 
 @app.post("/devices/register")

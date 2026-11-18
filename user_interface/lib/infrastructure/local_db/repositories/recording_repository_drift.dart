@@ -358,6 +358,38 @@ class RecordingRepositoryDrift {
         .get();
   }
 
+  /// Diagnostic completion includes the background master upload. This does
+  /// not change the separate rules that allow analysis to start before it.
+  Future<({String? outcome, DateTime? progressedAt})> getUploadTraceStatus(String lectureId) async {
+    return db.transaction(() async {
+      final lecture = await getLecture(lectureId);
+      if (lecture == null || lecture.deletedAt != null) {
+        return (outcome: 'deleted', progressedAt: null);
+      }
+      final jobs = await (db.select(db.localUploadJobs)
+            ..where((t) => t.lectureId.equals(lectureId)))
+          .get();
+      if (jobs.any((j) => j.status == 'cancelled')) {
+        return (outcome: 'cancelled', progressedAt: null);
+      }
+      DateTime? progressedAt;
+      for (final job in jobs.where((j) => j.status == 'done')) {
+        if (progressedAt == null || job.updatedAt.isAfter(progressedAt)) {
+          progressedAt = job.updatedAt;
+        }
+      }
+      final masterDone = jobs.any((j) =>
+          j.kind == 'master_audio_upload' && j.status == 'done');
+      final analysisRequired = lecture.autoStartAnalysis != false && lecture.courseId != null;
+      final analysisDone = jobs.any((j) =>
+          j.kind == 'start_analysis' && j.status == 'done');
+      final complete = lecture.expectedChunks != null && masterDone &&
+          jobs.every((j) => j.status == 'done') &&
+          (!analysisRequired || analysisDone);
+      return (outcome: complete ? 'completed' : null, progressedAt: progressedAt);
+    });
+  }
+
   // UploadManager用：start-analysisのトリガー判定に使う。
   // マスター音声(kind: 'master_audio_upload')は分析パイプラインの入力ではなく
   // 再生用途でしかないため、これが失敗・保留中でも分析開始をブロックしない。

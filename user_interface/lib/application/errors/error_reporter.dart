@@ -84,7 +84,8 @@ class ErrorReporter {
   int _droppedDistinct = 0;
 
   Timer? _flushTimer;
-  bool _flushing = false;
+  Future<void>? _flushFuture;
+  bool _flushAgain = false;
 
   /// 現在画面(ルート)。SnackBar等から渡されたものを保持する。
   String? currentRoute;
@@ -94,9 +95,18 @@ class ErrorReporter {
   // ---------------------------------------------------------------
 
   /// エラーを1件受け取る。**この呼び出しは決して例外を投げない。**
-  Future<void> report(AppError error, {String? route}) async {
+  ///
+  /// [traceLines]を渡すと、DevLog末尾の代わりにそれをbreadcrumbsとして送る
+  /// (UploadTraceの全文用)。
+  Future<bool> report(AppError error, {String? route, List<String>? traceLines}) async {
     try {
-      if (!error.shouldReport) return;
+      if (!error.shouldReport) return false;
+      // Each trace carries a distinct diagnostic payload, even within one group.
+      if (error.code == AppErrorCode.uploadTrace) {
+        await _enqueue(error, route: route, traceLines: traceLines);
+        _scheduleFlush();
+        return true;
+      }
 
       final fp = error.fingerprint;
       final now = DateTime.now();
@@ -106,7 +116,7 @@ class ErrorReporter {
       if (gate == null) {
         if (_gates.length >= _maxDistinctPerSession) {
           _droppedDistinct++;
-          return;
+          return false;
         }
         gate = _BurstGate(now);
         _gates[fp] = gate;
@@ -116,23 +126,26 @@ class ErrorReporter {
         gate = _BurstGate(now);
         _gates[fp] = gate;
         if (carried > 0) {
-          await _enqueue(error, route: route, extraOccurrences: carried);
-          return;
+          await _enqueue(error, route: route, extraOccurrences: carried, traceLines: traceLines);
+          _scheduleFlush();
+          return true;
         }
       }
 
       if (gate.passed >= _burstAllowance) {
         gate.suppressed++;
-        return;
+        return false;
       }
       gate.passed++;
 
       // --- B段 ---
-      await _enqueue(error, route: route);
+      await _enqueue(error, route: route, traceLines: traceLines);
       _scheduleFlush();
+      return true;
     } catch (e) {
       // 報告の失敗でアプリを壊さない。DevLogにだけ残す。
       DevLog.add('⚠️ [ErrorReporter] report() failed: $e');
+      return false;
     }
   }
 
@@ -140,15 +153,17 @@ class ErrorReporter {
     AppError error, {
     String? route,
     int extraOccurrences = 0,
+    List<String>? traceLines,
   }) async {
     final payload = <String, dynamic>{
       'error': error.toJson(),
       'route': route ?? currentRoute,
-      'breadcrumbs': _breadcrumbs(),
+      'breadcrumbs': traceLines ?? _breadcrumbs(),
       if (extraOccurrences > 0) 'suppressed': extraOccurrences,
     };
 
     await _db.enqueueErrorReport(
+      coalesce: error.code != AppErrorCode.uploadTrace,
       fingerprint: error.fingerprint,
       refCode: error.refCode,
       code: error.code,
@@ -176,9 +191,19 @@ class ErrorReporter {
 
   /// キューをまとめて送る。アプリ起動時・フォアグラウンド復帰時・
   /// バックグラウンド遷移時に呼ぶ。
-  Future<void> flush() async {
-    if (_flushing) return;
-    _flushing = true;
+  Future<void> flush() {
+    _flushAgain = true;
+    return _flushFuture ??= _drain().whenComplete(() => _flushFuture = null);
+  }
+
+  Future<void> _drain() async {
+    do {
+      _flushAgain = false;
+      await _flushBatch();
+    } while (_flushAgain);
+  }
+
+  Future<void> _flushBatch() async {
     try {
       final connectivity = await Connectivity().checkConnectivity();
       if (connectivity.every((r) => r == ConnectivityResult.none)) return;
@@ -199,6 +224,7 @@ class ErrorReporter {
           payload = {'error': {'raw': r.payloadJson}};
         }
         return {
+          'report_id': r.id.toString(),
           'fingerprint': r.fingerprint,
           'ref_code': r.refCode,
           'code': r.code,
@@ -240,9 +266,23 @@ class ErrorReporter {
       // サーバーは受理できた限り2xxを返す(レート制限で捨てた場合も202)。
       // 2xxならローカルからは消してよい。
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        await _db.deleteErrorReportIds(rows.map((r) => r.id).toList());
+        // Traces require an explicit acknowledgement that their full event was
+        // stored. Older servers, partial failures and sample caps retain them.
+        final decoded = jsonDecode(res.body);
+        final acknowledged = decoded is Map
+            ? (decoded['accepted_report_ids'] as List? ?? const []).toSet()
+            : <dynamic>{};
+        final sent = rows.where((r) =>
+            r.code != AppErrorCode.uploadTrace || acknowledged.contains(r.id.toString()));
+        final retained = rows.where((r) =>
+            r.code == AppErrorCode.uploadTrace && !acknowledged.contains(r.id.toString()));
+        await _db.deleteErrorReportIds(sent.map((r) => r.id).toList());
+        for (final row in retained) {
+          await _db.recordErrorReportFailure(row.id);
+        }
+        if (rows.length == 50 && sent.isNotEmpty) _flushAgain = true;
         _droppedDistinct = 0;
-        DevLog.add('📮 [ErrorReporter] Sent ${rows.length} report group(s)');
+        DevLog.add('📮 [ErrorReporter] Sent ${sent.length} report(s)');
       } else {
         for (final r in rows) {
           await _db.recordErrorReportFailure(r.id);
@@ -252,8 +292,6 @@ class ErrorReporter {
     } catch (e) {
       DevLog.add('⚠️ [ErrorReporter] flush() failed: $e');
       // 個別のバックオフは次回 flush 時に dequeue 条件で効く
-    } finally {
-      _flushing = false;
     }
   }
 
@@ -300,8 +338,18 @@ void installErrorReporter(ErrorReporter reporter) {
 }
 
 /// どこからでも呼べる報告関数。Reporterが未設置なら黙って何もしない。
-void reportAppError(AppError error, {String? route}) {
-  unawaited(_global?.report(error, route: route) ?? Future.value());
+void reportAppError(AppError error, {String? route, List<String>? traceLines}) {
+  unawaited(_global?.report(error, route: route, traceLines: traceLines) ?? Future<bool>.value(false));
+}
+
+/// Persist the report before starting delivery. True means durably queued,
+/// not server acknowledgement. A failed enqueue must preserve the source file.
+Future<bool> reportAppErrorAndFlush(AppError error, {List<String>? traceLines}) async {
+  final reporter = _global;
+  if (reporter == null) return false;
+  final queued = await reporter.report(error, traceLines: traceLines);
+  if (queued) unawaited(reporter.flush());
+  return queued;
 }
 
 /// 例外をその場で封筒に入れて報告する短縮形。
