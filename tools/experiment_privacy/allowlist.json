@@ -1,0 +1,8 @@
+{
+  "_comment": "Users whose data may be committed to this public repo as-is. Everyone else must be redacted (IDs only) or kept out (content). See AGENTS.md > Experiment Results & Privacy.",
+  "users": [
+    {"label": "developer", "user_id": "5be0566d-9b7a-499f-b7d2-f1c736fd5082"},
+    {"label": "friend-a (consented 2026-11-17)", "user_id": "a29fe924-9adf-4baa-b84a-7c8906944d7b"},
+    {"label": "friend-b (consented 2026-11-17)", "user_id": "13726160-6858-4a03-8cb5-69aeb0599773"}
+  ]
+}

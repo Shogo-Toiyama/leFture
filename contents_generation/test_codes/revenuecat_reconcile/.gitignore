@@ -1,4 +1,3 @@
 .venv/
 pgdata/
-results/*_rc_v2_probe*.json
 __pycache__/

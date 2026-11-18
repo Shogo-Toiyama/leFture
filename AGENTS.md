@@ -18,6 +18,18 @@
 - **Mandatory Dry-Run Before API Calls**: Always execute dry-runs (empty/mock calls or full validation without external token spends) to confirm that the script, parameters, prompt formatting, and schemas run without errors before making actual API calls.
 - **Metrics & Reporting**: Explicitly report execution speed (latency/TTFT), token consumption, cost (including the cost of the test itself), tone of the response, or any other targeted metrics.
 - **Persistent Result Artifacts**: Assign appropriate, timestamped names to test runs and save all execution results and summaries inside the experiment folder (`results/`).
+
+## Experiment Results & Privacy
+This repo is public, and experiment results are committed on purpose: they record what was tried, what changed and why. Raw inputs (`inputs/`, `cases/`, `patched/`) stay git-ignored.
+- **Whose data may be committed**: only users listed in `tools/experiment_privacy/allowlist.json` (the developer and people who have consented). Add someone only when the developer says that person agreed.
+- **Check before every commit that adds or changes experiment files**: run `python3 tools/experiment_privacy/check_results.py` (stdlib only, reads `lefture_backend/.env`). It resolves every UUID's owner in Supabase and flags data of anyone outside the allowlist. Do not commit while it reports `ACTION`.
+- **IDs only** (user IDs, RevenueCat customers, IDs with no content next to them): run it with `--redact`. IDs become stable pseudonyms such as `redacted-user-1a2b3c4d`, so cross-references still match.
+- **Content** (lecture text, chat messages, titles, topic names) of anyone outside the allowlist: never commit it, not even partly masked. Instead:
+  1. Write a summary in the experiment's `results/` that keeps what matters: the change tried, the metrics (latency, tokens, cost, counts, scores) and the conclusion. Refer to that person's material only by a neutral label such as "user X, lecture 2".
+  2. Move the raw file to the developer's private repo, and add its path to `.gitignore`.
+  3. **Always tell the developer** which files were kept out and where the summary is.
+- **Always mask**: secrets (API keys, JWTs, signed URLs) and personal emails. The checker flags them, but does not remove them.
+- **Known limit**: the checker spots content through IDs and through titles or topic names. A file with only one matching title, or content that is copied without any title or ID, is reported as `note` at most. When results quote production data, read them before committing.
 - **Minimal Changes**: Favor minimal, targeted additions or edits over wholesale rewrites to prevent regression.
 - **Always Search the Web for Latest Information**: Whenever discussing AI models, API specifications, pricing, feature flags, or specific implementation details, always verify the latest information via web search before answering or implementing. Never rely on outdated memory or assumptions.
 
