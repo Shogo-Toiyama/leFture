@@ -749,7 +749,7 @@ void main() {
     String inputText(WidgetTester tester) =>
         tester.widget<TextField>(find.byType(TextField)).controller!.text;
 
-    testWidgets('「＋」→ この会話の資料 → 全文で添付すると、一覧を開いたまま入力欄に名前が入る', (tester) async {
+    testWidgets('「＋」→ この会話の資料 → 全文で添付すると、一覧を開いたまま全文で読む資料になり、入力欄の上にチップが出る', (tester) async {
       repo.attachments = [material('m1', 'Heap notes')];
       await pumpView(tester);
       await openThread(tester, conversation);
@@ -768,12 +768,20 @@ void main() {
       await tester.tap(find.text(l10n.aiChatAttachFull));
       await settle(tester);
 
-      // 一覧は開いたまま、「添付する予定」の印が付く
+      // 一覧は開いたまま、その場で「全文で読み中」になる(送信を待たない)
       expect(find.text(l10n.aiChatAttachmentsTitle), findsWidgets);
-      expect(find.text(l10n.aiChatAttachPendingFull), findsOneWidget);
-      await tester.tap(find.byType(ModalBarrier).last);
-      await settle(tester);
-      expect(inputText(tester), '@Heap notes ');
+      expect(repo.selectCalls, [('m1', true)]);
+      expect(find.text(l10n.aiChatAttachPinned), findsWidgets);
+      // 一覧を閉じる(閉じ方はこのテストの対象外なので、Navigatorで確実に閉じる)
+      Navigator.of(tester.element(find.text('About heaps'))).pop();
+      // 閉じるアニメーションに300〜400msかかるので、既定のsettle(計400ms)より長く待つ
+      await settle(tester, 400);
+      // 一覧の見出しは「＋」メニューの項目と同じ文言なので、一覧にしか無い要約で閉じたことを見る
+      expect(find.text('About heaps'), findsNothing);
+
+      // 入力欄には名前を入れず(それは「メンション」)、入力欄の上にチップが出る
+      expect(inputText(tester), '');
+      expect(find.byType(ChatPinnedChip), findsOneWidget);
     });
 
     testWidgets('資料が無い会話では、「＋」の「この会話の資料」は選べない', (tester) async {
