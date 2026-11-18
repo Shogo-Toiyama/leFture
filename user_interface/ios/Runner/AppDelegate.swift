@@ -2,7 +2,7 @@ import Flutter
 import UIKit
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   /// Dart側から開始された`beginBackgroundTask`の管理表。
   ///
   /// ★ なぜこれが必要か:
@@ -25,42 +25,45 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    GeneratedPluginRegistrant.register(with: self)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
 
-    if let controller = window?.rootViewController as? FlutterViewController {
-      let channel = FlutterMethodChannel(
-        name: "lefture/background_task",
-        binaryMessenger: controller.binaryMessenger
-      )
-      channel.setMethodCallHandler { [weak self] call, result in
-        guard let self = self else {
-          result(nil)
-          return
+  /// UIScene対応(iOS 27以降は必須)。UIScene下では`didFinishLaunching`の時点で
+  /// `window`も`FlutterViewController`も存在しないため、プラグイン登録と
+  /// MethodChannelの作成はFlutterエンジンの初期化通知であるここで行う。
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+    let channel = FlutterMethodChannel(
+      name: "lefture/background_task",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard let self = self else {
+        result(nil)
+        return
+      }
+      switch call.method {
+      case "begin":
+        let args = call.arguments as? [String: Any]
+        let name = args?["name"] as? String ?? "lefture.task"
+        result(self.beginTask(name: name))
+
+      case "end":
+        if let id = (call.arguments as? [String: Any])?["id"] as? Int {
+          self.endTask(id: id)
         }
-        switch call.method {
-        case "begin":
-          let args = call.arguments as? [String: Any]
-          let name = args?["name"] as? String ?? "lefture.task"
-          result(self.beginTask(name: name))
+        result(nil)
 
-        case "end":
-          if let id = (call.arguments as? [String: Any])?["id"] as? Int {
-            self.endTask(id: id)
-          }
-          result(nil)
+      case "remainingSeconds":
+        // フォアグラウンドでは非常に大きな値(greatestFiniteMagnitude)が返る。
+        // 「事実上無制限」の意味なので、Dart側でそのまま扱えるよう素通しする。
+        result(UIApplication.shared.backgroundTimeRemaining)
 
-        case "remainingSeconds":
-          // フォアグラウンドでは非常に大きな値(greatestFiniteMagnitude)が返る。
-          // 「事実上無制限」の意味なので、Dart側でそのまま扱えるよう素通しする。
-          result(UIApplication.shared.backgroundTimeRemaining)
-
-        default:
-          result(FlutterMethodNotImplemented)
-        }
+      default:
+        result(FlutterMethodNotImplemented)
       }
     }
-
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
   /// 実行猶予を要求する。成功したらDart側が`end`で返すためのIDを返す。
