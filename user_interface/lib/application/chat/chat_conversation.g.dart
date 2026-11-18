@@ -56,7 +56,7 @@ final class ChatConversationProvider
   }
 }
 
-String _$chatConversationHash() => r'ca5f6418d0faf2393fa98603efbc3b72aa545462';
+String _$chatConversationHash() => r'68e9a98e01d93850ac2752a3b53bf3a3959e5487';
 
 /// 今開いている会話の表示と送信(webappのuseChatConversationと同じ役割)。
 ///
@@ -68,7 +68,7 @@ abstract class _$ChatConversation extends $Notifier<ChatConversationState> {
   ChatConversationState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<ChatConversationState, ChatConversationState>;
     final element =
         ref.element
@@ -78,6 +78,6 @@ abstract class _$ChatConversation extends $Notifier<ChatConversationState> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

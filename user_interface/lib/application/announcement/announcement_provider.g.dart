@@ -303,7 +303,7 @@ abstract class _$AnnouncementsPage extends $AsyncNotifier<List<Announcement>> {
   });
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<List<Announcement>>, List<Announcement>>;
     final element =
@@ -314,7 +314,7 @@ abstract class _$AnnouncementsPage extends $AsyncNotifier<List<Announcement>> {
               Object?,
               Object?
             >;
-    element.handleCreate(
+    return element.handleCreate(
       ref,
       () => build(status: _$args.status, type: _$args.type),
     );

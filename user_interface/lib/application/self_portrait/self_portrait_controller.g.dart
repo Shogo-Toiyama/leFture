@@ -49,7 +49,7 @@ abstract class _$SelfPortraitController extends $AsyncNotifier<SelfPortrait> {
   FutureOr<SelfPortrait> build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<SelfPortrait>, SelfPortrait>;
     final element =
         ref.element
@@ -59,7 +59,7 @@ abstract class _$SelfPortraitController extends $AsyncNotifier<SelfPortrait> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -185,7 +185,7 @@ abstract class _$AiMemoryController extends $AsyncNotifier<AiMemory> {
   FutureOr<AiMemory> build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AsyncValue<AiMemory>, AiMemory>;
     final element =
         ref.element
@@ -195,6 +195,6 @@ abstract class _$AiMemoryController extends $AsyncNotifier<AiMemory> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

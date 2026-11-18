@@ -91,7 +91,7 @@ final class ChatThreadActionsProvider
   }
 }
 
-String _$chatThreadActionsHash() => r'00eb945e80009b24e88c220d9fd50ca04c272844';
+String _$chatThreadActionsHash() => r'913cc4a55c1f427f7ff2c9d033d208a12f1269c9';
 
 /// スレッド一覧の操作。書き込みはバックエンド経由で、成功してからキャッシュに反映する。
 
@@ -99,7 +99,7 @@ abstract class _$ChatThreadActions extends $Notifier<void> {
   void build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<void, void>;
     final element =
         ref.element
@@ -109,6 +109,6 @@ abstract class _$ChatThreadActions extends $Notifier<void> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

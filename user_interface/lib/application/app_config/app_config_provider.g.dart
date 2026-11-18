@@ -69,7 +69,7 @@ abstract class _$AppConfigController extends $Notifier<AppConfig> {
   AppConfig build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<AppConfig, AppConfig>;
     final element =
         ref.element
@@ -79,6 +79,6 @@ abstract class _$AppConfigController extends $Notifier<AppConfig> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

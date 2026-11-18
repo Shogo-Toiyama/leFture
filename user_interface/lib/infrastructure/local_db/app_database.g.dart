@@ -14319,7 +14319,16 @@ class $$LocalOutboxTableTableManager
                 givenUp: givenUp,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalOutboxTable, LocalOutboxData>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalOutboxTable,
+                    LocalOutboxData
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -14931,7 +14940,16 @@ class $$LocalLecturesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalLecturesTable, LocalLecture>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalLecturesTable,
+                    LocalLecture
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -15361,7 +15379,18 @@ class $$LocalLectureAssetsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalLectureAssetsTable, LocalLectureAsset>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalLectureAssetsTable,
+                    LocalLectureAsset
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -15689,7 +15718,16 @@ class $$LocalUploadJobsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalUploadJobsTable, LocalUploadJob>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalUploadJobsTable,
+                    LocalUploadJob
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -16089,7 +16127,16 @@ class $$LocalCoursesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalCoursesTable, LocalCourse>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalCoursesTable,
+                    LocalCourse
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -16388,7 +16435,19 @@ class $$LocalCourseAttributesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<
+                    $LocalCourseAttributesTable,
+                    LocalCourseAttribute
+                  >(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalCourseAttributesTable,
+                    LocalCourseAttribute
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -16841,7 +16900,18 @@ class $$LocalAnnouncementsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalAnnouncementsTable, LocalAnnouncement>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalAnnouncementsTable,
+                    LocalAnnouncement
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -17158,7 +17228,18 @@ class $$LocalLectureMomentsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalLectureMomentsTable, LocalLectureMoment>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalLectureMomentsTable,
+                    LocalLectureMoment
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -17448,7 +17529,16 @@ class $$LocalAsrModelsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalAsrModelsTable, LocalAsrModel>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalAsrModelsTable,
+                    LocalAsrModel
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -17785,7 +17875,16 @@ class $$LocalFunFactsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalFunFactsTable, LocalFunFact>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalFunFactsTable,
+                    LocalFunFact
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -18151,7 +18250,16 @@ class $$LocalReviewCardsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalReviewCardsTable, LocalReviewCard>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalReviewCardsTable,
+                    LocalReviewCard
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -18456,7 +18564,16 @@ class $$LocalDeepNotesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalDeepNotesTable, LocalDeepNote>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalDeepNotesTable,
+                    LocalDeepNote
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -18778,7 +18895,16 @@ class $$LocalKeywordsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalKeywordsTable, LocalKeyword>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalKeywordsTable,
+                    LocalKeyword
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -19164,7 +19290,18 @@ class $$LocalLectureTopicsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalLectureTopicsTable, LocalLectureTopic>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalLectureTopicsTable,
+                    LocalLectureTopic
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -19391,7 +19528,16 @@ class $$LocalTopicMapsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalTopicMapsTable, LocalTopicMap>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalTopicMapsTable,
+                    LocalTopicMap
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -19584,7 +19730,16 @@ class $$LocalSyncCursorsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalSyncCursorsTable, LocalSyncCursor>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalSyncCursorsTable,
+                    LocalSyncCursor
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -19814,7 +19969,16 @@ class $$LocalCacheEntriesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalCacheEntriesTable, LocalCacheEntry>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalCacheEntriesTable,
+                    LocalCacheEntry
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -20103,7 +20267,16 @@ class $$LocalUserProfilesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalUserProfilesTable, LocalUserProfile>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalUserProfilesTable,
+                    LocalUserProfile
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -20457,7 +20630,16 @@ class $$LocalErrorReportsTableTableManager
                 givenUp: givenUp,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalErrorReportsTable, LocalErrorReport>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalErrorReportsTable,
+                    LocalErrorReport
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -20650,7 +20832,16 @@ class $$LocalChatThreadsTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalChatThreadsTable, LocalChatThread>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalChatThreadsTable,
+                    LocalChatThread
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -20859,7 +21050,16 @@ class $$LocalChatMessagesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$LocalChatMessagesTable, LocalChatMessage>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $LocalChatMessagesTable,
+                    LocalChatMessage
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),

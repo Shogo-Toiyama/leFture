@@ -105,7 +105,7 @@ abstract class _$RecordingController extends $Notifier<RecordingState> {
   RecordingState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<RecordingState, RecordingState>;
     final element =
         ref.element
@@ -115,6 +115,6 @@ abstract class _$RecordingController extends $Notifier<RecordingState> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

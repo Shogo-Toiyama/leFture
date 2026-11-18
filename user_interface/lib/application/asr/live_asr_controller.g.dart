@@ -60,7 +60,7 @@ abstract class _$LiveAsrStatus extends $Notifier<LiveAsrStatusState> {
   LiveAsrStatusState build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<LiveAsrStatusState, LiveAsrStatusState>;
     final element =
         ref.element
@@ -70,7 +70,7 @@ abstract class _$LiveAsrStatus extends $Notifier<LiveAsrStatusState> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }
 
@@ -150,7 +150,7 @@ abstract class _$LiveAsrController extends $Notifier<List<AsrLiveSegment>> {
   List<AsrLiveSegment> build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref = this.ref as $Ref<List<AsrLiveSegment>, List<AsrLiveSegment>>;
     final element =
         ref.element
@@ -160,6 +160,6 @@ abstract class _$LiveAsrController extends $Notifier<List<AsrLiveSegment>> {
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }

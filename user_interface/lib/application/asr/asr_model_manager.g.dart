@@ -100,7 +100,7 @@ abstract class _$AsrModelManager
   Map<String, AsrLanguageModelState> build();
   @$mustCallSuper
   @override
-  void runBuild() {
+  WhenComplete runBuild() {
     final ref =
         this.ref
             as $Ref<
@@ -118,6 +118,6 @@ abstract class _$AsrModelManager
               Object?,
               Object?
             >;
-    element.handleCreate(ref, build);
+    return element.handleCreate(ref, build);
   }
 }
