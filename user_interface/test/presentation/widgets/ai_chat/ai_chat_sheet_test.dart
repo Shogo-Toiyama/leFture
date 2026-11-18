@@ -535,11 +535,12 @@ void main() {
     expect(find.text('message number 0'), findsNothing);
     final list = tester.state<ScrollableState>(
       find.descendant(
-        of: find.byType(ListView),
+        of: find.byWidgetPredicate((w) => w is ScrollView).first,
         matching: find.byType(Scrollable),
-      ),
+      ).first,
     );
-    // reverse: true では最下部(最新の発言)は pixels: 0.0
+    // 最下部(最新の発言)は maxScrollExtent。開いた直後は 0.0
+    expect(list.position.pixels, closeTo(list.position.maxScrollExtent, 1));
     expect(list.position.pixels, closeTo(0.0, 1));
 
     // シートを引き上げても、下端(最新の発言)のまま
@@ -551,7 +552,7 @@ void main() {
     await g.up();
     await settle(tester, 400);
     expect(find.text('message number 29'), findsOneWidget);
-    expect(list.position.pixels, closeTo(0.0, 1));
+    expect(list.position.pixels, closeTo(list.position.maxScrollExtent, 1));
   });
 
   testWidgets('履歴で名前を変えて、削除できる', (tester) async {

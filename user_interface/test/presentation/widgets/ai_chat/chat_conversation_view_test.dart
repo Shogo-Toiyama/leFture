@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -925,17 +927,16 @@ void main() {
       expect(state1.hasMore, isTrue);
       expect(find.text('Message item 1'), findsNothing);
 
+      final messageList = find.byWidgetPredicate((w) => w is ScrollView).first;
       final list = tester.state<ScrollableState>(
-        find.descendant(
-          of: find.byType(ListView),
-          matching: find.byType(Scrollable),
-        ),
+        find.descendant(of: messageList, matching: find.byType(Scrollable)).first,
       );
+      double fromBottom() => list.position.maxScrollExtent - list.position.pixels;
 
       // 少し上(過去側)へスクロールして M26 が見える状態にする(トリガー閾値には届かない位置)
-      await tester.drag(find.byType(ListView), const Offset(0, 200));
+      await tester.drag(messageList, const Offset(0, 200));
       await tester.pump();
-      expect(list.position.pixels, closeTo(200, 1.0));
+      expect(fromBottom(), closeTo(200, 1.0));
 
       final m26Finder = find.text('Message item 26');
       expect(m26Finder, findsOneWidget);
@@ -955,8 +956,8 @@ void main() {
       // 過去ログ読み込み後も、見ていた M26 のY座標が 0.0px (完全に不変) であることを検証！
       final m26After = tester.getTopLeft(m26Finder);
       expect(m26After.dy, equals(m26Before.dy));
-      // scroll position の pixels も全く変わらない
-      expect(list.position.pixels, closeTo(200, 1.0));
+      // 最下部からの距離も全く変わらない
+      expect(fromBottom(), closeTo(200, 1.0));
     });
 
     testWidgets('最上部付近へスクロールすると自動で過去ログが読み込まれる', (tester) async {
@@ -972,16 +973,15 @@ void main() {
       await pumpView(tester);
       await openThread(tester, rows);
 
+      final messageList = find.byWidgetPredicate((w) => w is ScrollView).first;
       final list = tester.state<ScrollableState>(
-        find.descendant(
-          of: find.byType(ListView),
-          matching: find.byType(Scrollable),
-        ),
+        find.descendant(of: messageList, matching: find.byType(Scrollable)).first,
       );
 
-      // 最上部(maxScrollExtent - 50)へスクロールして150px閾値に入る
-      final targetOffset = list.position.maxScrollExtent - 50;
-      await tester.drag(find.byType(ListView), Offset(0, targetOffset));
+      // 最上部の50px手前までスクロールして150px閾値に入る
+      final targetOffset =
+          list.position.pixels - list.position.minScrollExtent - 50;
+      await tester.drag(messageList, Offset(0, targetOffset));
       await tester.pump();
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
@@ -993,5 +993,179 @@ void main() {
       expect(state.messages.length, 30);
       expect(state.hasMore, isFalse);
     });
+  });
+
+  /// 回答の続きを1つ受け取って、画面を進める。
+  Future<void> receive(WidgetTester tester, String delta) async {
+    repo.controller.add(ChatDeltaEvent(delta));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+
+  group('受信中のスクロール', () {
+    // 端で止まる(Android)と跳ね返る(iOS)の両方のスクロールで確かめる
+    final platforms = TargetPlatformVariant(
+      {TargetPlatform.android, TargetPlatform.iOS},
+    );
+    // 位置(pixels)ではなく画面上の見え方で確かめる。リストの組み方(逆向き/中央基準)で
+    // pixelsの意味が変わっても、ユーザーに見える動きは同じであるべきなので。
+    Finder messageList() => find.byWidgetPredicate((w) => w is ScrollView).first;
+
+    String paragraph(int i) => 'Delta paragraph $i. ${'streaming words here ' * 8}\n\n';
+
+    /// 長めの会話を開き、質問を送って回答の最初の4段落を受け取った状態にする。
+    Future<void> startStreaming(WidgetTester tester) async {
+      final rows = [
+        for (var i = 1; i <= 16; i++)
+          chatRow(
+            'M$i',
+            i.isOdd ? 'user' : 'assistant',
+            'Message item $i ${'lorem ipsum dolor sit amet ' * 6}',
+            createdAt: '2026-10-18T00:${i.toString().padLeft(2, '0')}:00Z',
+          ),
+      ];
+      await pumpView(tester);
+      await openThread(tester, rows);
+      await tester.enterText(find.byType(TextField), 'Explain');
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel(l10n.aiChatSend));
+      await settle(tester);
+      repo.controller.add(_meta);
+      await settle(tester);
+      for (var i = 0; i < 4; i++) {
+        await receive(tester, paragraph(i));
+      }
+    }
+
+    Future<void> finishStreaming(WidgetTester tester) async {
+      repo.controller.add(
+        const ChatDoneEvent(status: ChatMessageStatus.complete, creditsCharged: 0.1),
+      );
+      await repo.controller.close();
+      await settle(tester);
+      // 既存の会話への送信は、完了時にキャッシュを同期する。その処理はDBの実I/Oと
+      // 疑似時間のタイマーの両方を待つので、片方だけ進めても終わらず、tearDownの
+      // settle()が待ち続ける。実時間と疑似時間を交互に進めて終わらせる。
+      var done = false;
+      unawaited(
+        container.read(chatConversationProvider.notifier).settle().then((_) => done = true),
+      );
+      for (var i = 0; i < 50 && !done; i++) {
+        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 10)));
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(done, isTrue, reason: '裏の保存が終わらない');
+    }
+
+    double viewportBottom(WidgetTester tester) => tester.getRect(messageList()).bottom;
+
+    /// 指で[dy]だけ下へ動かし、止めてから離す(慣性スクロールを残さない)。
+    Future<void> scrollUpBy(WidgetTester tester, double dy) async {
+      final gesture = await tester.startGesture(tester.getCenter(messageList()));
+      const step = 20.0;
+      for (var moved = 0.0; moved < dy; moved += step) {
+        await gesture.moveBy(Offset(0, step < dy - moved ? step : dy - moved));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await tester.pump(const Duration(milliseconds: 300));
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    /// 一番新しい段落の下端(画面上のY)。
+    double newestBottom(WidgetTester tester, int i) => tester
+        .getRect(find.textContaining('Delta paragraph $i.', findRichText: true).first)
+        .bottom;
+
+    testWidgets('最下部にいるときは、伸びる回答の末尾が画面の下端に見え続ける', (tester) async {
+      await startStreaming(tester);
+      for (var i = 4; i < 8; i++) {
+        await receive(tester, paragraph(i));
+        final bottom = newestBottom(tester, i);
+        expect(bottom, lessThanOrEqualTo(viewportBottom(tester)), reason: 'delta $i');
+        expect(bottom, greaterThan(viewportBottom(tester) - 60), reason: 'delta $i');
+      }
+      await finishStreaming(tester);
+    }, variant: platforms, timeout: const Timeout(Duration(seconds: 60)));
+
+    testWidgets('上へ読み戻している間は、回答が伸びても読んでいる文章が動かない', (tester) async {
+      await startStreaming(tester);
+      await scrollUpBy(tester, 400);
+
+      final reading = find.textContaining('Delta paragraph 1.', findRichText: true).first;
+      final before = tester.getTopLeft(reading).dy;
+      expect(before, inInclusiveRange(0, viewportBottom(tester)), reason: '読んでいる段落が画面内にある');
+
+      for (var i = 4; i < 8; i++) {
+        await receive(tester, paragraph(i));
+        expect(tester.getTopLeft(reading).dy, closeTo(before, 0.5), reason: 'delta $i');
+        // 最下部へは引き戻されない
+        expect(newestBottom(tester, i), greaterThan(viewportBottom(tester)), reason: 'delta $i');
+      }
+      await finishStreaming(tester);
+      expect(tester.getTopLeft(reading).dy, closeTo(before, 0.5), reason: '完了後');
+    }, variant: platforms, timeout: const Timeout(Duration(seconds: 60)));
+
+    testWidgets('画面に収まる短い会話はスクロールせず、引っ張っても元の位置に戻る', (tester) async {
+      await pumpView(tester);
+      await tester.enterText(find.byType(TextField), 'Short question');
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel(l10n.aiChatSend));
+      await settle(tester);
+      repo.controller.add(_meta);
+      await receive(tester, 'Short answer.');
+      await settle(tester);
+
+      final question = find.text('Short question');
+      final before = tester.getTopLeft(question).dy;
+      final position = tester
+          .state<ScrollableState>(
+            find.descendant(of: messageList(), matching: find.byType(Scrollable)).first,
+          )
+          .position;
+      expect(position.maxScrollExtent - position.minScrollExtent, closeTo(0, 0.5));
+
+      await scrollUpBy(tester, 200);
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.getTopLeft(question).dy, closeTo(before, 0.5));
+      await finishStreaming(tester);
+    }, variant: platforms, timeout: const Timeout(Duration(seconds: 60)));
+
+    testWidgets('短い会話の回答が伸びて画面からはみ出しても、最下部に追従し、読み戻せば止まって見える', (tester) async {
+      await pumpView(tester);
+      await tester.enterText(find.byType(TextField), 'Short question');
+      await tester.pump();
+      await tester.tap(find.bySemanticsLabel(l10n.aiChatSend));
+      await settle(tester);
+      repo.controller.add(_meta);
+      for (var i = 0; i < 8; i++) {
+        await receive(tester, paragraph(i));
+        await tester.pump();
+        final bottom = newestBottom(tester, i);
+        expect(bottom, lessThanOrEqualTo(viewportBottom(tester)), reason: 'delta $i');
+        expect(bottom, greaterThan(viewportBottom(tester) - 60), reason: 'delta $i');
+      }
+
+      await scrollUpBy(tester, 400);
+      final reading = find.textContaining('Delta paragraph 3.', findRichText: true).first;
+      final before = tester.getTopLeft(reading).dy;
+      for (var i = 8; i < 11; i++) {
+        await receive(tester, paragraph(i));
+        expect(tester.getTopLeft(reading).dy, closeTo(before, 0.5), reason: 'delta $i');
+      }
+      await finishStreaming(tester);
+    }, variant: platforms, timeout: const Timeout(Duration(seconds: 60)));
+
+    testWidgets('最下部からわずかに離れただけなら、受信で最下部へ戻って追従する', (tester) async {
+      await startStreaming(tester);
+      await scrollUpBy(tester, 60);
+
+      await receive(tester, paragraph(4));
+      await receive(tester, paragraph(5));
+      final bottom = newestBottom(tester, 5);
+      expect(bottom, lessThanOrEqualTo(viewportBottom(tester)));
+      expect(bottom, greaterThan(viewportBottom(tester) - 60));
+      await finishStreaming(tester);
+    }, variant: platforms, timeout: const Timeout(Duration(seconds: 60)));
   });
 }
