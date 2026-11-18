@@ -1,0 +1,8 @@
+2026-11-18 Chat scroll generation boundary
+
+Baseline: a short drag after generation snapped back to offset 0 on both Flutter platform variants. Chrome also reproduced a pending near-bottom window snapping the conversation after generation had completed.
+
+Final: Flutter chat view and sheet suites passed all 93 cases (reporter elapsed time about 6 seconds). Browser fixture passed all 8 cases, including completion during the resume window, idle wheel scrolling, JIT opening of a finished conversation at the bottom, and another send from the bottom or history. The explicit jump button still works after generation completes.
+
+TypeScript and Vite production build passed. Vite reported 2.43 seconds.
+Flutter and Chrome used local conversation fixtures. No live network streaming, model tokens, or API costs. Device latency and physical gestures were not measured.

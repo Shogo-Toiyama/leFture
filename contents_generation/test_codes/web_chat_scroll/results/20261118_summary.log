@@ -1,0 +1,8 @@
+2026-11-18 Web chat scroll validation
+
+Before changes: the browser fixture reproduced the pull-back on an upward wheel scroll and the jump on send from history. The down arrow was absent, and the prior near-bottom behavior had no 500 ms cutoff.
+
+Final: all seven headless Chrome cases passed. Cases cover upward wheel movement, downward near-bottom resumption, expiry and exact-bottom recovery, pointer holds, arrow placement and behavior, and sending both from history and at the bottom. Stream fixtures grow the final message in place. Both the page and panel variants are mounted during the checks.
+
+TypeScript and the Vite production build passed. Vite reported 1.91 seconds.
+The Chrome fixture runs the production conversation component and CSS with local message, composer, and data fixtures. No production API, network streaming, or model calls were made. Model tokens and API cost were zero. No real-device input latency was measured.

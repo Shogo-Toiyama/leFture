@@ -1,0 +1,9 @@
+PASS Wheel movement pauses follow inside the bottom zone
+PASS Sending while reading history preserves the offset
+PASS Down arrow jumps immediately and restarts follow
+PASS Scroll toward the bottom resumes in the near-bottom zone
+PASS A held pointer pauses follow until after release
+PASS The near-bottom window expires after 500 ms
+PASS Sending at the bottom continues to follow
+PASS Completion cancels near-bottom follow and keeps the jump button
+ALL PASSED

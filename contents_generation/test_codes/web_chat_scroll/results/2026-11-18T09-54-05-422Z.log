@@ -1,0 +1,7 @@
+FAIL Wheel movement pauses follow inside the bottom zone: a new message pulled a reader back down
+FAIL Sending while reading history preserves the offset: send jumped to the bottom
+FAIL Down arrow jumps immediately and restarts follow: down arrow is missing away from the bottom
+PASS Scroll toward the bottom resumes in the near-bottom zone
+FAIL The near-bottom window expires after 500 ms: late near-bottom movement restored follow
+PASS Sending at the bottom continues to follow
+FAILED

@@ -846,6 +846,8 @@ export const en = {
   chatExitFullScreen: 'Exit full screen',
   chatInputPlaceholder: 'Ask anything…',
   chatInputPlaceholderFollowUp: 'Ask a follow-up…',
+  chatMessages: 'Chat messages',
+  chatJumpToBottom: 'Jump to latest message',
   chatSend: 'Send',
   chatStageThinking: 'Thinking…',
   chatStageSearching: 'Searching your lecture notes…',

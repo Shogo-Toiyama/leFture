@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Upload } from 'lucide-react';
+import { ArrowDown, Upload } from 'lucide-react';
 import { useLanguage } from '../../i18n/LanguageContext';
 import type { TranslationKey } from '../../i18n/translations';
 import { useChatConversation, type LocalChatMessage } from '../../hooks/useChatConversation';
+import { useChatScroll } from '../../hooks/useChatScroll';
 import {
   CHAT_MAX_ATTACHMENT_CHARS,
   CHAT_MAX_ATTACHMENTS_PER_MESSAGE,
@@ -99,8 +100,6 @@ function failureCopy(
 }
 
 /** 下端からこの距離以内にいるときだけ、新しい文字に合わせて自動で下へ追従する。 */
-const STICK_TO_BOTTOM_PX = 96;
-
 export const ChatConversation: React.FC<ChatConversationProps> = ({
   threadId,
   world,
@@ -146,9 +145,13 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     setLocalListOpen(false);
     onAttachmentListClose?.();
   }, [onAttachmentListClose]);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const stickToBottomRef = useRef(true);
-  const scrollSnapshotRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
+  const showGate = messages.length === 0 && !loading && !loadError;
+  const isGenerating = !loading && messages.some((message) =>
+    message.role === 'assistant' && message.status === 'streaming');
+  const {
+    scrollRef, threadRef, showJumpToBottom, jumpToBottom, preservePositionOnSend,
+    captureBeforePrepend, onScroll, onWheel, onKeyDown, onPointerDown, onTouchStart, onTouchEnd,
+  } = useChatScroll(messages, loading, showGate, isGenerating);
 
   const location = useLocation();
   // 親に .is-paper があるか、もしくは world prop で paper/universe を判定
@@ -254,39 +257,14 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     wasSendingRef.current = sending;
   }, [sending, onTurnComplete]);
 
-  const onScroll = () => {
+  const handleScroll = () => {
+    onScroll();
     const el = scrollRef.current;
     if (!el) return;
-    stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < STICK_TO_BOTTOM_PX;
     if (el.scrollTop <= 150 && hasMore && !loadingOlder && !loading) {
-      void loadOlder(() => {
-        if (scrollRef.current) {
-          scrollSnapshotRef.current = {
-            scrollHeight: scrollRef.current.scrollHeight,
-            scrollTop: scrollRef.current.scrollTop,
-          };
-        }
-      });
+      void loadOlder(captureBeforePrepend);
     }
   };
-
-  useLayoutEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    if (scrollSnapshotRef.current) {
-      const { scrollHeight: prevHeight, scrollTop: prevTop } = scrollSnapshotRef.current;
-      const newHeight = el.scrollHeight;
-      const delta = newHeight - prevHeight;
-      if (delta > 0) {
-        el.scrollTop = prevTop + delta;
-      }
-      scrollSnapshotRef.current = null;
-      return;
-    }
-    if (stickToBottomRef.current) {
-      el.scrollTop = el.scrollHeight;
-    }
-  }, [messages]);
 
   // 会話の中のAIの回答を選んで「返信」したときの引用。パネルの「Ask」(selection)とは別に持ち、
   // どちらかがあれば次の送信に添える(新しい「Ask」が来たら、そちらを優先して返信の引用は外す)
@@ -322,7 +300,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     references: ChatAttachmentRef[],
     context: ChatMessageContext
   ) => {
-    stickToBottomRef.current = true;
+    preservePositionOnSend();
     setEditingId(null);
     setEditError(null);
     void send(content, context, drafts, references, {
@@ -354,7 +332,6 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
 
   const handleSend = useCallback(
     (content: string, drafts: ChatDraftAttachment[] = [], references: ChatAttachmentRef[] = []) => {
-      stickToBottomRef.current = true;
       const context: ChatMessageContext = {};
       if (lectureId) context.lecture_id = lectureId;
       else if (courseId) context.course_id = courseId;
@@ -378,9 +355,10 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
         sendEdit(editingId, content, drafts, references, context);
         return;
       }
+      preservePositionOnSend();
       void send(content, context, drafts, references);
     },
-    [lectureId, courseId, activeSelection, screen, send, clearSelection, editingId, editInfo]
+    [lectureId, courseId, activeSelection, screen, send, clearSelection, editingId, editInfo, preservePositionOnSend]
   );
 
   /**
@@ -394,7 +372,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     const previousUser = [...messages.slice(0, assistantIndex)].reverse().find((m) => m.role === 'user');
     if (!previousUser || previousUser.id.startsWith('local-')) return undefined;
     return () => {
-      stickToBottomRef.current = true;
+      preservePositionOnSend();
       setEditError(null);
       void send(previousUser.content, previousUser.context, [], referencesOf(previousUser), {
         replaceFromMessageId: previousUser.id,
@@ -424,7 +402,14 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
             copy.key !== 'chatErrorBlockedCooldown' &&
             copy.key !== 'chatErrorSuspended' &&
             copy.key !== 'chatErrorThreadNotFound' && (
-              <button type="button" className="chat-banner-btn is-primary" onClick={() => retry(message.id)}>
+              <button
+                type="button"
+                className="chat-banner-btn is-primary"
+                onClick={() => {
+                  preservePositionOnSend();
+                  retry(message.id);
+                }}
+              >
                 {t('chatResend')}
               </button>
             )
@@ -488,8 +473,21 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
           </div>
         </div>
       )}
-      <div className="chat-scroll" ref={scrollRef} onScroll={onScroll}>
-        {messages.length === 0 && !loading && !loadError ? (
+      <div
+        className="chat-scroll"
+        ref={scrollRef}
+        role="region"
+        aria-label={t('chatMessages')}
+        tabIndex={0}
+        onScroll={handleScroll}
+        onWheelCapture={onWheel}
+        onKeyDown={onKeyDown}
+        onPointerDownCapture={onPointerDown}
+        onTouchStartCapture={onTouchStart}
+        onTouchEnd={onTouchEnd}
+        onTouchCancel={onTouchEnd}
+      >
+        {showGate ? (
           <div className="chat-empty-gate">
             <LaunchGateBackdrop world={resolvedWorld} />
             <div className="chat-gate-content">
@@ -527,7 +525,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
             </div>
           </div>
         ) : (
-          <div className="chat-thread">
+          <div className="chat-thread" ref={threadRef}>
             {loading ? (
               <div className="chat-loading" aria-busy="true">
                 <span className="chat-skeleton is-user" />
@@ -584,6 +582,20 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
       </div>
 
       <div className="chat-footer">
+        {showJumpToBottom && messages.length > 0 && !loading && (
+          <button
+            type="button"
+            className="chat-jump-to-bottom"
+            aria-label={t('chatJumpToBottom')}
+            title={t('chatJumpToBottom')}
+            onClick={() => {
+              scrollRef.current?.focus({ preventScroll: true });
+              jumpToBottom();
+            }}
+          >
+            <ArrowDown size={18} aria-hidden="true" />
+          </button>
+        )}
         {editError && (
           <div className="chat-banner" role="alert">
             <span>{t(failureCopy(editError.code, editError.detail).key, failureCopy(editError.code, editError.detail).params)}</span>

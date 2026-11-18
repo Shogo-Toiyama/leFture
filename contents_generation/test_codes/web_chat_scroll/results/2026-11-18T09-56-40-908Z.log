@@ -1,0 +1,7 @@
+PASS Wheel movement pauses follow inside the bottom zone
+PASS Sending while reading history preserves the offset
+FAIL Down arrow jumps immediately and restarts follow: down arrow is missing away from the bottom
+PASS Scroll toward the bottom resumes in the near-bottom zone
+PASS The near-bottom window expires after 500 ms
+PASS Sending at the bottom continues to follow
+FAILED

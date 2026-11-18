@@ -1,0 +1,56 @@
+00:00 +0: loading /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart
+00:00 +0: 受信中のスクロール 生成完了後は最下部の近くへスクロールしても吸着しない (variant: TargetPlatform.android)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: be in range from 10 (inclusive) to 96 (inclusive)
+  Actual: <0.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart:1328:9)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart line 1328
+The test description was:
+  生成完了後は最下部の近くへスクロールしても吸着しない (variant: TargetPlatform.android)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +0 -1: 受信中のスクロール 生成完了後は最下部の近くへスクロールしても吸着しない (variant: TargetPlatform.android) [E]
+  Test failed. See exception logs above.
+  The test description was: 生成完了後は最下部の近くへスクロールしても吸着しない (variant: TargetPlatform.android)
+
+00:01 +0 -1: 受信中のスクロール 生成完了後は最下部の近くへスクロールしても吸着しない (variant: TargetPlatform.iOS)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: be in range from 10 (inclusive) to 96 (inclusive)
+  Actual: <0.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart:1328:9)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart line 1328
+The test description was:
+  生成完了後は最下部の近くへスクロールしても吸着しない (variant: TargetPlatform.iOS)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +0 -2: 受信中のスクロール 生成完了後は最下部の近くへスクロールしても吸着しない (variant: TargetPlatform.iOS) [E]
+  Test failed. See exception logs above.
+  The test description was: 生成完了後は最下部の近くへスクロールしても吸着しない (variant: TargetPlatform.iOS)
+
+00:01 +0 -2: Some tests failed.
+
+Failing tests:
+  /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 生成完了後は最下部の近くへスクロールしても吸着しない (variant: TargetPlatform.android)
+  /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 生成完了後は最下部の近くへスクロールしても吸着しない (variant: TargetPlatform.iOS)

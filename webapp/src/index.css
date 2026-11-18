@@ -16920,6 +16920,7 @@ body.is-resizing-chat iframe {
 /* ── 入力欄 ───────────────────────────────────────────────────────────── */
 
 .chat-footer {
+  position: relative;
   flex: 0 0 auto;
   display: grid;
   gap: 6px;
@@ -16932,6 +16933,37 @@ body.is-resizing-chat iframe {
   width: 100%;
   max-width: 760px;
   margin-inline: auto;
+}
+
+.chat-footer > .chat-jump-to-bottom {
+  position: absolute;
+  inset-block-end: calc(100% + 10px);
+  inset-inline-start: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  margin: 0;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--void-raised);
+  color: var(--starlight);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.is-paper .chat-footer > .chat-jump-to-bottom {
+  border-color: var(--paper-line);
+  background: var(--paper-surface);
+  color: var(--ink);
+}
+
+.chat-footer > .chat-jump-to-bottom:hover,
+.chat-footer > .chat-jump-to-bottom:focus-visible {
+  border-color: var(--deep-gold);
 }
 
 .chat-convo.is-page .chat-footer {
