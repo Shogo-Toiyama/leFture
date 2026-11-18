@@ -1111,7 +1111,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get purchaseCreditsDisclosureAndroid =>
-      'Additional credits can only be purchased on our website at <gold>lefture.com</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.com</gold> in a browser to buy credits.';
+      'Additional credits can only be purchased on our website at <gold>lefture.tech</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.tech</gold> in a browser to buy credits.';
 
   @override
   String get purchaseCreditsNoExpiration => 'Never Expires';
@@ -1685,7 +1685,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plansDisclosureAndroid =>
-      'Paid plans can only be purchased on our website at <gold>lefture.com</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.com</gold> in a browser to subscribe.';
+      'Paid plans can only be purchased on our website at <gold>lefture.tech</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.tech</gold> in a browser to subscribe.';
 
   @override
   String get plansStartFreeButton => 'Start with the Free plan';

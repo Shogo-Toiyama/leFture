@@ -17,7 +17,7 @@ export const AccountSuspendedNotice: React.FC<{ variant?: 'full' | 'plans' }> = 
       <AlertCircle size={18} style={{ flexShrink: 0, marginTop: 2 }} />
       <span>
         {text}{' '}
-        <a href="https://lefture.com/contact" target="_blank" rel="noreferrer">
+        <a href="https://lefture.tech/contact" target="_blank" rel="noreferrer">
           {t('contactSupport')}
         </a>
       </span>

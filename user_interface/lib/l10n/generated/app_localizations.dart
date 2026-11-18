@@ -1994,7 +1994,7 @@ abstract class AppLocalizations {
   /// Android-only replacement for purchaseCreditsDisclosure, shown in a highlighted notice card instead of the plain Apple ID disclosure text. Intentionally plain text with no tappable link to the website, per Google Play Consumption-only positioning.
   ///
   /// In en, this message translates to:
-  /// **'Additional credits can only be purchased on our website at <gold>lefture.com</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.com</gold> in a browser to buy credits.'**
+  /// **'Additional credits can only be purchased on our website at <gold>lefture.tech</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.tech</gold> in a browser to buy credits.'**
   String get purchaseCreditsDisclosureAndroid;
 
   /// Badge indicating that purchased credit packs have no expiration date.
@@ -2945,7 +2945,7 @@ abstract class AppLocalizations {
   /// Android-only replacement for plansDisclosure, shown in a highlighted notice card instead of the plain Apple ID disclosure text. Google Play Consumption-only positioning: intentionally plain text with no tappable link to the website.
   ///
   /// In en, this message translates to:
-  /// **'Paid plans can only be purchased on our website at <gold>lefture.com</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.com</gold> in a browser to subscribe.'**
+  /// **'Paid plans can only be purchased on our website at <gold>lefture.tech</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.tech</gold> in a browser to subscribe.'**
   String get plansDisclosureAndroid;
 
   /// Android-only onboarding button shown below the plan disclosure notice, in the normal scroll flow (not floating). Unlike the shared Continue button, this is always fixed to activating the Free plan regardless of which plan card is currently selected in the carousel — it lets the user proceed through onboarding without any purchase capability.

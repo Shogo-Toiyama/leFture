@@ -14,5 +14,5 @@ export const APP_STORE_URL = 'https://apps.apple.com/us/app/lefture/id6792620779
 export const SITE_ORIGIN = 'https://lefture.com';
 
 /** Web app URL for account management and deletion */
-export const WEBAPP_URL = 'https://app.lefture.com';
+export const WEBAPP_URL = 'https://app.lefture.tech';
 

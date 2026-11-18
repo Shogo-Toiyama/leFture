@@ -346,8 +346,8 @@ export const ja: Translations = {
         answer:
           'leFtureのアカウントおよびすべての関連データ（録音講義、文字起こし、要約ノート、プロフィール情報など）の削除は、Webアプリ（アカウントページ）よりお手続きいただけます。\n下記のボタンからWebアプリにアクセスし、ログインした上で「アカウントを削除」を実行してください。',
         action: {
-          label: 'Webアプリを開く (app.lefture.com)',
-          url: 'https://app.lefture.com',
+          label: 'Webアプリを開く (app.lefture.tech)',
+          url: 'https://app.lefture.tech',
         },
         note: '※ メールアドレスでご登録の方はパスワードの再入力、Google/Appleでご登録の方はユーザーネームの入力が必要です。削除されたデータは永久に消去され復元できませんのでご注意ください。',
       },

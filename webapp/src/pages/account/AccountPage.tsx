@@ -568,7 +568,7 @@ export const AccountPage: React.FC = () => {
       {/* 2. Legal & Support (外部Webサイトのリンク) */}
       <div className="glass-card" style={{ marginTop: '0.85rem' }}>
         <a
-          href="https://lefture.com/privacy"
+          href="https://lefture.tech/privacy"
           target="_blank"
           rel="noopener noreferrer"
           className="glass-row"
@@ -585,7 +585,7 @@ export const AccountPage: React.FC = () => {
         <div className="glass-divider" />
 
         <a
-          href="https://lefture.com/terms"
+          href="https://lefture.tech/terms"
           target="_blank"
           rel="noopener noreferrer"
           className="glass-row"
@@ -602,7 +602,7 @@ export const AccountPage: React.FC = () => {
         <div className="glass-divider" />
 
         <a
-          href="https://lefture.com/contact"
+          href="https://lefture.tech/contact"
           target="_blank"
           rel="noopener noreferrer"
           className="glass-row"

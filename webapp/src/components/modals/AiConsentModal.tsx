@@ -104,10 +104,10 @@ export const AiConsentModal: React.FC<AiConsentModalProps> = ({ kind, updated, o
           )}
           <p style={{ margin: 0 }}>{message}</p>
           <p style={{ margin: '0.75rem 0 0', display: 'flex', gap: '1rem', flexWrap: 'wrap', fontSize: '0.85rem' }}>
-            <a href="https://lefture.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)' }}>
+            <a href="https://lefture.tech/privacy" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)' }}>
               {t('privacyPolicyLink')}
             </a>
-            <a href="https://lefture.com/contact" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)' }}>
+            <a href="https://lefture.tech/contact" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--gold)' }}>
               {t('contactUs')}
             </a>
           </p>

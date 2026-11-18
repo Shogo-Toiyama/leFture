@@ -326,12 +326,12 @@ const CheckoutForm: React.FC<{
       <p className="stripe-checkout-consent">
         {interpolate(t('stripeCheckoutConsent', { payLabel }), {
           terms: (
-            <a href="https://lefture.com/terms" target="_blank" rel="noopener noreferrer">
+            <a href="https://lefture.tech/terms" target="_blank" rel="noopener noreferrer">
               {t('stripeCheckoutTermsLink')}
             </a>
           ),
           privacy: (
-            <a href="https://lefture.com/privacy" target="_blank" rel="noopener noreferrer">
+            <a href="https://lefture.tech/privacy" target="_blank" rel="noopener noreferrer">
               {t('stripeCheckoutPrivacyLink')}
             </a>
           ),

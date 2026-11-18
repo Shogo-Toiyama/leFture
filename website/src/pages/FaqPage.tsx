@@ -169,7 +169,7 @@ export const FaqPage: React.FC = () => {
                       {item.answer}
                     </p>
 
-                    {/* Action Button (e.g. app.lefture.com or /privacy) */}
+                    {/* Action Button (e.g. app.lefture.tech or /privacy) */}
                     {item.action && (
                       <div style={{ marginTop: '16px', marginBottom: item.note ? '16px' : '0' }}>
                         {item.action.url.startsWith('http') ? (

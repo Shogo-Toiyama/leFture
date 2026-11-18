@@ -1424,7 +1424,7 @@
   "@purchaseCreditsDisclosure": {
     "description": "App Store disclosure text on the credit purchase page explaining charge to Apple ID account, no expiration, and automatic deduction."
   },
-  "purchaseCreditsDisclosureAndroid": "Additional credits can only be purchased on our website at <gold>lefture.com</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.com</gold> in a browser to buy credits.",
+  "purchaseCreditsDisclosureAndroid": "Additional credits can only be purchased on our website at <gold>lefture.tech</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.tech</gold> in a browser to buy credits.",
   "@purchaseCreditsDisclosureAndroid": {
     "description": "Android-only replacement for purchaseCreditsDisclosure, shown in a highlighted notice card instead of the plain Apple ID disclosure text. Intentionally plain text with no tappable link to the website, per Google Play Consumption-only positioning."
   },
@@ -2204,7 +2204,7 @@
   "@plansDisclosure": {
     "description": "Required App Store subscription disclosure paragraph shown in the scrollable area below the plan cards, per Apple App Review Guideline 3.1.2 (must disclose subscription length, auto-renewal, and that payment is charged to the Apple ID account). Also clarifies that downgrades are deferred to the next renewal, matching Apple's own StoreKit subscription-group behavior."
   },
-  "plansDisclosureAndroid": "Paid plans can only be purchased on our website at <gold>lefture.com</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.com</gold> in a browser to subscribe.",
+  "plansDisclosureAndroid": "Paid plans can only be purchased on our website at <gold>lefture.tech</gold>. <b>In-app purchases are not available on Android</b> — please visit <gold>lefture.tech</gold> in a browser to subscribe.",
   "@plansDisclosureAndroid": {
     "description": "Android-only replacement for plansDisclosure, shown in a highlighted notice card instead of the plain Apple ID disclosure text. Google Play Consumption-only positioning: intentionally plain text with no tappable link to the website."
   },

@@ -202,11 +202,11 @@ export const SignUpPage: React.FC = () => {
           />
           <span className="auth-checkbox-label">
             {t('agreementPrefix')}
-            <a href="https://lefture.com/terms" target="_blank" rel="noopener noreferrer">
+            <a href="https://lefture.tech/terms" target="_blank" rel="noopener noreferrer">
               {t('termsAndConditionsLink')}
             </a>
             {t('agreementMiddle')}
-            <a href="https://lefture.com/privacy" target="_blank" rel="noopener noreferrer">
+            <a href="https://lefture.tech/privacy" target="_blank" rel="noopener noreferrer">
               {t('privacyPolicyLink')}
             </a>
             {t('agreementSuffix')}

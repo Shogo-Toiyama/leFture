@@ -172,17 +172,17 @@ export const PurchaseCreditsPage: React.FC = () => {
           </p>
 
           <div className="purchase-credits-links">
-            <a href="https://lefture.com/terms" target="_blank" rel="noopener noreferrer">
+            <a href="https://lefture.tech/terms" target="_blank" rel="noopener noreferrer">
               {t('termsOfService')}
               <ExternalLink size={11} />
             </a>
             <span className="purchase-credits-dot">•</span>
-            <a href="https://lefture.com/privacy" target="_blank" rel="noopener noreferrer">
+            <a href="https://lefture.tech/privacy" target="_blank" rel="noopener noreferrer">
               {t('privacyPolicy')}
               <ExternalLink size={11} />
             </a>
             <span className="purchase-credits-dot">•</span>
-            <a href="https://lefture.com/contact" target="_blank" rel="noopener noreferrer">
+            <a href="https://lefture.tech/contact" target="_blank" rel="noopener noreferrer">
               {t('contactUs')}
               <ExternalLink size={11} />
             </a>

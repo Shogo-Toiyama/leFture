@@ -137,13 +137,13 @@ from app.services.task_runners import (
 app = FastAPI(title="leFture Backend Worker", version="2.0.0")
 logger = logging.getLogger(__name__)
 
-# webapp(app.lefture.com)からブラウザ経由で直接叩けるようにするためのCORS許可。
+# webapp(app.lefture.tech / app.lefture.com)からブラウザ経由で直接叩けるようにするためのCORS許可。
 # モバイル(Flutter)はブラウザのCORS制約を受けないため、これはWeb版専用の設定。
 _WEBAPP_CORS_ORIGINS = [
     origin.strip()
     for origin in os.environ.get(
         "WEBAPP_CORS_ORIGINS",
-        "https://app.lefture.com,http://localhost:3001,http://localhost:5173,http://localhost:3000",
+        "https://app.lefture.tech,https://app.lefture.com,http://localhost:3001,http://localhost:5173,http://localhost:3000",
     ).split(",")
     if origin.strip()
 ]
@@ -5311,7 +5311,7 @@ async def _patrol_send_trial_ending_reminders() -> dict:
                 end_date=end_date_str,
                 renewal_price=renewal_price,
                 renewal_interval=renewal_interval,
-                manage_plan_link="https://app.lefture.com/account/plans",
+                manage_plan_link="https://app.lefture.tech/account/plans",
                 display_name=display_name,
                 lang=lang,
             )
