@@ -996,6 +996,7 @@
   "aiChatInputPlaceholder": "何でも聞いてみよう…",
   "aiChatInputPlaceholderFollowUp": "続けて質問…",
   "aiChatSend": "送信",
+  "aiChatJumpToBottom": "最新のメッセージへ移動",
   "aiChatStageThinking": "考え中…",
   "aiChatStageSearching": "講義ノートを検索中…",
   "aiChatStageSearchingWeb": "Webで検索中…",

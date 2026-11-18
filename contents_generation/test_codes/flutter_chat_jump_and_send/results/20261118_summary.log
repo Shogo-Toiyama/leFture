@@ -1,0 +1,7 @@
+2026-11-18 Flutter chat jump button and send-position validation
+
+Baseline with the corrected test fixture: sending moved the visible history message by 469.98 logical pixels on Android and 449.17 on iOS. The jump button was absent on both.
+The first send-position fix exposed a separate 86 logical pixel shift when clearing a multiline composer. The final fix compensates for the viewport height change during that send layout.
+Final: all 97 Flutter chat and chat-sheet widget tests passed (reporter elapsed time about 7 seconds). The tests cover a stable visible history message during multiline send and answer growth, and a jump button that appears away from the bottom and returns to the latest message both during and after generation.
+Targeted Dart analysis reported no errors or warnings. Two existing Flutter Material import deprecation notices remain.
+Validation used local widget fixtures and a fake streaming repository. No live API calls, model tokens, or API costs. Device latency was not measured.

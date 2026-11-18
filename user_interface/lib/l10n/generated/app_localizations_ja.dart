@@ -3281,6 +3281,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get aiChatSend => '送信';
 
   @override
+  String get aiChatJumpToBottom => '最新のメッセージへ移動';
+
+  @override
   String get aiChatStageThinking => '考え中…';
 
   @override

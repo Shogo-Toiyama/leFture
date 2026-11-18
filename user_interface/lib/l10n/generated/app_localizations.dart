@@ -6008,6 +6008,12 @@ abstract class AppLocalizations {
   /// **'Send'**
   String get aiChatSend;
 
+  /// Tooltip for the button that jumps to the latest chat message.
+  ///
+  /// In en, this message translates to:
+  /// **'Jump to latest message'**
+  String get aiChatJumpToBottom;
+
   /// AI chat. Ported from the web app string "chatStageThinking".
   ///
   /// In en, this message translates to:

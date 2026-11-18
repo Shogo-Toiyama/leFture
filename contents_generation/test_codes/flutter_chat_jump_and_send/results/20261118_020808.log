@@ -1,0 +1,112 @@
+00:00 +0: loading /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart
+00:00 +0: 受信中のスクロール 履歴を読んだ位置で送信しても表示位置を保つ (variant: TargetPlatform.android)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: be in range from 0 (inclusive) to 775.0 (inclusive)
+  Actual: <-219.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart:1349:9)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart line 1349
+The test description was:
+  履歴を読んだ位置で送信しても表示位置を保つ (variant: TargetPlatform.android)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +0 -1: 受信中のスクロール 履歴を読んだ位置で送信しても表示位置を保つ (variant: TargetPlatform.android) [E]
+  Test failed. See exception logs above.
+  The test description was: 履歴を読んだ位置で送信しても表示位置を保つ (variant: TargetPlatform.android)
+
+00:01 +0 -1: 受信中のスクロール 履歴を読んだ位置で送信しても表示位置を保つ (variant: TargetPlatform.iOS)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      Iterable.first (dart:core/iterable.dart:663:7)
+#1      _FirstFinderMixin.filter (package:flutter_test/src/finders.dart:1383:28)
+#3      Iterable.isEmpty (dart:core/iterable.dart:560:33)
+#4      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2093:18)
+#5      WidgetController.getTopLeft (package:flutter_test/src/controller.dart:1962:12)
+#6      main.<anonymous closure>.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart:1348:31)
+<asynchronous suspension>
+#7      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#8      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided 2 frames from dart:async-patch and package:stack_trace)
+
+The test description was:
+  履歴を読んだ位置で送信しても表示位置を保つ (variant: TargetPlatform.iOS)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +0 -2: 受信中のスクロール 履歴を読んだ位置で送信しても表示位置を保つ (variant: TargetPlatform.iOS) [E]
+  Test failed. See exception logs above.
+  The test description was: 履歴を読んだ位置で送信しても表示位置を保つ (variant: TargetPlatform.iOS)
+
+00:01 +0 -2: 受信中のスクロール 下矢印で生成中も完了後も最下部に戻れる (variant: TargetPlatform.android)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _IconWidgetFinder:<Found 0 widgets with icon "IconData(U+0F575)": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart:1373:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart line 1373
+The test description was:
+  下矢印で生成中も完了後も最下部に戻れる (variant: TargetPlatform.android)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +0 -3: 受信中のスクロール 下矢印で生成中も完了後も最下部に戻れる (variant: TargetPlatform.android) [E]
+  Test failed. See exception logs above.
+  The test description was: 下矢印で生成中も完了後も最下部に戻れる (variant: TargetPlatform.android)
+
+00:01 +0 -3: 受信中のスクロール 下矢印で生成中も完了後も最下部に戻れる (variant: TargetPlatform.iOS)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _IconWidgetFinder:<Found 0 widgets with icon "IconData(U+0F575)": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart:1373:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart line 1373
+The test description was:
+  下矢印で生成中も完了後も最下部に戻れる (variant: TargetPlatform.iOS)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +0 -4: 受信中のスクロール 下矢印で生成中も完了後も最下部に戻れる (variant: TargetPlatform.iOS) [E]
+  Test failed. See exception logs above.
+  The test description was: 下矢印で生成中も完了後も最下部に戻れる (variant: TargetPlatform.iOS)
+
+00:02 +0 -4: Some tests failed.
+
+Failing tests:
+  /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 下矢印で生成中も完了後も最下部に戻れる (variant: TargetPlatform.android)
+  /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 下矢印で生成中も完了後も最下部に戻れる (variant: TargetPlatform.iOS)
+  /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 履歴を読んだ位置で送信しても表示位置を保つ (variant: TargetPlatform.android)
+  /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 履歴を読んだ位置で送信しても表示位置を保つ (variant: TargetPlatform.iOS)

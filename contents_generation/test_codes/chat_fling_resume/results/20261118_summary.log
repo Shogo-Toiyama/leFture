@@ -1,0 +1,6 @@
+2026-11-18 Flutter chat scroll validation
+Baseline: the new fast return case failed on both scroll configurations. After two simulated deltas, the distance from the latest content was 441.64 logical pixels on Android and 392.91 on iOS.
+After the change: 91 tests passed across the conversation and chat sheet suites (Flutter reporter: approximately 6 seconds).
+The regression cases exercise stopping on pointer down, resuming when a fling reaches the near-bottom zone within 500 ms, and requiring an actual bottom return once the 500 ms window expires. Existing tests cover upward flings, stable reading position, older message pagination, and following while new text arrives.
+Fixture: production conversation widget and controller, with the repository's fake streaming data and in-memory database. Network requests, model tokens, and API cost: 0. No device timing was measured.
+Targeted Dart analysis: no errors or warnings. Two existing Flutter Material import deprecation notices.

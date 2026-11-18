@@ -1,0 +1,6 @@
+00:00 +0: loading /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart
+00:00 +0: 受信中のスクロール 指を置くと受信中の追従が止まり、ドラッグ前も読んでいる位置を保つ (variant: TargetPlatform.android)
+00:01 +1: 受信中のスクロール 指を置くと受信中の追従が止まり、ドラッグ前も読んでいる位置を保つ (variant: TargetPlatform.iOS)
+00:01 +2: 受信中のスクロール 指を離したあと慣性で最下部近くまで戻ると追従を再開する (variant: TargetPlatform.android)
+00:01 +3: 受信中のスクロール 指を離したあと慣性で最下部近くまで戻ると追従を再開する (variant: TargetPlatform.iOS)
+00:01 +4: All tests passed!

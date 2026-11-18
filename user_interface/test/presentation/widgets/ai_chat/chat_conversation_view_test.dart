@@ -1013,8 +1013,7 @@ void main() {
 
     String paragraph(int i) => 'Delta paragraph $i. ${'streaming words here ' * 8}\n\n';
 
-    /// 長めの会話を開き、質問を送って回答の最初の4段落を受け取った状態にする。
-    Future<void> startStreaming(WidgetTester tester) async {
+    Future<void> openLongThread(WidgetTester tester) async {
       final rows = [
         for (var i = 1; i <= 16; i++)
           chatRow(
@@ -1026,12 +1025,23 @@ void main() {
       ];
       await pumpView(tester);
       await openThread(tester, rows);
-      await tester.enterText(find.byType(TextField), 'Explain');
-      await tester.pump();
+    }
+
+    Future<void> sendQuestion(WidgetTester tester, {String? draft = 'Explain'}) async {
+      if (draft != null) {
+        await tester.enterText(find.byType(TextField), draft);
+        await tester.pump();
+      }
       await tester.tap(find.bySemanticsLabel(l10n.aiChatSend));
       await settle(tester);
       repo.controller.add(_meta);
       await settle(tester);
+    }
+
+    /// 長めの会話を開き、質問を送って回答の最初の4段落を受け取った状態にする。
+    Future<void> startStreaming(WidgetTester tester) async {
+      await openLongThread(tester);
+      await sendQuestion(tester);
       for (var i = 0; i < 4; i++) {
         await receive(tester, paragraph(i));
       }
@@ -1199,6 +1209,102 @@ void main() {
       await finishStreaming(tester);
     }, variant: platforms, timeout: const Timeout(Duration(seconds: 60)));
 
+    testWidgets(
+      '指を置くと受信中の追従が止まり、ドラッグ前も読んでいる位置を保つ',
+      (tester) async {
+        await startStreaming(tester);
+        final gesture = await tester.startGesture(
+          tester.getCenter(messageList()),
+        );
+        try {
+          final before = newestBottom(tester, 3);
+          await receive(tester, paragraph(4));
+          expect(newestBottom(tester, 3), closeTo(before, 0.5));
+          expect(newestBottom(tester, 4), greaterThan(viewportBottom(tester)));
+        } finally {
+          await gesture.up();
+          await finishStreaming(tester);
+        }
+      },
+      variant: platforms,
+      timeout: const Timeout(Duration(seconds: 60)),
+    );
+
+    testWidgets(
+      '指を離したあと慣性で最下部近くまで戻ると追従を再開する',
+      (tester) async {
+        await startStreaming(tester);
+        try {
+          await scrollUpBy(tester, 400);
+          final position = tester
+              .state<ScrollableState>(
+                find
+                    .descendant(
+                      of: messageList(),
+                      matching: find.byType(Scrollable),
+                    )
+                    .first,
+              )
+              .position;
+          double distanceToBottom() =>
+              position.maxScrollExtent - position.pixels;
+
+          await tester.fling(messageList(), const Offset(0, -60), 1600);
+          expect(
+            distanceToBottom(),
+            greaterThan(96),
+            reason: '離した瞬間はまだ最下部から遠い',
+          );
+          for (var i = 0; i < 31 && distanceToBottom() >= 96; i++) {
+            await tester.pump(const Duration(milliseconds: 16));
+          }
+          expect(distanceToBottom(), lessThan(96), reason: '0.5秒以内に慣性で最下部へ近づく');
+
+          // 末尾に届く前に回答が伸びても、近づいたことを取りこぼさない。
+          await receive(tester, paragraph(4));
+          await receive(tester, paragraph(5));
+          expect(distanceToBottom(), closeTo(0, 0.5));
+        } finally {
+          await finishStreaming(tester);
+        }
+      },
+      variant: platforms,
+      timeout: const Timeout(Duration(seconds: 60)),
+    );
+
+    testWidgets(
+      '指を離して0.5秒を過ぎたら最下部まで戻って追従を再開する',
+      (tester) async {
+        await startStreaming(tester);
+        try {
+          await scrollUpBy(tester, 400);
+          await tester.pump(const Duration(milliseconds: 250));
+          final position = tester
+              .state<ScrollableState>(
+                find
+                    .descendant(
+                      of: messageList(),
+                      matching: find.byType(Scrollable),
+                    )
+                    .first,
+              )
+              .position;
+
+          position.jumpTo(position.maxScrollExtent - 60);
+          await receive(tester, paragraph(4));
+          expect(position.extentAfter, greaterThan(60));
+
+          position.jumpTo(position.maxScrollExtent);
+          await receive(tester, paragraph(5));
+          expect(position.extentAfter, closeTo(0, 0.5));
+        } finally {
+          await finishStreaming(tester);
+        }
+      },
+      variant: platforms,
+      timeout: const Timeout(Duration(seconds: 60)),
+    );
+
     testWidgets('上へ読み戻してから自分で最下部まで戻ると、また追従する', (tester) async {
       await startStreaming(tester);
       await scrollUpBy(tester, 400);
@@ -1214,6 +1320,86 @@ void main() {
       }
       await finishStreaming(tester);
     }, variant: platforms, timeout: const Timeout(Duration(seconds: 60)));
+
+    testWidgets(
+      '生成完了後は最下部の近くへスクロールしても吸着しない',
+      (tester) async {
+        await startStreaming(tester);
+        await finishStreaming(tester);
+        final position = tester
+            .state<ScrollableState>(
+              find.descendant(of: messageList(), matching: find.byType(Scrollable)).first,
+            )
+            .position;
+        position.jumpTo(position.maxScrollExtent);
+
+        await scrollUpBy(tester, 60);
+        await tester.pump(const Duration(milliseconds: 550));
+        expect(position.extentAfter, inInclusiveRange(10, 96));
+      },
+      variant: platforms,
+      timeout: const Timeout(Duration(seconds: 60)),
+    );
+
+    testWidgets(
+      '履歴を読んだ位置で送信しても表示位置を保つ',
+      (tester) async {
+        await openLongThread(tester);
+        await scrollUpBy(tester, 320);
+        await tester.enterText(
+          find.byType(TextField),
+          'Explain the last topic.\nInclude an example.\nCompare the alternatives.',
+        );
+        await tester.pump();
+        final reading = find.textContaining('Message item 15').first;
+        final before = tester.getTopLeft(reading).dy;
+        expect(before, inInclusiveRange(0, viewportBottom(tester)));
+
+        await sendQuestion(tester, draft: null);
+        try {
+          expect(tester.getTopLeft(reading).dy, closeTo(before, 0.5));
+          await receive(tester, paragraph(4));
+          expect(tester.getTopLeft(reading).dy, closeTo(before, 0.5));
+        } finally {
+          await finishStreaming(tester);
+        }
+      },
+      variant: platforms,
+      timeout: const Timeout(Duration(seconds: 60)),
+    );
+
+    testWidgets(
+      '下矢印で生成中も完了後も最下部に戻れる',
+      (tester) async {
+        await startStreaming(tester);
+        final arrow = find.byIcon(Icons.arrow_downward_rounded);
+        var didFinish = false;
+        try {
+          expect(arrow, findsNothing);
+          await scrollUpBy(tester, 400);
+          expect(arrow, findsOneWidget);
+          await tester.tap(arrow);
+          await tester.pump();
+          expect(arrow, findsNothing);
+          await receive(tester, paragraph(4));
+          expect(newestBottom(tester, 4), inInclusiveRange(
+            viewportBottom(tester) - 60, viewportBottom(tester),
+          ));
+          await finishStreaming(tester);
+          didFinish = true;
+
+          await scrollUpBy(tester, 400);
+          expect(arrow, findsOneWidget);
+          await tester.tap(arrow);
+          await tester.pump();
+          expect(arrow, findsNothing);
+        } finally {
+          if (!didFinish) await finishStreaming(tester);
+        }
+      },
+      variant: platforms,
+      timeout: const Timeout(Duration(seconds: 60)),
+    );
 
     testWidgets('最下部からわずかに離れただけなら、受信で最下部へ戻って追従する', (tester) async {
       await startStreaming(tester);

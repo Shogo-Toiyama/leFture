@@ -2,7 +2,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart' show VelocityTracker;
+import 'package:flutter/gestures.dart'
+    show PointerDownEvent, PointerEvent, PointerMoveEvent, VelocityTracker;
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/chat/chat_conversation.dart';
@@ -19,9 +20,14 @@ import 'package:lefture/presentation/widgets/ai_chat/launch_gate_backdrop.dart';
 
 /// 下端からこの距離以内にいるときだけ、新しい文字に合わせて自動で下へ追従する。
 const _stickToBottomPx = 96.0;
+const _bottomTolerance = 0.5;
+const _followResumeWindow = Duration(milliseconds: 500);
 
 /// 指を離したとき、指がこの速さ(px/秒)以上で下へ(過去側へ)動いていたら、追従に戻さない。
 const _flingAwayVelocity = 100.0;
+
+bool _hasStreamingReply(ChatConversationState state) =>
+    state.messages.any((message) => !message.isUser && message.isStreaming);
 
 /// 会話の画面を外から操作する(シートのヘッダーのクリップのボタンから、資料の一覧を開く)。
 class ChatConversationController {
@@ -92,7 +98,11 @@ class ChatConversationView extends ConsumerStatefulWidget {
 
 class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   final _scroll = ScrollController();
+  final _showJumpToBottom = ValueNotifier(false);
+  Object? _jumpRequest;
+  ({double pixels, double height})? _viewportBeforeSend;
   bool _stickToBottom = true;
+  bool _isGenerating = false;
 
   /// 会話を開いた時点(と、あとから読み込んだ過去ログ)のメッセージ。基準点より上に並べ、
   /// それより後に増えたメッセージ(送った質問・受信中の回答)は基準点より下に並べる。
@@ -104,13 +114,13 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   /// はみ出すまではスクロールできないので、読んでいる文章が流れることもない。
   bool _overflowing = false;
 
-  /// 指で動かしている(または指を離したあとの慣性で動いている)最中か。
-  /// この間は最下部への追従を止め、判定も更新しない。受信は1秒に何度も来るので、
-  /// 追従が残っていると、96px離れる前に毎回最下部へ戻されて上へ動かせない。
-  bool _userScrolling = false;
+  final _pointerVelocities = <int, VelocityTracker>{};
+  Timer? _followResumeTimer;
 
-  /// 指の速さ。指を離したときに、最下部から遠ざかる向きに払ったかを見る。
-  VelocityTracker? _pointerVelocity;
+  bool _canFollowBottom({bool openingThread = false}) =>
+      (_isGenerating || openingThread) &&
+      _stickToBottom &&
+      _pointerVelocities.isEmpty;
 
   /// 入力欄の中身を変える依頼。
   ChatPrefill? _prefill;
@@ -136,9 +146,9 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   @override
   void initState() {
     super.initState();
-    _historyIds = {
-      for (final m in ref.read(chatConversationProvider).messages) m.id,
-    };
+    final state = ref.read(chatConversationProvider);
+    _isGenerating = _hasStreamingReply(state);
+    _historyIds = {for (final m in state.messages) m.id};
     _scroll.addListener(_onScroll);
     widget.controller?._openAttachmentList = _openAttachmentList;
   }
@@ -158,6 +168,8 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   @override
   void dispose() {
     widget.controller?._openAttachmentList = null;
+    _followResumeTimer?.cancel();
+    _showJumpToBottom.dispose();
     _pendingRefs.dispose();
     _scroll.dispose();
     super.dispose();
@@ -166,12 +178,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   void _onScroll() {
     if (!_scroll.hasClients) return;
     final p = _scroll.position;
-    // 指で動かしている間と、慣性で動いている間は判定しない(払い始めの位置で追従に戻ると、
-    // 次の受信で払った動きが止められてしまう)。判定は指を離したときと止まったときに行う。
-    if (!_userScrolling && !p.isScrollingNotifier.value) {
-      _stickToBottom = p.maxScrollExtent - p.pixels < _stickToBottomPx;
-    }
-
+    _showJumpToBottom.value = p.extentAfter > _bottomTolerance;
     // 最上部(過去メッセージ側)に近づいたら過去ログを読み込む
     if (p.pixels - p.minScrollExtent <= 150) {
       final state = ref.read(chatConversationProvider);
@@ -184,14 +191,68 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   /// 最下部(最新の発言)へ合わせる。最下部は maxScrollExtent。新しい内容の高さは
   /// レイアウト後に決まるので、次のフレームで合わせる(最下部にいる間の追従は
   /// [_StickToBottomPhysics]がレイアウト中に行うので、ここは離れていたときだけ動く)。
-  void _scrollToBottomSoon() {
+  void _scrollToBottomSoon({bool openingThread = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scroll.hasClients || _userScrolling) return;
+      if (!mounted ||
+          !_scroll.hasClients ||
+          !_canFollowBottom(openingThread: openingThread)) {
+        return;
+      }
       final p = _scroll.position;
-      if (p.maxScrollExtent - p.pixels > 0.5) {
+      if (p.extentAfter > _bottomTolerance) {
         _scroll.jumpTo(p.maxScrollExtent);
       }
     });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  void _jumpToLatestMessage() {
+    _viewportBeforeSend = null;
+    _enableFollowing();
+    final request = _jumpRequest = Object();
+    void advance() {
+      if (!mounted || _jumpRequest != request || !_scroll.hasClients) return;
+      final position = _scroll.position;
+      if (position.extentAfter <= _bottomTolerance) {
+        _jumpRequest = null;
+        return;
+      }
+      _scroll.jumpTo(position.maxScrollExtent);
+      // A lazily built sliver can refine its maximum after the jump.
+      WidgetsBinding.instance.addPostFrameCallback((_) => advance());
+      WidgetsBinding.instance.ensureVisualUpdate();
+    }
+
+    advance();
+  }
+
+  void _preservePositionOnSend() {
+    _jumpRequest = null;
+    _followResumeTimer?.cancel();
+    _viewportBeforeSend = null;
+    final position = _scroll.hasClients ? _scroll.position : null;
+    _stickToBottom =
+        _pointerVelocities.isEmpty &&
+        (position == null || position.extentAfter <= _bottomTolerance);
+    if (_stickToBottom || position == null || !position.hasViewportDimension) {
+      return;
+    }
+    final snapshot = _viewportBeforeSend = (
+      pixels: position.pixels,
+      height: position.viewportDimension,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_viewportBeforeSend == snapshot) _viewportBeforeSend = null;
+    });
+  }
+
+  double? _offsetAfterSend(ScrollMetrics metrics) {
+    final before = _viewportBeforeSend;
+    if (before == null || before.height == metrics.viewportDimension) return null;
+    // The list is anchored to its bottom edge. Keep the visible text in place
+    // when clearing the composer changes the height of the message viewport.
+    return (before.pixels + metrics.viewportDimension - before.height)
+        .clamp(metrics.minScrollExtent, metrics.maxScrollExtent);
   }
 
   ChatConversation get _notifier => ref.read(chatConversationProvider.notifier);
@@ -356,7 +417,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
       return null;
     }
     return () {
-      _stickToBottom = true;
+      _preservePositionOnSend();
       setState(() => _editError = null);
       unawaited(
         _notifier.send(
@@ -396,13 +457,13 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
     List<ChatAttachmentRef> references,
     ChatConversationState state,
   ) async {
-    _stickToBottom = true;
     final context = _contextForSend();
     // 選択した文章は1回の質問にだけ添える
     if (_activeSelection != null) _clearSelection();
 
     final editingId = _editingId;
     if (editingId == null) {
+      _preservePositionOnSend();
       unawaited(
         _notifier.send(
           content,
@@ -426,6 +487,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
         return;
       }
     }
+    _preservePositionOnSend();
     setState(() {
       _editingId = null;
       _editError = null;
@@ -507,6 +569,8 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
 
     // 新しい文字・メッセージが来たら、下端にいるときだけ追従する(過去ログ読み込み時は飛ばさない)
     ref.listen(chatConversationProvider, (previous, next) {
+      _isGenerating = _hasStreamingReply(next);
+      if (!_isGenerating) _followResumeTimer?.cancel();
       if (previous == null) return;
       // 会話を開いた・読み直した・新しい会話にした: そのときのメッセージをすべて基準点より上へ。
       // (最初の送信でthreadIdが決まるのは同じ会話の続きなので、ここでは見ない)
@@ -515,10 +579,12 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
               next.messages.isEmpty &&
               previous.messages.isNotEmpty);
       if (reopened) {
+        _jumpRequest = null;
+        _viewportBeforeSend = null;
         _historyIds = {for (final m in next.messages) m.id};
         _overflowing = false;
-        _stickToBottom = true;
-        _scrollToBottomSoon();
+        _enableFollowing();
+        _scrollToBottomSoon(openingThread: true);
         return;
       }
       // 編集・作り直しでメッセージが消えた: いったん全部を基準点より上に戻して、
@@ -527,13 +593,13 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
       final removed = previous.messages.any(
         (m) => !m.id.startsWith('local-') && !nextIds.contains(m.id),
       );
-      if (removed) {
+      if (removed && _stickToBottom) {
         _historyIds = nextIds;
         _overflowing = false;
       }
       final prevMsgs = previous.messages;
       final nextMsgs = next.messages;
-      if (_stickToBottom && prevMsgs != nextMsgs) {
+      if (_canFollowBottom() && prevMsgs != nextMsgs) {
         final isPrepend = prevMsgs.isNotEmpty &&
             nextMsgs.isNotEmpty &&
             nextMsgs.first.id != prevMsgs.first.id;
@@ -581,33 +647,58 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
                         onPick: _setPrefill,
                       )
                     : Listener(
-                        onPointerDown: (e) =>
-                            _pointerVelocity = VelocityTracker.withKind(e.kind)
-                              ..addPosition(e.timeStamp, e.position),
-                        onPointerMove: (e) =>
-                            _pointerVelocity?.addPosition(e.timeStamp, e.position),
-                        onPointerUp: (_) => _onPointerReleased(),
-                        onPointerCancel: (_) => _onPointerReleased(),
+                        onPointerDown: _onPointerDown,
+                        onPointerMove: _onPointerMove,
+                        onPointerUp: _onPointerReleased,
+                        onPointerCancel: _onPointerReleased,
                         child: NotificationListener<ScrollNotification>(
-                        onNotification: _onListScroll,
-                        child: NotificationListener<ScrollMetricsNotification>(
-                        onNotification: _onListMetrics,
-                        child: _MessageList(
-                          controller: _scroll,
-                          messages: _splitLive(
-                            _buildMessages(
-                              state,
-                              colors,
-                              attachmentsById,
-                              attachmentsByMessage,
-                              editInfo,
+                          onNotification: _onListScroll,
+                          child: NotificationListener<ScrollMetricsNotification>(
+                            onNotification: _onListMetrics,
+                            child: _MessageList(
+                              controller: _scroll,
+                              canFollowBottom: _canFollowBottom,
+                              offsetAfterSend: _offsetAfterSend,
+                              messages: _splitLive(
+                                _buildMessages(
+                                  state,
+                                  colors,
+                                  attachmentsById,
+                                  attachmentsByMessage,
+                                  editInfo,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                      ),
-                      ),
               ),
+              if (!state.loading &&
+                  !state.loadFailed &&
+                  state.messages.isNotEmpty)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 10,
+                  child: Align(
+                    child: ValueListenableBuilder<bool>(
+                      valueListenable: _showJumpToBottom,
+                      builder: (context, show, _) => show
+                          ? IconButton.filled(
+                              onPressed: _jumpToLatestMessage,
+                              tooltip: l10n.aiChatJumpToBottom,
+                              style: IconButton.styleFrom(
+                                backgroundColor: colors.menuBackground,
+                                foregroundColor: colors.strongText,
+                                side: BorderSide(color: colors.menuBorder),
+                                elevation: 2,
+                              ),
+                              icon: const Icon(Icons.arrow_downward_rounded),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -725,42 +816,82 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
       ? built
       : (history: [...built.history, ...built.live], live: const <Widget>[]);
 
-  /// 指で動かし始めたら追従をやめる。
+  void _onPointerDown(PointerDownEvent event) {
+    _jumpRequest = null;
+    _viewportBeforeSend = null;
+    _followResumeTimer?.cancel();
+    _stickToBottom = false;
+    _pointerVelocities[event.pointer] = VelocityTracker.withKind(event.kind)
+      ..addPosition(event.timeStamp, event.position);
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    _pointerVelocities[event.pointer]?.addPosition(
+      event.timeStamp,
+      event.position,
+    );
+  }
+
   bool _onListScroll(ScrollNotification n) {
     if (n.depth != 0) return false;
     if ((n is ScrollStartNotification && n.dragDetails != null) ||
         (n is UserScrollNotification && n.direction != ScrollDirection.idle)) {
-      _userScrolling = true;
+      _jumpRequest = null;
+      _viewportBeforeSend = null;
       _stickToBottom = false;
-    } else if (n is ScrollEndNotification && _userScrolling) {
-      _onPointerReleased();
+    } else if (_isGenerating && !_stickToBottom && _pointerVelocities.isEmpty) {
+      final towardBottom = n is ScrollUpdateNotification &&
+          (n.scrollDelta ?? 0) > 0;
+      final tolerance = _followResumeTimer?.isActive == true
+          ? _stickToBottomPx
+          : _bottomTolerance;
+      if ((towardBottom || n is ScrollEndNotification) &&
+          n.metrics.extentAfter <= tolerance) {
+        _resumeFollowing();
+      }
     }
     return false;
   }
 
-  /// 指を離した瞬間に最下部の近く(または最下部より先)にいれば、追従に戻す。
-  /// ただし最下部から遠ざかる向きに払った(慣性で上へ進む)ときは戻さない。
-  /// スクロールの通知は、iOSの跳ね返りが終わるまで「スクロール中」のままなので使わない
-  /// (その間に回答が伸びると、止まった位置が新しい最下部から離れてしまう)。
-  /// 跳ね返りの途中で回答が届いたら、[_scrollToBottomSoon]が新しい最下部へ合わせる。
-  void _onPointerReleased() {
-    if (!_userScrolling || !_scroll.hasClients) return;
-    _userScrolling = false;
-    final p = _scroll.position;
-    // 指が下へ動いている = 過去側(最下部から遠ざかる向き)へ払った
-    final fingerDy =
-        _pointerVelocity?.getVelocity().pixelsPerSecond.dy ?? 0;
-    _pointerVelocity = null;
-    final pastBottom = p.pixels >= p.maxScrollExtent;
-    _stickToBottom = pastBottom ||
-        (p.maxScrollExtent - p.pixels < _stickToBottomPx &&
-            fingerDy < _flingAwayVelocity);
+  void _onPointerReleased(PointerEvent event) {
+    final tracker = _pointerVelocities.remove(event.pointer);
+    if (tracker == null ||
+        !_isGenerating ||
+        _pointerVelocities.isNotEmpty ||
+        _stickToBottom ||
+        !_scroll.hasClients) {
+      return;
+    }
+    if (tracker.getVelocity().pixelsPerSecond.dy >= _flingAwayVelocity) return;
+
+    if (_scroll.position.extentAfter <= _stickToBottomPx) {
+      _resumeFollowing();
+      return;
+    }
+    // 指が離れた位置だけでなく、その後の慣性スクロールでも末尾への到達を拾う。
+    _followResumeTimer = Timer(_followResumeWindow, () {
+      if (_scroll.hasClients && _scroll.position.extentAfter <= _stickToBottomPx) {
+        _resumeFollowing();
+      }
+    });
+  }
+
+  void _enableFollowing() {
+    _followResumeTimer?.cancel();
+    _stickToBottom = true;
+  }
+
+  void _resumeFollowing() {
+    _enableFollowing();
+    _scrollToBottomSoon();
   }
 
   /// 全部が基準点より上にある間は、minScrollExtent < 0 が「画面からはみ出した」の意味。
   /// はみ出したら次のフレームでliveを基準点より下へ移す(最下部にいるので見た目は変わらない)。
   bool _onListMetrics(ScrollMetricsNotification n) {
-    if (n.depth == 0 && !_overflowing && n.metrics.minScrollExtent < -0.5) {
+    if (n.depth != 0) return false;
+    _showJumpToBottom.value = n.metrics.extentAfter > _bottomTolerance;
+    if (!_overflowing && n.metrics.minScrollExtent < -0.5) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !_overflowing) setState(() => _overflowing = true);
       });
@@ -843,7 +974,10 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
                     label: l10n.aiChatResend,
                     colors: colors,
                     primary: true,
-                    onTap: () => unawaited(_notifier.retry(message.id)),
+                    onTap: () {
+                      _preservePositionOnSend();
+                      unawaited(_notifier.retry(message.id));
+                    },
                   ),
                 _BannerAction(
                   label: l10n.aiChatDismiss,
@@ -901,10 +1035,17 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
 /// 回答が伸びても、読んでいる文章の画面上の位置は変わらない。
 /// 開いた直後はliveが空で、pixels: 0(=maxScrollExtent)が最下部。
 class _MessageList extends StatelessWidget {
-  const _MessageList({required this.controller, required this.messages});
+  const _MessageList({
+    required this.controller,
+    required this.messages,
+    required this.canFollowBottom,
+    required this.offsetAfterSend,
+  });
 
   final ScrollController controller;
   final ({List<Widget> history, List<Widget> live}) messages;
+  final bool Function() canFollowBottom;
+  final double? Function(ScrollMetrics) offsetAfterSend;
 
   static const _centerKey = ValueKey('chat-live');
   static const _gap = 18.0;
@@ -912,8 +1053,8 @@ class _MessageList extends StatelessWidget {
   static const _bottom = 12.0;
 
   /// 各メッセージの上に間隔を取る(一番上の余白も兼ねる)。
-  static Widget _item(Widget child) => Padding(
-    padding: const EdgeInsets.only(top: _gap),
+  static Widget _item(Widget child, {double topGap = _gap}) => Padding(
+    padding: EdgeInsets.only(top: topGap),
     child: Align(
       alignment: Alignment.topCenter,
       // 広い画面(タブレット)でも読みやすい幅にする
@@ -932,8 +1073,10 @@ class _MessageList extends StatelessWidget {
       controller: controller,
       center: _centerKey,
       anchor: 1.0,
-      physics: const _StickToBottomPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
+      physics: _StickToBottomPhysics(
+        canFollowBottom: canFollowBottom,
+        offsetAfterSend: offsetAfterSend,
+        parent: const AlwaysScrollableScrollPhysics(),
       ),
       slivers: [
         // 基準点より前のsliverは上へ伸びる: index 0 が基準点のすぐ上(historyの最後)。
@@ -942,7 +1085,7 @@ class _MessageList extends StatelessWidget {
             _side,
             0,
             _side,
-            live.isEmpty ? _bottom : 0,
+            history.isEmpty ? 0 : _bottom,
           ),
           sliver: SliverList.builder(
             itemCount: history.length,
@@ -959,7 +1102,12 @@ class _MessageList extends StatelessWidget {
           ),
           sliver: SliverList.builder(
             itemCount: live.length,
-            itemBuilder: (_, i) => _item(live[i]),
+            // Keep the history's bottom padding fixed when the first reply
+            // appears, and count it as part of the gap between the two lists.
+            itemBuilder: (_, i) => _item(
+              live[i],
+              topGap: i == 0 && history.isNotEmpty ? _gap - _bottom : _gap,
+            ),
           ),
         ),
       ],
@@ -970,11 +1118,21 @@ class _MessageList extends StatelessWidget {
 /// 最下部(最新の発言)にいるときは、文字が増えても最下部に留まる。最下部は maxScrollExtent。
 /// レイアウト中に合わせるので、伸びた回答が一瞬ずれて見えることはない。
 class _StickToBottomPhysics extends ScrollPhysics {
-  const _StickToBottomPhysics({super.parent});
+  const _StickToBottomPhysics({
+    required this.canFollowBottom,
+    required this.offsetAfterSend,
+    super.parent,
+  });
+
+  final bool Function() canFollowBottom;
+  final double? Function(ScrollMetrics) offsetAfterSend;
 
   @override
-  _StickToBottomPhysics applyTo(ScrollPhysics? ancestor) =>
-      _StickToBottomPhysics(parent: buildParent(ancestor));
+  _StickToBottomPhysics applyTo(ScrollPhysics? ancestor) => _StickToBottomPhysics(
+    canFollowBottom: canFollowBottom,
+    offsetAfterSend: offsetAfterSend,
+    parent: buildParent(ancestor),
+  );
 
   @override
   double adjustPositionForNewDimensions({
@@ -983,13 +1141,15 @@ class _StickToBottomPhysics extends ScrollPhysics {
     required bool isScrolling,
     required double velocity,
   }) {
+    final preservedOffset = offsetAfterSend(newPosition);
+    if (preservedOffset != null) return preservedOffset;
     // oldPositionは最後にレイアウトした時点の位置。指が1フレームの間に動いて離れると
     // (間にレイアウトが入らないと)古いまま最下部に残るので、今の位置も最下部かを見る。
     // 見ないと、ユーザーが上へ動かした分が最下部へ戻されてしまう。
     final bottom = oldPosition.maxScrollExtent - 1.0;
     final wasAtBottom =
         oldPosition.pixels >= bottom && newPosition.pixels >= bottom;
-    if (!isScrolling && velocity == 0 && wasAtBottom) {
+    if (canFollowBottom() && !isScrolling && velocity == 0 && wasAtBottom) {
       return newPosition.maxScrollExtent;
     }
     return super.adjustPositionForNewDimensions(

@@ -3434,6 +3434,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiChatSend => 'Send';
 
   @override
+  String get aiChatJumpToBottom => 'Jump to latest message';
+
+  @override
   String get aiChatStageThinking => 'Thinking…';
 
   @override

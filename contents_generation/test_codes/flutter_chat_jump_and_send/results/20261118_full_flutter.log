@@ -1,0 +1,99 @@
+00:00 +0: loading /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart
+00:00 +0: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 開くと新しい会話の画面で、80%の高さ
+00:00 +1: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 開くと新しい会話の画面で、80%の高さ
+00:00 +2: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 出発ゲート 質問の候補を押すと、入力欄に入る
+00:00 +3: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 80%までは、後ろのメイン画面を触れる
+00:00 +4: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 出発ゲート 講義を指定していれば、その講義向けの候補になる
+00:00 +5: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: つまみを持っている間は、指に合わせて動き、離した高さで止まる
+00:00 +6: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: つまみを持っている間は、指に合わせて動き、離した高さで止まる
+00:00 +7: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 出発ゲート 紙の世界でも出る
+00:00 +8: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 80%から上へ引き上げても、指から外れずに付いていく(80%で引っかからない)
+00:00 +9: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 自分の質問は吹き出し、AIの回答は直接書かれる
+00:00 +10: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 自分の質問は吹き出し、AIの回答は直接書かれる
+00:01 +11: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 自分の質問は吹き出し、AIの回答は直接書かれる
+00:01 +12: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 自分の質問は吹き出し、AIの回答は直接書かれる
+00:01 +13: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 自分の質問は吹き出し、AIの回答は直接書かれる
+00:01 +14: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 自分の質問は吹き出し、AIの回答は直接書かれる
+00:01 +15: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 50%より少し高い(55%)ところからのタップは30%に下がる
+00:01 +16: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 回答の下に、コピー・作り直し・「…」が出る。質問の下にはコピー・編集
+00:01 +17: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 15%より下まで下げて離すと閉じる
+00:01 +18: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 長い質問は畳まれ、「もっと見る」で開く
+00:01 +19: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 長い質問は畳まれ、「もっと見る」で開く
+00:01 +20: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 15%より上で離したら閉じない
+00:01 +21: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 短い質問は畳まれない
+00:01 +22: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 素早く上へスワイプしたら100%
+00:01 +23: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 出典のチップを押すと、その出典が開く
+00:01 +24: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 素早く下へスワイプしたら閉じる。100%からでも閉じる
+00:01 +25: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 返答に失敗していたら、メッセージと作り直しが出る
+00:01 +26: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: ×で閉じる。閉じたあとはメイン画面を触れる
+00:01 +27: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 会話の表示 読み込みに失敗(キャッシュも無い)なら、再読み込みの導線が出る
+00:01 +28: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: キーボードが出たら、その上いっぱいまで広がる
+00:01 +29: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 送信 送ると、質問が吹き出しになり、段階の文言と停止ボタンが出る。完了で回答になる
+00:01 +30: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 送信 送ると、質問が吹き出しになり、段階の文言と停止ボタンが出る。完了で回答になる
+00:01 +31: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 送信 送ると、質問が吹き出しになり、段階の文言と停止ボタンが出る。完了で回答になる
+00:01 +32: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 別のページを開いても、チャットは最上位に残る
+00:01 +33: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 別のページを開いても、チャットは最上位に残る
+00:01 +34: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 送信 クレジット不足で弾かれたら、案内と購入の導線が出る
+00:01 +35: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: チャットから開いたシート(出典など)は、チャットより上に出る
+00:01 +36: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 送信 送れなかったら、「もう一度送る」で同じ内容を送り直せる
+00:01 +37: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: シートの中で文字を選んだまま次のポップアップを開いても、選択のつまみがシートの下に潜らない
+00:01 +38: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: シートの中で文字を選んだまま次のポップアップを開いても、選択のつまみがシートの下に潜らない
+00:02 +39: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: シートの中で文字を選んだまま次のポップアップを開いても、選択のつまみがシートの下に潜らない
+00:02 +40: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 送信 停止ボタンで止まる
+00:02 +41: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴を開いて会話を選ぶと、その会話に切り替わる
+00:02 +42: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴を開いて会話を選ぶと、その会話に切り替わる
+00:02 +43: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴を開いて会話を選ぶと、その会話に切り替わる
+00:02 +44: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴を開いて会話を選ぶと、その会話に切り替わる
+00:02 +45: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴を開いて会話を選ぶと、その会話に切り替わる
+00:02 +46: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴を開いて会話を選ぶと、その会話に切り替わる
+00:02 +47: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴を開いて会話を選ぶと、その会話に切り替わる
+00:02 +48: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴を開いて会話を選ぶと、その会話に切り替わる
+00:02 +49: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 回答への返信 「コピー」で、選んだ文章がコピーされ、メニューが閉じる
+00:02 +50: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 続きの会話で開くと、ヘッダーに会話の名前が出る
+00:02 +51: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 報告 「…」→ 報告 → 種類と内容を入れて送ると、受付コードが出る
+00:02 +52: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 長い会話を開くと、最初から最新の発言(下端)が見えている
+00:03 +53: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 長い会話を開くと、最初から最新の発言(下端)が見えている
+00:03 +54: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 長い会話を開くと、最初から最新の発言(下端)が見えている
+00:03 +55: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 資料 「＋」→ この会話の資料 → 全文で添付すると、一覧を開いたまま全文で読む資料になり、入力欄の上にチップが出る
+00:03 +56: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴で名前を変えて、削除できる
+00:03 +57: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴で名前を変えて、削除できる
+00:03 +58: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴で名前を変えて、削除できる
+00:03 +59: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴で名前を変えて、削除できる
+00:03 +60: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴で名前を変えて、削除できる
+00:03 +61: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 履歴で名前を変えて、削除できる
+00:03 +62: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 過去ログの読み込みとスクロール維持 最上部付近へスクロールすると自動で過去ログが読み込まれる
+00:03 +63: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 「新しい会話」で、今の会話が空に戻る
+00:03 +64: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 「新しい会話」で、今の会話が空に戻る
+00:04 +65: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 最下部にいるときは、伸びる回答の末尾が画面の下端に見え続ける (variant: TargetPlatform.iOS)
+00:04 +66: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 出典を押すと抜粋のシートが出る(講義へ行くボタンつき)
+00:04 +67: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 上へ読み戻している間は、回答が伸びても読んでいる文章が動かない (variant: TargetPlatform.android)
+00:04 +68: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 上へ読み戻している間は、回答が伸びても読んでいる文章が動かない (variant: TargetPlatform.android)
+00:04 +69: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 上へ読み戻している間は、回答が伸びても読んでいる文章が動かない (variant: TargetPlatform.android)
+00:04 +70: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/ai_chat_sheet_test.dart: 会話中は、モバイル画面で「…」メニューからAI設定を開ける
+00:04 +71: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 上へ読み戻している間は、回答が伸びても読んでいる文章が動かない (variant: TargetPlatform.iOS)
+00:04 +72: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 上へ読み戻している間は、回答が伸びても読んでいる文章が動かない (variant: TargetPlatform.iOS)
+00:04 +73: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 画面に収まる短い会話はスクロールせず、引っ張っても元の位置に戻る (variant: TargetPlatform.android)
+00:04 +74: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 画面に収まる短い会話はスクロールせず、引っ張っても元の位置に戻る (variant: TargetPlatform.iOS)
+00:04 +75: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 短い会話の回答が伸びて画面からはみ出しても、最下部に追従し、読み戻せば止まって見える (variant: TargetPlatform.android)
+00:04 +76: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 短い会話の回答が伸びて画面からはみ出しても、最下部に追従し、読み戻せば止まって見える (variant: TargetPlatform.iOS)
+00:04 +77: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 受信が続いている最中でも、指で上へ動かせる(最下部へ引き戻されない) (variant: TargetPlatform.android)
+00:05 +78: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 受信が続いている最中でも、指で上へ動かせる(最下部へ引き戻されない) (variant: TargetPlatform.iOS)
+00:05 +79: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 最下部から上へ素早く払うと、受信が続いても慣性のまま上へ進む (variant: TargetPlatform.android)
+00:05 +80: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 最下部から上へ素早く払うと、受信が続いても慣性のまま上へ進む (variant: TargetPlatform.iOS)
+00:05 +81: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 指を置くと受信中の追従が止まり、ドラッグ前も読んでいる位置を保つ (variant: TargetPlatform.android)
+00:05 +82: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 指を置くと受信中の追従が止まり、ドラッグ前も読んでいる位置を保つ (variant: TargetPlatform.iOS)
+00:05 +83: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 指を離したあと慣性で最下部近くまで戻ると追従を再開する (variant: TargetPlatform.android)
+00:06 +84: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 指を離したあと慣性で最下部近くまで戻ると追従を再開する (variant: TargetPlatform.iOS)
+00:06 +85: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 指を離して0.5秒を過ぎたら最下部まで戻って追従を再開する (variant: TargetPlatform.android)
+00:06 +86: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 指を離して0.5秒を過ぎたら最下部まで戻って追従を再開する (variant: TargetPlatform.iOS)
+00:06 +87: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 上へ読み戻してから自分で最下部まで戻ると、また追従する (variant: TargetPlatform.android)
+00:06 +88: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 上へ読み戻してから自分で最下部まで戻ると、また追従する (variant: TargetPlatform.iOS)
+00:06 +89: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 生成完了後は最下部の近くへスクロールしても吸着しない (variant: TargetPlatform.android)
+00:06 +90: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 生成完了後は最下部の近くへスクロールしても吸着しない (variant: TargetPlatform.iOS)
+00:06 +91: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 履歴を読んだ位置で送信しても表示位置を保つ (variant: TargetPlatform.android)
+00:06 +92: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 履歴を読んだ位置で送信しても表示位置を保つ (variant: TargetPlatform.iOS)
+00:06 +93: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 下矢印で生成中も完了後も最下部に戻れる (variant: TargetPlatform.android)
+00:07 +94: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 下矢印で生成中も完了後も最下部に戻れる (variant: TargetPlatform.iOS)
+00:07 +95: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 最下部からわずかに離れただけなら、受信で最下部へ戻って追従する (variant: TargetPlatform.android)
+00:07 +96: /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 最下部からわずかに離れただけなら、受信で最下部へ戻って追従する (variant: TargetPlatform.iOS)
+00:07 +97: All tests passed!
