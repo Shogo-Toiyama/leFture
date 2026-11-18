@@ -192,8 +192,14 @@ class _SlantedImageSlot extends ConsumerWidget {
         );
       }
       // 縮小版→元の画像の差し替えをふわっと見せる。
+      // 既定のlayoutBuilderはStackで子の制約をゆるめ、BoxFit.coverが枠いっぱいに
+      // 広がらなくなるため、StackFit.expandで枠の大きさを子に渡す。
       child = AnimatedSwitcher(
         duration: const Duration(milliseconds: 250),
+        layoutBuilder: (currentChild, previousChildren) => Stack(
+          fit: StackFit.expand,
+          children: [...previousChildren, ?currentChild],
+        ),
         child: child,
       );
     }

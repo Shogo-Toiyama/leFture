@@ -15,22 +15,165 @@ import 'package:pdfrx/pdfrx.dart';
 /// webappの AttachmentEditorModal と DraftPreviewModal。
 
 /// チャットの下から出るシート(資料の編集・一覧・ビューアで共通)。
+///
+/// 普段はシート全体を下に引いて閉じられる。ただ、シート全体の縦ドラッグは
+/// 中のPDFビューアや拡大した画像より先に一本指のドラッグを取ってしまう
+/// (縦ドラッグは18px、ビューアのパンは36pxで決まるため)。
+/// [dragFromHeaderOnly]をtrueにすると、つまみと[ChatSheetHeader]だけが
+/// シートを動かし、それより下の中身は中の表示がドラッグを受け取る。
 Future<T?> showChatSheet<T>(
   BuildContext context,
   ChatColors colors,
-  WidgetBuilder builder,
-) {
+  WidgetBuilder builder, {
+  bool dragFromHeaderOnly = false,
+}) {
+  final handleColor = colors.actionForeground.withValues(alpha: .4);
+  // シートの出入りのアニメーションを自分で持ち、見出しのドラッグで動かす。
+  // 閉じ終わったら_ChatSheetDragScopeが破棄する。
+  final controller = dragFromHeaderOnly
+      ? BottomSheet.createAnimationController(Navigator.of(context))
+      : null;
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    enableDrag: !dragFromHeaderOnly,
+    transitionAnimationController: controller,
     backgroundColor: colors.menuBackground,
     shape: kSheetShape,
-    builder: (context) => withSheetHandle(
-      builder(context),
-      handleColor: colors.actionForeground.withValues(alpha: .4),
-    ),
+    builder: (context) {
+      if (controller == null) {
+        return withSheetHandle(builder(context), handleColor: handleColor);
+      }
+      return _ChatSheetDragScope(
+        controller: controller,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ChatSheetDragArea(
+              child: Column(
+                children: [
+                  const SizedBox(height: kSheetHandleTop),
+                  SheetHandle(color: handleColor),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+            Flexible(child: builder(context)),
+          ],
+        ),
+      );
+    },
   );
+}
+
+/// [showChatSheet]の`dragFromHeaderOnly`で、見出しのドラッグをシートの動きにつなぐ。
+/// 動きはFlutterのBottomSheet(`_handleDragUpdate`/`_handleDragEnd`)と同じにする。
+class _ChatSheetDragScope extends StatefulWidget {
+  const _ChatSheetDragScope({required this.controller, required this.child});
+
+  final AnimationController controller;
+  final Widget child;
+
+  @override
+  State<_ChatSheetDragScope> createState() => _ChatSheetDragScopeState();
+}
+
+class _ChatSheetDragScopeState extends State<_ChatSheetDragScope> {
+  static const _minFlingVelocity = 700.0;
+  static const _closeProgressThreshold = 0.5;
+
+  bool _disposeHooked = false;
+
+  AnimationController get _controller => widget.controller;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ルートは渡されたコントローラーを破棄しない。閉じるアニメーションが終わり、
+    // ルートが破棄されたあと(completed)に破棄する。
+    final route = ModalRoute.of(context);
+    if (!_disposeHooked && route != null) {
+      _disposeHooked = true;
+      route.completed.whenComplete(_controller.dispose);
+    }
+  }
+
+  bool get _dismissUnderway => _controller.status == AnimationStatus.reverse;
+
+  double get _sheetHeight => context.size?.height ?? 1;
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    if (_dismissUnderway) return;
+    _controller.value -= details.primaryDelta! / _sheetHeight;
+  }
+
+  void _onDragEnd(DragEndDetails details) {
+    if (_dismissUnderway) return;
+    var isClosing = false;
+    final dy = details.velocity.pixelsPerSecond.dy;
+    if (dy > _minFlingVelocity) {
+      final flingVelocity = -dy / _sheetHeight;
+      if (_controller.value > 0) {
+        _controller.fling(velocity: flingVelocity);
+      }
+      isClosing = flingVelocity < 0;
+    } else if (_controller.value < _closeProgressThreshold) {
+      if (_controller.value > 0) {
+        _controller.fling(velocity: -1);
+      }
+      isClosing = true;
+    } else {
+      _controller.forward();
+    }
+    if (isClosing && (ModalRoute.of(context)?.isCurrent ?? false)) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _ChatSheetDragHandlers(
+      onUpdate: _onDragUpdate,
+      onEnd: _onDragEnd,
+      child: widget.child,
+    );
+  }
+}
+
+class _ChatSheetDragHandlers extends InheritedWidget {
+  const _ChatSheetDragHandlers({
+    required this.onUpdate,
+    required this.onEnd,
+    required super.child,
+  });
+
+  final GestureDragUpdateCallback onUpdate;
+  final GestureDragEndCallback onEnd;
+
+  @override
+  bool updateShouldNotify(_ChatSheetDragHandlers oldWidget) => false;
+}
+
+/// ここを縦に引くとシートが動く([showChatSheet]の`dragFromHeaderOnly`のときだけ)。
+/// それ以外のシートでは何もしない(シート全体がもともと動くため)。
+class ChatSheetDragArea extends StatelessWidget {
+  const ChatSheetDragArea({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final handlers = context
+        .dependOnInheritedWidgetOfExactType<_ChatSheetDragHandlers>();
+    if (handlers == null) return child;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onVerticalDragUpdate: handlers.onUpdate,
+      onVerticalDragEnd: handlers.onEnd,
+      child: child,
+    );
+  }
 }
 
 /// シートの上の見出し(種類のバッジ・題名・閉じる)。
@@ -54,7 +197,8 @@ class ChatSheetHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final c = colors;
-    return Padding(
+    return ChatSheetDragArea(
+      child: Padding(
       padding: const EdgeInsets.fromLTRB(20, 14, 8, 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,6 +252,7 @@ class ChatSheetHeader extends StatelessWidget {
             icon: Icon(Icons.close_rounded, color: c.actionForeground),
           ),
         ],
+      ),
       ),
     );
   }
@@ -377,6 +522,8 @@ Future<void> showChatDraftPreviewSheet(
       localId: localId,
       onRemove: onRemove,
     ),
+    // PDFと拡大した画像を一本指で動かせるように。シートは見出しで動かす。
+    dragFromHeaderOnly: true,
   );
 }
 

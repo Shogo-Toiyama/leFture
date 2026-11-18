@@ -678,7 +678,12 @@ class RecordingPage extends HookConsumerWidget {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.universe.glassBorder),
           ),
-          child: trailing != null
+          // 背景色付きのContainerの上にインクを描くため、透明なMaterialで包む。
+          child: Material(
+            type: MaterialType.transparency,
+            borderRadius: BorderRadius.circular(12),
+            clipBehavior: Clip.antiAlias,
+            child: trailing != null
               ? ListTile(
                   tileColor: Colors.transparent,
                   leading: Icon(icon, color: AppColors.universe.textComet),
@@ -701,6 +706,7 @@ class RecordingPage extends HookConsumerWidget {
                   inactiveTrackColor: AppColors.universe.glassWhiteLow,
                   contentPadding: contentPadding,
                 ),
+          ),
         ),
       );
     }
@@ -952,7 +958,13 @@ class RecordingPage extends HookConsumerWidget {
                                         ]
                                       : null,
                                 ),
-                                child: ListTile(
+                                // 背景色付きのContainerの上にインクを描くため、
+                                // 透明なMaterialで包む。
+                                child: Material(
+                                  type: MaterialType.transparency,
+                                  borderRadius: BorderRadius.circular(12),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: ListTile(
                                   leading: Container(
                                     width: 40,
                                     height: 40,
@@ -1051,6 +1063,7 @@ class RecordingPage extends HookConsumerWidget {
                                     color: Colors.white,
                                   ),
                                   onTap: isBusy ? null : openCoursePicker,
+                                ),
                                 ),
                               ),
 
@@ -2397,7 +2410,12 @@ class _RecordingLanguageRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.universe.glassBorder),
       ),
-      child: ListTile(
+      // 背景色付きのContainerの上にインクを描くため、透明なMaterialで包む。
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
         tileColor: Colors.transparent,
         onTap: onTap,
         enabled: onTap != null,
@@ -2433,6 +2451,7 @@ class _RecordingLanguageRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

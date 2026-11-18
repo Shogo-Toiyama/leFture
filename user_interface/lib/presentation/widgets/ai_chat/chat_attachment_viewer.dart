@@ -493,5 +493,7 @@ Future<void> showChatPdfViewer(
         ],
       ),
     ),
+    // PDFを一本指でスクロールできるように。シートは見出しで動かす。
+    dragFromHeaderOnly: true,
   );
 }
