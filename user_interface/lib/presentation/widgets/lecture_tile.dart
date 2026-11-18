@@ -175,7 +175,9 @@ class LectureTile extends ConsumerWidget {
               ),
               child: imageProvider == null
                   ? Icon(
-                      Icons.description_outlined,
+                      lecture.courseId == null
+                          ? Icons.description_outlined
+                          : CourseStyleHelper.getIcon(parentCourse?.icon),
                       color: themeColor,
                       size: 22,
                     )

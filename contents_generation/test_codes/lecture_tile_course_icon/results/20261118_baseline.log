@@ -1,0 +1,2 @@
+On the existing Flutter tile the assigned science icon assertion failed. The unassigned Document and image-precedence checks reached their assertions. The image fixture initially used an app icon that is not bundled as a runtime asset; the final run uses a bundled tutorial image.
+Fixture source: local Flutter course and lecture models with overridden providers. No network requests or model calls.

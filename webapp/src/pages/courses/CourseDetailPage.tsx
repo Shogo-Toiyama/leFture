@@ -358,6 +358,7 @@ export const CourseDetailPage: React.FC = () => {
                 lecture={lecture}
                 courseCode={course.course_code}
                 courseColor={accent}
+                courseIcon={course.metadata?.icon}
                 onEdit={() => setEditingLecture(lecture)}
                 onDelete={() => handleDeleteLecture(lecture)}
               />

@@ -1,0 +1,5 @@
+2026-11-18 validation
+Flutter widget test: passed. Covers a configured course icon with its course label hidden, the default school icon, the unassigned Document icon, and image precedence.
+Web React render probe: five cases passed. Covers a configured course icon, the default school icon, the unassigned Document icon, an image path still waiting for data, and a ready image.
+Web production build: TypeScript and Vite passed. Vite reported 2.41 seconds.
+Rendering checks used local fixtures. No R2 or Supabase network requests, model tokens, or model API costs. Production image latency was not measured.

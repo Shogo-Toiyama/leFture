@@ -6,6 +6,7 @@ import { lectureDisplayTitle } from '../types/lecture';
 import { TopicImage } from './TopicImage';
 import { useFirstTopicImagePath } from '../hooks/useFirstTopicImagePath';
 import { coverThumbPathOf } from '../lib/topicImagePaths';
+import { CourseIconGlyph } from '../lib/courseIcons';
 import { useLanguage } from '../i18n/LanguageContext';
 
 export interface LectureTileProps {
@@ -13,6 +14,7 @@ export interface LectureTileProps {
   to?: string;
   courseCode?: string | null;
   courseColor?: string | null;
+  courseIcon?: string | null;
   onEdit?: () => void;
   onDelete?: () => void;
 }
@@ -22,6 +24,7 @@ export const LectureTile: React.FC<LectureTileProps> = ({
   to,
   courseCode,
   courseColor,
+  courseIcon,
   onEdit,
   onDelete,
 }) => {
@@ -69,20 +72,23 @@ export const LectureTile: React.FC<LectureTileProps> = ({
       <Link to={targetUrl} className="lecture-tile-card">
         {/* Left: Thumbnail Image or Icon */}
         <div className="lecture-tile-thumb-box">
-          {tileImagePath ? (
-            <TopicImage
-              imagePath={tileImagePath}
-              alt={title}
-              className="lecture-tile-thumb-img"
-            />
-          ) : (
-            <div className="lecture-tile-fallback-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="tile-svg">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <polyline points="14 2 14 8 20 8" />
-              </svg>
-            </div>
-          )}
+          <TopicImage
+            imagePath={tileImagePath}
+            alt={title}
+            className="lecture-tile-thumb-img"
+            fallback={
+              <div className="lecture-tile-fallback-icon" aria-hidden="true">
+                {lecture.course_id ? (
+                  <CourseIconGlyph icon={courseIcon} size={22} />
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="tile-svg">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                )}
+              </div>
+            }
+          />
         </div>
 
         {/* Center: Title & Metadata */}
