@@ -930,10 +930,14 @@ class RecordingPage extends HookConsumerWidget {
               Column(
                 children: [
                   Expanded(
-                    child: SingleChildScrollView(
+                    // 録音中は状態の更新で中身がレイアウトし直される。SingleChildScrollViewは
+                    // レイアウトのたびに端を越えた位置(跳ね返りの途中)を範囲内へ戻すため、
+                    // 端で何度も引き戻されてガタつく。スライバーのListViewはそうしない。
+                    child: ListView(
                       controller: scrollController,
                       padding: const EdgeInsets.all(20),
-                      child: Center(
+                      children: [
+                        Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 500),
                           child: Column(
@@ -2024,6 +2028,7 @@ class RecordingPage extends HookConsumerWidget {
                           ),
                         ),
                       ),
+                      ],
                     ),
                   ),
 
@@ -2578,12 +2583,14 @@ class _LiveTab extends HookConsumerWidget {
               ? minTranscriptHeight
               : availableTranscriptHeight;
 
-          return SingleChildScrollView(
+          // SingleChildScrollViewにしない(録音中の更新で端の跳ね返りが引き戻されるため。Tab 1の注を参照)。
+          return ListView(
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
             padding: EdgeInsets.fromLTRB(20, 20, 20, 36 + bottomSafeArea),
-            child: Center(
+            children: [
+              Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 640),
                 child: Column(
@@ -2615,6 +2622,7 @@ class _LiveTab extends HookConsumerWidget {
                 ),
               ),
             ),
+            ],
           );
         } else {
           // Realtime OFF の場合
@@ -2626,12 +2634,14 @@ class _LiveTab extends HookConsumerWidget {
               ? minTimelineHeight
               : availableTimelineHeight;
 
-          return SingleChildScrollView(
+          // SingleChildScrollViewにしない(録音中の更新で端の跳ね返りが引き戻されるため。Tab 1の注を参照)。
+          return ListView(
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
             padding: EdgeInsets.fromLTRB(20, 20, 20, 36 + bottomSafeArea),
-            child: Center(
+            children: [
+              Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 640),
                 child: Column(
@@ -2659,6 +2669,7 @@ class _LiveTab extends HookConsumerWidget {
                 ),
               ),
             ),
+            ],
           );
         }
       },

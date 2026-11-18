@@ -809,7 +809,10 @@ class _StickToBottomPhysics extends ScrollPhysics {
     required bool isScrolling,
     required double velocity,
   }) {
-    final wasAtBottom = oldPosition.pixels <= 1.0;
+    // oldPositionは最後にレイアウトした時点の位置。指が1フレームの間に動いて離れると
+    // (間にレイアウトが入らないと)古いまま0に残るので、今の位置も最下部かを見る。
+    // 見ないと、ユーザーが上へ動かした分が最下部へ戻されてしまう。
+    final wasAtBottom = oldPosition.pixels <= 1.0 && newPosition.pixels <= 1.0;
     if (!isScrolling && velocity == 0 && wasAtBottom) {
       return 0.0;
     }
