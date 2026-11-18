@@ -1059,12 +1059,15 @@ void main() {
 
     double viewportBottom(WidgetTester tester) => tester.getRect(messageList()).bottom;
 
-    /// 指で[dy]だけ下へ動かし、止めてから離す(慣性スクロールを残さない)。
+    /// 指で[dy]だけ下へ(負なら上へ)動かし、止めてから離す(慣性スクロールを残さない)。
     Future<void> scrollUpBy(WidgetTester tester, double dy) async {
       final gesture = await tester.startGesture(tester.getCenter(messageList()));
       const step = 20.0;
-      for (var moved = 0.0; moved < dy; moved += step) {
-        await gesture.moveBy(Offset(0, step < dy - moved ? step : dy - moved));
+      final sign = dy < 0 ? -1.0 : 1.0;
+      final total = dy.abs();
+      for (var moved = 0.0; moved < total; moved += step) {
+        final d = step < total - moved ? step : total - moved;
+        await gesture.moveBy(Offset(0, sign * d));
         await tester.pump(const Duration(milliseconds: 16));
       }
       await tester.pump(const Duration(milliseconds: 300));
@@ -1152,6 +1155,62 @@ void main() {
       for (var i = 8; i < 11; i++) {
         await receive(tester, paragraph(i));
         expect(tester.getTopLeft(reading).dy, closeTo(before, 0.5), reason: 'delta $i');
+      }
+      await finishStreaming(tester);
+    }, variant: platforms, timeout: const Timeout(Duration(seconds: 60)));
+
+    testWidgets('受信が続いている最中でも、指で上へ動かせる(最下部へ引き戻されない)', (tester) async {
+      await startStreaming(tester);
+      final gesture = await tester.startGesture(tester.getCenter(messageList()));
+      // 実機と同じく、指を動かしている間にも回答が届き続ける
+      for (var i = 4; i < 24; i++) {
+        await gesture.moveBy(const Offset(0, 20));
+        await receive(tester, paragraph(i));
+      }
+      await gesture.up();
+      await tester.pump(const Duration(milliseconds: 500));
+      // 合計400px動かしたので、最新の段落は画面の下端より下にある
+      expect(newestBottom(tester, 23), greaterThan(viewportBottom(tester) + 200));
+
+      // 指を離したあとも、受信で引き戻されない
+      await receive(tester, paragraph(24));
+      expect(newestBottom(tester, 24), greaterThan(viewportBottom(tester) + 200));
+      await finishStreaming(tester);
+    }, variant: platforms, timeout: const Timeout(Duration(seconds: 60)));
+
+    testWidgets('最下部から上へ素早く払うと、受信が続いても慣性のまま上へ進む', (tester) async {
+      await startStreaming(tester);
+      // 指の移動は60pxだけ(離す瞬間はまだ最下部から96px以内)、速度は速い
+      await tester.fling(messageList(), const Offset(0, 60), 2500);
+      for (var i = 4; i < 12; i++) {
+        await receive(tester, paragraph(i));
+      }
+      await tester.pump(const Duration(seconds: 2));
+      // 遠くまで進むと、最新の段落は(画面からずっと下にあって)まだ作られていない
+      final newest = find.textContaining('Delta paragraph 11.', findRichText: true);
+      if (newest.evaluate().isNotEmpty) {
+        expect(newestBottom(tester, 11), greaterThan(viewportBottom(tester) + 200));
+      }
+      // 最下部へ戻されていない: 最初に見ていた段落も画面の下端より下にある
+      final first = find.textContaining('Delta paragraph 3.', findRichText: true);
+      if (first.evaluate().isNotEmpty) {
+        expect(tester.getTopLeft(first.first).dy, greaterThan(viewportBottom(tester)));
+      }
+      await finishStreaming(tester);
+    }, variant: platforms, timeout: const Timeout(Duration(seconds: 60)));
+
+    testWidgets('上へ読み戻してから自分で最下部まで戻ると、また追従する', (tester) async {
+      await startStreaming(tester);
+      await scrollUpBy(tester, 400);
+      await receive(tester, paragraph(4));
+      expect(newestBottom(tester, 4), greaterThan(viewportBottom(tester) + 200));
+
+      await scrollUpBy(tester, -1000); // 指を上へ: 最下部まで戻る
+      for (var i = 5; i < 8; i++) {
+        await receive(tester, paragraph(i));
+        final bottom = newestBottom(tester, i);
+        expect(bottom, lessThanOrEqualTo(viewportBottom(tester)), reason: 'delta $i');
+        expect(bottom, greaterThan(viewportBottom(tester) - 60), reason: 'delta $i');
       }
       await finishStreaming(tester);
     }, variant: platforms, timeout: const Timeout(Duration(seconds: 60)));

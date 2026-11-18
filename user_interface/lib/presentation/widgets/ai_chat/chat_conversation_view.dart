@@ -2,6 +2,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart' show VelocityTracker;
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lefture/application/chat/chat_conversation.dart';
 import 'package:lefture/domain/entities/chat.dart';
@@ -17,6 +19,9 @@ import 'package:lefture/presentation/widgets/ai_chat/launch_gate_backdrop.dart';
 
 /// 下端からこの距離以内にいるときだけ、新しい文字に合わせて自動で下へ追従する。
 const _stickToBottomPx = 96.0;
+
+/// 指を離したとき、指がこの速さ(px/秒)以上で下へ(過去側へ)動いていたら、追従に戻さない。
+const _flingAwayVelocity = 100.0;
 
 /// 会話の画面を外から操作する(シートのヘッダーのクリップのボタンから、資料の一覧を開く)。
 class ChatConversationController {
@@ -99,6 +104,14 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   /// はみ出すまではスクロールできないので、読んでいる文章が流れることもない。
   bool _overflowing = false;
 
+  /// 指で動かしている(または指を離したあとの慣性で動いている)最中か。
+  /// この間は最下部への追従を止め、判定も更新しない。受信は1秒に何度も来るので、
+  /// 追従が残っていると、96px離れる前に毎回最下部へ戻されて上へ動かせない。
+  bool _userScrolling = false;
+
+  /// 指の速さ。指を離したときに、最下部から遠ざかる向きに払ったかを見る。
+  VelocityTracker? _pointerVelocity;
+
   /// 入力欄の中身を変える依頼。
   ChatPrefill? _prefill;
 
@@ -153,7 +166,11 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   void _onScroll() {
     if (!_scroll.hasClients) return;
     final p = _scroll.position;
-    _stickToBottom = p.maxScrollExtent - p.pixels < _stickToBottomPx;
+    // 指で動かしている間と、慣性で動いている間は判定しない(払い始めの位置で追従に戻ると、
+    // 次の受信で払った動きが止められてしまう)。判定は指を離したときと止まったときに行う。
+    if (!_userScrolling && !p.isScrollingNotifier.value) {
+      _stickToBottom = p.maxScrollExtent - p.pixels < _stickToBottomPx;
+    }
 
     // 最上部(過去メッセージ側)に近づいたら過去ログを読み込む
     if (p.pixels - p.minScrollExtent <= 150) {
@@ -169,7 +186,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   /// [_StickToBottomPhysics]がレイアウト中に行うので、ここは離れていたときだけ動く)。
   void _scrollToBottomSoon() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scroll.hasClients) return;
+      if (!mounted || !_scroll.hasClients || _userScrolling) return;
       final p = _scroll.position;
       if (p.maxScrollExtent - p.pixels > 0.5) {
         _scroll.jumpTo(p.maxScrollExtent);
@@ -563,7 +580,17 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
                         suggestions: _suggestions(l10n, selectedText != null),
                         onPick: _setPrefill,
                       )
-                    : NotificationListener<ScrollMetricsNotification>(
+                    : Listener(
+                        onPointerDown: (e) =>
+                            _pointerVelocity = VelocityTracker.withKind(e.kind)
+                              ..addPosition(e.timeStamp, e.position),
+                        onPointerMove: (e) =>
+                            _pointerVelocity?.addPosition(e.timeStamp, e.position),
+                        onPointerUp: (_) => _onPointerReleased(),
+                        onPointerCancel: (_) => _onPointerReleased(),
+                        child: NotificationListener<ScrollNotification>(
+                        onNotification: _onListScroll,
+                        child: NotificationListener<ScrollMetricsNotification>(
                         onNotification: _onListMetrics,
                         child: _MessageList(
                           controller: _scroll,
@@ -577,6 +604,8 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
                             ),
                           ),
                         ),
+                      ),
+                      ),
                       ),
               ),
             ],
@@ -695,6 +724,38 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   ) => _overflowing
       ? built
       : (history: [...built.history, ...built.live], live: const <Widget>[]);
+
+  /// 指で動かし始めたら追従をやめる。
+  bool _onListScroll(ScrollNotification n) {
+    if (n.depth != 0) return false;
+    if ((n is ScrollStartNotification && n.dragDetails != null) ||
+        (n is UserScrollNotification && n.direction != ScrollDirection.idle)) {
+      _userScrolling = true;
+      _stickToBottom = false;
+    } else if (n is ScrollEndNotification && _userScrolling) {
+      _onPointerReleased();
+    }
+    return false;
+  }
+
+  /// 指を離した瞬間に最下部の近く(または最下部より先)にいれば、追従に戻す。
+  /// ただし最下部から遠ざかる向きに払った(慣性で上へ進む)ときは戻さない。
+  /// スクロールの通知は、iOSの跳ね返りが終わるまで「スクロール中」のままなので使わない
+  /// (その間に回答が伸びると、止まった位置が新しい最下部から離れてしまう)。
+  /// 跳ね返りの途中で回答が届いたら、[_scrollToBottomSoon]が新しい最下部へ合わせる。
+  void _onPointerReleased() {
+    if (!_userScrolling || !_scroll.hasClients) return;
+    _userScrolling = false;
+    final p = _scroll.position;
+    // 指が下へ動いている = 過去側(最下部から遠ざかる向き)へ払った
+    final fingerDy =
+        _pointerVelocity?.getVelocity().pixelsPerSecond.dy ?? 0;
+    _pointerVelocity = null;
+    final pastBottom = p.pixels >= p.maxScrollExtent;
+    _stickToBottom = pastBottom ||
+        (p.maxScrollExtent - p.pixels < _stickToBottomPx &&
+            fingerDy < _flingAwayVelocity);
+  }
 
   /// 全部が基準点より上にある間は、minScrollExtent < 0 が「画面からはみ出した」の意味。
   /// はみ出したら次のフレームでliveを基準点より下へ移す(最下部にいるので見た目は変わらない)。
