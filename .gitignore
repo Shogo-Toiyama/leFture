@@ -14,6 +14,8 @@ __pycache__/
 !user_interface/assets/**/*.jpg
 !user_interface/assets/*.png
 user_interface/assets/icon_foreground 2*.png
+# Flutterのゴールデンテストの基準画像
+!user_interface/test/goldens/*.png
 !lefture_backend/app/assets/**/*.jpg
 *.wav
 *.m4a
