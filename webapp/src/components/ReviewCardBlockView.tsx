@@ -5,7 +5,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-import { prepareMath } from '../lib/markdownText';
+import { prepareMath, remarkBracketEmphasis } from '../lib/markdownText';
 import { AnnotatedMarkdown } from './annotations/AnnotatedMarkdown';
 import { AskOnlyRegion } from './annotations/AskOnlyRegion';
 import { blockMarkdownSource, blockRawMarkdownSource, isAnnotatableBlock } from '../lib/reviewCardBlocks';
@@ -34,7 +34,10 @@ export const ReviewCardBlockView: React.FC<ReviewCardBlockViewProps> = ({
   if (block.type === 'code') {
     const explanation = block.explanation && (
       <div className="rc-code-explanation rcv-code-explanation">
-        <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkMath, remarkBracketEmphasis]}
+          rehypePlugins={[rehypeKatex]}
+        >
           {prepareMath(stripSidCitations(block.explanation))}
         </ReactMarkdown>
       </div>

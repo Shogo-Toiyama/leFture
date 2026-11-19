@@ -1,0 +1,6 @@
+PASS CJK bold includes parentheses at both edges
+PASS Code, escaped markers and math keep their meaning
+PASS Highlight covers the same text as the bold span
+PASS Touch swipe preserves departing and revisited card offsets (first 230 → 230 → 230, second 0 → 120 → 120)
+ALL PASSED
+Elapsed: 1797 ms

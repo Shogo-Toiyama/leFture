@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { ReviewCardBlockView } from '../ReviewCardBlockView';
 import { reviewCardTypeColor } from '../../lib/reviewCardTheme';
 import type { Annotation } from '../../types/annotation';
@@ -10,6 +10,8 @@ interface ReviewCardFaceProps {
   /** トピック画像。null のときは無地の紙カードになる。 */
   imageUrl: string | null;
   typeLabel: string;
+  scrollOffsets: Map<string, number>;
+  interactive: boolean;
 }
 
 /**
@@ -24,10 +26,23 @@ export const ReviewCardFace: React.FC<ReviewCardFaceProps> = ({
   annotations,
   imageUrl,
   typeLabel,
+  scrollOffsets,
+  interactive,
 }) => {
   const typeColor = reviewCardTypeColor(card.card_type);
   const emoji = card.hero_emoji?.trim() || '💡';
   const title = card.title?.trim();
+  const scrollRef = useCallback((element: HTMLDivElement | null) => {
+    if (!element) return;
+    element.scrollTop = scrollOffsets.get(card.id) ?? 0;
+    if (interactive) {
+      // React detaches the active card before attaching its animation copy.
+      // Read the DOM here so a queued scroll event cannot leave a stale offset.
+      return () => {
+        scrollOffsets.set(card.id, Math.max(0, element.scrollTop));
+      };
+    }
+  }, [card.id, interactive, scrollOffsets]);
 
   return (
     <article
@@ -38,7 +53,7 @@ export const ReviewCardFace: React.FC<ReviewCardFaceProps> = ({
       }}
     >
       <div className="rcv-paper">
-        <div className="rcv-scroll">
+        <div className="rcv-scroll" ref={scrollRef}>
           <div className="rcv-hero-emoji" aria-hidden="true">
             {emoji}
           </div>

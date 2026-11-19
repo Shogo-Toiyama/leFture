@@ -243,6 +243,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
       duration: const Duration(milliseconds: 350),
     );
 
+    // The same card is remounted when the viewer enters or leaves the
+    // animated stack. Keep its latest vertical position for both mounts.
+    final cardScrollOffsets = useMemoized(() => <String, double>{}, [lectureId]);
+
     // committedIndex: タイトル/カウンター/カード別ツールバー/進捗バーの塗り/
     // useEffectを駆動する「確定した」カード。ジェスチャーが確定した瞬間にだけ
     // 更新する(ドラッグ/スクラブの途中で更新すると他のUIがチラつくため)。
@@ -662,7 +666,8 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     Widget buildCard(int cardIdx) {
       final item = flatItems[cardIdx.clamp(0, totalCards - 1)];
       final imagePath = groups[item.groupIndex].imagePath;
-      if (item.isCover) {
+      final card = item.card;
+      if (card == null) {
         return _CoverCard(
           title: groups[item.groupIndex].title,
           images: images,
@@ -671,7 +676,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
         );
       }
       return _ContentCard(
-        card: item.card!,
+        key: ValueKey(card.id),
+        card: card,
+        scrollOffsets: cardScrollOffsets,
         images: images,
         imagePath: imagePath,
         themeColor: textThemeColor,
@@ -2296,9 +2303,11 @@ String reviewCardTypeLabel(BuildContext context, String? cardType) {
 // ---------------------------------------------------------------------------
 // Content card
 // ---------------------------------------------------------------------------
-class _ContentCard extends StatelessWidget {
+class _ContentCard extends HookWidget {
   const _ContentCard({
+    super.key,
     required this.card,
+    required this.scrollOffsets,
     required this.images,
     this.imagePath,
     required this.themeColor,
@@ -2313,6 +2322,7 @@ class _ContentCard extends StatelessWidget {
   });
 
   final ReviewCard card;
+  final Map<String, double> scrollOffsets;
   final Map<String, AsyncValue<File>> images;
   final String? imagePath;
   final Color themeColor;
@@ -2369,7 +2379,26 @@ class _ContentCard extends StatelessWidget {
           .toList(),
     );
 
+    final scrollController = useScrollController(
+      initialScrollOffset: scrollOffsets[card.id] ?? 0,
+      keepScrollOffset: false,
+    );
+    useEffect(() {
+      void rememberOffset() {
+        final position = scrollController.position;
+        if (!position.hasContentDimensions) return;
+        scrollOffsets[card.id] = position.pixels.clamp(
+          position.minScrollExtent,
+          position.maxScrollExtent,
+        );
+      }
+
+      scrollController.addListener(rememberOffset);
+      return () => scrollController.removeListener(rememberOffset);
+    }, [scrollController, scrollOffsets, card.id]);
+
     final content = SingleChildScrollView(
+      controller: scrollController,
       padding: EdgeInsets.fromLTRB(
         hasImage ? 20 : 28,
         hasImage ? 20 : 28,

@@ -16,7 +16,7 @@ import {
   parseCitationHref,
   stripCitationMarkers,
 } from '../../lib/chatCitations';
-import { fixBoldPunctuationSpacing, prepareMath } from '../../lib/markdownText';
+import { fixBoldPunctuationSpacing, prepareMath, remarkBracketEmphasis } from '../../lib/markdownText';
 import type { LocalChatMessage } from '../../hooks/useChatConversation';
 import {
   CHAT_MAX_SELECTED_TOKENS,
@@ -325,7 +325,7 @@ const UserMessage: React.FC<{
 };
 
 // 回答本文のMarkdown: GFM(表など)と数式(KaTeX)
-const MARKDOWN_REMARK_PLUGINS = [remarkGfm, remarkMath];
+const MARKDOWN_REMARK_PLUGINS = [remarkGfm, remarkMath, remarkBracketEmphasis];
 const MARKDOWN_REHYPE_PLUGINS = [rehypeKatex];
 
 function canOpenCitation(citation: ChatCitation | undefined): boolean {
@@ -445,7 +445,9 @@ const AssistantMessage: React.FC<{
         <div className="chat-care" role="note">
           <HeartHandshake size={18} className="chat-care-icon" />
           <div className="chat-markdown">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{fixBoldPunctuationSpacing(message.content)}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBracketEmphasis]}>
+              {fixBoldPunctuationSpacing(message.content)}
+            </ReactMarkdown>
           </div>
         </div>
       </div>

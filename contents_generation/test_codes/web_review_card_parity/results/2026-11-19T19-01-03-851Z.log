@@ -1,0 +1,5 @@
+FAIL CJK bold includes parentheses at both edges: strong elements were ["サンク(thunk)"]
+PASS Code, escaped markers and math keep their meaning
+FAIL Highlight covers the same text as the bold span: highlight covered **サンク(thun
+FAIL Touch swipe preserves departing and revisited card offsets: first 230 → 0 → 0, second 0 → 0 → 0
+Elapsed: 2169 ms

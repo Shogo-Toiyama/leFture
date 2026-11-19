@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import { prepareMath } from '../../lib/markdownText';
+import { prepareMath, remarkBracketEmphasis } from '../../lib/markdownText';
 import { rehypeAnnotations } from '../../lib/markdownAnnotations';
 import { useAnnotationLayer } from './AnnotationContext';
 import type { Annotation } from '../../types/annotation';
@@ -43,7 +43,7 @@ export const AnnotatedMarkdown: React.FC<AnnotatedMarkdownProps> = ({
   }, [layer, key, blockIdx, rawMarkdown]);
 
   const preparedMarkdown = useMemo(() => prepareMath(markdown), [markdown]);
-  const remarkPlugins = useMemo(() => [remarkGfm, remarkMath], []);
+  const remarkPlugins = useMemo(() => [remarkGfm, remarkMath, remarkBracketEmphasis], []);
   const rehypePlugins = useMemo(() => [rehypeAnnotations(annotations), rehypeKatex], [annotations]);
 
   const urlTransform = useMemo(

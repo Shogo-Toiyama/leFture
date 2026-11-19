@@ -61,6 +61,7 @@ export const ReviewCardsPage: React.FC = () => {
   const [dir, setDir] = useState<'next' | 'prev'>('next');
   const [leaving, setLeaving] = useState<number | null>(null);
   const indexRef = useRef(0);
+  const scrollOffsets = useMemo(() => new Map<string, number>(), [lectureId]);
 
   useEffect(() => {
     if (!lectureId) return;
@@ -243,6 +244,8 @@ export const ReviewCardsPage: React.FC = () => {
         annotations={readAnnotations(target.card.metadata)}
         imageUrl={targetImage}
         typeLabel={typeLabel(target.card.card_type)}
+        scrollOffsets={scrollOffsets}
+        interactive={interactive}
       />
     );
 

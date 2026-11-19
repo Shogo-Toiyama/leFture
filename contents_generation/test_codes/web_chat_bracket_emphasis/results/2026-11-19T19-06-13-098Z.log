@@ -1,0 +1,7 @@
+FAIL Completed reply: ["サンク(thunk","遅延評価"]
+FAIL Streaming reply: ["サンク(thunk","遅延評価"]
+FAIL Care message: ["サンク(thunk","遅延評価"]
+FAIL Citation preview: ["サンク(thunk","遅延評価"]
+PASS Shared annotated Markdown
+FAIL Non-bracket punctuation, inline code, math and citation: Mixed brackets and punctuation changed
+Elapsed: 284 ms
