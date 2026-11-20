@@ -292,6 +292,9 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     final tapDownPosition = useRef<Offset?>(null);
     final tapDownTime = useRef<Duration>(Duration.zero);
     final tapMoved = useRef<bool>(false);
+    // 指を置いた位置が用語マークの上か。用語のタップは定義シートを開くための
+    // ものなので、めくりには使わない(hitsTermMark参照)。
+    final tapOnTerm = useRef<bool>(false);
     // scrubPos: 進捗バーをなぞっている間の「小数付きカード位置」。整数部が今
     // めくられているカード、小数部がめくれ具合になるので、指の速さに関わらず
     // 前後どちらへも途切れずにパラパラめくれる。
@@ -1529,6 +1532,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                           tapDownPosition.value = event.localPosition;
                           tapDownTime.value = event.timeStamp;
                           tapMoved.value = false;
+                          tapOnTerm.value = hitsTermMark(
+                            context,
+                            event.position,
+                          );
                         },
                         onPointerMove: (event) {
                           final start = tapDownPosition.value;
@@ -1545,6 +1552,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
                           // 指が動いていればスワイプ、長く押されていれば選択操作
                           // なので、どちらもめくりとしては扱わない。
                           if (start == null || tapMoved.value) return;
+                          if (tapOnTerm.value) return;
                           if (event.timeStamp - tapDownTime.value >
                               kLongPressTimeout) {
                             return;

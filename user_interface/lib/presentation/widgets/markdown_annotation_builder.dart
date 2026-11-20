@@ -39,6 +39,30 @@ import 'package:lefture/core/utils/annotation_text_utils.dart';
 import 'package:lefture/core/utils/term_glossary.dart';
 import 'package:lefture/domain/entities/annotation.dart';
 
+/// 用語マーク(講義キーワード)のTextSpanに付けるタップ認識器。
+/// 型で見分けられるようにするためだけのサブクラスで、[hitsTermMark]が使う。
+class TermTapGestureRecognizer extends TapGestureRecognizer {}
+
+/// [globalPosition]の下に用語マークがあるか。
+///
+/// ReviewCardsはカード本文のタップを、ジェスチャーアリーナに参加しない
+/// Listenerのpointer upで「めくり」として扱う。pointer upはアリーナの決着
+/// (=用語のonTap)より先に届くため、onTapでフラグを立てても間に合わない。
+/// そこで指を置いた時点で自前でhit testし、用語の上ならめくらないようにする
+/// (RenderParagraphはタップ位置のTextSpanをhit testの経路に積む)。
+bool hitsTermMark(BuildContext context, Offset globalPosition) {
+  final result = HitTestResult();
+  WidgetsBinding.instance.hitTestInView(
+    result,
+    globalPosition,
+    View.of(context).viewId,
+  );
+  return result.path.any((entry) {
+    final target = entry.target;
+    return target is TextSpan && target.recognizer is TermTapGestureRecognizer;
+  });
+}
+
 /// Tags this builder must be registered under. Callers pass one shared
 /// instance to `MarkdownBody(builders: annotationMarkdownBuilders(builder))`.
 Map<String, MarkdownElementBuilder> annotationMarkdownBuilders(
@@ -301,7 +325,7 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
         final entry = term.entry;
         TapGestureRecognizer? recognizer;
         if (onTermTap != null) {
-          recognizer = TapGestureRecognizer()
+          recognizer = TermTapGestureRecognizer()
             ..onTap = () => onTermTap?.call(entry);
           _recognizers.add(recognizer);
         }
