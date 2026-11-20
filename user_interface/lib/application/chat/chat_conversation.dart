@@ -77,32 +77,27 @@ class LocalChatMessage {
   LocalChatMessage copyWith({
     ChatMessage? message,
     ({String code, Map<String, dynamic> detail})? failed,
-    ChatStage? stage,
+    ChatStatusEvent? status,
     String? thoughtText,
-    List<String>? searchDetail,
-    String? searchQuery,
-    String? searchTarget,
-    String? searchLayer,
-    String? searchHandle,
     List<ChatCitation>? pendingSources,
     bool? reconnecting,
     bool? stopping,
     bool? stopFailed,
     bool clearProgress = false,
   }) {
+    final replaceSearch = clearProgress || status != null;
+    final nextStatus = clearProgress ? null : status;
     return LocalChatMessage(
       message: message ?? this.message,
       failedCode: failed?.code ?? failedCode,
       failedDetail: failed?.detail ?? failedDetail,
-      stage: clearProgress ? null : stage ?? this.stage,
+      stage: clearProgress ? null : status?.stage ?? stage,
       thoughtText: clearProgress ? null : thoughtText ?? this.thoughtText,
-      searchDetail: clearProgress
-          ? const []
-          : searchDetail ?? this.searchDetail,
-      searchQuery: clearProgress ? null : searchQuery ?? this.searchQuery,
-      searchTarget: clearProgress ? null : searchTarget ?? this.searchTarget,
-      searchLayer: clearProgress ? null : searchLayer ?? this.searchLayer,
-      searchHandle: clearProgress ? null : searchHandle ?? this.searchHandle,
+      searchDetail: replaceSearch ? nextStatus?.detail ?? const [] : searchDetail,
+      searchQuery: replaceSearch ? nextStatus?.query : searchQuery,
+      searchTarget: replaceSearch ? nextStatus?.target : searchTarget,
+      searchLayer: replaceSearch ? nextStatus?.layer : searchLayer,
+      searchHandle: replaceSearch ? nextStatus?.handle : searchHandle,
       pendingSources: clearProgress
           ? null
           : pendingSources ?? this.pendingSources,
@@ -499,17 +494,7 @@ class ChatConversation extends _$ChatConversation {
             unawaited(_performStop(assistantId, stream));
           }
         case ChatStatusEvent():
-          patch(
-            assistantId,
-            (m) => m.copyWith(
-              stage: event.stage,
-              searchDetail: event.detail,
-              searchQuery: event.query,
-              searchTarget: event.target,
-              searchLayer: event.layer,
-              searchHandle: event.handle,
-            ),
-          );
+          patch(assistantId, (m) => m.copyWith(status: event));
         case ChatSourcesEvent():
           patch(assistantId, (m) => m.copyWith(pendingSources: event.sources));
         case ChatAttachmentsEvent():

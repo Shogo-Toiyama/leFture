@@ -47,7 +47,10 @@ String chatStageLabel(AppLocalizations l, LocalChatMessage message) {
             ? l.aiChatStageReadingTranscript
             : l.aiChatStageReadingNotes;
       }
-      return l.aiChatStageSearching;
+      if (message.searchTarget == 'lectures' || detail.contains('lectures')) {
+        return l.aiChatStageSearching;
+      }
+      return l.aiChatStageThinking;
     case ChatStage.reasoning:
       return l.aiChatStageReasoning;
     case ChatStage.writing:

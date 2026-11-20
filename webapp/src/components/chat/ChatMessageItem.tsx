@@ -509,7 +509,7 @@ const AssistantMessage: React.FC<{
       stageLabel = message.searchHandle.includes('/s')
         ? t('chatStageReadingTranscript')
         : t('chatStageReadingNotes');
-    } else {
+    } else if (message.searchTarget === 'lectures' || detail.includes('lectures')) {
       stageLabel = t('chatStageSearching');
     }
   } else if (message.stage === 'reasoning') {

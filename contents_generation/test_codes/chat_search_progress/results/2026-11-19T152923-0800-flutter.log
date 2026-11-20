@@ -1,0 +1,30 @@
+00:00 +0: loading /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/chat_search_progress/flutter_progress_test.dart
+00:00 +0: /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/chat_search_progress/flutter_progress_test.dart: Streaming status uses the current search target in en
+00:00 +1: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 送信 送信中は仮のid、metaで本物のidに変わり、deltaで本文が伸び、doneで確定する
+00:00 +2: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 送信 送信中は仮のid、metaで本物のidに変わり、deltaで本文が伸び、doneで確定する
+00:00 +3: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 送信 空のメッセージは送らない。送信中の二重送信も無視する
+00:00 +4: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 送信 送る前に弾かれたら(残高不足)、返答の枠は消えて「送れなかった」になる
+00:00 +5: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 送信 送れなかったメッセージは、同じ内容で再送できる
+00:00 +6: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 送信 送れなかったメッセージは、画面から消せる
+00:00 +7: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 送信 errorイベントでは返答がerrorになる(課金なし)
+00:00 +8: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 送信 資料つきの送信は、メッセージの文脈に資料と渡し方が残る
+00:00 +9: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 編集・作り直し 送る前は、編集したメッセージから後ろが画面から外れる
+00:00 +10: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 編集・作り直し 弾かれたら、会話は元のまま戻り、onRejectedが呼ばれる
+00:00 +11: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 停止 停止を押すと、サーバーが返した確定した行に差し替わり、受信も止まる
+00:00 +12: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 停止 返答のidが届く前に停止を押しても、届いた瞬間に止める
+00:00 +13: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 停止 停止のリクエストが届かなかったら、受信は続き、もう一度押せる
+00:00 +14: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 通信が切れた・裏から戻った metaのあとに切れたら、サーバーで生成が終わるのをDBで待って差し替える
+00:00 +15: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 通信が切れた・裏から戻った 待っても終わらなければ、errorにする
+00:01 +16: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 通信が切れた・裏から戻った 裏から戻ったら、受信中の接続を捨てて、DBの内容で追いつく
+00:01 +17: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 通信が切れた・裏から戻った 生成中でなければ、戻っても何もしない
+00:01 +18: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 開く・キャッシュ 前回のキャッシュを先に出し、サーバーの内容で丸ごと置き換える
+00:01 +19: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 開く・キャッシュ 読み込みに失敗しても、キャッシュがあればそのまま見せる
+00:01 +20: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 開く・キャッシュ キャッシュも無く読み込みに失敗したら、loadFailedになる
+00:01 +21: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 開く・キャッシュ 生成中のまま残っている返答は、完了を待つ
+00:01 +22: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 開く・キャッシュ 新しい会話(null)を開くと空になる
+00:01 +23: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: 開く・キャッシュ 別の会話に切り替えると、前の会話の受信は止める
+00:01 +24: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: サーバーの行はJSONのまま端末に保存され、同じ内容で読み戻せる
+00:01 +25: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: ページネーション(過去ログの読み込み) 20件を超える会話を開いたときは、最新の20件だけを読み込んで hasMore が true になる
+00:01 +26: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: ページネーション(過去ログの読み込み) loadOlderMessages で過去のメッセージが先頭に追加され、最上部に達したら hasMore が false になる
+00:01 +27: /Users/shogo/Documents/Programming/leFture/user_interface/test/application/chat/chat_conversation_test.dart: ページネーション(過去ログの読み込み) 20件以下の会話では最初から hasMore が false になる
+00:01 +28: All tests passed!
