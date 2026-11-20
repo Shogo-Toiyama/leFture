@@ -513,7 +513,7 @@ const AssistantMessage: React.FC<{
       stageLabel = t('chatStageSearching');
     }
   } else if (message.stage === 'reasoning') {
-    stageLabel = t('chatStageReasoning');
+    stageLabel = message.progressLabel ?? t('chatStageThinking');
   } else if (message.stage === 'writing') {
     stageLabel = t('chatStageWriting');
   }
@@ -570,7 +570,6 @@ const AssistantMessage: React.FC<{
           label={stageLabel}
           world={world}
           startedAt={message.created_at}
-          thoughtText={message.thoughtText}
         />
       )}
 

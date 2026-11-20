@@ -30,7 +30,7 @@ export interface LocalChatMessage extends ChatMessage {
   /** 生成中の段階(assistantのみ) */
   stage?: ChatStage;
   /** 生成中の思考テキスト(assistantのみ。完了後は破棄される) */
-  thoughtText?: string;
+  progressLabel?: string;
   /** stageがsearchingのとき、今の周で探しているもの。 */
   searchDetail?: ChatSearchDetail[];
   searchQuery?: string;
@@ -384,6 +384,7 @@ export function useChatConversation(threadId: string | null, options: Options = 
               searchTarget: event.target,
               searchLayer: event.layer,
               searchHandle: event.handle,
+              progressLabel: event.progress_label,
             });
             break;
           case 'sources':
@@ -395,13 +396,6 @@ export function useChatConversation(threadId: string | null, options: Options = 
               context: { attachment_notice: { unpinned: event.unpinned, too_long: event.too_long } },
             });
             void refreshAttachments(activeThreadIdRef.current);
-            break;
-          case 'thought':
-            setMessages((prev) =>
-              prev.map((m) =>
-                m.id === assistantId ? { ...m, thoughtText: (m.thoughtText ?? '') + event.text } : m
-              )
-            );
             break;
           case 'delta':
             setMessages((prev) =>
@@ -417,7 +411,7 @@ export function useChatConversation(threadId: string | null, options: Options = 
               citations: event.citations ?? [],
               credits_charged_micro: Math.round((event.credits_charged ?? 0) * 1_000_000),
               stage: undefined,
-              thoughtText: undefined,
+              progressLabel: undefined,
               pendingSources: undefined,
             });
             break;
@@ -425,7 +419,7 @@ export function useChatConversation(threadId: string | null, options: Options = 
             patchMessage(assistantId, {
               status: 'error',
               stage: undefined,
-              thoughtText: undefined,
+              progressLabel: undefined,
               pendingSources: undefined,
             });
             break;

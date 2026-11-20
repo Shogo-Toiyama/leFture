@@ -52,7 +52,7 @@ String chatStageLabel(AppLocalizations l, LocalChatMessage message) {
       }
       return l.aiChatStageThinking;
     case ChatStage.reasoning:
-      return l.aiChatStageReasoning;
+      return message.progressLabel ?? l.aiChatStageThinking;
     case ChatStage.writing:
       return l.aiChatStageWriting;
     case ChatStage.thinking:

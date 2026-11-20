@@ -4475,7 +4475,7 @@
   "@aiChatJumpToBottom": {
     "description": "Tooltip for the button that jumps to the latest chat message."
   },
-  "aiChatStageThinking": "Thinking…",
+  "aiChatStageThinking": "Thinking...",
   "@aiChatStageThinking": {
     "description": "AI chat. Ported from the web app string \"chatStageThinking\"."
   },

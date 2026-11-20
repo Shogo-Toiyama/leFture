@@ -22,7 +22,6 @@ class ChatThinkingIndicator extends StatefulWidget {
     required this.colors,
     required this.startedAt,
     this.nebulaSize = 34,
-    this.thoughtText,
   });
 
   final String label;
@@ -30,7 +29,6 @@ class ChatThinkingIndicator extends StatefulWidget {
   final ChatColors colors;
   final DateTime startedAt;
   final double nebulaSize;
-  final String? thoughtText;
 
   @override
   State<ChatThinkingIndicator> createState() => _ChatThinkingIndicatorState();
@@ -39,7 +37,6 @@ class ChatThinkingIndicator extends StatefulWidget {
 class _ChatThinkingIndicatorState extends State<ChatThinkingIndicator> {
   Timer? _timer;
   int _seconds = 0;
-  ScrollController? _thoughtScrollController;
 
   @override
   void initState() {
@@ -52,27 +49,6 @@ class _ChatThinkingIndicatorState extends State<ChatThinkingIndicator> {
     });
   }
 
-  @override
-  void didUpdateWidget(ChatThinkingIndicator oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.thoughtText != oldWidget.thoughtText &&
-        widget.thoughtText != null &&
-        widget.thoughtText!.isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted ||
-            _thoughtScrollController == null ||
-            !_thoughtScrollController!.hasClients) {
-          return;
-        }
-        _thoughtScrollController!.animateTo(
-          _thoughtScrollController!.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-        );
-      });
-    }
-  }
-
   /// 端末の時計とサーバーの時刻が少しずれていても、マイナスにはしない。
   int _elapsed() => DateTime.now()
       .toUtc()
@@ -83,7 +59,6 @@ class _ChatThinkingIndicatorState extends State<ChatThinkingIndicator> {
   @override
   void dispose() {
     _timer?.cancel();
-    _thoughtScrollController?.dispose();
     super.dispose();
   }
 
@@ -98,9 +73,6 @@ class _ChatThinkingIndicatorState extends State<ChatThinkingIndicator> {
       height: 1.5,
       color: widget.colors.stageText,
     );
-    final hasThought =
-        widget.thoughtText != null && widget.thoughtText!.trim().isNotEmpty;
-
     final indicatorRow = Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -136,51 +108,10 @@ class _ChatThinkingIndicatorState extends State<ChatThinkingIndicator> {
       ],
     );
 
-    if (!hasThought) {
-      return Semantics(
-        liveRegion: true,
-        label: widget.label,
-        child: indicatorRow,
-      );
-    }
-
-    _thoughtScrollController ??= ScrollController();
-
     return Semantics(
       liveRegion: true,
       label: widget.label,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          indicatorRow,
-          const SizedBox(height: 8),
-          Container(
-            margin: EdgeInsets.only(left: widget.nebulaSize + 10),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            constraints: const BoxConstraints(maxHeight: 140),
-            decoration: BoxDecoration(
-              color: widget.colors.stageText.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: widget.colors.stageText.withValues(alpha: 0.12),
-                width: 0.5,
-              ),
-            ),
-            child: SingleChildScrollView(
-              controller: _thoughtScrollController,
-              child: Text(
-                widget.thoughtText!.trim(),
-                style: TextStyle(
-                  fontSize: 12.0,
-                  height: 1.45,
-                  color: widget.colors.stageText.withValues(alpha: 0.85),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      child: indicatorRow,
     );
   }
 }

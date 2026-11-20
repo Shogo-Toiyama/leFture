@@ -70,6 +70,7 @@ from app.services.chat_navigator import (
     summarize_for_log,
 )
 from app.services.chat_reasoning import REASONING_CONFIG, CheckedWork, check_work, with_checked_work
+from app.services.chat_reasoning_progress import ReasoningProgress
 from app.services.chat_attachments import (
     MAX_ATTACHMENT_CHARS,
     MAX_ATTACHMENT_TITLE_CHARS,
@@ -2504,7 +2505,7 @@ async def _run_turn_steps(
         )
         messages, trimmed_turns = fit_answer_input(messages)
         answer_model, answer_effort = ANSWER_MODEL, ANSWER_REASONING_EFFORT
-        # 「じっくり考えています…」を出すのは推論が要るターンだけ(Haiku 5.5はふだんからeffort lowで少し考えるが、
+        # 推論の進捗を出すのは推論が要るターンだけ(Haiku 5.5はふだんからeffort lowで少し考えるが、
         # 最初の1文字まで1秒もかからないので、ふだんの「書いています」のままにする)
         thinking = False
         checked: Optional[CheckedWork] = None
@@ -2523,7 +2524,6 @@ async def _run_turn_steps(
             else:
                 answer_model = REASONING_CONFIG.single_model or ANSWER_MODEL
                 answer_effort = REASONING_CONFIG.single_effort
-                # 一段で推論するときは、考えている間(最初の1文字まで)「じっくり考えています…」を出す
                 thinking = answer_effort not in (None, "none")
         messages = apply_prompt_cache_controls(messages, answer_model)
         await emit("status", {"stage": "reasoning" if thinking else "writing"})
@@ -2532,17 +2532,40 @@ async def _run_turn_steps(
         timer.mark("answer_started")
         stop.raise_if_stopped()
 
-        async def _on_thought(chunk: str) -> None:
-            if not stop.stopped:
-                await emit("thought", {"text": chunk})
+        async def summarize_progress(excerpt: str) -> str:
+            prompt = _load_prompt("chat_reasoning_progress_prompt.txt").replace(
+                "${reply_language}", decision.reply_language,
+            )
+            result = await llm.generate(
+                "anthropic/claude-haiku-5-5",
+                [Message(role="system", content=prompt), Message(role="user", content=excerpt)],
+                LLMOptions(temperature=1.0, max_tokens=96, reasoning_effort="none"),
+            )
+            return result.output_text
 
-        async for delta in llm.generate_stream(
-            answer_model, messages, state, options, stop_event=stop.event, on_thought=_on_thought,
-        ):
-            if "answer_first_token" not in timer.marks:
-                timer.mark("answer_first_token")
-            progress.answer_parts.append(delta)
-            await emit("delta", {"text": delta})
+        async def publish_progress(label: str) -> None:
+            await emit("status", {"stage": "reasoning", "progress_label": label})
+
+        reasoning_progress = ReasoningProgress(summarize_progress, publish_progress) if thinking else None
+
+        async def on_thought(chunk: str) -> None:
+            if not stop.stopped and reasoning_progress is not None:
+                reasoning_progress.feed(chunk)
+
+        try:
+            async for delta in llm.generate_stream(
+                answer_model, messages, state, options, stop_event=stop.event,
+                on_thought=on_thought if reasoning_progress is not None else None,
+            ):
+                if "answer_first_token" not in timer.marks:
+                    timer.mark("answer_first_token")
+                    if reasoning_progress is not None:
+                        reasoning_progress.close()
+                progress.answer_parts.append(delta)
+                await emit("delta", {"text": delta})
+        finally:
+            if reasoning_progress is not None:
+                reasoning_progress.close()
         timer.mark("answer_done")
         # 止められてストリームを閉じた: 途中までの本文で、run_chat_turnが締める
         progress.answer_usage = {"answer_input_tokens": state.input_tokens, "answer_output_tokens": state.output_tokens,

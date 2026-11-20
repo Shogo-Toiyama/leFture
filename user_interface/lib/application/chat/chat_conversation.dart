@@ -18,7 +18,7 @@ class LocalChatMessage {
     this.failedCode,
     this.failedDetail = const {},
     this.stage,
-    this.thoughtText,
+    this.progressLabel,
     this.searchDetail = const [],
     this.searchQuery,
     this.searchTarget,
@@ -41,8 +41,8 @@ class LocalChatMessage {
   /// 生成中の段階(assistantのみ)。
   final ChatStage? stage;
 
-  /// 生成中の思考テキスト(assistantのみ。完了後は破棄される)。
-  final String? thoughtText;
+  /// 推論中に表示する短い進捗ラベル(完了後は破棄される)。
+  final String? progressLabel;
 
   /// stageがsearchingのとき、今の周で探しているもの('lectures' / 'chats' / 'web' / 'attachments')。
   final List<String> searchDetail;
@@ -78,26 +78,27 @@ class LocalChatMessage {
     ChatMessage? message,
     ({String code, Map<String, dynamic> detail})? failed,
     ChatStatusEvent? status,
-    String? thoughtText,
     List<ChatCitation>? pendingSources,
     bool? reconnecting,
     bool? stopping,
     bool? stopFailed,
     bool clearProgress = false,
   }) {
-    final replaceSearch = clearProgress || status != null;
+    final replaceStatus = clearProgress || status != null;
     final nextStatus = clearProgress ? null : status;
     return LocalChatMessage(
       message: message ?? this.message,
       failedCode: failed?.code ?? failedCode,
       failedDetail: failed?.detail ?? failedDetail,
       stage: clearProgress ? null : status?.stage ?? stage,
-      thoughtText: clearProgress ? null : thoughtText ?? this.thoughtText,
-      searchDetail: replaceSearch ? nextStatus?.detail ?? const [] : searchDetail,
-      searchQuery: replaceSearch ? nextStatus?.query : searchQuery,
-      searchTarget: replaceSearch ? nextStatus?.target : searchTarget,
-      searchLayer: replaceSearch ? nextStatus?.layer : searchLayer,
-      searchHandle: replaceSearch ? nextStatus?.handle : searchHandle,
+      progressLabel: replaceStatus ? nextStatus?.progressLabel : progressLabel,
+      searchDetail: replaceStatus
+          ? nextStatus?.detail ?? const []
+          : searchDetail,
+      searchQuery: replaceStatus ? nextStatus?.query : searchQuery,
+      searchTarget: replaceStatus ? nextStatus?.target : searchTarget,
+      searchLayer: replaceStatus ? nextStatus?.layer : searchLayer,
+      searchHandle: replaceStatus ? nextStatus?.handle : searchHandle,
       pendingSources: clearProgress
           ? null
           : pendingSources ?? this.pendingSources,
@@ -508,13 +509,6 @@ class ChatConversation extends _$ChatConversation {
             ),
           );
           unawaited(_refreshAttachments(state.threadId));
-        case ChatThoughtEvent():
-          patch(
-            assistantId,
-            (m) => m.copyWith(
-              thoughtText: (m.thoughtText ?? '') + event.text,
-            ),
-          );
         case ChatDeltaEvent():
           patch(
             assistantId,

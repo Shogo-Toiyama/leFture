@@ -847,7 +847,7 @@ export const ja: Record<keyof typeof en, string> = {
   chatMessages: 'チャットのメッセージ',
   chatJumpToBottom: '最新のメッセージへ移動',
   chatSend: '送信',
-  chatStageThinking: '考え中…',
+  chatStageThinking: '考え中...',
   chatStageSearching: '講義ノートを検索中…',
   chatStageSearchingWeb: 'Webで検索中…',
   chatStageSearchingChats: '過去のチャットを確認中…',

@@ -659,7 +659,6 @@ class ChatAssistantMessage extends StatelessWidget {
               world: world,
               colors: c,
               startedAt: m.createdAt,
-              thoughtText: message.thoughtText,
             ),
           if (m.content.isNotEmpty) markdown,
           if (isGenerating &&

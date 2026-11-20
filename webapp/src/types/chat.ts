@@ -159,10 +159,10 @@ export type ChatStreamEvent =
       target?: string;
       layer?: string;
       handle?: string;
+      progress_label?: string;
     }
   | { type: 'sources'; sources: ChatCitation[] }
   | ({ type: 'attachments' } & ChatAttachmentNotice)
-  | { type: 'thought'; text: string }
   | { type: 'delta'; text: string }
   | { type: 'replace'; text: string }
   | { type: 'done'; status: ChatMessageStatus; citations?: ChatCitation[]; credits_charged: number }

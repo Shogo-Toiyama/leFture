@@ -478,12 +478,12 @@ sealed class ChatStreamEvent {
           target: data['target'] as String?,
           layer: data['layer'] as String?,
           handle: data['handle'] as String?,
+          progressLabel: data['progress_label'] as String?,
         ),
         'sources' => ChatSourcesEvent(ChatCitation.listFrom(data['sources'])),
         'attachments' => ChatAttachmentsEvent(
           ChatAttachmentNotice.fromMap(data),
         ),
-        'thought' => ChatThoughtEvent((data['text'] as String?) ?? ''),
         'delta' => ChatDeltaEvent((data['text'] as String?) ?? ''),
         'replace' => ChatReplaceEvent((data['text'] as String?) ?? ''),
         'done' => ChatDoneEvent(
@@ -522,9 +522,11 @@ class ChatStatusEvent extends ChatStreamEvent {
     this.target,
     this.layer,
     this.handle,
+    this.progressLabel,
   });
 
   final ChatStage stage;
+  final String? progressLabel;
 
   /// 探索中に何を探しているか('lectures' / 'chats' / 'web' / 'attachments')
   final List<String> detail;
@@ -542,11 +544,6 @@ class ChatSourcesEvent extends ChatStreamEvent {
 class ChatAttachmentsEvent extends ChatStreamEvent {
   const ChatAttachmentsEvent(this.notice);
   final ChatAttachmentNotice notice;
-}
-
-class ChatThoughtEvent extends ChatStreamEvent {
-  const ChatThoughtEvent(this.text);
-  final String text;
 }
 
 class ChatDeltaEvent extends ChatStreamEvent {

@@ -71,13 +71,18 @@ void main() {
       repo.controller.add(
         const ChatStatusEvent(
           stage: ChatStage.reasoning,
+          progressLabel: 'Checking the heap',
         ),
       );
-      repo.controller.add(const ChatThoughtEvent('考え'));
-      repo.controller.add(const ChatThoughtEvent('てみる'));
+      repo.controller.add(
+        const ChatStatusEvent(
+          stage: ChatStage.reasoning,
+          progressLabel: 'Checking the parent node',
+        ),
+      );
       await _pump();
       s = read();
-      expect(s.messages.last.thoughtText, '考えてみる');
+      expect(s.messages.last.progressLabel, 'Checking the parent node');
       expect(s.messages.last.stage, ChatStage.reasoning);
 
       repo.controller.add(
@@ -94,6 +99,7 @@ void main() {
       expect(s.messages.last.message.content, '木のこと');
       expect(s.messages.last.stage, ChatStage.searching);
       expect(s.messages.last.searchQuery, 'heap');
+      expect(s.messages.last.progressLabel, isNull);
 
       repo.controller.add(
         const ChatDoneEvent(
@@ -114,7 +120,7 @@ void main() {
       expect(reply.message.citations, hasLength(1));
       expect(reply.message.creditsChargedMicro, 500000);
       expect(reply.stage, isNull);
-      expect(reply.thoughtText, isNull);
+      expect(reply.progressLabel, isNull);
     });
 
     test('空のメッセージは送らない。送信中の二重送信も無視する', () async {

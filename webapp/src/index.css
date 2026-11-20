@@ -16813,35 +16813,6 @@ body.is-resizing-chat iframe {
   color: #6f655b;
 }
 
-.chat-thinking-indicator-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.chat-thinking-thought-box {
-  padding: 8px 12px;
-  max-height: 140px;
-  overflow-y: auto;
-  border-radius: 8px;
-  background: rgba(142, 153, 166, 0.08);
-  border: 1px solid rgba(142, 153, 166, 0.16);
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--comet, #8e99a6);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.chat-fullscreen.is-paper .chat-thinking-thought-box,
-.chat-page.is-paper .chat-thinking-thought-box,
-.chat-panel.is-paper .chat-thinking-thought-box {
-  background: rgba(111, 101, 91, 0.08);
-  border-color: rgba(111, 101, 91, 0.16);
-  color: #6f655b;
-}
-
 /* シマーテキスト (.slabel) */
 .slabel {
   --sh-a: var(--comet, #8e99a6);

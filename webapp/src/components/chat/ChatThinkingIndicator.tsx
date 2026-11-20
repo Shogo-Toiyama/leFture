@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChatWorld } from './LaunchGateBackdrop';
 import { ThinkingNebula } from './ThinkingNebula';
 
@@ -7,7 +7,6 @@ interface ChatThinkingIndicatorProps {
   world?: ChatWorld;
   startedAt?: string | number | Date;
   nebulaSize?: number;
-  thoughtText?: string;
 }
 
 const CHAT_ELAPSED_VISIBLE_AFTER_SECONDS = 5;
@@ -17,10 +16,8 @@ export const ChatThinkingIndicator: React.FC<ChatThinkingIndicatorProps> = ({
   world = 'universe',
   startedAt,
   nebulaSize = 34,
-  thoughtText,
 }) => {
   const [seconds, setSeconds] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const startTime = startedAt ? new Date(startedAt).getTime() : Date.now();
@@ -37,16 +34,9 @@ export const ChatThinkingIndicator: React.FC<ChatThinkingIndicatorProps> = ({
     return () => clearInterval(interval);
   }, [startedAt]);
 
-  useEffect(() => {
-    if (thoughtText && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [thoughtText]);
-
   const showSeconds = seconds >= CHAT_ELAPSED_VISIBLE_AFTER_SECONDS;
-  const hasThought = Boolean(thoughtText && thoughtText.trim().length > 0);
 
-  const indicatorRow = (
+  return (
     <div
       className="chat-thinking-indicator"
       role="status"
@@ -59,23 +49,6 @@ export const ChatThinkingIndicator: React.FC<ChatThinkingIndicatorProps> = ({
         {showSeconds && (
           <span className="chat-thinking-seconds">{seconds}s</span>
         )}
-      </div>
-    </div>
-  );
-
-  if (!hasThought) {
-    return indicatorRow;
-  }
-
-  return (
-    <div className="chat-thinking-indicator-wrapper">
-      {indicatorRow}
-      <div
-        ref={scrollRef}
-        className="chat-thinking-thought-box"
-        style={{ marginLeft: `${nebulaSize + 10}px` }}
-      >
-        {thoughtText!.trim()}
       </div>
     </div>
   );

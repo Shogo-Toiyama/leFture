@@ -849,7 +849,7 @@ export const en = {
   chatMessages: 'Chat messages',
   chatJumpToBottom: 'Jump to latest message',
   chatSend: 'Send',
-  chatStageThinking: 'Thinking…',
+  chatStageThinking: 'Thinking...',
   chatStageSearching: 'Searching your lecture notes…',
   chatStageSearchingWeb: 'Searching the web…',
   chatStageSearchingChats: 'Looking through past chats…',

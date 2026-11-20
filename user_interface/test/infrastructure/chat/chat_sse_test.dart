@@ -109,11 +109,15 @@ void main() {
       expect(e.text, 'hi');
     });
 
-    test('thoughtイベントを読める', () {
+    test('reads a reasoning progress label from the status event', () {
       final e =
-          parseChatSseBlock('event: thought\ndata: {"text":"思考プロセス..."}')!
-              as ChatThoughtEvent;
-      expect(e.text, '思考プロセス...');
+          parseChatSseBlock(
+                'event: status\ndata: {"stage":"reasoning","progress_label":"Checking scope"}',
+              )!
+              as ChatStatusEvent;
+      expect(e.stage, ChatStage.reasoning);
+      expect(e.progressLabel, 'Checking scope');
+      expect(parseChatSseBlock('event: thought\ndata: {"text":"old"}'), isNull);
     });
   });
 

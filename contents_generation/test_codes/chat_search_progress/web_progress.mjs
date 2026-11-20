@@ -29,6 +29,7 @@ const bundle = await build({
       import { renderToStaticMarkup } from 'react-dom/server';
       import { ChatMessageItem } from './src/components/chat/ChatMessageItem';
       import { translations } from './src/i18n/translations';
+      import { parseSseEvent } from './src/lib/chat';
 
       const cases = [
         ['pending search target', {}, 'chatStageThinking'],
@@ -43,6 +44,23 @@ const bundle = await build({
       const results = [];
       for (const language of ['en', 'ja']) {
         globalThis.testChatLanguage = language;
+        const label = language === 'ja' ? '変数のスコープを確認中' : 'Checking variable scope';
+        const fallback = language === 'ja' ? '考え中...' : 'Thinking...';
+        const event = parseSseEvent('event: status\\ndata: ' +
+          JSON.stringify({ stage: 'reasoning', progress_label: label }));
+        const renderReasoning = (progressLabel, content = '') => renderToStaticMarkup(<ChatMessageItem
+          message={{ id: 'fixture', role: 'assistant', status: 'streaming', stage: event.stage,
+            content, progressLabel }}
+          onOpenCitation={() => {}}
+        />);
+        const before = renderReasoning(undefined);
+        const during = renderReasoning(event.progress_label);
+        const after = renderReasoning(event.progress_label, 'Response');
+        const expectedReasoning = before.includes('aria-label="' + fallback + '"') &&
+          during.includes('aria-label="' + label + '"') &&
+          during.includes('chat-thinking-label slabel') && !during.includes(fallback) &&
+          !during.includes('chat-thinking-thought-box') && !after.includes(label);
+        results.push((expectedReasoning ? 'PASS ' : 'FAIL ') + language + ' inline reasoning progress');
         for (const [name, fields, key] of cases) {
           const expected = translations[language][key].replace('{query}', fields.searchQuery ?? '');
           const markup = renderToStaticMarkup(<ChatMessageItem

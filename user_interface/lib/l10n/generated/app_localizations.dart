@@ -6017,7 +6017,7 @@ abstract class AppLocalizations {
   /// AI chat. Ported from the web app string "chatStageThinking".
   ///
   /// In en, this message translates to:
-  /// **'Thinking…'**
+  /// **'Thinking...'**
   String get aiChatStageThinking;
 
   /// AI chat. Ported from the web app string "chatStageSearching".

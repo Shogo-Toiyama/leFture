@@ -297,7 +297,24 @@ void main() {
         findsOneWidget,
       );
 
+      repo.controller.add(const ChatStatusEvent(stage: ChatStage.reasoning));
+      await settle(tester);
+      expect(find.text(l10n.aiChatStageThinking), findsOneWidget);
+
+      const progressLabel = 'Checking heap ordering';
+      repo.controller.add(
+        const ChatStatusEvent(
+          stage: ChatStage.reasoning,
+          progressLabel: progressLabel,
+        ),
+      );
+      await settle(tester);
+      expect(find.text(progressLabel), findsOneWidget);
+      expect(find.text(l10n.aiChatStageThinking), findsNothing);
+
       repo.controller.add(const ChatDeltaEvent('It swaps with the parent.'));
+      await settle(tester);
+      expect(find.text(progressLabel), findsNothing);
       repo.controller.add(
         const ChatDoneEvent(
           status: ChatMessageStatus.complete,
