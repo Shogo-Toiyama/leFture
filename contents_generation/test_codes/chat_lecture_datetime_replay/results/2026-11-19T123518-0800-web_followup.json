@@ -1,0 +1,43 @@
+{
+  "case": "web_followup",
+  "prompt_estimate": 9801,
+  "retrieval_ms": 0,
+  "previous_web_sources": 3,
+  "material_kinds": [
+    "previous_web",
+    "previous_web",
+    "previous_web"
+  ],
+  "navigator_stop": null,
+  "navigator_laps": 0,
+  "answer_ms": 5014,
+  "answer_ttft_ms": null,
+  "answer_input_tokens": 11863,
+  "answer_output_tokens": 929,
+  "answer_cache_read_tokens": 8284,
+  "cost_usd": 0.00118256,
+  "usage": [
+    {
+      "dimension": "tokens",
+      "resource": "anthropic/claude-haiku-5-5",
+      "usage": {
+        "input": 11863.0,
+        "output": 929.0,
+        "cache_read": 8284.0,
+        "cache_write": 1269.0
+      },
+      "cost_usd": 0.00103214,
+      "task_type": "CHAT_DATETIME_REPLAY"
+    },
+    {
+      "dimension": "time",
+      "resource": "cloudrun/self",
+      "usage": {
+        "seconds": 5.013883417006582,
+        "multiplier": 1.0
+      },
+      "cost_usd": 0.00015041650251019747,
+      "task_type": "CHAT_DATETIME_REPLAY"
+    }
+  ]
+}

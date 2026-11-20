@@ -6,8 +6,8 @@ docs/chatbot_context_and_retrieval_roadmap.md の 3-5。
 - 探索役にはUUIDを見せず、1ターンの間だけ有効な短い呼び名を使わせる(UUIDは長くて
   トークンの無駄が多く、存在しないIDを作ることがある)。呼び名 → UUIDの変換はここで行い、
   探索役が選べる呼び名はJSON Schemaのenumで縛る。
-- 呼び名はターンごとに振り直す。コースは作成順、講義はコースの中でsort_order順
-  (同じなら日時順)。次のターンに持ち越すもの(前のターンで開いたものなど)は、
+- 呼び名はターンごとに振り直す。コースは作成順、講義はコースの中で日時順
+  (同日時の講義と日時不明の講義の間ではsort_order順)。次のターンに持ち越すものは、
   呼び名ではなくUUIDで保存すること(講義が増えたり消えたりすると番号がずれる)。
 - 地図のコースの行には、学期(course_attributesは任意入力)と講義の日付の範囲、
   録音の言語とまとめの言語を載せる。学期が未設定でも日付の範囲から「今学期」を判断でき、
@@ -338,16 +338,19 @@ def load_student_map(admin_client, user_id: str, tz: tzinfo = timezone.utc) -> S
         term_parts = [attr_names.get(row.get("year_id") or ""), attr_names.get(row.get("term_id") or "")]
         term = " ".join(p for p in term_parts if p) or None
 
+        # Keep the existing language tie-break while assigning lecture handles by time.
         rows = sorted(by_course.get(row["id"], []),
                       key=lambda r: (r.get("sort_order") or 0, r.get("lecture_datetime") or ""))
+        dated_rows = [(lec, _to_datetime(lec.get("lecture_datetime"), timezone.utc)) for lec in rows]
+        dated_rows.sort(key=lambda pair: (pair[1] is None, pair[1], pair[0].get("sort_order") or 0, pair[0]["id"]))
         handle = f"C{i}"
         course = MapCourse(
             handle=handle, id=row["id"], title=title or "(untitled course)", term=term,
             recorded_language=_majority([r.get("recording_language") for r in rows]),
             notes_language=_majority([r.get("display_language") for r in rows]),
         )
-        for j, lec in enumerate(rows, start=1):
-            lec_dt = _to_datetime(lec.get("lecture_datetime"), tz)
+        for j, (lec, lecture_time) in enumerate(dated_rows, start=1):
+            lec_dt = lecture_time.astimezone(tz) if lecture_time else None
             course.lectures.append(MapLecture(
                 handle=f"{handle}/L{j}", id=lec["id"], course_handle=handle,
                 title=(lec.get("title") or lec.get("title_generated") or "(untitled lecture)").strip(),

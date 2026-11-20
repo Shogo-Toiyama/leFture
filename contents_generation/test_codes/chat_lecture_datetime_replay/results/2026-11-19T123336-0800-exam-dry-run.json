@@ -1,0 +1,11 @@
+{
+  "case": "exam",
+  "prompt_estimate": 10889,
+  "retrieval_ms": 181,
+  "previous_web_sources": 0,
+  "material_kinds": [
+    "course_topics"
+  ],
+  "navigator_stop": "enough_now",
+  "navigator_laps": 2
+}

@@ -50,6 +50,7 @@ from app.services.chat_materials import (
     format_sources_block,
     material_from_chunk,
     normalize_citations,
+    previous_web_materials,
     select_materials,
     select_materials_async,
     sources_event,
@@ -1612,11 +1613,32 @@ def _turn_links(turn: PreparedTurn) -> list:
 
 def _previous_turn_refs(history_rows: list[dict]) -> list[dict]:
     """直前の返答(完了したもの)の行に保存した「開いたもの」(context.opened)。"""
-    for row in reversed(history_rows):
-        if row.get("role") == "assistant" and row.get("status") == "complete":
-            opened = (row.get("context") or {}).get("opened")
-            return [r for r in opened if isinstance(r, dict)] if isinstance(opened, list) else []
-    return []
+    row = _previous_completed_reply(history_rows)
+    opened = ((row or {}).get("context") or {}).get("opened")
+    return [r for r in opened if isinstance(r, dict)] if isinstance(opened, list) else []
+
+
+def _previous_completed_reply(history_rows: list[dict]) -> Optional[dict]:
+    return next((row for row in reversed(history_rows)
+                 if row.get("role") == "assistant" and row.get("status") == "complete"), None)
+
+
+async def _fetch_previous_citations(admin_client, thread_id: str, history_rows: list[dict]) -> list:
+    row = _previous_completed_reply(history_rows)
+    if not row or not row.get("id"):
+        return []
+
+    def query():
+        return admin_client.table("chat_messages").select("citations").eq("thread_id", thread_id) \
+            .eq("id", row["id"]).is_("deleted_at", "null").limit(1).execute()
+
+    try:
+        result = await asyncio.to_thread(query)
+        citations = (result.data[0].get("citations") if result.data else None)
+        return citations if isinstance(citations, list) else []
+    except Exception as exc:
+        print(f"⚠️ [chat] failed to load previous reply citations: {exc}")
+        return []
 
 
 @dataclass
@@ -2297,6 +2319,7 @@ async def _run_turn_steps(
     止められたらTurnStoppedを投げ、締めはrun_chat_turnが行う(途中までの本文はprogressに残す)。
     """
     decision: Optional[RouterDecision] = None
+    previous_citations_task: Optional[asyncio.Task] = None
     timer = turn.timer
 
     try:
@@ -2341,6 +2364,8 @@ async def _run_turn_steps(
         history = build_history_messages(turn.history_rows, RAW_MAX_TURNS, None,
                                          _attachment_titles_by_message(turn.attachments))
         answer_history = build_answer_history(raw_history_rows, turn.attachments)
+        previous_citations_task = asyncio.create_task(
+            _fetch_previous_citations(admin_client, turn.thread_id, raw_history_rows))
         memory = ConversationMemory.from_blocks(turn.summary_blocks, turn.summary_level2)
         # 地図(コース一覧)とプランはprepare_chat_turnで事前チェックと並行に読み始めている。
         # 無い場合(テスト等で直接PreparedTurnを作ったとき)だけここで読む。
@@ -2454,7 +2479,11 @@ async def _run_turn_steps(
             timer.mark("retrieval_done")
             # 探索役の中で握りつぶされた停止を、ここで拾い直す
             stop.raise_if_stopped()
-            progress.materials = materials
+        previous_materials = previous_web_materials(await previous_citations_task, materials)
+        stop.raise_if_stopped()
+        materials.extend(previous_materials)
+        progress.materials = materials
+        if decision.needs_retrieval or previous_materials:
             await emit("sources", {"sources": sources_event(materials)})
 
         # --- 4. 回答 ---
@@ -2536,6 +2565,7 @@ async def _run_turn_steps(
             "answer_history_trimmed_turns": trimmed_turns or None,
             "usage_estimated": state.usage_estimated,
             "materials": [{"key": m.key, "handle": m.handle} for m in materials],
+            "previous_web_source_count": len(previous_materials),
             "retrieval_forced_for_attachments": retrieval_forced or None,
             "attachments": {
                 "count": len(turn.attachments),
@@ -2627,6 +2657,9 @@ async def _run_turn_steps(
             # ここでも失敗したら、行はstreamingのまま残り、patrolがerrorにする
             print(f"❌ [chat] failed to mark message {turn.assistant_message_id} as error: {finalize_error}")
         await emit("error", {"error_code": "CHAT_FAILED", "message": "Failed to generate a reply."})
+    finally:
+        if previous_citations_task is not None and not previous_citations_task.done():
+            previous_citations_task.cancel()
 
 
 # 停止のとき、ストリームを閉じる・段階の境目に着くなど、すぐ終わる本体だけを待つ時間。これを過ぎたら
