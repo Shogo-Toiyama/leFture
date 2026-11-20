@@ -1,0 +1,52 @@
+{
+  "mode": "dry",
+  "recorded_baseline": {
+    "intent": "chitchat",
+    "needs_retrieval": false,
+    "router_tokens": {
+      "in": 3337,
+      "out": 118,
+      "cache": 0,
+      "attempts": 1
+    },
+    "previous_reply_chars": 780,
+    "topic_offset_chars": 545,
+    "router_history_char_limit": 1200
+  },
+  "summary": {
+    "priority_31": {
+      "trials": 1,
+      "correct": 1,
+      "missed_search": 0,
+      "unnecessary_search": 0,
+      "fallbacks": 0,
+      "language_errors": 0,
+      "median_ms": 4.25,
+      "p95_ms": 4.25,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "provider_usd": 0
+    }
+  },
+  "trials": [
+    {
+      "case": "recorded_news_followup",
+      "group": "missing_detail",
+      "variant": "priority_31",
+      "expected": true,
+      "actual": true,
+      "intent": "personal",
+      "fallback": false,
+      "reply_language": "ja",
+      "expected_language": "ja",
+      "needs_reasoning": false,
+      "latency_ms": 4.25,
+      "provider_usd": 0,
+      "in_tokens": 0,
+      "out_tokens": 0,
+      "cache_read": 0,
+      "provider_calls_recorded": 0,
+      "repeat": 1
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+[
+  {
+    "name": "professor_implicit",
+    "group": "Implicit course reference",
+    "expected": true,
+    "gold_reason": "The student asks for the instructor's reasoning in a lecture. The visible answer only states the instructor's choice.",
+    "history": [
+      ["user", "先週の統計の授業、最初に何使ってたんだっけ？"],
+      ["assistant", "木曜の回は最初に中央値を使っていました。"]
+    ],
+    "text": "へえ、先生はなんでそっちにしたんだろう？"
+  },
+  {
+    "name": "textbook_why",
+    "group": "Stable general knowledge",
+    "expected": false,
+    "gold_reason": "They want the general statistical explanation. Course-specific evidence is unnecessary.",
+    "history": [
+      ["user", "中央値って、データを順番に並べて真ん中を見る数だよね？"],
+      ["assistant", "そうです。外れ値の影響も小さめです。"]
+    ],
+    "text": "あ、なんで極端な値が1個あってもそこまで変わらないの？仕組みが知りたい。"
+  },
+  {
+    "name": "screen_selection",
+    "group": "Visible lecture selection",
+    "expected": false,
+    "gold_reason": "The user points directly at visible text and wants an explanation.",
+    "lecture": "Operating Systems / Process Scheduling",
+    "selected_text": "A runnable process can be preempted before it completes.",
+    "history": [
+      ["user", "今日の授業のノートを開いた。"],
+      ["assistant", "気になる行を選ぶと、その部分を一緒に確認できます。"]
+    ],
+    "text": "この行の before it completes ってどういう意味？"
+  },
+  {
+    "name": "full_attachment_check",
+    "group": "Full attachment visible",
+    "expected": false,
+    "gold_reason": "The answerer already sees the attached file in full. The requested detail is in that file.",
+    "attachments": "- A1: Project handout (1,240 characters) — FULL TEXT visible to the answerer (questions about it never need a fetch). The student refers to it in this message. Summary: Assignment milestones and submission instructions.",
+    "language": "en",
+    "text": "Could you check the handout I attached and tell me if the appendix counts toward the page limit?"
+  },
+  {
+    "name": "partial_attachment_detail",
+    "group": "Attachment summary only",
+    "expected": true,
+    "gold_reason": "The requested precise value is absent from the attachment summary and requires opening the file.",
+    "attachments": "- A1: Lab 4 rubric (12,870 characters) — only this summary is visible to the answerer (questions about its contents need a fetch). The student refers to it in this message. Summary: Criterion descriptions for report sections and plots.",
+    "language": "en",
+    "text": "How many points does the rubric give for axis labels? I can't tell from the summary."
+  },
+  {
+    "name": "news_missing_detail",
+    "group": "Recent public event, missing fact",
+    "expected": true,
+    "gold_reason": "The previous reply gives a cancellation without its cause. The user wants the organizer's actual reason.",
+    "history": [
+      ["user", "今日の科学ニュースで面白いのあった？"],
+      ["assistant", "天文台が今夜の一般公開を中止したと発表しました。⟦W1.2⟧"]
+    ],
+    "text": "え、楽しみにしてたのに！どうして中止になったの？"
+  },
+  {
+    "name": "event_supported_fact",
+    "group": "Prior reply already supplies fact",
+    "expected": false,
+    "gold_reason": "The prior cited reply already supplies the source's stated reason. The user is confirming that same reason.",
+    "history": [
+      ["user", "市のリサイクル回収のお知らせは何て？"],
+      ["assistant", "市の告知では、祝日のため水曜日の回収が翌日にずれると書かれています。⟦W2.1⟧"]
+    ],
+    "text": "つまり祝日で曜日がずれたって理解で合ってる？"
+  },
+  {
+    "name": "explicit_no_search",
+    "group": "Explicit request to avoid search",
+    "expected": false,
+    "gold_reason": "The student explicitly asks to use the headline alone, even though the broader reason may be missing.",
+    "history": [
+      ["user", "What's the latest on the gallery?"],
+      ["assistant", "Today's headline says the gallery postponed its autumn reopening. ⟦W2.3⟧"]
+    ],
+    "language": "en",
+    "text": "Don't look anything up. Just tell me what 'postponed' means in that headline."
+  },
+  {
+    "name": "older_chat_recall",
+    "group": "Earlier conversation recall",
+    "expected": true,
+    "gold_reason": "They ask for a detail agreed in another chat. The current history contains no such information.",
+    "text": "先月、別のチャットで一緒に決めた面接対策の順番って覚えてる？最初に何をやるって決めたっけ。"
+  },
+  {
+    "name": "current_registration",
+    "group": "Current outside deadline",
+    "expected": true,
+    "gold_reason": "The exact deadline is a current outside fact and has not appeared in this conversation.",
+    "language": "en",
+    "text": "Is registration for this year's Seattle Half Marathon still open, and when does it close?"
+  }
+]

@@ -1,0 +1,68 @@
+[
+  {
+    "name": "library_reason_missing",
+    "group": "Reaction with an elliptical question",
+    "expected": true,
+    "gold_reason": "The announcement describes the decision but gives no reason. The short question asks for the missing cause.",
+    "history": [
+      ["user", "大学の図書館、今週遅くまで開いてる？"],
+      ["assistant", "大学の今日の告知では、今週の夜間開館を取りやめるそうです。⟦W1.2⟧"]
+    ],
+    "text": "えっ困る。なんで？試験前なのに"
+  },
+  {
+    "name": "library_reason_present",
+    "group": "Reaction with an elliptical question",
+    "expected": false,
+    "gold_reason": "The cited announcement already supplies the reason the user is asking about.",
+    "history": [
+      ["user", "大学の図書館、今週遅くまで開いてる？"],
+      ["assistant", "大学の今日の告知では、今週の夜間開館を取りやめるそうです。理由は夜間に配置できる職員を確保できなかったためです。⟦W1.2⟧"]
+    ],
+    "text": "えっ困る。なんで？試験前なのに"
+  },
+  {
+    "name": "scholarship_policy_missing",
+    "group": "Thanks with a practical follow-up",
+    "expected": true,
+    "gold_reason": "The deadline extension alone does not establish whether students need to resubmit.",
+    "history": [
+      ["user", "奨学金の締め切りについて新しいお知らせある？"],
+      ["assistant", "奨学金事務局が、今年度の申請締め切りを一週間延ばしたと発表しています。⟦W2.1⟧"]
+    ],
+    "text": "助かる！で、もう出した人は出し直すの？"
+  },
+  {
+    "name": "scholarship_policy_present",
+    "group": "Thanks with a practical follow-up",
+    "expected": false,
+    "gold_reason": "The same cited notice already directly answers whether resubmission is needed.",
+    "history": [
+      ["user", "奨学金の締め切りについて新しいお知らせある？"],
+      ["assistant", "奨学金事務局が、今年度の申請締め切りを一週間延ばしたと発表しています。提出済みの申請は有効で、再提出は不要と明記されています。⟦W2.1⟧"]
+    ],
+    "text": "助かる！で、もう出した人は出し直すの？"
+  },
+  {
+    "name": "lecture_reason_missing",
+    "group": "Instructor decision with an implicit follow-up",
+    "expected": true,
+    "gold_reason": "The follow-up is about the instructor's rationale in a specific exercise. The conversation states the choice but not the rationale.",
+    "history": [
+      ["user", "統計の演習、あの標本数が少ない図で、先生はどっちの手法使ってたっけ？"],
+      ["assistant", "先週の演習では、先生は正規近似を使わず、正確検定の方を選んでいました。"]
+    ],
+    "text": "あ、そっちは使わなかったんだ。なんでだろ"
+  },
+  {
+    "name": "lecture_reason_present",
+    "group": "Instructor decision with an implicit follow-up",
+    "expected": false,
+    "gold_reason": "The preceding reply already reports the instructor's stated reason for that exercise.",
+    "history": [
+      ["user", "統計の演習、あの標本数が少ない図で、先生はどっちの手法使ってたっけ？"],
+      ["assistant", "先週の演習では、先生は正規近似を使わず、正確検定の方を選んでいました。先生は、標本が少なく、その演習のデータでは近似の前提が満たせないからだと説明しています。"]
+    ],
+    "text": "あ、そっちは使わなかったんだ。なんでだろ"
+  }
+]

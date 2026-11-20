@@ -1,0 +1,74 @@
+{
+  "mode": "live",
+  "summary": {
+    "current_31": {
+      "trials": 3,
+      "correct": 3,
+      "missed_search": 0,
+      "unnecessary_search": 0,
+      "fallbacks": 0,
+      "language_errors": 0,
+      "median_ms": 1270.18,
+      "p95_ms": 1324.56,
+      "input_tokens": 6814,
+      "output_tokens": 331,
+      "provider_usd": 0.0022
+    }
+  },
+  "trials": [
+    {
+      "case": "professor_implicit",
+      "group": "Implicit course reference",
+      "variant": "current_31",
+      "expected": true,
+      "actual": true,
+      "intent": "learning",
+      "fallback": false,
+      "reply_language": "ja",
+      "expected_language": "ja",
+      "needs_reasoning": false,
+      "latency_ms": 1270.18,
+      "provider_usd": 0.00073875,
+      "in_tokens": 2265,
+      "out_tokens": 115,
+      "cache_read": 0,
+      "provider_calls_recorded": 1
+    },
+    {
+      "case": "news_missing_detail",
+      "group": "Recent public event, missing fact",
+      "variant": "current_31",
+      "expected": true,
+      "actual": true,
+      "intent": "learning",
+      "fallback": false,
+      "reply_language": "ja",
+      "expected_language": "ja",
+      "needs_reasoning": false,
+      "latency_ms": 1105.29,
+      "provider_usd": 0.000733,
+      "in_tokens": 2272,
+      "out_tokens": 110,
+      "cache_read": 0,
+      "provider_calls_recorded": 1
+    },
+    {
+      "case": "event_supported_fact",
+      "group": "Prior reply already supplies fact",
+      "variant": "current_31",
+      "expected": false,
+      "actual": false,
+      "intent": "learning",
+      "fallback": false,
+      "reply_language": "ja",
+      "expected_language": "ja",
+      "needs_reasoning": false,
+      "latency_ms": 1324.56,
+      "provider_usd": 0.00072825,
+      "in_tokens": 2277,
+      "out_tokens": 106,
+      "cache_read": 0,
+      "provider_calls_recorded": 1
+    }
+  ]
+}

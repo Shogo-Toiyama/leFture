@@ -1,0 +1,113 @@
+{
+  "mode": "live",
+  "recorded_baseline": {
+    "intent": "chitchat",
+    "needs_retrieval": false,
+    "router_tokens": {
+      "in": 3337,
+      "out": 118,
+      "cache": 0,
+      "attempts": 1
+    }
+  },
+  "summary": {
+    "current_31": {
+      "trials": 1,
+      "correct": 0,
+      "missed_search": 1,
+      "unnecessary_search": 0,
+      "fallbacks": 0,
+      "language_errors": 0,
+      "median_ms": 1260.09,
+      "p95_ms": 1260.09,
+      "input_tokens": 2981,
+      "output_tokens": 114,
+      "provider_usd": 0.00091625
+    },
+    "revised_31": {
+      "trials": 1,
+      "correct": 0,
+      "missed_search": 1,
+      "unnecessary_search": 0,
+      "fallbacks": 0,
+      "language_errors": 0,
+      "median_ms": 1146.42,
+      "p95_ms": 1146.42,
+      "input_tokens": 3117,
+      "output_tokens": 115,
+      "provider_usd": 0.00095175
+    },
+    "revised_35": {
+      "trials": 1,
+      "correct": 0,
+      "missed_search": 1,
+      "unnecessary_search": 0,
+      "fallbacks": 0,
+      "language_errors": 0,
+      "median_ms": 1092.08,
+      "p95_ms": 1092.08,
+      "input_tokens": 3117,
+      "output_tokens": 114,
+      "provider_usd": 0.0012201
+    }
+  },
+  "trials": [
+    {
+      "case": "recorded_news_followup",
+      "group": "missing_detail",
+      "variant": "revised_35",
+      "expected": true,
+      "actual": false,
+      "intent": "personal",
+      "fallback": false,
+      "reply_language": "ja",
+      "expected_language": "ja",
+      "needs_reasoning": false,
+      "latency_ms": 1092.08,
+      "provider_usd": 0.0012201,
+      "in_tokens": 3117,
+      "out_tokens": 114,
+      "cache_read": 0,
+      "provider_calls_recorded": 1,
+      "repeat": 1
+    },
+    {
+      "case": "recorded_news_followup",
+      "group": "missing_detail",
+      "variant": "current_31",
+      "expected": true,
+      "actual": false,
+      "intent": "personal",
+      "fallback": false,
+      "reply_language": "ja",
+      "expected_language": "ja",
+      "needs_reasoning": false,
+      "latency_ms": 1260.09,
+      "provider_usd": 0.00091625,
+      "in_tokens": 2981,
+      "out_tokens": 114,
+      "cache_read": 0,
+      "provider_calls_recorded": 1,
+      "repeat": 1
+    },
+    {
+      "case": "recorded_news_followup",
+      "group": "missing_detail",
+      "variant": "revised_31",
+      "expected": true,
+      "actual": false,
+      "intent": "chitchat",
+      "fallback": false,
+      "reply_language": "ja",
+      "expected_language": "ja",
+      "needs_reasoning": false,
+      "latency_ms": 1146.42,
+      "provider_usd": 0.00095175,
+      "in_tokens": 3117,
+      "out_tokens": 115,
+      "cache_read": 0,
+      "provider_calls_recorded": 1,
+      "repeat": 1
+    }
+  ]
+}
