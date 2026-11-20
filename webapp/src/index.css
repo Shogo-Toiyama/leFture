@@ -379,6 +379,50 @@ label {
   min-width: 0;
 }
 
+.app-topbar.has-center-title {
+  --app-topbar-side-width: 9rem;
+  display: grid;
+  grid-template-columns: minmax(var(--app-topbar-side-width), 1fr) minmax(0, 2fr) minmax(var(--app-topbar-side-width), 1fr);
+  column-gap: 8px;
+}
+
+.app-topbar.has-center-title:has(.rec-chip) {
+  --app-topbar-side-width: 14rem;
+}
+
+.app-topbar.has-center-title .app-topbar-account {
+  justify-self: end;
+}
+
+.app-topbar-title {
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .app-topbar.has-center-title {
+    --app-topbar-side-width: 2.25rem;
+    padding-inline: 12px;
+    column-gap: 6px;
+  }
+
+  .app-topbar.has-center-title:has(.rec-chip) {
+    --app-topbar-side-width: 7.5rem;
+  }
+
+  .app-topbar.has-center-title .app-topbar-left {
+    gap: 6px;
+  }
+
+  .app-topbar.has-center-title .app-topbar-brand-name {
+    display: none;
+  }
+}
+
 /*
  * 紙テーマのヘッダー(Deep Notes・復習カード・文字起こし・チャットの全画面)。
  * 暗い宇宙のヘッダーをそのまま載せると浮くので、紙の地色に半透明で溶かし、

@@ -13,7 +13,7 @@ import { updateReviewCardReaction } from '../../lib/content';
 import { readAnnotations, toggleSaved } from '../../lib/annotations';
 import { readableAccent } from '../../lib/reviewCardTheme';
 import { REVIEW_CARD_TYPE_ORDER, type ContentMetadata, type ReviewCard } from '../../types/content';
-import type { Lecture } from '../../types/lecture';
+import { lectureDisplayTitle, type Lecture } from '../../types/lecture';
 import type { TranslationKey } from '../../i18n/translations';
 import { ReactionBar } from '../../components/ReactionBar';
 import { AnnotationLayer } from '../../components/annotations/AnnotationLayer';
@@ -79,6 +79,9 @@ export const ReviewCardsPage: React.FC = () => {
   }, [lectureId]);
 
   const accent = readableAccent((course?.metadata?.color as string | undefined) ?? null);
+  const lectureTitle = lecture && lecture.id === lectureId
+    ? lectureDisplayTitle(lecture, t('lectureUntitled'))
+    : undefined;
 
   const { groups, flat } = useMemo(() => {
     const byTopic = new Map<number, ReviewCard[]>();
@@ -199,7 +202,7 @@ export const ReviewCardsPage: React.FC = () => {
   if (error || flat.length === 0) {
     return (
       <div className="pv-root" style={rootStyle}>
-        <AppTopbar variant="light" />
+        <AppTopbar variant="light" centerTitle={lectureTitle} />
         <div className="pv-top">
           <div className="pv-top-row">
             <button type="button" className="pv-icon-btn" onClick={close} aria-label={t('close')}>
@@ -282,7 +285,7 @@ export const ReviewCardsPage: React.FC = () => {
 
   return (
     <div className="pv-root" style={rootStyle}>
-      <AppTopbar variant="light" />
+      <AppTopbar variant="light" centerTitle={lectureTitle} />
       <div className="pv-split">
         {sourceSids && (
           <TranscriptSheet lectureId={lectureId!} sids={sourceSids} onClose={() => setSourceSids(null)} />

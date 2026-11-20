@@ -14,7 +14,7 @@ import { readableAccent } from '../../lib/reviewCardTheme';
 import { replaceFigurePlaceholders, stripFigurePlaceholders, stripSidCitations } from '../../lib/sidCitation';
 import { useDeepNoteFigures } from '../../hooks/useDeepNoteFigures';
 import type { ContentMetadata } from '../../types/content';
-import type { Lecture } from '../../types/lecture';
+import { lectureDisplayTitle, type Lecture } from '../../types/lecture';
 import { AnnotatedMarkdown } from '../../components/annotations/AnnotatedMarkdown';
 import { AnnotationLayer } from '../../components/annotations/AnnotationLayer';
 import { ReactionBar } from '../../components/ReactionBar';
@@ -75,6 +75,9 @@ const DeepNotesDetailPageContent: React.FC = () => {
   }, [lectureId]);
 
   const accent = readableAccent((course?.metadata?.color as string | undefined) ?? null);
+  const lectureTitle = lecture && lecture.id === lectureId
+    ? lectureDisplayTitle(lecture, t('lectureUntitled'))
+    : undefined;
 
   const entries = useMemo(
     () =>
@@ -168,7 +171,7 @@ const DeepNotesDetailPageContent: React.FC = () => {
   if (error || !current) {
     return (
       <div className="pv-root" style={rootStyle}>
-        <AppTopbar variant="light" />
+        <AppTopbar variant="light" centerTitle={lectureTitle} />
         <div className="pv-top">
           <div className="pv-top-row">
             <button type="button" className="pv-icon-btn" onClick={close} aria-label={t('close')}>
@@ -200,7 +203,7 @@ const DeepNotesDetailPageContent: React.FC = () => {
 
   return (
     <div className="pv-root" style={rootStyle}>
-      <AppTopbar variant="light" />
+      <AppTopbar variant="light" centerTitle={lectureTitle} />
       <div className="pv-split">
         {sourceSids && (
           <TranscriptSheet lectureId={lectureId!} sids={sourceSids} onClose={() => setSourceSids(null)} />

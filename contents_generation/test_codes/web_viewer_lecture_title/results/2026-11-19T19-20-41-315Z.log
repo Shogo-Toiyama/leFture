@@ -1,0 +1,14 @@
+desktop
+PASS Review Cards uses the explicit lecture title (header 1280px, title 616px, overlap 0)
+PASS Deep Notes centers a long generated title alongside a recording timer (header 1280px, title 616px, overlap 0)
+PASS Empty Review Cards keeps the lecture title and localized fallback (header 1280px, title 616px, overlap 0)
+PASS The default header keeps its layout
+ALL PASSED
+
+mobile
+PASS Review Cards uses the explicit lecture title (header 500px, title 232px, overlap 0)
+PASS Deep Notes centers a long generated title alongside a recording timer (header 500px, title 224px, overlap 0)
+PASS Empty Review Cards keeps the lecture title and localized fallback (header 500px, title 232px, overlap 0)
+PASS The default header keeps its layout
+ALL PASSED
+Elapsed: 3013 ms

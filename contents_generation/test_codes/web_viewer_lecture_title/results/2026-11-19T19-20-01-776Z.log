@@ -1,0 +1,12 @@
+desktop
+FAIL Review Cards uses the explicit lecture title: Lecture title was missing or incorrect
+FAIL Deep Notes centers a long generated title alongside a recording timer: Lecture title was missing or incorrect
+FAIL Empty Review Cards keeps the lecture title and localized fallback: Lecture title was missing or incorrect
+PASS The default header keeps its layout
+
+mobile
+FAIL Review Cards uses the explicit lecture title: Lecture title was missing or incorrect
+FAIL Deep Notes centers a long generated title alongside a recording timer: Lecture title was missing or incorrect
+FAIL Empty Review Cards keeps the lecture title and localized fallback: Lecture title was missing or incorrect
+PASS The default header keeps its layout
+Elapsed: 2860 ms

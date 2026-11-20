@@ -21,7 +21,10 @@ interface GaugeData {
  * (Deep Notes・復習カード・文字起こし・チャット)は紙テーマ(variant="light")で同じものを出す。
  * PCの音の録音中は、ロゴのすぐ右にタイマー(RecordingChip)が入る。
  */
-export const AppTopbar: React.FC<{ variant?: 'dark' | 'light' }> = ({ variant = 'dark' }) => {
+export const AppTopbar: React.FC<{ variant?: 'dark' | 'light'; centerTitle?: string }> = ({
+  variant = 'dark',
+  centerTitle,
+}) => {
   const { profile } = useProfile();
   const [gaugeData, setGaugeData] = useState<GaugeData | null>(null);
 
@@ -57,7 +60,7 @@ export const AppTopbar: React.FC<{ variant?: 'dark' | 'light' }> = ({ variant = 
   }, []);
 
   return (
-    <header className={`app-topbar ${variant === 'light' ? 'is-light' : ''}`}>
+    <header className={`app-topbar ${variant === 'light' ? 'is-light' : ''} ${centerTitle ? 'has-center-title' : ''}`}>
       <div className="app-topbar-left">
         <Link to="/" className="app-topbar-home" title="leFture Home">
           <img src="/img/logo-icon.webp" alt="leFture Logo" className="app-topbar-logo" />
@@ -67,6 +70,10 @@ export const AppTopbar: React.FC<{ variant?: 'dark' | 'light' }> = ({ variant = 
         </Link>
         <RecordingChip />
       </div>
+
+      {centerTitle && (
+        <span className="app-topbar-title" title={centerTitle}>{centerTitle}</span>
+      )}
 
       <div className="app-topbar-account">
         <Link to="/account" className="credit-gauge" aria-label="Account">
