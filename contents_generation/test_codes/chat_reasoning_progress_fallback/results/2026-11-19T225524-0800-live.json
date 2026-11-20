@@ -1,0 +1,122 @@
+[
+  {
+    "case": "unresolved_reference",
+    "label": "前の内容を確認しています",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 754,
+    "input_tokens": 338,
+    "output_tokens": 11,
+    "provider_cost_usd": 3.93e-05
+  },
+  {
+    "case": "unresolved_reference",
+    "label": "回答の内容を確認しています",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 647,
+    "input_tokens": 338,
+    "output_tokens": 12,
+    "provider_cost_usd": 3.9800000000000005e-05
+  },
+  {
+    "case": "response_style",
+    "label": "NONE",
+    "expected_label": true,
+    "valid": false,
+    "elapsed_ms": 619,
+    "input_tokens": 348,
+    "output_tokens": 5,
+    "provider_cost_usd": 3.73e-05
+  },
+  {
+    "case": "response_style",
+    "label": "NONE",
+    "expected_label": true,
+    "valid": false,
+    "elapsed_ms": 701,
+    "input_tokens": 348,
+    "output_tokens": 5,
+    "provider_cost_usd": 3.73e-05
+  },
+  {
+    "case": "equation",
+    "label": "計算の検算中",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 650,
+    "input_tokens": 355,
+    "output_tokens": 8,
+    "provider_cost_usd": 3.9500000000000005e-05
+  },
+  {
+    "case": "equation",
+    "label": "計算の検算を確認中",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 732,
+    "input_tokens": 355,
+    "output_tokens": 11,
+    "provider_cost_usd": 4.1e-05
+  },
+  {
+    "case": "concrete_topic",
+    "label": "回答を準備中です",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 721,
+    "input_tokens": 350,
+    "output_tokens": 9,
+    "provider_cost_usd": 3.9500000000000005e-05
+  },
+  {
+    "case": "concrete_topic",
+    "label": "Python演習の内容と締めの言葉を検討中",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 814,
+    "input_tokens": 350,
+    "output_tokens": 20,
+    "provider_cost_usd": 4.5e-05
+  },
+  {
+    "case": "unintelligible",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 1141,
+    "input_tokens": 337,
+    "output_tokens": 5,
+    "provider_cost_usd": 3.62e-05
+  },
+  {
+    "case": "unintelligible",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 1228,
+    "input_tokens": 337,
+    "output_tokens": 5,
+    "provider_cost_usd": 3.62e-05
+  },
+  {
+    "case": "punctuation_only",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 676,
+    "input_tokens": 326,
+    "output_tokens": 5,
+    "provider_cost_usd": 3.51e-05
+  },
+  {
+    "case": "punctuation_only",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 621,
+    "input_tokens": 326,
+    "output_tokens": 5,
+    "provider_cost_usd": 3.51e-05
+  }
+]

@@ -1,0 +1,134 @@
+[
+  {
+    "case": "practice_planning",
+    "variant": "grounded_activity",
+    "repetition": 1,
+    "result": "木構造の探索問題を作成中",
+    "none": false,
+    "elapsed_ms": 846,
+    "input_tokens": 275,
+    "output_tokens": 14,
+    "provider_cost_usd": 3.4500000000000005e-05
+  },
+  {
+    "case": "practice_planning",
+    "variant": "grounded_activity",
+    "repetition": 2,
+    "result": "木構造の走査問題を作成中",
+    "none": false,
+    "elapsed_ms": 744,
+    "input_tokens": 275,
+    "output_tokens": 14,
+    "provider_cost_usd": 3.4500000000000005e-05
+  },
+  {
+    "case": "thin_task_context",
+    "variant": "grounded_activity",
+    "repetition": 1,
+    "result": "字句スコープの説明を作成中",
+    "none": false,
+    "elapsed_ms": 658,
+    "input_tokens": 277,
+    "output_tokens": 14,
+    "provider_cost_usd": 3.47e-05
+  },
+  {
+    "case": "thin_task_context",
+    "variant": "grounded_activity",
+    "repetition": 2,
+    "result": "レキシカルスコープの定義を説明中",
+    "none": false,
+    "elapsed_ms": 686,
+    "input_tokens": 277,
+    "output_tokens": 17,
+    "provider_cost_usd": 3.62e-05
+  },
+  {
+    "case": "equation_only",
+    "variant": "grounded_activity",
+    "repetition": 1,
+    "result": "方程式を解いています",
+    "none": false,
+    "elapsed_ms": 716,
+    "input_tokens": 278,
+    "output_tokens": 9,
+    "provider_cost_usd": 3.23e-05
+  },
+  {
+    "case": "equation_only",
+    "variant": "grounded_activity",
+    "repetition": 2,
+    "result": "方程式を解いています",
+    "none": false,
+    "elapsed_ms": 725,
+    "input_tokens": 278,
+    "output_tokens": 9,
+    "provider_cost_usd": 3.23e-05
+  },
+  {
+    "case": "finding_only",
+    "variant": "grounded_activity",
+    "repetition": 1,
+    "result": "変数スコープの説明をまとめ中",
+    "none": false,
+    "elapsed_ms": 691,
+    "input_tokens": 271,
+    "output_tokens": 16,
+    "provider_cost_usd": 3.51e-05
+  },
+  {
+    "case": "finding_only",
+    "variant": "grounded_activity",
+    "repetition": 2,
+    "result": "変数スコープの説明をまとめています",
+    "none": false,
+    "elapsed_ms": 728,
+    "input_tokens": 271,
+    "output_tokens": 15,
+    "provider_cost_usd": 3.46e-05
+  },
+  {
+    "case": "presentation_only",
+    "variant": "grounded_activity",
+    "repetition": 1,
+    "result": "NONE",
+    "none": true,
+    "elapsed_ms": 659,
+    "input_tokens": 271,
+    "output_tokens": 5,
+    "provider_cost_usd": 2.9599999999999998e-05
+  },
+  {
+    "case": "presentation_only",
+    "variant": "grounded_activity",
+    "repetition": 2,
+    "result": "NONE",
+    "none": true,
+    "elapsed_ms": 994,
+    "input_tokens": 271,
+    "output_tokens": 5,
+    "provider_cost_usd": 2.9599999999999998e-05
+  },
+  {
+    "case": "generic_planning",
+    "variant": "grounded_activity",
+    "repetition": 1,
+    "result": "NONE",
+    "none": true,
+    "elapsed_ms": 727,
+    "input_tokens": 261,
+    "output_tokens": 5,
+    "provider_cost_usd": 2.86e-05
+  },
+  {
+    "case": "generic_planning",
+    "variant": "grounded_activity",
+    "repetition": 2,
+    "result": "NONE",
+    "none": true,
+    "elapsed_ms": 641,
+    "input_tokens": 261,
+    "output_tokens": 5,
+    "provider_cost_usd": 2.86e-05
+  }
+]

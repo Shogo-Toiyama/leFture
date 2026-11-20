@@ -1,0 +1,62 @@
+[
+  {
+    "case": "unresolved_reference",
+    "label": "内容を確認しています",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "provider_cost_usd": 0
+  },
+  {
+    "case": "response_style",
+    "label": "内容を確認しています",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "provider_cost_usd": 0
+  },
+  {
+    "case": "equation",
+    "label": "内容を確認しています",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "provider_cost_usd": 0
+  },
+  {
+    "case": "concrete_topic",
+    "label": "内容を確認しています",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "provider_cost_usd": 0
+  },
+  {
+    "case": "unintelligible",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "provider_cost_usd": 0
+  },
+  {
+    "case": "empty",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "provider_cost_usd": 0
+  }
+]

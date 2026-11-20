@@ -1,0 +1,122 @@
+[
+  {
+    "case": "unresolved_reference",
+    "label": "上記の内容を確認中",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 1065,
+    "input_tokens": 387,
+    "output_tokens": 11,
+    "provider_cost_usd": 4.42e-05
+  },
+  {
+    "case": "unresolved_reference",
+    "label": "上記の内容を確認中",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 831,
+    "input_tokens": 387,
+    "output_tokens": 11,
+    "provider_cost_usd": 4.42e-05
+  },
+  {
+    "case": "response_style",
+    "label": "I'm not sure what you'd like me to write a status for. Could you share the excerpt or text you want summarized? Once I have it, I'll return a short status phrase in Japanese, up to 60 characters.",
+    "expected_label": true,
+    "valid": false,
+    "elapsed_ms": 845,
+    "input_tokens": 397,
+    "output_tokens": 67,
+    "provider_cost_usd": 7.32e-05
+  },
+  {
+    "case": "response_style",
+    "label": "NONE",
+    "expected_label": true,
+    "valid": false,
+    "elapsed_ms": 743,
+    "input_tokens": 397,
+    "output_tokens": 5,
+    "provider_cost_usd": 4.22e-05
+  },
+  {
+    "case": "equation",
+    "label": "計算を確認中",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 730,
+    "input_tokens": 404,
+    "output_tokens": 8,
+    "provider_cost_usd": 4.440000000000001e-05
+  },
+  {
+    "case": "equation",
+    "label": "計算を確認中",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 719,
+    "input_tokens": 404,
+    "output_tokens": 8,
+    "provider_cost_usd": 4.440000000000001e-05
+  },
+  {
+    "case": "concrete_topic",
+    "label": "Python授業の課題作成",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 802,
+    "input_tokens": 399,
+    "output_tokens": 11,
+    "provider_cost_usd": 4.54e-05
+  },
+  {
+    "case": "concrete_topic",
+    "label": "Python授業の演習作成中",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 734,
+    "input_tokens": 399,
+    "output_tokens": 12,
+    "provider_cost_usd": 4.5900000000000004e-05
+  },
+  {
+    "case": "unintelligible",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 1033,
+    "input_tokens": 386,
+    "output_tokens": 5,
+    "provider_cost_usd": 4.11e-05
+  },
+  {
+    "case": "unintelligible",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 1043,
+    "input_tokens": 386,
+    "output_tokens": 5,
+    "provider_cost_usd": 4.11e-05
+  },
+  {
+    "case": "empty",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 640,
+    "input_tokens": 375,
+    "output_tokens": 5,
+    "provider_cost_usd": 4e-05
+  },
+  {
+    "case": "empty",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 746,
+    "input_tokens": 375,
+    "output_tokens": 5,
+    "provider_cost_usd": 4e-05
+  }
+]

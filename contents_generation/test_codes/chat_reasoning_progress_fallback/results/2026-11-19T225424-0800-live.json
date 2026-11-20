@@ -1,0 +1,122 @@
+[
+  {
+    "case": "unresolved_reference",
+    "label": "ご確認の内容を確認しています",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 1039,
+    "input_tokens": 387,
+    "output_tokens": 14,
+    "provider_cost_usd": 4.57e-05
+  },
+  {
+    "case": "unresolved_reference",
+    "label": "Checking the content",
+    "expected_label": true,
+    "valid": false,
+    "elapsed_ms": 682,
+    "input_tokens": 387,
+    "output_tokens": 7,
+    "provider_cost_usd": 4.2199999999999996e-05
+  },
+  {
+    "case": "response_style",
+    "label": "応答の準備をしています",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 760,
+    "input_tokens": 397,
+    "output_tokens": 10,
+    "provider_cost_usd": 4.47e-05
+  },
+  {
+    "case": "response_style",
+    "label": "Response structure preparation",
+    "expected_label": true,
+    "valid": false,
+    "elapsed_ms": 830,
+    "input_tokens": 397,
+    "output_tokens": 9,
+    "provider_cost_usd": 4.4200000000000004e-05
+  },
+  {
+    "case": "equation",
+    "label": "計算を確認中",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 717,
+    "input_tokens": 404,
+    "output_tokens": 8,
+    "provider_cost_usd": 4.440000000000001e-05
+  },
+  {
+    "case": "equation",
+    "label": "計算を確認中",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 726,
+    "input_tokens": 404,
+    "output_tokens": 8,
+    "provider_cost_usd": 4.440000000000001e-05
+  },
+  {
+    "case": "concrete_topic",
+    "label": "Pythonの練習問題を作成中",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 940,
+    "input_tokens": 399,
+    "output_tokens": 15,
+    "provider_cost_usd": 4.74e-05
+  },
+  {
+    "case": "concrete_topic",
+    "label": "Python練習問題の作成中",
+    "expected_label": true,
+    "valid": true,
+    "elapsed_ms": 719,
+    "input_tokens": 399,
+    "output_tokens": 12,
+    "provider_cost_usd": 4.5900000000000004e-05
+  },
+  {
+    "case": "unintelligible",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 1082,
+    "input_tokens": 386,
+    "output_tokens": 5,
+    "provider_cost_usd": 4.11e-05
+  },
+  {
+    "case": "unintelligible",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 1370,
+    "input_tokens": 386,
+    "output_tokens": 5,
+    "provider_cost_usd": 4.11e-05
+  },
+  {
+    "case": "empty",
+    "label": "NONE",
+    "expected_label": false,
+    "valid": true,
+    "elapsed_ms": 909,
+    "input_tokens": 375,
+    "output_tokens": 5,
+    "provider_cost_usd": 4e-05
+  },
+  {
+    "case": "empty",
+    "label": "「…?」だけでは作業内容がわからないため、状態を表す言葉を出せません。NONE",
+    "expected_label": false,
+    "valid": false,
+    "elapsed_ms": 742,
+    "input_tokens": 375,
+    "output_tokens": 36,
+    "provider_cost_usd": 5.550000000000001e-05
+  }
+]

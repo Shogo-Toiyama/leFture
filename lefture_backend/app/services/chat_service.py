@@ -38,11 +38,19 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from html import escape
 from typing import Any, Awaitable, Callable, Literal, Optional, get_args
 
 from app.core.supabase import get_supabase_client
 from app.services.chat_lecture_source import DbLectureSource
-from app.services.chat_map import ChatMap, StudentMap, load_chat_map, load_student_map, resolve_timezone
+from app.services.chat_map import (
+    ChatMap,
+    StudentMap,
+    language_name,
+    load_chat_map,
+    load_student_map,
+    resolve_timezone,
+)
 from app.services.chat_materials import (
     Material,
     extract_citations,
@@ -2565,11 +2573,12 @@ async def _run_turn_steps(
 
         async def summarize_progress(excerpt: str) -> str:
             prompt = _load_prompt("chat_reasoning_progress_prompt.txt").replace(
-                "${reply_language}", decision.reply_language,
+                "${reply_language}", language_name(decision.reply_language),
             )
+            content = f"<excerpt>\n{escape(excerpt, quote=False)}\n</excerpt>"
             result = await llm.generate(
                 "anthropic/claude-haiku-5-5",
-                [Message(role="system", content=prompt), Message(role="user", content=excerpt)],
+                [Message(role="system", content=prompt), Message(role="user", content=content)],
                 LLMOptions(temperature=1.0, max_tokens=256, reasoning_effort="none"),
             )
             return result.output_text

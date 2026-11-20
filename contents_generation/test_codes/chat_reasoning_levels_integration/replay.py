@@ -149,8 +149,8 @@ async def dry_run(backend):
             if not kwargs.get("stream"):
                 label_calls += 1
                 assert kwargs["thinking"] == {"type": "disabled"} and kwargs["max_tokens"] == 256
-                assert "ja" in kwargs["messages"][0]["content"] and "${reply_language}" not in kwargs["messages"][0]["content"]
-                assert kwargs["messages"][1]["content"] == "Checking the selected rule."
+                assert "Japanese" in kwargs["messages"][0]["content"] and "${reply_language}" not in kwargs["messages"][0]["content"]
+                assert kwargs["messages"][1]["content"] == "<excerpt>\nChecking the selected rule.\n</excerpt>"
                 label_started.set()
                 if behavior == "slow":
                     try:

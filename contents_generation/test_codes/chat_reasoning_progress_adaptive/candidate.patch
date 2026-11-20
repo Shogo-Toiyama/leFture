@@ -1,0 +1,38 @@
+--- a/lefture_backend/app/services/chat_service.py
++++ b/lefture_backend/app/services/chat_service.py
+@@ -2529,3 +2529 @@
+-        # 推論の進捗を出すのは推論が要るターンだけ(Haiku 5.5はふだんからeffort lowで少し考えるが、
+-        # 最初の1文字まで1秒もかからないので、ふだんの「書いています」のままにする)
+-        thinking = False
++        reasoning_shown = False
+@@ -2548 +2546 @@
+-                thinking = answer_effort not in (None, "none")
++                reasoning_shown = answer_effort not in (None, "none")
+@@ -2550 +2548 @@
+-        await emit("status", {"stage": "reasoning" if thinking else "writing"})
++        await emit("status", {"stage": "reasoning" if reasoning_shown else "writing"})
+@@ -2570 +2568 @@
+-        reasoning_progress = ReasoningProgress(summarize_progress, publish_progress) if thinking else None
++        reasoning_progress = ReasoningProgress(summarize_progress, publish_progress)
+@@ -2573,2 +2571,7 @@
+-            if not stop.stopped and reasoning_progress is not None:
+-                reasoning_progress.feed(chunk)
++            nonlocal reasoning_shown
++            if stop.stopped or "answer_first_token" in timer.marks:
++                return
++            if not reasoning_shown and chunk.strip():
++                reasoning_shown = True
++                await emit("status", {"stage": "reasoning"})
++            reasoning_progress.feed(chunk)
+@@ -2578,2 +2581 @@
+-                answer_model, messages, state, options, stop_event=stop.event,
+-                on_thought=on_thought if reasoning_progress is not None else None,
++                answer_model, messages, state, options, stop_event=stop.event, on_thought=on_thought,
+@@ -2583,2 +2585 @@
+-                    if reasoning_progress is not None:
+-                        reasoning_progress.close()
++                    reasoning_progress.close()
+@@ -2588,2 +2589 @@
+-            if reasoning_progress is not None:
+-                reasoning_progress.close()
++            reasoning_progress.close()

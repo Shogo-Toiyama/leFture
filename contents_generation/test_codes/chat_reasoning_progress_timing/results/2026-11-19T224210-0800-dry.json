@@ -1,0 +1,80 @@
+[
+  {
+    "case": "dry_completed",
+    "level": "medium",
+    "events_ms": [
+      [
+        "answer_started",
+        0
+      ],
+      [
+        "answer_first_thought",
+        11
+      ],
+      [
+        "first_excerpt_ready",
+        22
+      ],
+      [
+        "summary_started",
+        22
+      ],
+      [
+        "summary_finished",
+        23
+      ],
+      [
+        "answer_first_progress_label",
+        23
+      ],
+      [
+        "answer_first_token",
+        43
+      ]
+    ],
+    "summary_excerpts": [
+      {
+        "excerpt_chars": 38
+      }
+    ],
+    "labels": 1,
+    "provider_cost_usd": 0
+  },
+  {
+    "case": "dry_cancelled",
+    "level": "medium",
+    "events_ms": [
+      [
+        "answer_started",
+        0
+      ],
+      [
+        "answer_first_thought",
+        11
+      ],
+      [
+        "first_excerpt_ready",
+        22
+      ],
+      [
+        "summary_started",
+        22
+      ],
+      [
+        "answer_first_token",
+        44
+      ],
+      [
+        "summary_cancelled",
+        44
+      ]
+    ],
+    "summary_excerpts": [
+      {
+        "excerpt_chars": 38
+      }
+    ],
+    "labels": 0,
+    "provider_cost_usd": 0
+  }
+]

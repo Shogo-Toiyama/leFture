@@ -1,0 +1,201 @@
+[
+  {
+    "case": "dry_completed",
+    "level": "medium",
+    "events_ms": [
+      [
+        "answer_started",
+        0
+      ],
+      [
+        "answer_first_thought",
+        11
+      ],
+      [
+        "first_excerpt_ready",
+        22
+      ],
+      [
+        "summary_started",
+        22
+      ],
+      [
+        "summary_finished",
+        23
+      ],
+      [
+        "answer_first_progress_label",
+        23
+      ],
+      [
+        "answer_first_token",
+        43
+      ]
+    ],
+    "summary_excerpts": [
+      {
+        "excerpt_chars": 38
+      }
+    ],
+    "labels": 1,
+    "provider_cost_usd": 0
+  },
+  {
+    "case": "dry_cancelled",
+    "level": "medium",
+    "events_ms": [
+      [
+        "answer_started",
+        0
+      ],
+      [
+        "answer_first_thought",
+        11
+      ],
+      [
+        "first_excerpt_ready",
+        22
+      ],
+      [
+        "summary_started",
+        22
+      ],
+      [
+        "answer_first_token",
+        44
+      ],
+      [
+        "summary_cancelled",
+        44
+      ]
+    ],
+    "summary_excerpts": [
+      {
+        "excerpt_chars": 38
+      }
+    ],
+    "labels": 0,
+    "provider_cost_usd": 0
+  },
+  {
+    "case": "weighted_grade_1",
+    "level": "medium",
+    "events_ms": [
+      [
+        "answer_started",
+        0
+      ],
+      [
+        "answer_first_thought",
+        1801
+      ],
+      [
+        "first_excerpt_ready",
+        2069
+      ],
+      [
+        "summary_started",
+        2069
+      ],
+      [
+        "summary_none",
+        2767
+      ],
+      [
+        "answer_first_token",
+        3654
+      ]
+    ],
+    "summary_excerpts": [
+      {
+        "excerpt_chars": 100
+      }
+    ],
+    "labels": 0,
+    "input_tokens": 8513.0,
+    "output_tokens": 765.0,
+    "provider_cost_usd": 0.00054035
+  },
+  {
+    "case": "weighted_grade_2",
+    "level": "medium",
+    "events_ms": [
+      [
+        "answer_started",
+        0
+      ],
+      [
+        "answer_first_thought",
+        1899
+      ],
+      [
+        "first_excerpt_ready",
+        3053
+      ],
+      [
+        "summary_started",
+        3054
+      ],
+      [
+        "answer_first_token",
+        3077
+      ],
+      [
+        "summary_cancelled",
+        3077
+      ]
+    ],
+    "summary_excerpts": [
+      {
+        "excerpt_chars": 94
+      }
+    ],
+    "labels": 0,
+    "input_tokens": 8323.0,
+    "output_tokens": 676.0,
+    "provider_cost_usd": 0.00047685
+  },
+  {
+    "case": "variable_scope",
+    "level": "low",
+    "events_ms": [
+      [
+        "answer_started",
+        0
+      ],
+      [
+        "answer_first_thought",
+        1351
+      ],
+      [
+        "first_excerpt_ready",
+        1585
+      ],
+      [
+        "summary_started",
+        1585
+      ],
+      [
+        "summary_finished",
+        2314
+      ],
+      [
+        "answer_first_progress_label",
+        2314
+      ],
+      [
+        "answer_first_token",
+        3163
+      ]
+    ],
+    "summary_excerpts": [
+      {
+        "excerpt_chars": 186
+      }
+    ],
+    "labels": 1,
+    "input_tokens": 8501.0,
+    "output_tokens": 1087.0,
+    "provider_cost_usd": 0.00070015
+  }
+]
