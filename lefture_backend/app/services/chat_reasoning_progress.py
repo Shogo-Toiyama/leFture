@@ -43,13 +43,9 @@ class ReasoningProgress:
         while not self._closed:
             try:
                 async with asyncio.timeout(3):
-                    label = (await self._summarize(excerpt)).strip()
-                if (
-                    not self._closed
-                    and 0 < len(label) <= 60
-                    and label.upper() != "NONE"
-                    and len(label.splitlines()) == 1
-                ):
+                    text = await self._summarize(excerpt)
+                label = " ".join(line.strip() for line in text.splitlines() if line.strip())
+                if not self._closed and label and label.upper() != "NONE":
                     await self._publish(label)
             except Exception:
                 # A progress label is optional. The answer stream continues.

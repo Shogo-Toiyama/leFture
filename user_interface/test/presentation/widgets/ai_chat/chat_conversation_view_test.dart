@@ -301,7 +301,8 @@ void main() {
       await settle(tester);
       expect(find.text(l10n.aiChatStageThinking), findsOneWidget);
 
-      const progressLabel = 'Checking heap ordering';
+      const progressLabel =
+          'Checking how heap ordering is maintained as the new element moves from the bottom of the tree through its parent nodes';
       repo.controller.add(
         const ChatStatusEvent(
           stage: ChatStage.reasoning,

@@ -546,7 +546,10 @@ class UnifiedLLM:
         if options.max_completion_tokens is not None:
             kwargs["max_completion_tokens"] = options.max_completion_tokens
 
-        if options.reasoning_effort is not None:
+        if model == "anthropic/claude-haiku-5-5" and options.reasoning_effort == "none":
+            # Haiku 5.5 enables adaptive thinking when the field is omitted.
+            kwargs["thinking"] = {"type": "disabled"}
+        elif options.reasoning_effort is not None:
             kwargs["reasoning_effort"] = options.reasoning_effort
             # litellmのモデル表がreasoning_effortを知らないモデルは、明示的に通すよう
             # 頼まないとUnsupportedParamsErrorになる(gpt-6-lunaで2026-09-30に確認)

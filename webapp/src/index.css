@@ -16781,6 +16781,7 @@ body.is-resizing-chat iframe {
   align-items: center;
   gap: 10px;
   min-height: 38px;
+  max-width: 100%;
 }
 
 .chat-thinking-nebula {
@@ -16790,6 +16791,7 @@ body.is-resizing-chat iframe {
 
 .chat-thinking-text-wrap {
   display: flex;
+  min-width: 0;
   align-items: baseline;
   gap: 8px;
   font-size: 13.5px;
@@ -16798,6 +16800,7 @@ body.is-resizing-chat iframe {
 
 .chat-thinking-label {
   font-size: 13.5px;
+  overflow-wrap: anywhere;
 }
 
 .chat-thinking-seconds {

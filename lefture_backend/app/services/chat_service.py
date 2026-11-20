@@ -2560,7 +2560,7 @@ async def _run_turn_steps(
             result = await llm.generate(
                 "anthropic/claude-haiku-5-5",
                 [Message(role="system", content=prompt), Message(role="user", content=excerpt)],
-                LLMOptions(temperature=1.0, max_tokens=96, reasoning_effort="none"),
+                LLMOptions(temperature=1.0, max_tokens=256, reasoning_effort="none"),
             )
             return result.output_text
 

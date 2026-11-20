@@ -55,9 +55,12 @@ const bundle = await build({
         />);
         const before = renderReasoning(undefined);
         const during = renderReasoning(event.progress_label);
+        const longLabel = Array.from({ length: 7 }, () => label).join(' ');
+        const duringLongLabel = renderReasoning(longLabel);
         const after = renderReasoning(event.progress_label, 'Response');
         const expectedReasoning = before.includes('aria-label="' + fallback + '"') &&
           during.includes('aria-label="' + label + '"') &&
+          duringLongLabel.includes('>' + longLabel + '</span>') &&
           during.includes('chat-thinking-label slabel') && !during.includes(fallback) &&
           !during.includes('chat-thinking-thought-box') && !after.includes(label);
         results.push((expectedReasoning ? 'PASS ' : 'FAIL ') + language + ' inline reasoning progress');

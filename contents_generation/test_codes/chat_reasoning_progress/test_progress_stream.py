@@ -66,8 +66,9 @@ class ReasoningProgressTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(labels, ["Reviewing the problem"])
         progress.close()
 
-    async def test_invalid_results_are_skipped(self):
-        outputs = iter(["A\nB", "x" * 61, "Checking variables"])
+    async def test_long_labels_are_published_in_full(self):
+        long_label = "Checking how each variable is scoped across the nested functions " * 2
+        outputs = iter(["First sentence.\n\nSecond sentence.", long_label, " ", "NONE"])
         labels = []
 
         async def summarize(_):
@@ -77,10 +78,10 @@ class ReasoningProgressTests(unittest.IsolatedAsyncioTestCase):
             labels.append(label)
 
         progress = ReasoningProgress(summarize, publish)
-        for chunk in ("First\n", "a\nb\nc\n", "d\ne\nf\n"):
+        for chunk in ("First\n", "a\nb\nc\n", "d\ne\nf\n", "g\nh\ni\n"):
             progress.feed(chunk)
             await asyncio.sleep(0)
-        self.assertEqual(labels, ["Checking variables"])
+        self.assertEqual(labels, ["First sentence. Second sentence.", long_label.strip()])
         progress.close()
 
     async def test_close_cancels_and_discards_pending_updates(self):
