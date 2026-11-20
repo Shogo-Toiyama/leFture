@@ -1,0 +1,18 @@
+{
+ "python": "3.11.18",
+ "modules": 64,
+ "ok": 62,
+ "failed": {
+  "app.services.logic.lecture_segmentaion": "ImportError: cannot import name 'CostCollector' from 'app.services.helpers.llm_unified' (<repo>/lefture_backend/app/services/helpers/llm_unified.py)",
+  "app.services.pipeline": "ImportError: cannot import name 'init_logger' from 'app.services.helpers.helpers' (<repo>/lefture_backend/app/services/helpers/helpers.py)"
+ },
+ "warnings": {
+  "app.main": [
+   "DeprecationWarning: \n        on_event is deprecated, use lifespan event handlers instead.\n\n        Read more about it in the\n        [FastAPI docs for Lifespan Events](https://fast (applications.py)",
+   "DeprecationWarning: \n        on_event is deprecated, use lifespan event handlers instead.\n\n        Read more about it in the\n        [FastAPI docs for Lifespan Events](https://fast (main.py)",
+   "DeprecationWarning: 'audioop' is deprecated and slated for removal in Python 3.13 (utils.py)",
+   "RuntimeWarning: Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work (utils.py)"
+  ]
+ },
+ "seconds": 3.02
+}

@@ -1,0 +1,26 @@
+diff --git a/lefture_backend/Dockerfile b/lefture_backend/Dockerfile
+index 7f78642..7b45d14 100644
+--- a/lefture_backend/Dockerfile
++++ b/lefture_backend/Dockerfile
+@@ -1,5 +1,5 @@
+-# Python 3.11 (軽量版)
+-FROM python:3.11-slim
++# Python 3.14 (軽量版)。3.11は2027-10にサポート終了(contents_generation/test_codes/python314_upgrade)
++FROM python:3.14-slim
+ 
+ # ffmpegなどのシステム依存関係をインストール
+ RUN apt-get update && apt-get install -y \
+diff --git a/lefture_backend/requirements.txt b/lefture_backend/requirements.txt
+index a4f9746..07aeb58 100644
+--- a/lefture_backend/requirements.txt
++++ b/lefture_backend/requirements.txt
+@@ -13,6 +13,9 @@ google-cloud-tasks
+ google-auth
+ nltk
+ pydub
++# Python 3.13で標準ライブラリのaudioopが削除された。pydubが使うので、3.13以上では代わりのパッケージを入れる
++# (contents_generation/test_codes/python314_upgrade)。3.11では何も入らない
++audioop-lts; python_version >= "3.13"
+ httpx
+ boto3
+ # 固定する。上げるとClaudeへの送り方が黙って変わることがある(1.104.2でthinkingのdisplayが変わり、

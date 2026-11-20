@@ -1,5 +1,5 @@
-# Python 3.11 (軽量版)
-FROM python:3.11-slim
+# Python 3.14 (軽量版)。3.11は2027-10にサポート終了(contents_generation/test_codes/python314_upgrade)
+FROM python:3.14-slim
 
 # ffmpegなどのシステム依存関係をインストール
 RUN apt-get update && apt-get install -y \

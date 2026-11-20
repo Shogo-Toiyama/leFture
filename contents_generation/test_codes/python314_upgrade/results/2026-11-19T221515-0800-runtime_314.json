@@ -1,0 +1,219 @@
+{
+ "python": "3.14.10",
+ "pydub": {
+  "duration_ms": 2000,
+  "rms": 577,
+  "frame_rate": 16000
+ },
+ "helpers": {
+  "normalize": [
+   "C4/L6-7",
+   "C4/L6",
+   "C4/L6-7",
+   "C4/topics"
+  ],
+  "names": "\"Lecture 9\" (2026-10-22) and the lectures from 2026-10-22 to 2026-10-27, L1 cache, the part on \"Scope\" in \"Lecture 10\" (2026-10-27)"
+ },
+ "llm": {
+  "router_gemini": {
+   "ok": true,
+   "text": "{\"intent\": \"learning\"}",
+   "json": {
+    "intent": "learning"
+   },
+   "finish": "stop",
+   "in": 30,
+   "out": 10,
+   "requests": [
+    {
+     "host": "generativelanguage.googleapis.com",
+     "path": "/v1alpha/models/gemini-3.1-flash-lite:generateContent",
+     "body": {
+      "contents": [
+       {
+        "role": "user",
+        "parts": [
+         {
+          "text": "Hi"
+         }
+        ]
+       }
+      ],
+      "system_instruction": {
+       "parts": [
+        {
+         "text": "You are a test."
+        }
+       ]
+      },
+      "generationConfig": {
+       "response_mime_type": "application/json",
+       "response_json_schema": {
+        "type": "object",
+        "properties": {
+         "intent": {
+          "type": "string"
+         }
+        },
+        "required": [
+         "intent"
+        ]
+       },
+       "thinkingConfig": {
+        "thinkingLevel": "minimal",
+        "includeThoughts": false
+       },
+       "temperature": 1.0
+      }
+     }
+    }
+   ],
+   "ms": 70.6
+  },
+  "navigator_like_haiku": {
+   "ok": true,
+   "text": "{\"status\": \"ok\"}",
+   "json": {
+    "status": "ok"
+   },
+   "finish": "stop",
+   "in": 30,
+   "out": 10,
+   "requests": [
+    {
+     "host": "api.anthropic.com",
+     "path": "/v1/messages",
+     "body": {
+      "model": "claude-haiku-5-5",
+      "messages": [
+       {
+        "role": "user",
+        "content": [
+         {
+          "type": "text",
+          "text": "Hi"
+         }
+        ]
+       }
+      ],
+      "max_tokens": 2000,
+      "output_format": {
+       "type": "json_schema",
+       "schema": {
+        "type": "object",
+        "properties": {
+         "status": {
+          "type": "string"
+         }
+        },
+        "required": [
+         "status"
+        ],
+        "additionalProperties": false
+       }
+      },
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      },
+      "output_config": {
+       "effort": "low"
+      },
+      "system": [
+       {
+        "type": "text",
+        "text": "You are a test."
+       }
+      ]
+     }
+    }
+   ],
+   "ms": 58.9
+  },
+  "progress_haiku": {
+   "ok": true,
+   "text": "変数のスコープを確認中",
+   "json": null,
+   "finish": "stop",
+   "in": 30,
+   "out": 10,
+   "requests": [
+    {
+     "host": "api.anthropic.com",
+     "path": "/v1/messages",
+     "body": {
+      "model": "claude-haiku-5-5",
+      "messages": [
+       {
+        "role": "user",
+        "content": [
+         {
+          "type": "text",
+          "text": "Hi"
+         }
+        ]
+       }
+      ],
+      "temperature": 1.0,
+      "max_tokens": 256,
+      "thinking": {
+       "type": "disabled"
+      },
+      "system": [
+       {
+        "type": "text",
+        "text": "You are a test."
+       }
+      ]
+     }
+    }
+   ],
+   "ms": 1.7
+  },
+  "answer_stream_haiku": {
+   "ok": true,
+   "events": 4,
+   "text": "Hellofromthefixture.",
+   "final_text": "Hellofromthefixture.",
+   "finish": "stop",
+   "in": 30,
+   "out": 10,
+   "requests": [
+    {
+     "host": "api.anthropic.com",
+     "path": "/v1/messages",
+     "body": {
+      "model": "claude-haiku-5-5",
+      "messages": [
+       {
+        "role": "user",
+        "content": [
+         {
+          "type": "text",
+          "text": "Hi"
+         }
+        ]
+       }
+      ],
+      "temperature": 1.0,
+      "max_tokens": 4000,
+      "thinking": {
+       "type": "adaptive",
+       "display": "summarized"
+      },
+      "output_config": {
+       "effort": "low"
+      },
+      "system": [
+       {
+        "type": "text",
+        "text": "You are a test."
+       }
+      ],
+      "stream": true
+     }
+    }
+   ]
+  }
+ }
+}
