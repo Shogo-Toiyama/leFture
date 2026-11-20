@@ -1,0 +1,159 @@
+00:00 +0: loading /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart
+00:00 +0: 受信中のスクロール 生成が完了するフレームで出典と回答の操作ボタンまで追従する (variant: TargetPlatform.android)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: a numeric value within <0.5> of <0>
+  Actual: <84.0>
+   Which:  differs by <84.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart:1253:9)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart line 1253
+The test description was:
+  生成が完了するフレームで出典と回答の操作ボタンまで追従する (variant: TargetPlatform.android)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +0 -1: 受信中のスクロール 生成が完了するフレームで出典と回答の操作ボタンまで追従する (variant: TargetPlatform.android) [E]
+  Test failed. See exception logs above.
+  The test description was: 生成が完了するフレームで出典と回答の操作ボタンまで追従する (variant: TargetPlatform.android)
+
+00:01 +0 -1: 受信中のスクロール 生成が完了するフレームで出典と回答の操作ボタンまで追従する (variant: TargetPlatform.iOS)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: a numeric value within <0.5> of <0>
+  Actual: <84.0>
+   Which:  differs by <84.0>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart:1253:9)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart line 1253
+The test description was:
+  生成が完了するフレームで出典と回答の操作ボタンまで追従する (variant: TargetPlatform.iOS)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:01 +0 -2: 受信中のスクロール 生成が完了するフレームで出典と回答の操作ボタンまで追従する (variant: TargetPlatform.iOS) [E]
+  Test failed. See exception logs above.
+  The test description was: 生成が完了するフレームで出典と回答の操作ボタンまで追従する (variant: TargetPlatform.iOS)
+
+00:01 +0 -2: 受信中のスクロール 最下部から1画面より離れて送信しても読んでいた文章の位置を保つ (variant: TargetPlatform.android)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      ListBase.firstWhere (dart:collection/list.dart:132:5)
+#1      main.<anonymous closure>.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart:1412:11)
+<asynchronous suspension>
+#2      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#3      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  最下部から1画面より離れて送信しても読んでいた文章の位置を保つ (variant: TargetPlatform.android)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +0 -3: 受信中のスクロール 最下部から1画面より離れて送信しても読んでいた文章の位置を保つ (variant: TargetPlatform.android) [E]
+  Test failed. See exception logs above.
+  The test description was: 最下部から1画面より離れて送信しても読んでいた文章の位置を保つ (variant: TargetPlatform.android)
+
+00:02 +0 -3: 受信中のスクロール 最下部から1画面より離れて送信しても読んでいた文章の位置を保つ (variant: TargetPlatform.iOS)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following StateError was thrown running a test:
+Bad state: No element
+
+When the exception was thrown, this was the stack:
+#0      ListBase.firstWhere (dart:collection/list.dart:132:5)
+#1      main.<anonymous closure>.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart:1412:11)
+<asynchronous suspension>
+#2      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#3      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  最下部から1画面より離れて送信しても読んでいた文章の位置を保つ (variant: TargetPlatform.iOS)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +0 -4: 受信中のスクロール 最下部から1画面より離れて送信しても読んでいた文章の位置を保つ (variant: TargetPlatform.iOS) [E]
+  Test failed. See exception logs above.
+  The test description was: 最下部から1画面より離れて送信しても読んでいた文章の位置を保つ (variant: TargetPlatform.iOS)
+
+00:02 +0 -4: 受信中のスクロール 最下部から1画面以内で送信すると最新の回答まで戻って追従する (variant: TargetPlatform.android)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: a numeric value within <0.5> of <0>
+  Actual: <722.5>
+   Which:  differs by <722.5>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart:1445:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart line 1445
+The test description was:
+  最下部から1画面以内で送信すると最新の回答まで戻って追従する (variant: TargetPlatform.android)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +0 -5: 受信中のスクロール 最下部から1画面以内で送信すると最新の回答まで戻って追従する (variant: TargetPlatform.android) [E]
+  Test failed. See exception logs above.
+  The test description was: 最下部から1画面以内で送信すると最新の回答まで戻って追従する (variant: TargetPlatform.android)
+
+00:02 +0 -5: 受信中のスクロール 最下部から1画面以内で送信すると最新の回答まで戻って追従する (variant: TargetPlatform.iOS)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: a numeric value within <0.5> of <0>
+  Actual: <722.5>
+   Which:  differs by <722.5>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure>.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart:1445:11)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart line 1445
+The test description was:
+  最下部から1画面以内で送信すると最新の回答まで戻って追従する (variant: TargetPlatform.iOS)
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:02 +0 -6: 受信中のスクロール 最下部から1画面以内で送信すると最新の回答まで戻って追従する (variant: TargetPlatform.iOS) [E]
+  Test failed. See exception logs above.
+  The test description was: 最下部から1画面以内で送信すると最新の回答まで戻って追従する (variant: TargetPlatform.iOS)
+
+00:02 +0 -6: Some tests failed.
+
+Failing tests:
+  /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 最下部から1画面より離れて送信しても読んでいた文章の位置を保つ (variant: TargetPlatform.android)
+  /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 最下部から1画面より離れて送信しても読んでいた文章の位置を保つ (variant: TargetPlatform.iOS)
+  /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 最下部から1画面以内で送信すると最新の回答まで戻って追従する (variant: TargetPlatform.android)
+  /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart: 受信中のスクロール 最下部から1画面以内で送信すると最新の回答まで戻って追従する (variant: TargetPlatform.iOS)
+  ... and 2 more

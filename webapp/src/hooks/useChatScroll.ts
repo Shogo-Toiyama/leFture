@@ -19,6 +19,7 @@ export function useChatScroll(
   const threadRef = useRef<HTMLDivElement>(null);
   const following = useRef(true);
   const opening = useRef(true);
+  const wasGenerating = useRef(false);
   const lastScrollTop = useRef(0);
   const resumeUntil = useRef(0);
   const held = useRef({ pointers: new Set<number>(), touch: false, startTop: 0, wasFollowing: true });
@@ -43,11 +44,12 @@ export function useChatScroll(
     syncScroll(true);
   }, [syncScroll]);
 
-  const preservePositionOnSend = useCallback(() => {
+  const prepareToSend = useCallback((followIfNear = false) => {
     const el = scrollRef.current;
     opening.current = false;
     resumeUntil.current = 0;
-    following.current = Boolean(el && !isHolding() && distanceToBottom(el) <= BOTTOM_TOLERANCE);
+    const tolerance = followIfNear && el ? el.clientHeight : BOTTOM_TOLERANCE;
+    following.current = Boolean(el && !isHolding() && distanceToBottom(el) <= tolerance);
   }, [isHolding]);
 
   const captureBeforePrepend = useCallback(() => {
@@ -56,6 +58,8 @@ export function useChatScroll(
   }, []);
 
   useLayoutEffect(() => {
+    const finishedReply = wasGenerating.current && !isGenerating && !loading;
+    wasGenerating.current = isGenerating;
     const el = scrollRef.current;
     if (!el) return;
     // Loading or clearing a conversation resets its position. Adopting the ID
@@ -75,7 +79,9 @@ export function useChatScroll(
       el.scrollTop = snapshot.scrollTop + Math.max(0, el.scrollHeight - snapshot.scrollHeight);
       lastScrollTop.current = el.scrollTop;
     }
-    syncScroll(openAtBottom && !isHolding());
+    // The final commit lays out the citations and message actions.
+    const followFinalReply = finishedReply && following.current;
+    syncScroll((openAtBottom || followFinalReply) && !isHolding());
   }, [isGenerating, isHolding, loading, messages, syncScroll]);
 
   useLayoutEffect(() => {
@@ -202,7 +208,7 @@ export function useChatScroll(
   };
 
   return {
-    scrollRef, threadRef, showJumpToBottom, jumpToBottom, preservePositionOnSend,
+    scrollRef, threadRef, showJumpToBottom, jumpToBottom, prepareToSend,
     captureBeforePrepend, onScroll, onWheel, onKeyDown, onPointerDown, onTouchStart, onTouchEnd,
   };
 }

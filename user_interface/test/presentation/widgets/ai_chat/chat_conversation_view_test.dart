@@ -13,6 +13,7 @@ import 'package:lefture/infrastructure/local_db/repositories/chat_cache_drift.da
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_composer_parts.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_conversation_view.dart';
+import 'package:lefture/presentation/widgets/ai_chat/chat_message_views.dart';
 import 'package:lefture/presentation/widgets/ai_chat/chat_world.dart';
 import 'package:lefture/presentation/widgets/selection_floating_menu.dart';
 
@@ -1065,9 +1066,16 @@ void main() {
       }
     }
 
-    Future<void> finishStreaming(WidgetTester tester) async {
+    Future<void> finishStreaming(
+      WidgetTester tester, {
+      List<ChatCitation>? citations,
+    }) async {
       repo.controller.add(
-        const ChatDoneEvent(status: ChatMessageStatus.complete, creditsCharged: 0.1),
+        ChatDoneEvent(
+          status: ChatMessageStatus.complete,
+          citations: citations,
+          creditsCharged: 0.1,
+        ),
       );
       await repo.controller.close();
       await settle(tester);
@@ -1086,6 +1094,12 @@ void main() {
     }
 
     double viewportBottom(WidgetTester tester) => tester.getRect(messageList()).bottom;
+
+    ScrollPosition listPosition(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find.descendant(of: messageList(), matching: find.byType(Scrollable)).first,
+        )
+        .position;
 
     /// 指で[dy]だけ下へ(負なら上へ)動かし、止めてから離す(慣性スクロールを残さない)。
     Future<void> scrollUpBy(WidgetTester tester, double dy) async {
@@ -1228,6 +1242,26 @@ void main() {
     }, variant: platforms, timeout: const Timeout(Duration(seconds: 60)));
 
     testWidgets(
+      '生成完了時に出典と回答の操作ボタンまで追従する',
+      (tester) async {
+        await startStreaming(tester);
+        final position = listPosition(tester);
+        expect(position.extentAfter, closeTo(0, 0.5));
+        await finishStreaming(tester, citations: const [
+          ChatCitation(ref: 'W1', sourceType: 'web', label: 'Example source'),
+        ]);
+
+        expect(position.extentAfter, closeTo(0, 0.5));
+        final source = find.text('Example source');
+        expect(source.hitTestable(), findsOneWidget);
+        final copy = find.bySemanticsLabel(l10n.aiChatActionCopy).last;
+        expect(tester.getRect(copy).bottom, lessThanOrEqualTo(viewportBottom(tester)));
+      },
+      variant: platforms,
+      timeout: const Timeout(Duration(seconds: 60)),
+    );
+
+    testWidgets(
       '指を置くと受信中の追従が止まり、ドラッグ前も読んでいる位置を保つ',
       (tester) async {
         await startStreaming(tester);
@@ -1360,16 +1394,24 @@ void main() {
     );
 
     testWidgets(
-      '履歴を読んだ位置で送信しても表示位置を保つ',
+      '最下部から1画面より離れて送信しても読んでいた文章の位置を保つ',
       (tester) async {
         await openLongThread(tester);
-        await scrollUpBy(tester, 320);
         await tester.enterText(
           find.byType(TextField),
           'Explain the last topic.\nInclude an example.\nCompare the alternatives.',
         );
         await tester.pump();
-        final reading = find.textContaining('Message item 15').first;
+        final position = listPosition(tester);
+        final distance = position.viewportDimension * 1.25;
+        position.jumpTo(position.maxScrollExtent - distance);
+        await tester.pump();
+        expect(position.extentAfter, closeTo(distance, 0.5));
+        final visible = find.byType(ChatUserMessage).hitTestable().first;
+        final id = tester.widget<ChatUserMessage>(visible).message.id;
+        final reading = find.byWidgetPredicate(
+          (widget) => widget is ChatUserMessage && widget.message.id == id,
+        );
         final before = tester.getTopLeft(reading).dy;
         expect(before, inInclusiveRange(0, viewportBottom(tester)));
 
@@ -1378,6 +1420,29 @@ void main() {
           expect(tester.getTopLeft(reading).dy, closeTo(before, 0.5));
           await receive(tester, paragraph(4));
           expect(tester.getTopLeft(reading).dy, closeTo(before, 0.5));
+        } finally {
+          await finishStreaming(tester);
+        }
+      },
+      variant: platforms,
+      timeout: const Timeout(Duration(seconds: 60)),
+    );
+
+    testWidgets(
+      '最下部から1画面以内で送信すると最新の回答まで戻って追従する',
+      (tester) async {
+        await openLongThread(tester);
+        final position = listPosition(tester);
+        final distance = position.viewportDimension * 0.7;
+        position.jumpTo(position.maxScrollExtent - distance);
+        await tester.pump();
+        expect(position.extentAfter, closeTo(distance, 0.5));
+
+        await sendQuestion(tester);
+        try {
+          expect(position.extentAfter, closeTo(0, 0.5));
+          await receive(tester, paragraph(4));
+          expect(position.extentAfter, closeTo(0, 0.5));
         } finally {
           await finishStreaming(tester);
         }

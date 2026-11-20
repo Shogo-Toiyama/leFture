@@ -1,0 +1,8 @@
+PASS Completion reveals the citation and action row at the bottom
+PASS Completion preserves the scroll position of a reader
+PASS Sending from one screen away (page)
+PASS Sending from one pixel beyond one screen (page)
+PASS Sending from one screen away (panel)
+PASS Sending from one pixel beyond one screen (panel)
+ALL PASSED
+Runner time: 1221 ms

@@ -1,0 +1,5 @@
+PASS Completion reveals the citation and action row at the bottom
+PASS Completion preserves the scroll position of a reader
+PASS Sending from the near position
+PASS Sending from the far position
+ALL PASSED

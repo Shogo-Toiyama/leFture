@@ -1,0 +1,4 @@
+00:00 +0: loading /Users/shogo/Documents/Programming/leFture/user_interface/test/presentation/widgets/ai_chat/chat_conversation_view_test.dart
+00:00 +0: 受信中のスクロール 最下部から1画面より離れて送信しても読んでいた文章の位置を保つ (variant: TargetPlatform.android)
+00:00 +1: 受信中のスクロール 最下部から1画面より離れて送信しても読んでいた文章の位置を保つ (variant: TargetPlatform.iOS)
+00:01 +2: All tests passed!

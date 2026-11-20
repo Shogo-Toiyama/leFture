@@ -149,7 +149,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
   const isGenerating = !loading && messages.some((message) =>
     message.role === 'assistant' && message.status === 'streaming');
   const {
-    scrollRef, threadRef, showJumpToBottom, jumpToBottom, preservePositionOnSend,
+    scrollRef, threadRef, showJumpToBottom, jumpToBottom, prepareToSend,
     captureBeforePrepend, onScroll, onWheel, onKeyDown, onPointerDown, onTouchStart, onTouchEnd,
   } = useChatScroll(messages, loading, showGate, isGenerating);
 
@@ -300,7 +300,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     references: ChatAttachmentRef[],
     context: ChatMessageContext
   ) => {
-    preservePositionOnSend();
+    prepareToSend();
     setEditingId(null);
     setEditError(null);
     void send(content, context, drafts, references, {
@@ -355,10 +355,10 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
         sendEdit(editingId, content, drafts, references, context);
         return;
       }
-      preservePositionOnSend();
+      prepareToSend(true);
       void send(content, context, drafts, references);
     },
-    [lectureId, courseId, activeSelection, screen, send, clearSelection, editingId, editInfo, preservePositionOnSend]
+    [lectureId, courseId, activeSelection, screen, send, clearSelection, editingId, editInfo, prepareToSend]
   );
 
   /**
@@ -372,7 +372,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
     const previousUser = [...messages.slice(0, assistantIndex)].reverse().find((m) => m.role === 'user');
     if (!previousUser || previousUser.id.startsWith('local-')) return undefined;
     return () => {
-      preservePositionOnSend();
+      prepareToSend();
       setEditError(null);
       void send(previousUser.content, previousUser.context, [], referencesOf(previousUser), {
         replaceFromMessageId: previousUser.id,
@@ -406,7 +406,7 @@ export const ChatConversation: React.FC<ChatConversationProps> = ({
                 type="button"
                 className="chat-banner-btn is-primary"
                 onClick={() => {
-                  preservePositionOnSend();
+                  prepareToSend();
                   retry(message.id);
                 }}
               >

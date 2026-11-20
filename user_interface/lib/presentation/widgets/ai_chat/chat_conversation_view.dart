@@ -103,6 +103,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   ({double pixels, double height})? _viewportBeforeSend;
   bool _stickToBottom = true;
   bool _isGenerating = false;
+  bool _layingOutFinalReply = false;
 
   /// 会話を開いた時点(と、あとから読み込んだ過去ログ)のメッセージ。基準点より上に並べ、
   /// それより後に増えたメッセージ(送った質問・受信中の回答)は基準点より下に並べる。
@@ -118,7 +119,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
   Timer? _followResumeTimer;
 
   bool _canFollowBottom({bool openingThread = false}) =>
-      (_isGenerating || openingThread) &&
+      (_isGenerating || _layingOutFinalReply || openingThread) &&
       _stickToBottom &&
       _pointerVelocities.isEmpty;
 
@@ -226,14 +227,18 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
     advance();
   }
 
-  void _preservePositionOnSend() {
+  void _prepareToSend({bool followIfNear = false}) {
     _jumpRequest = null;
     _followResumeTimer?.cancel();
     _viewportBeforeSend = null;
     final position = _scroll.hasClients ? _scroll.position : null;
+    final tolerance =
+        followIfNear && position != null && position.hasViewportDimension
+        ? position.viewportDimension
+        : _bottomTolerance;
     _stickToBottom =
         _pointerVelocities.isEmpty &&
-        (position == null || position.extentAfter <= _bottomTolerance);
+        (position == null || position.extentAfter <= tolerance);
     if (_stickToBottom || position == null || !position.hasViewportDimension) {
       return;
     }
@@ -417,7 +422,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
       return null;
     }
     return () {
-      _preservePositionOnSend();
+      _prepareToSend();
       setState(() => _editError = null);
       unawaited(
         _notifier.send(
@@ -463,7 +468,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
 
     final editingId = _editingId;
     if (editingId == null) {
-      _preservePositionOnSend();
+      _prepareToSend(followIfNear: true);
       unawaited(
         _notifier.send(
           content,
@@ -487,7 +492,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
         return;
       }
     }
-    _preservePositionOnSend();
+    _prepareToSend();
     setState(() {
       _editingId = null;
       _editError = null;
@@ -569,6 +574,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
 
     // 新しい文字・メッセージが来たら、下端にいるときだけ追従する(過去ログ読み込み時は飛ばさない)
     ref.listen(chatConversationProvider, (previous, next) {
+      final wasGenerating = _isGenerating;
       _isGenerating = _hasStreamingReply(next);
       if (!_isGenerating) _followResumeTimer?.cancel();
       if (previous == null) return;
@@ -581,12 +587,15 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
       if (reopened) {
         _jumpRequest = null;
         _viewportBeforeSend = null;
+        _layingOutFinalReply = false;
         _historyIds = {for (final m in next.messages) m.id};
         _overflowing = false;
         _enableFollowing();
         _scrollToBottomSoon(openingThread: true);
         return;
       }
+      final finishedReply = wasGenerating && !_isGenerating;
+      if (finishedReply) _layingOutFinalReply = true;
       // 編集・作り直しでメッセージが消えた: いったん全部を基準点より上に戻して、
       // はみ出しているかを測り直す(送ったときの仮のIDが本物に変わるのは消えたとみなさない)。
       final nextIds = {for (final m in next.messages) m.id};
@@ -606,6 +615,12 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
         if (!isPrepend) {
           _scrollToBottomSoon();
         }
+      }
+      if (finishedReply) {
+        // Citations and message actions are laid out in this frame.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _layingOutFinalReply = false;
+        });
       }
     });
 
@@ -975,7 +990,7 @@ class _ChatConversationViewState extends ConsumerState<ChatConversationView> {
                     colors: colors,
                     primary: true,
                     onTap: () {
-                      _preservePositionOnSend();
+                      _prepareToSend();
                       unawaited(_notifier.retry(message.id));
                     },
                   ),

@@ -1,0 +1,5 @@
+FAIL Completion reveals the citation and action row at the bottom — completion left 74px below the viewport
+PASS Completion preserves the scroll position of a reader
+FAIL Sending from the near position — send left 533px below the viewport
+PASS Sending from the far position
+FAILED
