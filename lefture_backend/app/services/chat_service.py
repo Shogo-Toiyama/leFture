@@ -8,14 +8,13 @@
   1. 保存: スレッド作成 or 読み込み → userメッセージ → 添付された資料(processing) → 返答用の空行(streaming)
   1.5 添付された資料があれば、審査・要約・目次を作る(chat_attachments.py)。どれかを断ったら
      そのターンごと断る(課金なし・断られた回数に数える)
-  2. 仕分け役(Gemini 2.5 Flash-Lite, 構造化出力):
-     {intent, needs_retrieval, needs_reasoning, reply_language, thread_title}
+  2. 仕分け役(構造化出力):
+     {intent, needs_retrieval, reasoning_level, reply_language, thread_title}
   3. 分岐(ここはLLMではなく普通のコード):
      blocked → 定型文(課金なし) / crisis → 共感の定型文+相談窓口(課金なし)
      それ以外 → needs_retrievalがtrueなら探索役(chat_navigator.py、GPT-6 Luna、最大4周)が
      地図を見て検索を選び、コードが実行する(検索は本人のJWTでRPC、Webは1ターン2回までBrave)
-  4. 回答役(GPT-6 Luna, ストリーミング)。needs_reasoning(計算・コード・提出物の確認・難しい質問)なら推論lowで
-     一段で答える(chat_reasoning.py。二段構え=確かめ役のメモ→別のモデルが書く、にも設定で戻せる)
+  4. 回答役(ストリーミング)。reasoning_levelで指定した強さで考え、推論中は進捗を流す。
   5. 締め: 本文・出典・原価を保存 → 原価×CHAT_CREDIT_MARKUP(1.5)のクレジットを消費 → done
      → 未要約が15往復以上なら、畳む処理(chat_summary.py)をCloud Tasksに積む
 
@@ -39,7 +38,7 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Literal, Optional, get_args
 
 from app.core.supabase import get_supabase_client
 from app.services.chat_lecture_source import DbLectureSource
@@ -172,7 +171,7 @@ ANSWER_MODEL = "anthropic/claude-haiku-5-5"
 # 単価はLunaと同じ(入力$0.10/M・出力$0.50/M)で、最初の1文字までは0.4〜0.9秒。mediumは長くなる代わりに
 # 書き始めが3〜6秒に遅れたのでlowにした。プロンプトが10万トークンを超えると単価が5倍になるので、
 # 入力はANSWER_MAX_INPUT_ESTIMATEに収める(fit_answer_input)。推論が要るターンもHaiku 5.5(effort medium、
-# chat_reasoning.REASONING_CONFIG)。LiteLLM 1.90.2はreasoning_effortを thinking: adaptive +
+# 当時のchat_reasoning.REASONING_CONFIG)。LiteLLM 1.90.2はreasoning_effortを thinking: adaptive +
 # output_config.effort に変換し、既定値以外のtemperatureは外して送る(2026-10-07に実際に送って確認)。
 #
 # 以下はLunaを選んだときの記録。2026-10-05にGemini 2.5 Flashから変更(ユーザー判断、数日試す)。2.5 Flashは、正しい確かめ役(Luna)のメモを
@@ -244,6 +243,8 @@ CHARGEABLE_COUNT_RESOURCES = frozenset({"brave/llm_context"})
 STREAMING_STALE_MINUTES = 10
 
 INTENTS = ("chitchat", "learning", "personal", "blocked", "crisis")
+ReasoningLevel = Literal["none", "low", "medium", "high"]
+REASONING_LEVELS = get_args(ReasoningLevel)
 
 ROUTER_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -258,7 +259,7 @@ ROUTER_SCHEMA: dict[str, Any] = {
             "description": "Brief explanation (1 sentence) of whether lecture retrieval is needed and why.",
         },
         "needs_retrieval": {"type": "boolean"},
-        "needs_reasoning": {"type": "boolean"},
+        "reasoning_level": {"type": "string", "enum": list(REASONING_LEVELS)},
         "reply_language": {"type": "string"},
         "thread_title": {"type": ["string", "null"]},
     },
@@ -267,7 +268,7 @@ ROUTER_SCHEMA: dict[str, Any] = {
         "user_goal",
         "retrieval_reason",
         "needs_retrieval",
-        "needs_reasoning",
+        "reasoning_level",
         "reply_language",
         "thread_title",
     ],
@@ -344,13 +345,20 @@ class RouterDecision:
     user_goal: Optional[str] = None
     # 資料取得の要否を判断した理由(自己回帰推論で探索要否を正確に判断するためのCoT)
     retrieval_reason: Optional[str] = None
-    # 正しく答えるのに手順を追った検討が要るか(計算・コードの追跡・生徒の解答の正誤判定・押し返しなど)。
-    # Trueなら回答役の前に確かめ役が答えを確かめる(chat_reasoning.py)
+    # 旧ルーターの保存データと再生スクリプトとの互換性。現在はmedium/highから導出する。
     needs_reasoning: bool = False
     # 振り分け役が正常に判断できず、既定値で先へ進めた場合にTrue
     fallback: bool = False
     # 振り分け役への入力が安全フィルタで遮断された場合にTrue
     provider_blocked: bool = False
+    reasoning_level: Optional[ReasoningLevel] = None
+
+    def __post_init__(self) -> None:
+        if self.intent in ("blocked", "crisis"):
+            self.reasoning_level = "none"
+        elif self.reasoning_level is None:
+            self.reasoning_level = "high" if self.needs_reasoning else ANSWER_REASONING_EFFORT
+        self.needs_reasoning = self.reasoning_level in ("medium", "high")
 
     def to_json(self) -> dict:
         return {
@@ -359,6 +367,7 @@ class RouterDecision:
             "retrieval_reason": self.retrieval_reason,
             "needs_retrieval": self.needs_retrieval,
             "needs_reasoning": self.needs_reasoning,
+            "reasoning_level": self.reasoning_level,
             "reply_language": self.reply_language,
             "thread_title": self.thread_title,
             "fallback": self.fallback,
@@ -398,7 +407,9 @@ def normalize_router_output(raw: Any, message: str, is_first_message: bool) -> R
 
     intent = raw["intent"]
     needs_retrieval = bool(raw.get("needs_retrieval")) and intent not in ("chitchat", "blocked", "crisis")
-    needs_reasoning = bool(raw.get("needs_reasoning")) and intent in ("learning", "personal")
+    level = raw.get("reasoning_level")
+    legacy_reasoning = raw.get("needs_reasoning") if "reasoning_level" not in raw else None
+    valid_level = level in REASONING_LEVELS
     reply_language = raw.get("reply_language") if isinstance(raw.get("reply_language"), str) and raw.get("reply_language") else guess_language(message)
     user_goal = raw.get("user_goal") if isinstance(raw.get("user_goal"), str) and raw.get("user_goal").strip() else None
     retrieval_reason = raw.get("retrieval_reason") if isinstance(raw.get("retrieval_reason"), str) else None
@@ -412,7 +423,9 @@ def normalize_router_output(raw: Any, message: str, is_first_message: bool) -> R
     return RouterDecision(
         intent=intent,
         needs_retrieval=needs_retrieval,
-        needs_reasoning=needs_reasoning,
+        reasoning_level=level if valid_level else None,
+        needs_reasoning=legacy_reasoning is True and intent in ("learning", "personal"),
+        fallback=not valid_level and not isinstance(legacy_reasoning, bool),
         reply_language=reply_language[:10],
         thread_title=title,
         user_goal=user_goal,
@@ -2525,10 +2538,9 @@ async def _run_turn_steps(
             topic_titles=navigation.topic_titles if navigation else None,
         )
         messages, trimmed_turns = fit_answer_input(messages)
-        answer_model, answer_effort = ANSWER_MODEL, ANSWER_REASONING_EFFORT
-        # 推論の進捗を出すのは推論が要るターンだけ(Haiku 5.5はふだんからeffort lowで少し考えるが、
-        # 最初の1文字まで1秒もかからないので、ふだんの「書いています」のままにする)
-        thinking = False
+        answer_model = ANSWER_MODEL
+        answer_effort = decision.reasoning_level
+        show_reasoning = answer_effort != "none"
         checked: Optional[CheckedWork] = None
         # 推論が要るターン: 二段構えなら確かめ役のメモを足し、一段ならそのモデルで直接答える(chat_reasoning.py)
         if decision.needs_reasoning:
@@ -2544,10 +2556,8 @@ async def _run_turn_steps(
                     print(f"⚠️ [chat] checking step failed for message {turn.assistant_message_id}: {checked.error}")
             else:
                 answer_model = REASONING_CONFIG.single_model or ANSWER_MODEL
-                answer_effort = REASONING_CONFIG.single_effort
-                thinking = answer_effort not in (None, "none")
         messages = apply_prompt_cache_controls(messages, answer_model)
-        await emit("status", {"stage": "reasoning" if thinking else "writing"})
+        await emit("status", {"stage": "reasoning" if show_reasoning else "writing"})
         state = StreamState()
         options = answer_options(answer_model, answer_effort, _answer_max_tokens(navigation, materials))
         timer.mark("answer_started")
@@ -2565,13 +2575,19 @@ async def _run_turn_steps(
             return result.output_text
 
         async def publish_progress(label: str) -> None:
-            await emit("status", {"stage": "reasoning", "progress_label": label})
+            if not stop.stopped:
+                if "answer_first_progress_label" not in timer.marks:
+                    timer.mark("answer_first_progress_label")
+                await emit("status", {"stage": "reasoning", "progress_label": label})
 
-        reasoning_progress = ReasoningProgress(summarize_progress, publish_progress) if thinking else None
+        reasoning_progress = ReasoningProgress(summarize_progress, publish_progress) if show_reasoning else None
 
         async def on_thought(chunk: str) -> None:
-            if not stop.stopped and reasoning_progress is not None:
-                reasoning_progress.feed(chunk)
+            if stop.stopped or "answer_first_token" in timer.marks or reasoning_progress is None:
+                return
+            if chunk.strip() and "answer_first_thought" not in timer.marks:
+                timer.mark("answer_first_thought")
+            reasoning_progress.feed(chunk)
 
         try:
             async for delta in llm.generate_stream(
@@ -2597,6 +2613,7 @@ async def _run_turn_steps(
             "router_model": ROUTER_MODEL,
             "navigator": navigation.to_json() if navigation else None,
             "answer_model": answer_model,
+            "answer_reasoning_effort": answer_effort,
             "reasoning": {
                 "mode": REASONING_CONFIG.mode,
                 "checked_work": checked.to_json() if checked else None,

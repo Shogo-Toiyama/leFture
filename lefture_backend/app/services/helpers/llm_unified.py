@@ -13,6 +13,15 @@ import litellm
 # エラーで落とさず自動で無視します。
 litellm.drop_params = True
 
+# LiteLLM 1.104.2 can omit Haiku 5.5's effort when its model map lacks this capability.
+litellm.register_model({
+    "claude-haiku-5-5": {
+        "litellm_provider": "anthropic",
+        "supports_adaptive_thinking": True,
+        "supports_output_config": True,
+    },
+})
+
 # =========================================================
 # 💰 価格マトリックス
 # =========================================================

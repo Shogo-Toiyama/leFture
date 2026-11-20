@@ -1,7 +1,11 @@
 """Turn complete reasoning-summary lines into transient chat progress labels."""
 
 import asyncio
+import re
 from typing import Awaitable, Callable
+
+
+_SENTENCE_END = re.compile(r"(?<=[.!?])(?:[ \t]+|$)|(?<=[。！？])")
 
 
 class ReasoningProgress:
@@ -24,6 +28,12 @@ class ReasoningProgress:
             return
         lines = (self._partial + chunk).split("\n")
         self._partial = lines.pop()
+        if self._batch_size == 1 and not any(line.strip() for line in lines):
+            sentence_end = _SENTENCE_END.search(self._partial)
+            if sentence_end:
+                end = sentence_end.end()
+                lines.append(self._partial[:end])
+                self._partial = self._partial[end:]
         for line in lines:
             line = line.strip()
             if not line:

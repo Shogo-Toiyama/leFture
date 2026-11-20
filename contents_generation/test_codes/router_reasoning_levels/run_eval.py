@@ -122,9 +122,10 @@ VARIANTS = {"levels_v1": NEW_SECTION, "levels_v2": NEW_SECTION_V2, "levels_v3": 
 
 def make_prompt(tag: str = "levels_v1") -> str:
     prod = _load_prompt("chat_router_prompt.txt")
-    a = prod.index(OLD_SECTION_START)
+    start = OLD_SECTION_START if OLD_SECTION_START in prod else "### ALSO, HOW MUCH TO THINK IT THROUGH\n"
+    a = prod.index(start)
     b = prod.index(OLD_SECTION_END)
-    assert a < b and prod.count(OLD_SECTION_START) == 1
+    assert a < b and prod.count(start) == 1
     section = VARIANTS[tag]
     assert tag == "levels_v1" or section != NEW_SECTION, "v2 replacements did not apply"
     if tag == "levels_v3":
@@ -134,7 +135,7 @@ def make_prompt(tag: str = "levels_v1") -> str:
 
 def make_schema() -> dict:
     s = copy.deepcopy(cs.ROUTER_SCHEMA)
-    del s["properties"]["needs_reasoning"]
+    s["properties"].pop("needs_reasoning", None)
     s["properties"]["reasoning_level"] = {"type": "string", "enum": LEVELS}
     s["required"] = [("reasoning_level" if k == "needs_reasoning" else k) for k in s["required"]]
     # プロンプトの節の並び(FETCH → THINK → LAST)に合わせて、needs_retrieval の後ろに置く
