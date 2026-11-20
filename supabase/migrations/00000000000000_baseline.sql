@@ -1104,7 +1104,7 @@ CREATE UNIQUE INDEX user_subscription_mappings_user_plan_uidx ON public.user_sub
 -- Name: processing_tasks Trigger Orchestrator; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER "Trigger Orchestrator" AFTER INSERT OR UPDATE ON public.processing_tasks FOR EACH ROW EXECUTE FUNCTION supabase_functions.http_request('https://lefture-511705914929.us-west1.run.app/webhook/orchestrator', 'POST', '{"x-webhook-secret":"Yvygk@-9pQvwW%rG%14hQq1h"}', '{}', '10000');
+CREATE TRIGGER "Trigger Orchestrator" AFTER INSERT OR UPDATE ON public.processing_tasks FOR EACH ROW EXECUTE FUNCTION supabase_functions.http_request('https://lefture-511705914929.us-west1.run.app/webhook/orchestrator', 'POST', '{"x-webhook-secret":"<WEBHOOK_SECRET: set in the Supabase dashboard, never commit the value>"}', '{}', '10000');
 
 
 --
