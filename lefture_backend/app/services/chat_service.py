@@ -64,6 +64,7 @@ from app.services.chat_navigator import (
     NavigatorTools,
     make_chat_search,
     make_lecture_search,
+    lecture_handles_to_names,
     make_search,
     navigate,
     refs_from_materials,
@@ -1729,6 +1730,19 @@ async def _fetch_referenced_source_turns(
     return "\n\n".join(parts)
 
 
+def _done_result(task: "Optional[asyncio.Task]"):
+    """読み終わったタスクの結果(まだ・失敗ならNone)。待たない。"""
+    if task is None or not task.done() or task.cancelled() or task.exception() is not None:
+        return None
+    return task.result()
+
+
+def _note_for_answer(note: Optional[str], attachments: list[Attachment], student_map: Optional[StudentMap],
+                     topic_titles: Optional[dict[str, str]]) -> str:
+    """振り分け役・探索役のメモを回答役に渡す形にする(添付資料と講義の呼び名を名前に直す)。"""
+    return lecture_handles_to_names(attachment_handles_to_titles(note or "", attachments), student_map, topic_titles)
+
+
 def _build_answer_messages(
     turn: PreparedTurn,
     decision: RouterDecision,
@@ -1742,6 +1756,8 @@ def _build_answer_messages(
     link_failures: Optional[list[tuple[str, str]]] = None,
     referenced_sources: Optional[str] = None,
     retrieval_reasoning: Optional[str] = None,
+    student_map: Optional[StudentMap] = None,
+    topic_titles: Optional[dict[str, str]] = None,
 ) -> list[Message]:
     """
     並びは「system(固定の指示+プロフィール → 要約 → 会話の前提) → 原文の履歴 → 今回の文脈+質問」。
@@ -1791,9 +1807,10 @@ def _build_answer_messages(
         "AI_CODE_RULE": ai_code_rule,
         "SCREEN_CONTEXT": screen_context,
         "CURRENT_TIME": current_time_str,
-        # 振り分け役・探索役のメモの中の資料の呼び名(A1)は名前に直す(回答役には呼び名を渡さないため)
-        "USER_GOAL": attachment_handles_to_titles(decision.user_goal or "", turn.attachments),
-        "RETRIEVAL_REASONING": attachment_handles_to_titles(retrieval_reasoning or "", turn.attachments),
+        # 振り分け役・探索役のメモの中の呼び名(A1、コース付きの C4/L10・C4/L10/T5)は名前に直す
+        # (回答役には呼び名を渡さないため。裸の L1・T5 は講義の中身の言葉と区別できないので残す)
+        "USER_GOAL": _note_for_answer(decision.user_goal, turn.attachments, student_map, topic_titles),
+        "RETRIEVAL_REASONING": _note_for_answer(retrieval_reasoning, turn.attachments, student_map, topic_titles),
         # 探索役が開こうとして読めなかったリンク(ログインが要る授業サイトなど)
         "LINK_NOTES": "\n".join(f"- {url}: {reason}" for url, reason in link_failures or []),
         "REPLY_LANGUAGE": decision.reply_language,
@@ -2502,6 +2519,10 @@ async def _run_turn_steps(
             link_failures=navigation.link_failures if navigation else None,
             referenced_sources=referenced_sources,
             retrieval_reasoning=retrieval_reasoning,
+            # 地図は探索役が動いたターンなら読み終わっている。読み終わっていない(探索しなかった)ターンは
+            # メモに講義の呼び名が無いので、待たずに渡さない
+            student_map=_done_result(map_task),
+            topic_titles=navigation.topic_titles if navigation else None,
         )
         messages, trimmed_turns = fit_answer_input(messages)
         answer_model, answer_effort = ANSWER_MODEL, ANSWER_REASONING_EFFORT

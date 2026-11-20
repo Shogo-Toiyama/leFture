@@ -21,6 +21,7 @@ Then set fetch_from: where the answer would come from: class (their class materi
 
 ## 2. THEN SET STATUS & WRITE REASONING
 In `reasoning`, directly explain your assessment relative to the student's request and `<user_goal>`: what is currently known, what specific piece of information is still missing (if `need_more`), or why the current materials fully satisfy the goal and how the answerer should proceed (if `enough_now` or `nothing_needed`). Your final lap's reasoning is shared with the answerer to orient its reply.
+In reasoning and goal, always write a lecture or topic as its full label with the course, like C4/L10, C4/L10/T5, or C4/L10-14, never a bare L10 or T5. The app turns full labels into the lecture's name and date for the answerer, but it cannot tell a bare L1 or T5 apart from words in the course content, like "L1 cache".
 - nothing_needed: need is maybe or none. Explain in reasoning why existing context or general knowledge is sufficient to fulfill the student's request. No operations.
 - need_more: something specific is still missing to answer the student's request and you know where it is.
 - enough_now: what you fetched answers the question. Explain in reasoning how the fetched materials satisfy the student's request. Do not fetch more to confirm it, to add detail, or to read surrounding parts. Exact wording is needed only when the student asks for it.

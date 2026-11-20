@@ -687,6 +687,8 @@ class Opened:
     ref: Optional[dict] = None
     # 範囲の材料の予算から使った量(estimate_tokens)
     range_tokens: int = 0
+    # 中身に出てきたトピックの名前(C4/L11/T1 → 題名)。探索役のメモの呼び名を回答役向けに名前に直すときに使う
+    topic_titles: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -796,6 +798,8 @@ class NavigationResult:
     links: list[dict] = field(default_factory=list)
     # 開けなかったリンク(URL, 理由)。回答役に渡す
     link_failures: list[tuple[str, str]] = field(default_factory=list)
+    # 開いたものに出てきたトピックの名前(C4/L11/T1 → 題名)。lecture_handles_to_namesに渡す
+    topic_titles: dict[str, str] = field(default_factory=dict)
 
     @property
     def failed_before_any_fetch(self) -> bool:
@@ -1261,6 +1265,97 @@ def build_user_message(nav_input: NavigatorInput, state: NavState, lap: int) -> 
 
 
 # =========================================================
+# 🏷️ 回答役に渡すものから講義の呼び名を外す
+# =========================================================
+# 回答役は何も開かないので呼び名(C4/L11・T1)は要らず、見えると回答にそのまま写してしまう(2026-11-20、
+# 呼び名つきの目次を渡したターンで「C4/L9「型付け方式と型安全性」」のように書いた)。
+# 材料の本文はDBの題名と日付から組み立てるときに呼び名を書かない。探索役のメモ(reasoning)は
+# LLMが書いた文なので、コース付きの形(C4/L10・C4/L10/T5・C4/L6-8)だけを名前に直す。裸の L1・T5 は
+# 「L1 cache」「T1強調画像」のような講義の中身の言葉と見分けられないので触らない(探索役のプロンプトで
+# いつもコース付きで書かせている)。
+
+def _lecture_heading(lec: MapLecture) -> str:
+    """回答役に渡す本文の講義の見出し(呼び名なし)。"""
+    when = f" ({lec.date.isoformat()})" if lec.date else ""
+    return f"{lec.title or 'Untitled lecture'}{when}"
+
+
+def _lecture_lines(lines: list, labels: bool) -> str:
+    """文字列と講義(MapLecture=見出し)の並びを本文にする。labels=Trueなら探索役向けに呼び名をつける。"""
+    out = []
+    for x in lines:
+        if isinstance(x, MapLecture):
+            out.append(f"\n### {x.handle}: {x.title}" if labels else f"\n### {_lecture_heading(x)}")
+        else:
+            out.append(x)
+    return "\n".join(out)
+
+
+_NOTE_LECTURE_HANDLE_RE = re.compile(
+    r"(?<![A-Za-z0-9/])(C\d+)/(?:"
+    r"(topics|keywords|announcements)"
+    r"|L(\d+)(?:\s*[-‐‑–—~]\s*L?(\d+))?"
+    r"(?:/(?:T(\d+)(?:\s*[-‐‑–—~]\s*T?(\d+))?|(s\d+(?:\s*-\s*s?\d+)?)|(cards|announcements)))?"
+    r")(?![A-Za-z0-9])"
+)
+
+
+def _note_lecture_name(lec: MapLecture) -> str:
+    title = f'"{lec.title}"' if lec.title else "the lecture"
+    return f"{title} ({lec.date.isoformat()})" if lec.date else title
+
+
+def lecture_handles_to_names(text: str, student_map: Optional[StudentMap],
+                             topic_titles: Optional[dict[str, str]] = None) -> str:
+    """
+    探索役・振り分け役のメモの中のコース付きの講義の呼び名を、名前と日付に直す(回答役に渡す前)。
+    地図に実在する呼び名だけを直し、それ以外(裸の L1・T5、地図に無い番号)はそのまま残す。
+    トピックは開いたものから題名が分かるときだけ題名を添え、分からなければ講義の名前にする。
+    """
+    if not text or student_map is None:
+        return text or ""
+    titles = topic_titles or {}
+
+    def sub(m: re.Match) -> str:
+        c_handle, course_sub, l_a, l_b, t_a, t_b, sentences, lec_sub = m.groups()
+        course = student_map.course(c_handle)
+        if course is None:
+            return m.group(0)
+        if course_sub:
+            # 冠詞はつけない(メモでは「the C4/topics tree」のように前に冠詞が来ることが多い)
+            what = {"topics": "topic list", "keywords": "glossary", "announcements": "announcements"}[course_sub]
+            return f'"{course.title}" {what}'
+        lec = student_map.lecture(f"{c_handle}/L{int(l_a)}")
+        if lec is None:
+            return m.group(0)
+        if l_b is not None:
+            last = student_map.lecture(f"{c_handle}/L{int(l_b)}")
+            if last is None:
+                return m.group(0)
+            first, last = sorted((lec, last), key=_lecture_number)
+            if first.date and last.date:
+                span = f"the lectures from {first.date.isoformat()} to {last.date.isoformat()}"
+            else:
+                span = f"the lectures from {_note_lecture_name(first)} to {_note_lecture_name(last)}"
+            return f"the review cards of {span}" if lec_sub == "cards" else span
+        name = _note_lecture_name(lec)
+        if t_a is not None:
+            topic_handles = [f"{lec.handle}/T{int(t_a)}"] + ([f"{lec.handle}/T{int(t_b)}"] if t_b else [])
+            named = [titles.get(h) for h in topic_handles]
+            if all(named):
+                parts = " to ".join(f'"{t}"' for t in named)
+                return f"the part{'s' if t_b else ''} on {parts} in {name}"
+            return name
+        if sentences:
+            return f"the transcript of {name}"
+        if lec_sub:
+            return f"the {'review cards' if lec_sub == 'cards' else 'announcements'} of {name}"
+        return name
+
+    return _NOTE_LECTURE_HANDLE_RE.sub(sub, text)
+
+
+# =========================================================
 # 📂 開く(講義の目次・文字起こし)
 # =========================================================
 
@@ -1412,61 +1507,72 @@ async def open_handle(
 
     if parsed.kind == "course":
         summaries = await source.lecture_summaries([x.id for x in course.lectures])
-        lines = [
-            f"{x.handle} ({x.date.isoformat() if x.date else 'no date'}) {x.title}"
-            + (f"\n  Summary: {summaries[x.id].strip()}" if summaries.get(x.id) else "")
-            for x in course.lectures
-        ]
-        body = "\n".join(lines) or "(No lectures recorded yet.)"
+
+        def course_lines(labels: bool) -> str:
+            # 呼び名(C4/L11)は探索役の本文にだけ書く。回答役に渡す本文に書くと回答にそのまま写してしまう
+            lines = [
+                (f"{x.handle} " if labels else "")
+                + f"({x.date.isoformat() if x.date else 'no date'}) {x.title}"
+                + (f"\n  Summary: {summaries[x.id].strip()}" if summaries.get(x.id) else "")
+                for x in course.lectures
+            ]
+            return "\n".join(lines) or "(No lectures recorded yet.)"
         sub_surfaced = [f"{handle}/topics", f"{handle}/keywords", f"{handle}/announcements"]
         return Opened(
             handle=handle,
-            text=f"Course {handle}: {course.title}\n{body}",
+            text=f"Course {handle}: {course.title}\n{course_lines(labels=True)}",
             material=Material(key=f"course:{course.id}", kind="course", label=f"{course.title} / Lectures",
-                              content=body, source_type="course", course_id=course.id, handle=handle),
+                              content=course_lines(labels=False), source_type="course", course_id=course.id,
+                              handle=handle),
             surfaced=sub_surfaced + [x.handle for x in course.lectures],
             ref={"type": "course", "id": course.id},
         )
 
     if parsed.kind == "course_topics":
         topics_map = await source.course_topics([x.id for x in course.lectures])
-        lines = [f"# {course.title} — Course Topics & Syllabus Tree"]
+        # 探索役の本文(呼び名つき)と回答役の本文(名前だけ)を並べて作る
+        nav_lines = [f"# {course.title} — Course Topics & Syllabus Tree"]
+        ans_lines = list(nav_lines)
         surfaced = []
+        topic_titles: dict[str, str] = {}
         for x in course.lectures:
             t_list = topics_map.get(x.id, [])
             when = f" ({x.date.isoformat()})" if x.date else ""
-            lines.append(f"- {x.handle}: {x.title}{when}")
+            nav_lines.append(f"- {x.handle}: {x.title}{when}")
+            ans_lines.append(f"- {x.title or 'Untitled lecture'}{when}")
             for t in t_list:
                 t_idx = t.get("index")
                 t_title = t.get("title") or "Untitled"
-                lines.append(f"  - T{t_idx}: {t_title}")
+                nav_lines.append(f"  - T{t_idx}: {t_title}")
+                ans_lines.append(f"  - {t_title}")
                 surfaced.append(f"{x.handle}/T{t_idx}")
-        body = "\n".join(lines)
+                topic_titles[f"{x.handle}/T{t_idx}"] = t_title
         return Opened(
             handle=handle,
-            text=f"Course Topics {handle}: {course.title}\n{body}",
+            text=f"Course Topics {handle}: {course.title}\n" + "\n".join(nav_lines),
             material=Material(
                 key=f"course_topics:{course.id}",
                 kind="course_topics",
                 label=f"{course.title} / Syllabus & Topics",
-                content=body,
+                content="\n".join(ans_lines),
                 source_type="course_topics",
                 course_id=course.id,
                 handle=handle,
             ),
             surfaced=surfaced,
+            topic_titles=topic_titles,
             ref={"type": "course", "id": course.id},
         )
 
     if parsed.kind == "course_keywords":
         kws_map = await source.course_keywords([x.id for x in course.lectures])
-        lines = [f"# {course.title} — Key Terms & Glossary"]
+        lines: list = [f"# {course.title} — Key Terms & Glossary"]
         count = 0
         for x in course.lectures:
             k_list = kws_map.get(x.id, [])
             if not k_list:
                 continue
-            lines.append(f"\n### {x.handle}: {x.title}")
+            lines.append(x)  # 講義の見出し(_lecture_lines が呼び名つき/名前だけに書き分ける)
             for k in k_list:
                 count += 1
                 if count > 120:
@@ -1480,15 +1586,14 @@ async def open_handle(
                     lines.append(f"- **{kw}**")
             if count > 120:
                 break
-        body = "\n".join(lines)
         return Opened(
             handle=handle,
-            text=f"Course Glossary {handle}: {course.title}\n{body}",
+            text=f"Course Glossary {handle}: {course.title}\n{_lecture_lines(lines, labels=True)}",
             material=Material(
                 key=f"course_keywords:{course.id}",
                 kind="course_keywords",
                 label=f"{course.title} / Glossary & Key Terms",
-                content=body,
+                content=_lecture_lines(lines, labels=False),
                 source_type="course_keywords",
                 course_id=course.id,
                 handle=handle,
@@ -1499,7 +1604,7 @@ async def open_handle(
     if parsed.kind == "course_announcements":
         lec_ids = [x.id for x in course.lectures]
         anns = await source.announcements(lec_ids)
-        lines = [f"# {course.title} — Class Announcements & Exam Hints"]
+        lines: list = [f"# {course.title} — Class Announcements & Exam Hints"]
         anns_by_lec: dict[str, list[dict]] = {}
         for a in anns:
             anns_by_lec.setdefault(a["lecture_id"], []).append(a)
@@ -1513,7 +1618,7 @@ async def open_handle(
             if not items:
                 continue
             has_any = True
-            lines.append(f"\n### {x.handle}: {x.title}")
+            lines.append(x)  # 講義の見出し(_lecture_lines が呼び名つき/名前だけに書き分ける)
             sorted_items = sorted(items, key=lambda it: _type_pri(it.get("type")))
             for item in sorted_items[:10]:
                 itype = (item.get("type") or "INFO").upper()
@@ -1525,15 +1630,14 @@ async def open_handle(
         if not has_any:
             lines.append("(No announcements recorded for this course.)")
 
-        body = "\n".join(lines)
         return Opened(
             handle=handle,
-            text=f"Course Announcements {handle}: {course.title}\n{body}",
+            text=f"Course Announcements {handle}: {course.title}\n{_lecture_lines(lines, labels=True)}",
             material=Material(
                 key=f"course_announcements:{course.id}",
                 kind="course_announcements",
                 label=f"{course.title} / Announcements & Hints",
-                content=body,
+                content=_lecture_lines(lines, labels=False),
                 source_type="course_announcements",
                 course_id=course.id,
                 handle=handle,
@@ -1628,31 +1732,35 @@ async def open_handle(
     if parsed.kind == "lecture":
         summary = (await source.lecture_summaries([lec.id])).get(lec.id, "")
         topics = await source.lecture_topics(lec.id)
-        topic_lines = [
-            f"{handle}/T{t['index']} {t['title']}"
-            + (f" — {t['summary'].strip()}" if t.get("summary") else "")
-            for t in topics
-        ]
+        def topic_lines(labels: bool) -> list[str]:
+            # 呼び名(C4/L11/T1)は探索役の本文にだけ書く(回答役に渡す本文に書くと回答に写してしまう)
+            return [
+                (f"{handle}/T{t['index']} " if labels else "- ") + f"{t['title']}"
+                + (f" — {t['summary'].strip()}" if t.get("summary") else "")
+                for t in topics
+            ]
         # ReviewCards (core_why, gotcha) を取得して講義マテリアルに同梱
         cards = await source.lecture_review_cards(lec.id, card_types=("core_why", "gotcha"))
         cards_section = format_lecture_review_cards(cards)
 
-        body_parts = [f"Summary: {summary or '(no summary)'}"]
-        if topic_lines:
-            body_parts.append("Topics:\n" + "\n".join(topic_lines))
-        if cards_section:
-            body_parts.append("Key Review Cards (Core Why & Gotchas):\n" + cards_section)
+        def lecture_body(labels: bool) -> str:
+            body_parts = [f"Summary: {summary or '(no summary)'}"]
+            if topics:
+                body_parts.append("Topics:\n" + "\n".join(topic_lines(labels)))
+            if cards_section:
+                body_parts.append("Key Review Cards (Core Why & Gotchas):\n" + cards_section)
+            return "\n\n".join(body_parts)
 
-        body = "\n\n".join(body_parts)
         return Opened(
             handle=handle,
-            text=f"Lecture {handle}: {lec.title} ({when})\n{body}",
+            text=f"Lecture {handle}: {lec.title} ({when})\n{lecture_body(labels=True)}",
             material=Material(key=f"lecture:{lec.id}", kind="lecture",
                               label=f"{course.title} / {lec.title} ({when}) / Lecture Overview & Review Cards",
-                              content=f"Lecture date: {when}\n{body}",
+                              content=f"Lecture date: {when}\n{lecture_body(labels=False)}",
                               source_type="lecture_summary", source_id=lec.id, lecture_id=lec.id,
                               course_id=course.id, handle=handle),
             surfaced=[f"{handle}/announcements", f"{handle}/cards"] + [f"{handle}/T{t['index']}" for t in topics],
+            topic_titles={f"{handle}/T{t['index']}": t["title"] for t in topics if t.get("title")},
             ref={"type": "lecture", "id": lec.id},
         )
 
@@ -1676,6 +1784,7 @@ async def open_handle(
                               metadata={"topic_number": parsed.topic_index}, handle=handle),
             surfaced=ranges,
             ref={"type": "topic", "lecture_id": lec.id, "index": parsed.topic_index},
+            topic_titles={f"{parsed.lecture}/T{parsed.topic_index}": detail["title"]} if detail.get("title") else {},
         )
 
     # 文字起こしの範囲: 前後1文を足して、講義の話の流れが分かるようにする
@@ -2564,9 +2673,10 @@ async def navigate(
     opened_materials = [op.material for op in state.opened.values() if op.material]
     materials = opened_materials + [m for m in state.search_materials if not _covered_by_opened(m, opened_materials)]
     refs = [op.ref for op in state.opened.values() if op.ref]
+    topic_titles = {k: v for op in state.opened.values() for k, v in op.topic_titles.items()}
     return NavigationResult(materials=materials, goal=goal, laps=state.laps, stop_reason=stop_reason,
                             opened_refs=refs, prepare_ms=prepare_ms, links=state.link_fetches,
-                            link_failures=state.link_failures)
+                            link_failures=state.link_failures, topic_titles=topic_titles)
 
 
 def _covered_by_opened(hit: Material, opened: list[Material]) -> bool:
