@@ -63,6 +63,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>We use the camera so you can photograph notes, slides, or a whiteboard and attach the photo to a conversation with the AI assistant.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app does not actively track your location. Location access may be requested when viewing interactive web content within lectures.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need access to your microphone to record lectures and audio for AI analysis and study content generation.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

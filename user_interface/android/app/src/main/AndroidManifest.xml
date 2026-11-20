@@ -9,6 +9,13 @@
          background recording survives on OEMs (Xiaomi, Samsung, etc.) that
          kill foreground services despite FOREGROUND_SERVICE_MICROPHONE. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+
+    <!-- Allow tablets, foldables, and desktop/Chromebook devices to install
+         the app even though MainActivity specifies portrait orientation. -->
+    <uses-feature
+        android:name="android.hardware.screen.portrait"
+        android:required="false" />
+
     <application
         android:label="leFture"
         android:name="${applicationName}"
