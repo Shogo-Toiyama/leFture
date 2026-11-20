@@ -26,20 +26,21 @@ fun getCommitCount(): Int {
     return output.toInt()
 }
 
+// flutter_tools reads `namespace` with a regex that requires a literal `android {` block,
+// so keep that shape while configuring the public ApplicationExtension.
+fun android(block: com.android.build.api.dsl.ApplicationExtension.() -> Unit) =
+    extensions.configure(block)
+
 android {
     namespace = "com.lefture.app"
     compileSdk = flutter.compileSdkVersion
     // ndkVersion = flutter.ndkVersion
-    ndkVersion = "27.0.12077973"
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
         isCoreLibraryDesugaringEnabled = true
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
     defaultConfig {
@@ -63,6 +64,12 @@ android {
         release {
             signingConfig = signingConfigs.getByName("release")
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
 }
 
