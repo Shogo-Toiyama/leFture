@@ -43,7 +43,12 @@ Before producing any output, internally perform the following stages. Do not sho
 
 - For each ACADEMIC topic, extract 3 to 6 core academic concepts (`keywords`).
 <!--IF:keyword_extraction_subscriber-->
-- Return `keywords` as a list of objects `{"keyword": "...", "definition": "..."}` — one object per concept, never a plain string. Fill in each `definition` with a short explanation (roughly 1-2 minutes to read, about 3-6 sentences) of what the term means AND specifically how/why it was used in THIS lecture's context — not a generic dictionary definition. **Language Rule (CRITICAL):** write `definition` strictly in the specified output language per `OUTPUT LANGUAGE` above — do NOT leave it in English/transcript language just because the `keyword` itself keeps an original-language term in parentheses.
+- Return `keywords` as a list of objects with a `keyword` and a `definition`, one object per concept.
+- Write each `definition` for a student encountering the concept for the first time. Start with one plain-language sentence that answers what the term means or what it does. Use the meaning supported by the lecture transcript. If the lecture uses an everyday word in a specialized sense, make that sense clear in the opening sentence.
+- Then explain what helps the student understand the concept more fully: what happens in practice, how to use the concept, or why it matters. Choose what is most useful for this term. A short example, a concrete consequence, or a common point of confusion can help. Aim for 3 to 4 sentences total.
+- Make the explanation understandable on its own. Use familiar words for supporting ideas. If another technical term is essential, explain it briefly where it first appears.
+- Use the lecture to determine the meaning and relevant details. Include a classroom example when it helps explain the concept. If you add your own example, present it as an illustration without attributing it to the lecture. Describe what the professor said or did only when it helps the student understand the term.
+- Write `definition` in the language specified under OUTPUT LANGUAGE, even when `keyword` includes the original-language term in parentheses.
 <!--ELSE-->
 - Return `keywords` as a plain list of strings (e.g. `["Virtual memory", "Process isolation"]`) — do NOT wrap them in objects and do NOT include a `definition` field. Writing definitions is not needed for this lecture, so skip that work entirely.
 <!--END_IF-->
@@ -152,19 +157,19 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
 <!--IF:keyword_extraction_subscriber-->
         {
           "keyword": "Virtual memory",
-          "definition": "A memory management technique that provides an abstracted, idealized view of storage resources. In this lecture, the professor introduced it as the essential architecture that freed modern computing from physical RAM limits. It was emphasized as the foundational mechanism that allows multiple programs to run simultaneously without corrupting one another's memory."
+          "definition": "Virtual memory gives each program its own set of addresses for reading and writing data. The computer keeps track of where the data for each address is actually stored. Two programs can therefore use the same address and still reach different pieces of data."
         },
         {
           "keyword": "Process isolation",
-          "definition": "A security and stability boundary that prevents one running process from accessing or modifying the memory assigned to another. The professor presented this as the primary design driver for modern operating systems, noting how early computing suffered constant crashes when rogue programs wrote to shared memory."
+          "definition": "Process isolation keeps running programs from reading or changing one another's private data in memory. The computer checks whether a program is allowed to use a location before letting it read or write there. If one program tries to write to the wrong place, that check can stop it from damaging another program's data."
         },
         {
           "keyword": "Address space",
-          "definition": "The complete range of memory addresses available to a given program. The lecture illustrated how every process is granted the illusion of its own private, contiguous address space starting from zero, completely divorced from physical RAM layout."
+          "definition": "An address space is the set of memory addresses a program can refer to. Think of each program as having its own numbered list of places where data could go. Some places may be unused, and the same number can refer to a different location in another program's list."
         },
         {
           "keyword": "Memory fragmentation",
-          "definition": "A state in which memory becomes divided into small, non-contiguous chunks that cannot satisfy allocation demands despite total free memory being sufficient. The professor highlighted external fragmentation as the historical failure mode that doomed naive contiguous memory allocation."
+          "definition": "Here, memory fragmentation means that free memory is scattered across small gaps. Imagine two separate gaps that can each hold five items. Even though there is room for ten items in total, a request for eight spots in a row will fail."
         }
 <!--ELSE-->
         "Virtual memory",
@@ -188,23 +193,23 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
 <!--IF:keyword_extraction_subscriber-->
         {
           "keyword": "Address translation",
-          "definition": "The hardware-driven conversion of program-generated virtual addresses into physical addresses in DRAM. The professor emphasized this mechanism as the heart of virtual memory, comparing it to hotel keycards directing guests to designated rooms without exposing back-of-house room allocation."
+          "definition": "Address translation turns the address a program uses into the address where its data is actually stored in memory. The computer looks up the program's address before it reads or writes the data. This lets the program keep using the same address even if the computer moves the data to a different spot."
         },
         {
           "keyword": "Page table",
-          "definition": "A per-process data structure maintained by the operating system that stores virtual-to-physical address mappings. The professor walked through how the OS traverses page table entries (PTEs) on memory accesses and marks invalid pages to trigger demand paging."
+          "definition": "A page table helps a computer find where a program's data is stored in memory. The program uses its own addresses, and the computer checks the table to find the corresponding locations in physical memory. This lets two programs use the same address in their code while keeping their data in separate places."
         },
         {
           "keyword": "Memory Management Unit (MMU)",
-          "definition": "A dedicated hardware component on the CPU chip responsible for executing virtual-to-physical translations at hardware clock speeds. The professor contrasted the MMU's sub-nanosecond lookups with slow OS interrupt handling, showing why virtual memory demands dedicated hardware."
+          "definition": "The memory management unit is the part of the processor that finds the real memory location for an address a program uses. It can also check whether the program is allowed to read or change data there. These checks happen so often that the processor has hardware dedicated to doing them quickly."
         },
         {
           "keyword": "Virtual address",
-          "definition": "The memory address emitted by an application's CPU instructions. The professor stressed that user applications execute exclusively in virtual address space and never encounter physical memory pointers directly."
+          "definition": "A virtual address is the number a program uses to refer to a place in its own view of memory. Before using that number to read or write data, the computer works out which actual memory location it refers to. Two programs using the same number can therefore reach different data."
         },
         {
           "keyword": "Physical address",
-          "definition": "The raw hardware address dispatched across the physical memory bus to DRAM. The lecture demonstrated how disparate virtual addresses from different programs map onto arbitrary, non-contiguous physical page frames transparently."
+          "definition": "A physical address identifies an actual location in the computer's memory. A program can refer to that location by a different number called a virtual address. The computer translates the program's number to find where to read or write the data."
         }
 <!--ELSE-->
         "Address translation",
@@ -231,19 +236,19 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
 <!--IF:keyword_extraction_subscriber-->
         {
           "keyword": "Translation Lookaside Buffer (TLB)",
-          "definition": "A small, ultra-fast associative cache inside the MMU that holds recent virtual-to-physical translations. The professor explained that since full page table walks require multiple memory references, the TLB is the critical component that keeps virtual memory performance viable."
+          "definition": "The TLB is a small, fast lookup table that remembers where data for recently used addresses is stored. When the processor sees an address again, it can check this table before searching the computer's larger records. Reusing a previous answer makes repeated reads and writes faster."
         },
         {
           "keyword": "Context switch overhead",
-          "definition": "The latency and throughput penalty that occurs when the CPU switches from executing one process to another. The professor highlighted that flushing the TLB during context switches discards cached translations, causing severe latency spikes until the new process rebuilds its working set."
+          "definition": "Context switch overhead is the extra work a processor does when it pauses one program and starts or resumes another. It must save enough information to pick up the first program later and load the information needed to run the next one. If it also discards remembered memory locations, it has to look them up again as the next program runs."
         },
         {
           "keyword": "Cache hit rate",
-          "definition": "The percentage of memory translation attempts that find their entry directly in the TLB without requiring a full page table walk. The professor emphasized that real-world workloads depend on high locality of reference to maintain hit rates above 98%."
+          "definition": "The TLB hit rate is how often the processor finds a memory location in its small, fast lookup table. If 9 out of 10 lookups find an answer there, the hit rate is 90%. A higher rate means the processor spends less time searching for memory locations elsewhere."
         },
         {
           "keyword": "Page fault",
-          "definition": "An exception raised by the MMU when a program accesses a virtual page not currently resident in physical memory. The professor detailed how the kernel intercepts this trap to load the page from disk into RAM and update the page table before resuming execution."
+          "definition": "A page fault is a signal that the computer needs to handle a program's request for a block of memory before the program can continue. For example, the requested data may need to be brought back from storage. Once the data is available in memory, the program can retry its request."
         }
 <!--ELSE-->
         "Translation Lookaside Buffer (TLB)",
@@ -264,7 +269,7 @@ Do not include markdown formatting, code fences, comments, explanations, or prea
 Notes on the example above:
 - `idx` is simply each topic's position in the array (1, 2, 3, 4, ...) — just number topics in order as you write them, no special counting rule needed.
 <!--IF:keyword_extraction_subscriber-->
-- Each keyword's `definition` explains its meaning in the specific context of this lecture, as shown above.
+- Each keyword's `definition` starts with its meaning in plain language and adds the detail that best helps a beginner understand the concept, as shown above.
 <!--ELSE-->
 - `keywords` is a plain list of strings, as shown above — no objects, no `definition` field.
 <!--END_IF-->
