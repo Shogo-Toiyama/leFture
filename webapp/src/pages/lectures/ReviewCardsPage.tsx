@@ -17,6 +17,8 @@ import { lectureDisplayTitle, type Lecture } from '../../types/lecture';
 import type { TranslationKey } from '../../i18n/translations';
 import { ReactionBar } from '../../components/ReactionBar';
 import { AnnotationLayer } from '../../components/annotations/AnnotationLayer';
+import { TermGlossaryProvider } from '../../components/terms/TermGlossaryContext';
+import { useKeywords } from '../../hooks/useKeywords';
 import { ReviewCardFace } from '../../components/reviewCards/ReviewCardFace';
 import { ReviewCoverCard } from '../../components/reviewCards/ReviewCoverCard';
 import { ReviewCardListDrawer } from '../../components/reviewCards/ReviewCardListDrawer';
@@ -44,6 +46,7 @@ export const ReviewCardsPage: React.FC = () => {
 
   const { topics } = useLectureTopics(lectureId);
   const { cards, loading, error, setCards } = useReviewCards(lectureId);
+  const { keywords } = useKeywords(lectureId);
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const { course } = useCourse(lecture?.course_id);
 
@@ -242,14 +245,16 @@ export const ReviewCardsPage: React.FC = () => {
     }
 
     const face = (
-      <ReviewCardFace
-        card={target.card}
-        annotations={readAnnotations(target.card.metadata)}
-        imageUrl={targetImage}
-        typeLabel={typeLabel(target.card.card_type)}
-        scrollOffsets={scrollOffsets}
-        interactive={interactive}
-      />
+      <TermGlossaryProvider keywords={keywords} topicNumber={targetGroup.topic.index}>
+        <ReviewCardFace
+          card={target.card}
+          annotations={readAnnotations(target.card.metadata)}
+          imageUrl={targetImage}
+          typeLabel={typeLabel(target.card.card_type)}
+          scrollOffsets={scrollOffsets}
+          interactive={interactive}
+        />
+      </TermGlossaryProvider>
     );
 
     // 退場中のカードは見た目だけの残像なので、選択メニューは載せない。

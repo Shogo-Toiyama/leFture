@@ -17,6 +17,8 @@ import type { ContentMetadata } from '../../types/content';
 import { lectureDisplayTitle, type Lecture } from '../../types/lecture';
 import { AnnotatedMarkdown } from '../../components/annotations/AnnotatedMarkdown';
 import { AnnotationLayer } from '../../components/annotations/AnnotationLayer';
+import { TermGlossaryProvider } from '../../components/terms/TermGlossaryContext';
+import { useKeywords } from '../../hooks/useKeywords';
 import { ReactionBar } from '../../components/ReactionBar';
 import {
   DeepNoteListDrawer,
@@ -45,6 +47,7 @@ const DeepNotesDetailPageContent: React.FC = () => {
   const { topics } = useLectureTopics(lectureId);
   const { notes, loading, error, setNotes } = useDeepNotes(lectureId);
   const { figures } = useDeepNoteFigures(lectureId);
+  const { keywords } = useKeywords(lectureId);
   const [lecture, setLecture] = useState<Lecture | null>(null);
   const { course } = useCourse(lecture?.course_id);
   // 一覧は常に本文へ覆いかぶさるオーバーレイ(モーダル)。出典シートとは違い、
@@ -298,14 +301,16 @@ const DeepNotesDetailPageContent: React.FC = () => {
               lectureId={lectureId!}
               onOpenSource={setSourceSids}
             >
-              <AnnotatedMarkdown
-                className="dnv-prose"
-                markdown={cleaned}
-                rawMarkdown={note.note_contents}
-                annotations={readAnnotations(note.metadata)}
-                blockIdx={null}
-                figures={currentFigures}
-              />
+              <TermGlossaryProvider keywords={keywords} topicNumber={topic.index}>
+                <AnnotatedMarkdown
+                  className="dnv-prose"
+                  markdown={cleaned}
+                  rawMarkdown={note.note_contents}
+                  annotations={readAnnotations(note.metadata)}
+                  blockIdx={null}
+                  figures={currentFigures}
+                />
+              </TermGlossaryProvider>
             </AnnotationLayer>
           )}
 

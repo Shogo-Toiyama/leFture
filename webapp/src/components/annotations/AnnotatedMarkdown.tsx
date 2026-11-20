@@ -7,6 +7,8 @@ import 'katex/dist/katex.min.css';
 import { prepareMath, remarkBracketEmphasis } from '../../lib/markdownText';
 import { rehypeAnnotations } from '../../lib/markdownAnnotations';
 import { useAnnotationLayer } from './AnnotationContext';
+import { rehypeTermMarks } from '../../lib/termGlossary';
+import { useTermGlossary } from '../terms/TermGlossaryContext';
 import type { Annotation } from '../../types/annotation';
 import type { DeepNoteFigure } from '../../types/content';
 import { DeepNoteFigureCard } from '../deepNotes/DeepNoteFigureCard';
@@ -44,7 +46,16 @@ export const AnnotatedMarkdown: React.FC<AnnotatedMarkdownProps> = ({
 
   const preparedMarkdown = useMemo(() => prepareMath(markdown), [markdown]);
   const remarkPlugins = useMemo(() => [remarkGfm, remarkMath, remarkBracketEmphasis], []);
-  const rehypePlugins = useMemo(() => [rehypeAnnotations(annotations), rehypeKatex], [annotations]);
+  const terms = useTermGlossary();
+  const rehypePlugins = useMemo(
+    () => [
+      // 用語マークはアノテーションより先に付ける(<mark>が用語spanの内側に入る)
+      rehypeTermMarks(terms?.glossary ?? null, terms?.topicNumber ?? null),
+      rehypeAnnotations(annotations),
+      rehypeKatex,
+    ],
+    [annotations, terms]
+  );
 
   const urlTransform = useMemo(
     () => (url: string) => (url.startsWith('figure:') ? url : defaultUrlTransform(url)),

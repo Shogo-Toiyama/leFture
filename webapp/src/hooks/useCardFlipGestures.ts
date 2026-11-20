@@ -55,7 +55,8 @@ export function useCardFlipGestures({
 
       // 注釈や操作ボタンの上での操作は、そちらの仕事なので邪魔しない。
       const target = event.target as HTMLElement | null;
-      if (target?.closest('button, a, [data-annotation-id], [data-annotation-ui]')) return;
+      // 用語マーク([data-term-id])のタップは定義のポップアップを開くためのもの。
+      if (target?.closest('button, a, [data-annotation-id], [data-annotation-ui], [data-term-id]')) return;
 
       // 文字を選んでいる最中のタップは、選択の解除が目的なのでめくらない。
       const selection = window.getSelection();

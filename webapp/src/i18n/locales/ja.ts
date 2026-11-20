@@ -422,6 +422,7 @@ export const ja: Record<keyof typeof en, string> = {
 
   // Keywords Modal
   keywordsTitle: 'キーワード',
+  termPopoverLabel: '講義のキーワード',
   keywordsEmpty: 'まだ何もありません',
   keywordPlaceholder: '単語・用語',
   definitionPlaceholder: '説明・定義',

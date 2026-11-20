@@ -36,6 +36,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:markdown/markdown.dart' as md;
 
 import 'package:lefture/core/utils/annotation_text_utils.dart';
+import 'package:lefture/core/utils/term_glossary.dart';
 import 'package:lefture/domain/entities/annotation.dart';
 
 /// Tags this builder must be registered under. Callers pass one shared
@@ -119,12 +120,16 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
   MarkdownAnnotationBuilder({
     required List<Annotation> annotations,
     this.onAnnotationTap,
+    TermGlossary? terms,
+    this.termTopicNumber,
+    this.onTermTap,
     TextStyle? codeStyle,
     TextStyle? strongStyle,
     TextStyle? emStyle,
     this.codeblockPadding = EdgeInsets.zero,
   }) : _annotations = [...annotations]
          ..sort((a, b) => a.startIdx.compareTo(b.startIdx)),
+       _terms = terms ?? TermGlossary.empty,
        _inlineStyles = {
          'strong': strongStyle ?? const TextStyle(fontWeight: FontWeight.bold),
          'em': emStyle ?? const TextStyle(fontStyle: FontStyle.italic),
@@ -133,6 +138,17 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
 
   final List<Annotation> _annotations;
   final ValueChanged<Annotation>? onAnnotationTap;
+
+  // 用語マーク(講義キーワード)。見出しごとに「最初の1回だけ」マークし、
+  // 見出し・コードの中はマークしない(webappのrehypeTermMarksと同じ規則)。
+  // 注釈と重なった箇所は注釈の見た目・タップを優先する。
+  final TermGlossary _terms;
+  final int? termTopicNumber;
+  final ValueChanged<TermEntry>? onTermTap;
+  Set<String> _seenTerms = {};
+  int _termSkipDepth = 0;
+  static const _termSectionTags = {'h1', 'h2', 'h3', 'h4'};
+  static const _termSkipTags = {'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre', 'code'};
   // 'pre'がbuildersに登録されると、flutter_markdownはコードブロック用の
   // 横スクロール/パディング処理(_ScrollControllerBuilder+codeblockPadding)を
   // 一切適用しなくなる(builder.dartのvisitText参照)。オフセット計算を合わせる
@@ -168,6 +184,8 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
     final style = _inlineStyles[element.tag];
     if (style != null) _inlineStyleStack.add(style);
     if (element.tag == 'pre') _inPreBlock = true;
+    if (_termSectionTags.contains(element.tag)) _seenTerms = {};
+    if (_termSkipTags.contains(element.tag)) _termSkipDepth++;
   }
 
   @override
@@ -182,6 +200,9 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
       _inlineStyleStack.removeLast();
     }
     if (element.tag == 'pre') _inPreBlock = false;
+    if (_termSkipTags.contains(element.tag) && _termSkipDepth > 0) {
+      _termSkipDepth--;
+    }
     return null; // let flutter_markdown build the default wrapping widget
   }
 
@@ -197,67 +218,104 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
     final leafEnd = leafStart + content.length;
     _offset = leafEnd;
 
-    final spans = <InlineSpan>[];
-    var cursor = leafStart;
+    final termMatches = _termSkipDepth > 0
+        ? const <TermMatch>[]
+        : findTermMatches(content, _terms, _seenTerms, termTopicNumber);
+
+    // 注釈と用語マークの境界すべてで切り、区間ごとに装飾を決める。
+    final cuts = <int>{leafStart, leafEnd};
     for (final a in _annotations) {
-      if (a.endIdx <= cursor || a.startIdx >= leafEnd) continue;
-      final overlapStart = a.startIdx.clamp(cursor, leafEnd);
-      final overlapEnd = a.endIdx.clamp(cursor, leafEnd);
-      if (overlapStart > cursor) {
+      if (a.startIdx > leafStart && a.startIdx < leafEnd) cuts.add(a.startIdx);
+      if (a.endIdx > leafStart && a.endIdx < leafEnd) cuts.add(a.endIdx);
+    }
+    for (final m in termMatches) {
+      cuts.add(leafStart + m.start);
+      cuts.add(leafStart + m.end);
+    }
+    final boundaries = cuts.toList()..sort();
+
+    final spans = <InlineSpan>[];
+    for (var i = 0; i < boundaries.length - 1; i++) {
+      final segStart = boundaries[i];
+      final segEnd = boundaries[i + 1];
+      if (segEnd <= segStart) continue;
+      final segText = content.substring(
+        segStart - leafStart,
+        segEnd - leafStart,
+      );
+
+      // 重なった注釈は開始位置の早いものを優先する(従来と同じ)。
+      Annotation? annotation;
+      for (final a in _annotations) {
+        if (a.startIdx <= segStart && a.endIdx >= segEnd) {
+          annotation = a;
+          break;
+        }
+      }
+
+      if (annotation != null) {
+        final a = annotation;
+        TapGestureRecognizer? recognizer;
+        if (onAnnotationTap != null) {
+          recognizer = TapGestureRecognizer()
+            ..onTap = () => onAnnotationTap?.call(a);
+          _recognizers.add(recognizer);
+        }
         spans.add(
           TextSpan(
-            text: content.substring(
-              cursor - leafStart,
-              overlapStart - leafStart,
-            ),
-            style: effectiveStyle,
+            text: segText,
+            style: _decoratedStyle(effectiveStyle, a),
+            recognizer: recognizer,
           ),
         );
-      }
-      TapGestureRecognizer? recognizer;
-      if (onAnnotationTap != null) {
-        recognizer = TapGestureRecognizer()
-          ..onTap = () => onAnnotationTap?.call(a);
-        _recognizers.add(recognizer);
-      }
-      spans.add(
-        TextSpan(
-          text: content.substring(
-            overlapStart - leafStart,
-            overlapEnd - leafStart,
-          ),
-          style: _decoratedStyle(effectiveStyle, a),
-          recognizer: recognizer,
-        ),
-      );
-      // ノートが付いている箇所だと一目でわかるよう、注釈の終端(この行が
-      // アノテーションの最後のリーフになる箇所)にゴールドのコメントマークを
-      // 添える。複数のleafに跨るアノテーションでも1回だけ表示されるよう、
-      // 実際にa.endIdxまで到達したタイミングでのみ追加する。
-      if (a.annotationType == 'notes' && overlapEnd == a.endIdx) {
-        spans.add(
-          WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 2),
-              child: Icon(
-                Icons.mode_comment_rounded,
-                size: (effectiveStyle?.fontSize ?? 14) * 0.85,
-                color: const Color(0xFFC5A059),
+        // ノートが付いている箇所だと一目でわかるよう、注釈の終端(この区間が
+        // アノテーションの最後になる箇所)にゴールドのコメントマークを添える。
+        // 複数のleafに跨るアノテーションでも1回だけ表示されるよう、
+        // 実際にa.endIdxまで到達したタイミングでのみ追加する。
+        if (a.annotationType == 'notes' && segEnd == a.endIdx) {
+          spans.add(
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 2),
+                child: Icon(
+                  Icons.mode_comment_rounded,
+                  size: (effectiveStyle?.fontSize ?? 14) * 0.85,
+                  color: const Color(0xFFC5A059),
+                ),
               ),
             ),
+          );
+        }
+        continue;
+      }
+
+      TermMatch? term;
+      for (final m in termMatches) {
+        if (leafStart + m.start <= segStart && leafStart + m.end >= segEnd) {
+          term = m;
+          break;
+        }
+      }
+      if (term != null) {
+        final entry = term.entry;
+        TapGestureRecognizer? recognizer;
+        if (onTermTap != null) {
+          recognizer = TapGestureRecognizer()
+            ..onTap = () => onTermTap?.call(entry);
+          _recognizers.add(recognizer);
+        }
+        spans.add(
+          TextSpan(
+            text: segText,
+            style: _termStyle(effectiveStyle),
+            recognizer: recognizer,
           ),
         );
+        continue;
       }
-      cursor = overlapEnd;
-    }
-    if (cursor < leafEnd) {
-      spans.add(
-        TextSpan(
-          text: content.substring(cursor - leafStart),
-          style: effectiveStyle,
-        ),
-      );
+
+      spans.add(TextSpan(text: segText, style: effectiveStyle));
     }
 
     final Widget result = spans.isEmpty
@@ -271,6 +329,16 @@ class MarkdownAnnotationBuilder extends MarkdownElementBuilder {
         scrollDirection: Axis.horizontal,
         child: result,
       ),
+    );
+  }
+
+  TextStyle _termStyle(TextStyle? base) {
+    return (base ?? const TextStyle()).copyWith(
+      backgroundColor: const Color(0x14FFB300),
+      decoration: TextDecoration.underline,
+      decorationStyle: TextDecorationStyle.dotted,
+      decorationColor: const Color(0xB3CC8D00),
+      decorationThickness: 1.5,
     );
   }
 

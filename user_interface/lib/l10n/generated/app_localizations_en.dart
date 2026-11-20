@@ -2426,6 +2426,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Deep Notes for this topic were not generated because this lecture was analyzed under the Free plan.';
 
   @override
+  String get termSheetLabel => 'Lecture keyword';
+
+  @override
   String get keywordsLockedDialogTitle => 'Keywords not generated';
 
   @override

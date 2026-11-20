@@ -37,6 +37,8 @@ import 'package:lefture/presentation/widgets/custom_scrollbar.dart';
 import 'package:lefture/presentation/widgets/card_selection_toolbar.dart';
 import 'package:lefture/presentation/widgets/highlight_sub_toolbar.dart';
 import 'package:lefture/presentation/widgets/markdown_annotation_builder.dart';
+import 'package:lefture/presentation/widgets/term_glossary_scope.dart';
+import 'package:lefture/core/utils/term_glossary.dart';
 import 'package:lefture/presentation/widgets/note_sub_toolbar.dart';
 import 'package:lefture/presentation/widgets/selection_floating_menu.dart';
 import 'package:lefture/presentation/widgets/broad_selection_sheet.dart';
@@ -79,6 +81,12 @@ class DeepNotesDetailPage extends HookConsumerWidget {
         : ref.watch(deepNotesProvider(lectureId));
     final figuresAsync = ref.watch(deepNoteFiguresProvider(lectureId));
     final figures = figuresAsync.asData?.value ?? const <DeepNoteFigure>[];
+    // 本文中の講義キーワードに用語マークを付けるための辞書(定義があるものだけ)
+    final keywords = ref.watch(lectureKeywordsProvider(lectureId)).asData?.value;
+    final termGlossary = useMemoized(
+      () => buildTermGlossary(keywords ?? const []),
+      [keywords],
+    );
 
     // 講義ページを経由せずに開かれた場合(記録ページ等から)にも、古い講義の
     // 中身を取る(前回から24時間以内ならローカルのまま)。
@@ -703,7 +711,10 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    _NoteDetailContent(
+                    TermGlossaryScope(
+                      glossary: termGlossary,
+                      topicNumber: topic.topicNumber ?? (topic.index + 1),
+                      child: _NoteDetailContent(
                       topic: topic,
                       topicIndex: currentIndex.value,
                       totalTopics: totalTopics,
@@ -789,6 +800,7 @@ class DeepNotesDetailPage extends HookConsumerWidget {
                           );
                         }
                       },
+                    ),
                     ),
                     if (highlightToolbarOpen.value && hasSelection.value)
                       HighlightSubToolbar(
@@ -1335,7 +1347,9 @@ class _NoteDetailContent extends HookWidget {
       ),
       if (temporaryHighlight != null) temporaryHighlight!,
     ];
-    final annotationsCacheKeyValue = annotationsCacheKey(noteAnnotations);
+    final termScope = TermGlossaryScope.maybeOf(context);
+    final annotationsCacheKeyValue =
+        '${annotationsCacheKey(noteAnnotations)}#${termScope?.cacheKey ?? ''}';
     // annotationsCacheKeyValueが変わる(=MarkdownBodyがremountされる)たびに
     // 新しいbuilderを作り、古いbuilderが生成したTapGestureRecognizerを確実に
     // disposeする。InlineSpanはGestureRecognizerのライフサイクルを管理しない
@@ -1356,6 +1370,9 @@ class _NoteDetailContent extends HookWidget {
       () => MarkdownAnnotationBuilder(
         annotations: noteAnnotations,
         onAnnotationTap: onAnnotationTap,
+        terms: termScope?.glossary,
+        termTopicNumber: termScope?.topicNumber,
+        onTermTap: (entry) => showTermDefinitionSheet(context, entry),
         codeStyle: codeStyle,
         codeblockPadding: const EdgeInsets.all(16),
       ),

@@ -3197,6 +3197,10 @@
   "@deepNotesSkippedTopicNotice": {
     "description": "Dialog message shown when tapping a skipped deep note in topics sheet."
   },
+  "termSheetLabel": "Lecture keyword",
+  "@termSheetLabel": {
+    "description": "Small label above a lecture keyword in the sheet shown when a highlighted term in Deep Notes or Review Cards is tapped"
+  },
   "keywordsLockedDialogTitle": "Keywords not generated",
   "@keywordsLockedDialogTitle": {
     "description": "Title of the dialog shown when tapping the Keywords chip on a lecture that was processed on a plan below Core, so no keyword/definition rows exist for it. States non-existence, not a hidden/locked state."

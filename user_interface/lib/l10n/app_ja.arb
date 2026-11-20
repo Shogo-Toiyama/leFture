@@ -702,6 +702,7 @@
   "deepNotesSkippedPlanLimitDescription": "Freeプランご利用時の講義のため、詳細ノートは第1トピックのみ生成されています。",
   "deepNotesSkippedPlanLimitCaption": "Freeプラン時に解析（詳細ノート未生成）",
   "deepNotesSkippedTopicNotice": "この講義はFreeプラン時に解析されたため、このトピックの詳細ノートは生成されていません。",
+  "termSheetLabel": "講義のキーワード",
   "keywordsLockedDialogTitle": "キーワードは生成されていません",
   "keywordsLockedDialogMessage": "この講義のキーワードは抽出されていません。Coreプラン以上にアップグレードすると、今後の講義から自動で抽出されます。",
   "announcementsLockedDialogTitle": "アナウンスメントは生成されていません",

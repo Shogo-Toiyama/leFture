@@ -2325,6 +2325,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'この講義はFreeプラン時に解析されたため、このトピックの詳細ノートは生成されていません。';
 
   @override
+  String get termSheetLabel => '講義のキーワード';
+
+  @override
   String get keywordsLockedDialogTitle => 'キーワードは生成されていません';
 
   @override

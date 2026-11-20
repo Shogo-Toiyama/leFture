@@ -39,6 +39,8 @@ import 'package:lefture/presentation/widgets/highlight_sub_toolbar.dart';
 import 'package:lefture/presentation/widgets/selection_floating_menu.dart';
 import 'package:lefture/presentation/widgets/selection_swipe_priority.dart';
 import 'package:lefture/presentation/widgets/markdown_annotation_builder.dart';
+import 'package:lefture/presentation/widgets/term_glossary_scope.dart';
+import 'package:lefture/core/utils/term_glossary.dart';
 import 'package:lefture/presentation/widgets/note_sub_toolbar.dart';
 import 'package:lefture/presentation/widgets/broad_selection_sheet.dart';
 import 'package:lefture/presentation/widgets/transcript_modal.dart';
@@ -246,6 +248,14 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
     // The same card is remounted when the viewer enters or leaves the
     // animated stack. Keep its latest vertical position for both mounts.
     final cardScrollOffsets = useMemoized(() => <String, double>{}, [lectureId]);
+
+    // 本文中の講義キーワードに用語マークを付けるための辞書(定義があるものだけ)
+    final keywords =
+        widgetRef.watch(lectureKeywordsProvider(lectureId)).asData?.value;
+    final termGlossary = useMemoized(
+      () => buildTermGlossary(keywords ?? const []),
+      [keywords],
+    );
 
     // committedIndex: タイトル/カウンター/カード別ツールバー/進捗バーの塗り/
     // useEffectを駆動する「確定した」カード。ジェスチャーが確定した瞬間にだけ
@@ -675,7 +685,10 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
           borderRadius: 24,
         );
       }
-      return _ContentCard(
+      return TermGlossaryScope(
+        glossary: termGlossary,
+        topicNumber: card.topicNumber,
+        child: _ContentCard(
         key: ValueKey(card.id),
         card: card,
         scrollOffsets: cardScrollOffsets,
@@ -750,6 +763,7 @@ class _ReviewCardsViewerBody extends HookConsumerWidget {
             temporaryHighlightBlockIdx.value = a.blockIdx;
           }
         },
+      ),
       );
     }
 
@@ -2661,7 +2675,9 @@ class _ReviewCardBlockView extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cacheKey = annotationsCacheKey(annotations);
+    final termScope = TermGlossaryScope.maybeOf(context);
+    final cacheKey =
+        '${annotationsCacheKey(annotations)}#${termScope?.cacheKey ?? ''}';
     // annotationsKeyが変わる(=MarkdownBodyがremountされる)たびに新しいbuilder
     // を作り、古いbuilderが生成したTapGestureRecognizerを確実にdisposeする。
     // InlineSpanはGestureRecognizerのライフサイクルを管理しないため、ここで
@@ -2674,6 +2690,9 @@ class _ReviewCardBlockView extends HookWidget {
       () => MarkdownAnnotationBuilder(
         annotations: annotations,
         onAnnotationTap: onAnnotationTap,
+        terms: termScope?.glossary,
+        termTopicNumber: termScope?.topicNumber,
+        onTermTap: (entry) => showTermDefinitionSheet(context, entry),
         codeStyle: codeStyle,
       ),
       [cacheKey, codeStyle],

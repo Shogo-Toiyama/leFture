@@ -422,6 +422,7 @@ export const en = {
 
   // Keywords Modal
   keywordsTitle: 'Keywords',
+  termPopoverLabel: 'Lecture keyword',
   keywordsEmpty: 'Nothing here yet',
   keywordPlaceholder: 'Keyword',
   definitionPlaceholder: 'Definition',

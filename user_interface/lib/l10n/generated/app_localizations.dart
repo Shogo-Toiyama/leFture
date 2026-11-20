@@ -4244,6 +4244,12 @@ abstract class AppLocalizations {
   /// **'Deep Notes for this topic were not generated because this lecture was analyzed under the Free plan.'**
   String get deepNotesSkippedTopicNotice;
 
+  /// Small label above a lecture keyword in the sheet shown when a highlighted term in Deep Notes or Review Cards is tapped
+  ///
+  /// In en, this message translates to:
+  /// **'Lecture keyword'**
+  String get termSheetLabel;
+
   /// Title of the dialog shown when tapping the Keywords chip on a lecture that was processed on a plan below Core, so no keyword/definition rows exist for it. States non-existence, not a hidden/locked state.
   ///
   /// In en, this message translates to:
