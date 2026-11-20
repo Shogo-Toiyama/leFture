@@ -106,7 +106,7 @@ class PushNotificationService {
     }
 
     // ログイン/ログアウトに合わせてトークンの登録・解除を行う
-    _authSub = supabase.auth.onAuthStateChange.listen((state) {
+    _authSub = authStateEvents(supabase.auth.onAuthStateChange).listen((state) {
       if (state.event == AuthChangeEvent.signedIn) {
         _fetchAndRegisterToken();
       } else if (state.event == AuthChangeEvent.signedOut) {

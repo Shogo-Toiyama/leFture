@@ -1,0 +1,8 @@
+00:00 +0: loading /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/auth_state_refresh_errors/auth_state_refresh_errors_test.dart
+00:00 +0: /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/auth_state_refresh_errors/auth_state_refresh_errors_test.dart: refresh failures do not become uncaught auth stream errors
+00:00 +1: /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/auth_state_refresh_errors/auth_state_refresh_errors_test.dart: unexpected auth stream errors still reach the subscriber
+00:03 +2: /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart: latest stops after its Ref is disposed
+00:03 +3: /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart: active stops after its Ref is disposed
+00:03 +4: /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart: all stops after its Ref is disposed
+00:03 +5: /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart: mounted providers still publish their first values
+00:03 +6: All tests passed!

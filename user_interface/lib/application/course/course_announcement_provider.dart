@@ -13,6 +13,8 @@ part 'course_announcement_provider.g.dart';
 @riverpod
 Stream<Announcement?> latestAnnouncementForCourse(Ref ref, String courseId) async* {
   final lectures = await ref.watch(lectureListStreamProvider(courseId).future);
+  if (!ref.mounted) return;
+
   final lectureIds = lectures.map((l) => l.id).toList();
   final cutoff = DateTime.now().subtract(const Duration(minutes: 5));
 
@@ -31,6 +33,8 @@ Stream<Announcement?> latestAnnouncementForCourse(Ref ref, String courseId) asyn
 @riverpod
 Stream<List<Announcement>> activeAnnouncementsForCourse(Ref ref, String courseId) async* {
   final lectures = await ref.watch(lectureListStreamProvider(courseId).future);
+  if (!ref.mounted) return;
+
   final lectureIds = lectures.map((l) => l.id).toList();
   final cutoff = DateTime.now().subtract(const Duration(minutes: 5));
 
@@ -51,6 +55,8 @@ Stream<List<Announcement>> activeAnnouncementsForCourse(Ref ref, String courseId
 @riverpod
 Stream<List<Announcement>> allAnnouncementsForCourse(Ref ref, String courseId) async* {
   final lectures = await ref.watch(lectureListStreamProvider(courseId).future);
+  if (!ref.mounted) return;
+
   final lectureIds = lectures.map((l) => l.id).toList();
   yield* ref
       .watch(announcementRepositoryDriftProvider)

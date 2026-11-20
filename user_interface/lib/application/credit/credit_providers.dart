@@ -7,6 +7,7 @@ import '../../domain/entities/credit_usage_item.dart';
 import '../../domain/entities/plan_option.dart';
 import '../../domain/plan_features.dart' as plan_features;
 import '../../infrastructure/repositories/credit_repository.dart';
+import '../../infrastructure/supabase/supabase_client.dart';
 
 /// このファイルだけ手書きのProvider(コード生成無し)にしている。他の多くの
 /// providerは@riverpodコード生成を使っているが、クレジット関連はテーブルが
@@ -43,7 +44,7 @@ final creditRepositoryProvider = Provider<CreditRepository>((ref) {
 /// アプリ全体監視役(creditPollingProvider等)と同じ場所でwatchし、
 /// 依存グラフ上creditSummaryProviderと無関係な存在にする。
 final Provider<void> creditSummaryAuthWatcherProvider = Provider<void>((ref) {
-  final sub = Supabase.instance.client.auth.onAuthStateChange.listen((state) {
+  final sub = authStateEvents(supabase.auth.onAuthStateChange).listen((state) {
     // tokenRefreshed: 失効していたセッションが復帰した直後
     // signedIn:      別アカウントも含め、ログインし直した直後
     if (state.event == AuthChangeEvent.tokenRefreshed ||

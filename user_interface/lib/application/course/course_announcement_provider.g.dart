@@ -74,7 +74,7 @@ final class LatestAnnouncementForCourseProvider
 }
 
 String _$latestAnnouncementForCourseHash() =>
-    r'109e483323e61803768656ba17760cc005ab6593';
+    r'1ce222de6444ceda64d607351639c3bff1b22873';
 
 /// コースに属する全レクチャーを横断した、未完了のうち最新のアナウンスメント。
 /// ローカルDB経由でオフライン優先。
@@ -168,7 +168,7 @@ final class ActiveAnnouncementsForCourseProvider
 }
 
 String _$activeAnnouncementsForCourseHash() =>
-    r'2d97f1db5f0a12ea924aeff16b20e4aec4de8a89';
+    r'0adededdd42c971279a8d92b1b80e3551c71bd61';
 
 /// コースに属する全レクチャーを横断した、未完了、または直近5分以内に完了したアナウンスメント一覧。
 /// ローカルDB経由でオフライン優先。30秒ごとに再評価し、5分経過した完了済みアナウンスメントを自動消去する。
@@ -258,7 +258,7 @@ final class AllAnnouncementsForCourseProvider
 }
 
 String _$allAnnouncementsForCourseHash() =>
-    r'dcf7b7040cdc19a24c09d4ff422f559adbb77696';
+    r'9da483985d836058134e400441347ef106414963';
 
 /// コースに属する全レクチャーを横断した、全アナウンスメント一覧（完了・未完了問わず全件）。
 

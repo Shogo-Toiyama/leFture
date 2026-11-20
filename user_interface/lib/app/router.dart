@@ -71,7 +71,9 @@ CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) {
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final refreshStream = GoRouterRefreshStream(supabase.auth.onAuthStateChange);
+  final refreshStream = GoRouterRefreshStream(
+    authStateEvents(supabase.auth.onAuthStateChange),
+  );
 
   return GoRouter(
     navigatorKey: _rootKey,

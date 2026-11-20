@@ -1,0 +1,3 @@
+00:00 +0: loading /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/client_error_context_design/router_template_test.dart
+00:00 +0: reads the visible route template across go, push and pop
+00:00 +1: All tests passed!

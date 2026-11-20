@@ -48,7 +48,7 @@ class UserProfileRepositorySupabase {
     // ユーザーにそのまま漏れてしまう不具合があったため、authのユーザーIDが
     // 変わるたびにキャッシュを破棄する。
     _lastUid = supabase.auth.currentUser?.id;
-    _authSubscription = supabase.auth.onAuthStateChange.listen((data) {
+    _authSubscription = authStateEvents(supabase.auth.onAuthStateChange).listen((data) {
       final newUid = data.session?.user.id;
       if (newUid != _lastUid) {
         _cachedOnboardingCompleted = null;

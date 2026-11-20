@@ -1,0 +1,18 @@
+00:00 +0: loading /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/auth_state_refresh_errors/auth_state_refresh_errors_test.dart
+00:00 +0: refresh failures do not become uncaught auth stream errors
+00:00 +0 -1: refresh failures do not become uncaught auth stream errors [E]
+  Expected: empty
+    Actual: [
+              AuthRetryableFetchException:AuthRetryableFetchException(message: fixture, statusCode: null),
+              AuthApiException:AuthApiException(message: fixture, statusCode: 400, code: refresh_token_not_found)
+            ]
+
+  package:matcher                                                                                       expect
+  package:flutter_test/src/widget_tester.dart 473:18                                                    expect
+  ../contents_generation/test_codes/auth_state_refresh_errors/auth_state_refresh_errors_test.dart 41:5  main.<fn>
+
+00:00 +0 -1: unexpected auth stream errors still reach the subscriber
+00:00 +1 -1: Some tests failed.
+
+Failing tests:
+  /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/auth_state_refresh_errors/auth_state_refresh_errors_test.dart: refresh failures do not become uncaught auth stream errors

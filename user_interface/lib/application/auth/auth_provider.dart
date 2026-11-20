@@ -51,7 +51,7 @@ final String googleSignInHashedNonce =
 /// 🔄 現在のセッション（ログイン状態）を監視
 @riverpod
 Stream<AuthState> authState(Ref ref) {
-  return supabase.auth.onAuthStateChange;
+  return authStateEvents(supabase.auth.onAuthStateChange);
 }
 
 /// 👤 ログイン中のユーザー情報

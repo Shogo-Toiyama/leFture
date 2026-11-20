@@ -59,7 +59,7 @@ class ActivityPingService {
       onHide: _stopTimer,
     );
 
-    _authSubscription = supabase.auth.onAuthStateChange.listen((state) {
+    _authSubscription = authStateEvents(supabase.auth.onAuthStateChange).listen((state) {
       if (state.event == AuthChangeEvent.signedOut) {
         _stopTimer();
       } else if (state.event == AuthChangeEvent.signedIn) {

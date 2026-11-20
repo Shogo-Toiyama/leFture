@@ -1,0 +1,110 @@
+00:00 +0: loading /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart
+00:00 +0: latest stops after its Ref is disposed
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: empty
+  Actual: [
+            UnmountedRefException:Cannot use the Ref of Provider<Ref>#92f9b after it has been
+disposed. This typically happens if:
+          - A provider rebuilt, but the previous "build" was still pending and is still performing
+operations.
+            You should therefore either use `ref.onDispose` to cancel pending work, or
+            check `ref.mounted` after async gaps or anything that could invalidate the provider.
+          - You tried to use Ref inside `onDispose` or other life-cycles.
+            This is not supported, as the provider is already being disposed.
+
+          ]
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart:63:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/c  TimeoutException after 0:10:00.000000: Test timed out after 10 minutes.
+  dart:isolate  _RawReceivePort._handleMessage
+
+10:00 +0 -1: active stops after its Ref is disposed
+10:00 +0 -2: active stops after its Ref is disposed [E]
+  'package:flutter_test/src/binding.dart': Failed assertion: line 2587 pos 12: '!inTest': is not true.
+  dart:core                                           _AssertionError._throwNew
+  package:flutter_test/src/binding.dart 2587:12       AutomatedTestWidgetsFlutterBinding.runTest
+  package:flutter_test/src/widget_tester.dart 184:24  testWidgets.<fn>
+
+10:00 +0 -2: all stops after its Ref is disposed
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: false
+  Actual: <true>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart:55:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart line 55
+The test description was:
+  all stops after its Ref is disposed
+════════════════════════════════════════════════════════════════════════════════════════════════════
+10:00 +0 -3: all stops after its Ref is disposed [E]
+  Test failed. See exception logs above.
+  The test description was: all stops after its Ref is disposed
+
+  TimeoutException after 0:10:00.000000: Test timed out after 10 minutes.
+  dart:isolate  _RawReceivePort._handleMessage
+
+20:00 +0 -3: mounted providers still publish their first values
+20:00 +0 -4: mounted providers still publish their first values [E]
+  'package:flutter_test/src/binding.dart': Failed assertion: line 2587 pos 12: '!inTest': is not true.
+  dart:core                                           _AssertionError._throwNew
+  package:flutter_test/src/binding.dart 2587:12       AutomatedTestWidgetsFlutterBinding.runTest
+  package:flutter_test/src/widget_tester.dart 184:24  testWidgets.<fn>
+
+20:00 +0 -4: Some tests failed.
+
+Failing tests:
+  /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart: active stops after its Ref is disposed
+  /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart: all stops after its Ref is disposed
+  /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart: latest stops after its Ref is disposed
+  /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart: mounted providers still publish their first values
+          This is not supported, as the provider is already being disposed.
+
+          ]
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart:63:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1968:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart line 63
+The test description was:
+  all stops after its Ref is disposed
+════════════════════════════════════════════════════════════════════════════════════════════════════
+00:00 +0 -3: all stops after its Ref is disposed [E]
+  Test failed. See exception logs above.
+  The test description was: all stops after its Ref is disposed
+
+00:00 +0 -3: mounted providers still publish their first values
+00:00 +1 -3: Some tests failed.
+
+Failing tests:
+  /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart: active stops after its Ref is disposed
+  /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart: all stops after its Ref is disposed
+  /Users/shogo/Documents/Programming/leFture/contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart: latest stops after its Ref is disposed
