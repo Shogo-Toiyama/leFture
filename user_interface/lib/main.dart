@@ -11,7 +11,6 @@ import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/application/errors/error_reporter.dart';
 import 'package:lefture/application/recording/upload_trace.dart';
-import 'package:lefture/domain/errors/app_error.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app/app.dart';
@@ -41,9 +40,7 @@ void _logUncaughtError(Object error, StackTrace stack) {
   // つまり**これまで開発者に一切届いていなかったクラス**のエラーで、
   // 自動報告の恩恵が最も大きい。ErrorReporter側で
   // 同一fingerprintの連投は潰されるので、毎フレーム投げても溢れない。
-  reportAppError(
-    AppError.from(error, origin: 'main.uncaught', stack: stack),
-  );
+  reportUncaughtError(error, stack);
 }
 
 // バックグラウンド/終了状態でのFCM受信を処理するトップレベル関数。

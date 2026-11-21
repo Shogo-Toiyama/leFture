@@ -1,0 +1,19 @@
+00:00 +0: loading contents_generation/test_codes/client_error_diagnostics/client_error_diagnostics_test.dart
+00:00 +0: contents_generation/test_codes/course_announcement_ref_lifecycle/course_announcement_ref_lifecycle_test.dart: latest stops after its Ref is disposed
+00:00 +1: contents_generation/test_codes/client_error_diagnostics/router_diagnostics_test.dart: reads the visible route template across go, push and pop
+00:00 +2: contents_generation/test_codes/client_error_diagnostics/router_diagnostics_test.dart: reads the visible route template across go, push and pop
+00:00 +3: contents_generation/test_codes/client_error_diagnostics/router_diagnostics_test.dart: reads the visible route template across go, push and pop
+00:00 +4: contents_generation/test_codes/client_error_diagnostics/router_diagnostics_test.dart: reads the visible route template across go, push and pop
+00:00 +5: contents_generation/test_codes/client_error_diagnostics/client_error_diagnostics_test.dart: the queued sample keeps the screen at the time of the error
+00:00 +6: contents_generation/test_codes/client_error_diagnostics/client_error_diagnostics_test.dart: a stackless native error keeps its player context and safe codes
+00:00 +7: contents_generation/test_codes/client_error_diagnostics/client_error_diagnostics_test.dart: history is bounded and snapshots from a previous session are invalid
+00:00 +8: contents_generation/test_codes/client_error_diagnostics/client_error_diagnostics_test.dart: repeated errors retain the existing burst limit
+00:00 +9: contents_generation/test_codes/client_error_diagnostics/client_error_diagnostics_test.dart: upload trace keeps its supplied lines outside the diagnostic budget
+00:00 +10: user_interface/test/application/recording/upload_trace_test.dart: records DevLog lines after begin, skipping timer ticks
+[DevLog] 12:51:20 [Timer] Tick: 6
+[DevLog] 12:51:20 🔄 [UploadManager] Attempting master_audio_upload#abc
+00:00 +11: user_interface/test/application/recording/upload_trace_test.dart: finish removes the trace file (no reporter installed: send is a no-op)
+[DevLog] 12:51:20 ⚠️ [UploadTrace] begin failed: PathNotFoundException: Cannot open file, path = '<test-temp>/upload_traces/lec-2.log' (OS Error: No such file or directory, errno = 2)
+00:00 +12: contents_generation/test_codes/auth_state_refresh_errors/auth_state_refresh_errors_test.dart: refresh failures do not become uncaught auth stream errors
+00:00 +13: contents_generation/test_codes/auth_state_refresh_errors/auth_state_refresh_errors_test.dart: unexpected auth stream errors still reach the subscriber
+00:01 +14: All tests passed!

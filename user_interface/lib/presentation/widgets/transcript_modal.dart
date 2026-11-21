@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:lefture/application/audio/diagnostic_audio_player.dart';
+import 'package:lefture/application/errors/client_diagnostics.dart';
 
 import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/lecture/lecture_audio_source.dart';
@@ -175,7 +177,12 @@ class TranscriptModal extends HookConsumerWidget {
 
     final currentUserId = supabase.auth.currentUser?.id ?? '';
 
-    final player = useMemoized(() => AudioPlayer());
+    final player = useMemoized(
+      () => DiagnosticAudioPlayer(
+        ref.read(clientDiagnosticsProvider),
+        surface: DiagnosticSurface.transcriptModal,
+      ),
+    );
     final duration = useState<Duration>(Duration.zero);
     final position = useState<Duration>(Duration.zero);
     final playerState = useState<PlayerState>(PlayerState.stopped);
@@ -606,7 +613,12 @@ class TranscriptModal extends HookConsumerWidget {
               .then((_) => player.setSource(audioSource.source))
               .then((_) async {
                 isAudioLoaded.value = true;
-                if (resumeAt > Duration.zero) await player.seek(resumeAt);
+                if (resumeAt > Duration.zero) {
+                  await player.seek(
+                    resumeAt,
+                    trigger: DiagnosticTrigger.restorePosition,
+                  );
+                }
                 if (wasPlaying) await player.resume();
               });
           return null;
@@ -636,7 +648,7 @@ class TranscriptModal extends HookConsumerWidget {
             final target = Duration(milliseconds: startMs);
 
             position.value = target;
-            player.seek(target);
+            player.seek(target, trigger: DiagnosticTrigger.autoHighlight);
 
             hasSeekedToHighlight.value = true;
             return null;
@@ -690,7 +702,7 @@ class TranscriptModal extends HookConsumerWidget {
           if (!isAudioLoaded.value) return;
           final target = Duration(milliseconds: ms);
           position.value = target;
-          await player.seek(target);
+          await player.seek(target, trigger: DiagnosticTrigger.transcriptTap);
           if (playerState.value != PlayerState.playing) {
             await player.resume();
           }
@@ -1423,7 +1435,10 @@ class TranscriptModal extends HookConsumerWidget {
                       },
                       onSeek: (value) async {
                         position.value = value;
-                        await player.seek(value);
+                        await player.seek(
+                          value,
+                          trigger: DiagnosticTrigger.slider,
+                        );
                       },
                       onRewind10: () async {
                         final target =
@@ -1432,7 +1447,10 @@ class TranscriptModal extends HookConsumerWidget {
                             ? Duration.zero
                             : target;
                         position.value = actualTarget;
-                        await player.seek(actualTarget);
+                        await player.seek(
+                          actualTarget,
+                          trigger: DiagnosticTrigger.skip,
+                        );
                       },
                       onForward10: () async {
                         final target =
@@ -1441,7 +1459,10 @@ class TranscriptModal extends HookConsumerWidget {
                             ? duration.value
                             : target;
                         position.value = actualTarget;
-                        await player.seek(actualTarget);
+                        await player.seek(
+                          actualTarget,
+                          trigger: DiagnosticTrigger.skip,
+                        );
                       },
                       onSpeedSelected: (speed) async {
                         playbackSpeed.value = speed;

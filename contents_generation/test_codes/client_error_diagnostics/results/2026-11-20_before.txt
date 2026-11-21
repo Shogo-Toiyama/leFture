@@ -1,0 +1,19 @@
+00:00 +0: loading contents_generation/test_codes/client_error_diagnostics/client_error_diagnostics_test.dart
+00:00 +0: the reported screen and navigation history are captured with the error
+00:00 +0 -1: the reported screen and navigation history are captured with the error [E]
+  Expected: '/home/courses/c/:courseId'
+    Actual: 'dialog:fixture'
+     Which: is different.
+            Expected: /home/cour ...
+              Actual: dialog:fix ...
+                      ^
+             Differ at offset 0
+
+  package:matcher                                                                                     expect
+  package:flutter_test/src/widget_tester.dart 473:18                                                  expect
+  ../contents_generation/test_codes/client_error_diagnostics/client_error_diagnostics_test.dart 35:7  main.<fn>
+
+00:00 +0 -1: Some tests failed.
+
+Failing tests:
+  contents_generation/test_codes/client_error_diagnostics/client_error_diagnostics_test.dart: the reported screen and navigation history are captured with the error

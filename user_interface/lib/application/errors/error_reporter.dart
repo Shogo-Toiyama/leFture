@@ -33,6 +33,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:lefture/application/device/device_identity_service.dart';
+import 'package:lefture/application/errors/client_diagnostics.dart';
 import 'package:lefture/core/config/app_config.dart';
 import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/domain/errors/app_error.dart';
@@ -53,16 +54,26 @@ class ErrorReporter {
     required AppDatabase db,
     required DeviceIdentityService deviceIdentity,
     required SupabaseClient supabase,
+    ClientDiagnostics? diagnostics,
     http.Client? httpClient,
   })  : _db = db,
         _deviceIdentity = deviceIdentity,
         _supabase = supabase,
-        _http = httpClient ?? http.Client();
+        _diagnostics = diagnostics ?? ClientDiagnostics(),
+        _http = httpClient ?? http.Client() {
+    _diagnostics.setSessionUser(supabase.auth.currentUser?.id);
+    _authSubscription = supabase.auth.onAuthStateChange.listen(
+      (state) => _diagnostics.setSessionUser(state.session?.user.id),
+      onError: (Object _, StackTrace _) {},
+    );
+  }
 
   final AppDatabase _db;
   final DeviceIdentityService _deviceIdentity;
   final SupabaseClient _supabase;
+  final ClientDiagnostics _diagnostics;
   final http.Client _http;
+  late final StreamSubscription<AuthState> _authSubscription;
 
   // --- A段のパラメータ ---
 
@@ -87,9 +98,6 @@ class ErrorReporter {
   Future<void>? _flushFuture;
   bool _flushAgain = false;
 
-  /// 現在画面(ルート)。SnackBar等から渡されたものを保持する。
-  String? currentRoute;
-
   // ---------------------------------------------------------------
   // 受け口
   // ---------------------------------------------------------------
@@ -98,12 +106,21 @@ class ErrorReporter {
   ///
   /// [traceLines]を渡すと、DevLog末尾の代わりにそれをbreadcrumbsとして送る
   /// (UploadTraceの全文用)。
-  Future<bool> report(AppError error, {String? route, List<String>? traceLines}) async {
+  Future<bool> report(
+    AppError error, {
+    String? route,
+    List<String>? traceLines,
+    DiagnosticSnapshot? diagnostics,
+  }) async {
     try {
       if (!error.shouldReport) return false;
       // Each trace carries a distinct diagnostic payload, even within one group.
       if (error.code == AppErrorCode.uploadTrace) {
-        await _enqueue(error, route: route, traceLines: traceLines);
+        await _enqueue(
+          error,
+          route: route,
+          breadcrumbs: traceLines ?? _breadcrumbs(40),
+        );
         _scheduleFlush();
         return true;
       }
@@ -113,6 +130,7 @@ class ErrorReporter {
 
       // --- A段 ---
       var gate = _gates[fp];
+      var carried = 0;
       if (gate == null) {
         if (_gates.length >= _maxDistinctPerSession) {
           _droppedDistinct++;
@@ -122,24 +140,33 @@ class ErrorReporter {
         _gates[fp] = gate;
       } else if (now.difference(gate.firstAt) > _burstWindow) {
         // 窓が明けた。抑制していた分を1件にまとめて通す。
-        final carried = gate.suppressed;
+        carried = gate.suppressed;
         gate = _BurstGate(now);
         _gates[fp] = gate;
-        if (carried > 0) {
-          await _enqueue(error, route: route, extraOccurrences: carried, traceLines: traceLines);
-          _scheduleFlush();
-          return true;
-        }
       }
 
-      if (gate.passed >= _burstAllowance) {
-        gate.suppressed++;
-        return false;
+      if (carried == 0) {
+        if (gate.passed >= _burstAllowance) {
+          gate.suppressed++;
+          return false;
+        }
+        gate.passed++;
       }
-      gate.passed++;
 
       // --- B段 ---
-      await _enqueue(error, route: route, traceLines: traceLines);
+      final captured = _diagnostics.currentSnapshot(diagnostics);
+      final snapshot = captured ?? _diagnostics.snapshot();
+      final breadcrumbs = traceLines ?? [
+        // Scoped reports use typed context without unrelated free-form logs.
+        if (captured == null) ..._breadcrumbs(40 - snapshot.lines.length),
+        ...snapshot.lines,
+      ];
+      await _enqueue(
+        error,
+        route: snapshot.route ?? route,
+        extraOccurrences: carried,
+        breadcrumbs: breadcrumbs,
+      );
       _scheduleFlush();
       return true;
     } catch (e) {
@@ -153,12 +180,12 @@ class ErrorReporter {
     AppError error, {
     String? route,
     int extraOccurrences = 0,
-    List<String>? traceLines,
+    required List<String> breadcrumbs,
   }) async {
     final payload = <String, dynamic>{
       'error': error.toJson(),
-      'route': route ?? currentRoute,
-      'breadcrumbs': traceLines ?? _breadcrumbs(),
+      'route': route,
+      'breadcrumbs': breadcrumbs,
       if (extraOccurrences > 0) 'suppressed': extraOccurrences,
     };
 
@@ -174,9 +201,8 @@ class ErrorReporter {
 
   /// DevLogのリングバッファ末尾。エラー直前に何が起きていたかの手掛かり。
   /// uid等が混ざり得るのでサーバー側でもマスクするが、ここでも量を絞る。
-  List<String> _breadcrumbs() {
+  List<String> _breadcrumbs(int take) {
     final lines = DevLog.lines.value;
-    const take = 40;
     return lines.length <= take ? List.of(lines) : lines.sublist(lines.length - take);
   }
 
@@ -307,6 +333,7 @@ class ErrorReporter {
 
   void dispose() {
     _flushTimer?.cancel();
+    unawaited(_authSubscription.cancel());
   }
 
   /// main.dart の supabaseAnonKey と同じ値。未ログイン時の送信に使う。
@@ -320,6 +347,7 @@ final errorReporterProvider = Provider<ErrorReporter>((ref) {
     db: ref.watch(appDatabaseProvider),
     deviceIdentity: ref.watch(deviceIdentityServiceProvider),
     supabase: Supabase.instance.client,
+    diagnostics: ref.watch(clientDiagnosticsProvider),
   );
   ref.onDispose(reporter.dispose);
   return reporter;
@@ -338,8 +366,29 @@ void installErrorReporter(ErrorReporter reporter) {
 }
 
 /// どこからでも呼べる報告関数。Reporterが未設置なら黙って何もしない。
-void reportAppError(AppError error, {String? route, List<String>? traceLines}) {
-  unawaited(_global?.report(error, route: route, traceLines: traceLines) ?? Future<bool>.value(false));
+void reportAppError(
+  AppError error, {
+  String? route,
+  List<String>? traceLines,
+  DiagnosticSnapshot? diagnostics,
+}) {
+  unawaited(_global?.report(
+    error,
+    route: route,
+    traceLines: traceLines,
+    diagnostics: diagnostics,
+  ));
+}
+
+void reportUncaughtError(Object error, StackTrace stack) {
+  final reporter = _global;
+  if (reporter == null || reporter._diagnostics.wasNativeErrorReported(error)) {
+    return;
+  }
+  unawaited(reporter.report(
+    AppError.from(error, origin: 'main.uncaught', stack: stack),
+    diagnostics: reporter._diagnostics.failureSnapshot(error),
+  ));
 }
 
 /// Persist the report before starting delivery. True means durably queued,
@@ -360,6 +409,10 @@ AppError reportRawError(
   String? route,
 }) {
   final appError = AppError.from(error, origin: origin, stack: stack);
-  reportAppError(appError, route: route);
+  reportAppError(
+    appError,
+    route: route,
+    diagnostics: _global?._diagnostics.failureSnapshot(error),
+  );
   return appError;
 }

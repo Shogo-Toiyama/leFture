@@ -6,8 +6,10 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:lefture/app/diagnostic_route.dart';
 import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/auth/auth_provider.dart';
+import 'package:lefture/application/errors/client_diagnostics.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
 import 'package:lefture/core/services/device_permissions_service.dart';
 import 'package:lefture/core/utils/dev_log.dart';
@@ -75,7 +77,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     authStateEvents(supabase.auth.onAuthStateChange),
   );
 
-  return GoRouter(
+  final router = GoRouter(
     navigatorKey: _rootKey,
     // チャットのシートを、ページが増えても最上位に、ポップアップはその上に保つ
     observers: [chatSheetKeeper],
@@ -662,6 +664,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+  final stopObservingRoutes = observeDiagnosticRoutes(
+    router,
+    ref.read(clientDiagnosticsProvider),
+  );
+  ref.onDispose(() {
+    stopObservingRoutes();
+    router.dispose();
+    refreshStream.dispose();
+  });
+  return router;
 });
 
 /// ルートNavigatorのcontext経由でSnackBarを表示する。

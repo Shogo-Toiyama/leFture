@@ -11,6 +11,8 @@
 // アクションを選ばせる。
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:lefture/application/audio/diagnostic_audio_player.dart';
+import 'package:lefture/application/errors/client_diagnostics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -57,7 +59,12 @@ class RecoveredRecordingView extends HookConsumerWidget {
     final liveTranscriptAsync = ref.watch(liveTranscriptProvider(orphan.lectureId));
     final sentences = liveTranscriptAsync.value?.sentences ?? const [];
 
-    final player = useMemoized(() => AudioPlayer());
+    final player = useMemoized(
+      () => DiagnosticAudioPlayer(
+        ref.read(clientDiagnosticsProvider),
+        surface: DiagnosticSurface.lectureRecoveredRecording,
+      ),
+    );
     final position = useState(Duration.zero);
     final duration = useState(orphan.duration);
     final playerState = useState(PlayerState.stopped);
@@ -261,19 +268,19 @@ class RecoveredRecordingView extends HookConsumerWidget {
             },
             onSeek: (value) async {
               position.value = value;
-              await player.seek(value);
+              await player.seek(value, trigger: DiagnosticTrigger.slider);
             },
             onRewind10: () async {
               final target = position.value - const Duration(seconds: 10);
               final actualTarget = target < Duration.zero ? Duration.zero : target;
               position.value = actualTarget;
-              await player.seek(actualTarget);
+              await player.seek(actualTarget, trigger: DiagnosticTrigger.skip);
             },
             onForward10: () async {
               final target = position.value + const Duration(seconds: 10);
               final actualTarget = target > duration.value ? duration.value : target;
               position.value = actualTarget;
-              await player.seek(actualTarget);
+              await player.seek(actualTarget, trigger: DiagnosticTrigger.skip);
             },
             onSpeedSelected: (speed) async {
               playbackSpeed.value = speed;
@@ -579,7 +586,10 @@ class RecoveredRecordingView extends HookConsumerWidget {
                   moments: moments,
                   onSeek: (target) async {
                     position.value = target;
-                    await player.seek(target);
+                    await player.seek(
+                      target,
+                      trigger: DiagnosticTrigger.transcriptTap,
+                    );
                   },
                 ),
               ],

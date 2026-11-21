@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:lefture/application/audio/diagnostic_audio_player.dart';
+import 'package:lefture/application/errors/client_diagnostics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -201,7 +203,12 @@ class NotStartedView extends HookConsumerWidget {
         ? ref.watch(artifactFileProvider(audioPath))
         : const AsyncValue<File?>.data(null);
 
-    final player = useMemoized(() => AudioPlayer());
+    final player = useMemoized(
+      () => DiagnosticAudioPlayer(
+        ref.read(clientDiagnosticsProvider),
+        surface: DiagnosticSurface.lectureNotStarted,
+      ),
+    );
     final playerDuration = useState<Duration>(Duration.zero);
     final playerPosition = useState<Duration>(Duration.zero);
     final playerState = useState<PlayerState>(PlayerState.stopped);
@@ -342,20 +349,29 @@ class NotStartedView extends HookConsumerWidget {
                           },
                           onSeek: (value) async {
                             playerPosition.value = value;
-                            await player.seek(value);
+                            await player.seek(
+                              value,
+                              trigger: DiagnosticTrigger.slider,
+                            );
                           },
                           onRewind10: () async {
                             final target = playerPosition.value - const Duration(seconds: 10);
                             final actualTarget = target < Duration.zero ? Duration.zero : target;
                             playerPosition.value = actualTarget;
-                            await player.seek(actualTarget);
+                            await player.seek(
+                              actualTarget,
+                              trigger: DiagnosticTrigger.skip,
+                            );
                           },
                           onForward10: () async {
                             final target = playerPosition.value + const Duration(seconds: 10);
                             final actualTarget =
                                 target > playerDuration.value ? playerDuration.value : target;
                             playerPosition.value = actualTarget;
-                            await player.seek(actualTarget);
+                            await player.seek(
+                              actualTarget,
+                              trigger: DiagnosticTrigger.skip,
+                            );
                           },
                           onSpeedSelected: (speed) async {
                             playbackSpeed.value = speed;
