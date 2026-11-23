@@ -10,6 +10,7 @@ from app.services.helpers.helpers import _sid_to_int, _int_to_sid
 from app.services.helpers.helpers import _build_bilingual_gloss_instruction
 from app.services.helpers.credits import DURATION_TIERS, DurationTier
 from app.services.helpers.plan_features import has_feature, FEATURE_KEYWORD_EXTRACTION_SUBSCRIBER, FEATURE_DEEP_NOTES_FULL
+from app.services.helpers.task_errors import PermanentTaskError, NO_SPEECH_DETECTED
 
 # 重なりを自動補正してよい上限（文数）。これを超える場合は「軽微なズレ」とは
 # 言えないため補正を諦め、リトライに任せる。
@@ -103,7 +104,9 @@ class CoreExtractionService:
         formatted_transcript = "\n".join(formatted_lines)
 
         if not formatted_transcript:
-            raise ValueError("No valid transcript lines found for Core Extraction.")
+            # 通常は文字起こし側(TRANSCRIBE_MASTER/CHECK_AND_ASSEMBLE)で先に止まる。
+            # ここは、その判定が入る前に作られたジョブを手動でやり直した場合の受け皿。
+            raise PermanentTaskError(NO_SPEECH_DETECTED, "No valid transcript lines found for Core Extraction.")
 
         messages = [
             Message(role="system", content=prompt),

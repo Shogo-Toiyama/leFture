@@ -7,6 +7,7 @@ import '../../core/utils/network_constants.dart';
 import '../auth/authed_http.dart';
 import '../../domain/entities/processing_jobs.dart';
 import '../../domain/entities/processing_task.dart';
+import '../../domain/errors/app_error.dart';
 import '../../domain/exceptions/insufficient_credits_exception.dart';
 
 class JobRepository {
@@ -200,6 +201,16 @@ class JobRepository {
       } catch (_) {
         // フォールスルーして下の汎用Exceptionを投げる
       }
+    }
+
+    if (response.statusCode == 409) {
+      // 録音済み音声の講義で、音声ファイルがまだサーバーに無い(AUDIO_NOT_UPLOADED)。
+      // error_codeを残したまま投げ、画面側で専用の文言を出す。
+      throw AppError.fromResponse(
+        origin: 'job_repository.startAnalysis',
+        statusCode: response.statusCode,
+        body: response.body,
+      );
     }
 
     if (response.statusCode != 200 && response.statusCode != 202) {

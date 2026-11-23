@@ -915,6 +915,20 @@ class AppLocalizationsJa extends AppLocalizations {
   String get processingViewFailedTitle => '解析に失敗しました';
 
   @override
+  String get taskFailureNoSpeechTitle => '音声が検出されませんでした';
+
+  @override
+  String get taskFailureNoSpeechMessage =>
+      'この録音からは話し声を聞き取れなかったため、解析できませんでした。マイクが講義の音声を拾えていたか確認してください。';
+
+  @override
+  String get taskFailureAudioNotUploadedTitle => '音声がアップロードされていません';
+
+  @override
+  String get taskFailureAudioNotUploadedMessage =>
+      'この講義の音声がまだサーバーに届いていません。アップロードが終わるまでアプリを開いたままにして、もう一度お試しください。';
+
+  @override
   String get processingViewAnalyzingTitle => '講義を解析しています...';
 
   @override

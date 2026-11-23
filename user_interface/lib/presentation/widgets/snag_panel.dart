@@ -78,6 +78,8 @@ String? friendlyMessageForCode(AppLocalizations l10n, String code) {
       return l10n.errSameEmail;
     case AppErrorCode.accountSuspended:
       return l10n.errAccountSuspended;
+    case AppErrorCode.audioNotUploaded:
+      return l10n.taskFailureAudioNotUploadedMessage;
     default:
       // INSUFFICIENT_CREDITS / NO_CREDIT_ALLOCATION は専用ダイアログで
       // クレジットページへ誘導する経路があるので、ここでは扱わない。

@@ -11,6 +11,8 @@ import { useChatScreen } from '../../context/ChatPanelContext';
 import { useLanguage } from '../../i18n/LanguageContext';
 import type { TranslationKey } from '../../i18n/translations';
 import { startAnalysis, InsufficientCreditsError } from '../../lib/upload';
+import { ApiError } from '../../lib/api';
+import { AUDIO_NOT_UPLOADED, NO_SPEECH_DETECTED, TASK_FAILURE_TEXT_KEYS, taskFailureCode } from '../../lib/pipelineSteps';
 import { updateFunFactReaction, stripFunFactCitations } from '../../lib/content';
 import {
   hasFeature,
@@ -100,7 +102,17 @@ export const LectureViewerPage: React.FC = () => {
       await startAnalysis(lectureId, force);
       await refetch();
     } catch (err) {
-      setStartError(err instanceof InsufficientCreditsError ? err.message : t('failedToStartAnalysis'));
+      if (err instanceof InsufficientCreditsError) {
+        setStartError(err.message);
+      } else if (
+        err instanceof ApiError &&
+        err.status === 409 &&
+        (err.body as { detail?: { error_code?: string } } | null)?.detail?.error_code === AUDIO_NOT_UPLOADED
+      ) {
+        setStartError(t('taskFailureAudioNotUploadedMessage'));
+      } else {
+        setStartError(t('failedToStartAnalysis'));
+      }
     } finally {
       setStarting(false);
     }
@@ -137,6 +149,12 @@ export const LectureViewerPage: React.FC = () => {
   const hasAnythingReady = topics.length > 0;
   const showOverlay = !ready && !hasAnythingReady;
   const completedTasks = tasks.filter((t) => t.status === 'COMPLETED').length;
+  // やり直しても結果が変わらない失敗(無音・音声なし)。見出しと説明を専用にする。
+  const failureCode = failed
+    ? tasks.map(taskFailureCode).find((code) => code !== null) ?? null
+    : null;
+  // 無音の録音は最初からやり直しても同じ結果になるので、Start overは出さない
+  const canStartOver = failureCode !== NO_SPEECH_DETECTED;
   const courseColor = (course?.metadata?.color as string) || '#FFB300';
 
   const formatSourceHost = (url: string) => {
@@ -241,22 +259,27 @@ export const LectureViewerPage: React.FC = () => {
               )}
               {failed && (
                 <>
-                  <h2 className="lecture-overlay-title is-failed">{t('processingViewFailedTitle')}</h2>
+                  <h2 className="lecture-overlay-title is-failed">
+                    {t(failureCode ? TASK_FAILURE_TEXT_KEYS[failureCode].title : 'processingViewFailedTitle')}
+                  </h2>
+                  {failureCode && <p className="muted">{t(TASK_FAILURE_TEXT_KEYS[failureCode].message)}</p>}
                   <p className="lecture-overlay-steps-badge is-failed">
                     {t('processingViewStepsCompletedLabel', { completed: String(completedTasks), total: String(tasks.length || 14) })}
                   </p>
                   <PipelineStepsList tasks={tasks} jobFailed={failed} onRetried={refetch} />
-                  <div className="lecture-overlay-actions">
-                    <button
-                      type="button"
-                      className="auth-submit-btn lecture-overlay-retry-btn"
-                      onClick={() => handleStart(true)}
-                      disabled={starting}
-                    >
-                      <RotateCcw size={15} />
-                      <span>{starting ? t('starting') : t('processingViewStartOverFromScratchButton')}</span>
-                    </button>
-                  </div>
+                  {canStartOver && (
+                    <div className="lecture-overlay-actions">
+                      <button
+                        type="button"
+                        className="auth-submit-btn lecture-overlay-retry-btn"
+                        onClick={() => handleStart(true)}
+                        disabled={starting}
+                      >
+                        <RotateCcw size={15} />
+                        <span>{starting ? t('starting') : t('processingViewStartOverFromScratchButton')}</span>
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </div>

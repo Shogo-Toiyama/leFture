@@ -1,0 +1,69 @@
+{
+  "dry_run": true,
+  "elapsed_seconds": 0.004,
+  "passed": 12,
+  "total": 12,
+  "cost_usd": 0.0,
+  "results": [
+    {
+      "case": "A core_extraction empty",
+      "pass": true,
+      "detail": "literal [] (dry-run or no --r2-lecture) -> PermanentTaskError(NO_SPEECH_DETECTED)"
+    },
+    {
+      "case": "B1 transcribe_master no speech",
+      "pass": true,
+      "detail": "code=NO_SPEECH_DETECTED, FAILED writes=2, cost recorded=1, messages=['NO_SPEECH_DETECTED: No speech was detected in this recording.']"
+    },
+    {
+      "case": "B2 transcribe_master no audio",
+      "pass": true,
+      "detail": "code=AUDIO_NOT_UPLOADED, error_message=['AUDIO_NOT_UPLOADED: Lecture lec-test has no uploaded audio (audio_path is empty).']"
+    },
+    {
+      "case": "B3 transcribe_master with speech",
+      "pass": true,
+      "detail": "statuses=['COMPLETED']"
+    },
+    {
+      "case": "C check_and_assemble no speech",
+      "pass": true,
+      "detail": "code=NO_SPEECH_DETECTED, error_message=['NO_SPEECH_DETECTED: No speech was detected in this recording.']"
+    },
+    {
+      "case": "D1 permanent, first attempt",
+      "pass": true,
+      "detail": "raised=False, return={'status': 'failed', 'error_code': 'NO_SPEECH_DETECTED'}, job set FAILED=True"
+    },
+    {
+      "case": "D2 transient, first attempt",
+      "pass": true,
+      "detail": "raised=True, return=None, job set FAILED=False"
+    },
+    {
+      "case": "D3 transient, last attempt",
+      "pass": true,
+      "detail": "raised=True, return=None, job set FAILED=True"
+    },
+    {
+      "case": "E1 pre-recorded, no audio, no chunks",
+      "pass": true,
+      "detail": "HTTP 409 {\"error_code\": \"AUDIO_NOT_UPLOADED\", \"message\": \"This lecture's audio hasn't bee"
+    },
+    {
+      "case": "E2 no audio_path but chunks on server (realtime from other device)",
+      "pass": true,
+      "detail": "passed the audio check"
+    },
+    {
+      "case": "E3 realtime request (expected_chunks>0)",
+      "pass": true,
+      "detail": "passed the audio check"
+    },
+    {
+      "case": "E4 pre-recorded with audio",
+      "pass": true,
+      "detail": "passed the audio check"
+    }
+  ]
+}

@@ -1733,6 +1733,30 @@ abstract class AppLocalizations {
   /// **'Analysis Failed'**
   String get processingViewFailedTitle;
 
+  /// Headline on the processing screen when analysis stopped because the recording contains no speech.
+  ///
+  /// In en, this message translates to:
+  /// **'No speech detected'**
+  String get taskFailureNoSpeechTitle;
+
+  /// Explanation shown when analysis stopped because transcription found no speech. Retrying would give the same result, so no retry button is shown.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t hear anyone speaking in this recording, so there\'s nothing to analyze. Check that the microphone picked up the lecture.'**
+  String get taskFailureNoSpeechMessage;
+
+  /// Headline on the processing screen when analysis stopped because the lecture's audio file never reached the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio not uploaded'**
+  String get taskFailureAudioNotUploadedTitle;
+
+  /// Shown when analysis cannot start or stopped because the lecture's audio file has not been uploaded to the server.
+  ///
+  /// In en, this message translates to:
+  /// **'This lecture\'s audio hasn\'t reached the server yet. Keep the app open until the upload finishes, then try again.'**
+  String get taskFailureAudioNotUploadedMessage;
+
   /// Headline shown on the processing screen while the lecture's analysis job is actively running.
   ///
   /// In en, this message translates to:

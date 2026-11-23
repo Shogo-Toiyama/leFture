@@ -183,6 +183,10 @@ export const en = {
   // Processing View (aligned with Flutter)
   processingViewAnalyzingTitle: 'Analyzing lecture...',
   processingViewFailedTitle: 'Analysis failed',
+  taskFailureNoSpeechTitle: 'No speech detected',
+  taskFailureNoSpeechMessage: "We couldn't hear anyone speaking in this recording, so there's nothing to analyze. Check that the audio file contains the lecture.",
+  taskFailureAudioNotUploadedTitle: 'Audio not uploaded',
+  taskFailureAudioNotUploadedMessage: "This lecture's audio hasn't reached the server. Upload the recording again, then start the analysis.",
   processingViewStepsCompletedLabel: '{completed} / {total} steps completed',
   processingViewStopButton: 'Stop',
   processingViewStoppingLabel: 'Stopping...',

@@ -125,7 +125,9 @@ class _StepRow extends HookConsumerWidget {
     // タスクが「本当に詰まっている」かどうか:
     // ジョブが既にFAILED確定済みなら5分待たず即座に、そうでなければ
     // isStaleFailed(5分ヒューリスティック)で判定する
-    final isStuck = task!.isFailed && (jobFailed || task!.isStaleFailed);
+    // やり直しても変わらない失敗(無音・音声なし)は、自動リトライもされないので即座に確定扱い。
+    final isStuck =
+        task!.isFailed && (jobFailed || task!.isStaleFailed || task!.failureCode != null);
     if (isStuck) {
       return _StuckStepCard(taskType: taskType, task: task!, label: label);
     }
@@ -273,6 +275,10 @@ class _StuckStepCard extends HookConsumerWidget {
       }
     }
 
+    // やり直しても結果が変わらない失敗は、生のエラー文の代わりに理由を説明し、
+    // リトライボタンも出さない(押しても同じ失敗を繰り返すだけのため)。
+    final permanentMessage = taskFailureMessage(l10n, task.failureCode);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -300,7 +306,13 @@ class _StuckStepCard extends HookConsumerWidget {
               ),
             ],
           ),
-          if (task.errorMessage != null) ...[
+          if (permanentMessage != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              permanentMessage,
+              style: TextStyle(color: AppColors.universe.textStarlight, fontSize: 12),
+            ),
+          ] else if (task.errorMessage != null) ...[
             const SizedBox(height: 6),
             Text(
               task.errorMessage!,
@@ -316,31 +328,52 @@ class _StuckStepCard extends HookConsumerWidget {
               style: const TextStyle(color: AppColors.correctionRed, fontSize: 11),
             ),
           ],
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: OutlinedButton.icon(
-              onPressed: isRetrying.value ? null : retry,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.correctionRed,
-                side: BorderSide(color: AppColors.correctionRed.withValues(alpha: 0.5)),
-              ),
-              icon: isRetrying.value
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.correctionRed),
-                    )
-                  : const Icon(Icons.refresh, size: 16),
-              label: Text(
-                isRetrying.value
-                    ? l10n.pipelineStepsRetryingLabel
-                    : l10n.pipelineStepsRetryThisStepButton,
+          if (permanentMessage == null) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: isRetrying.value ? null : retry,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.correctionRed,
+                  side: BorderSide(color: AppColors.correctionRed.withValues(alpha: 0.5)),
+                ),
+                icon: isRetrying.value
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.correctionRed),
+                      )
+                    : const Icon(Icons.refresh, size: 16),
+                label: Text(
+                  isRetrying.value
+                      ? l10n.pipelineStepsRetryingLabel
+                      : l10n.pipelineStepsRetryThisStepButton,
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
   }
+}
+
+/// やり直しても結果が変わらない失敗([ProcessingTask.failureCode])の説明文。
+/// 該当しなければnull。
+String? taskFailureMessage(AppLocalizations l10n, String? failureCode) {
+  return switch (failureCode) {
+    ProcessingTask.noSpeechDetected => l10n.taskFailureNoSpeechMessage,
+    ProcessingTask.audioNotUploaded => l10n.taskFailureAudioNotUploadedMessage,
+    _ => null,
+  };
+}
+
+/// [taskFailureMessage]の見出し版(ProcessingViewのタイトルに使う)。
+String? taskFailureTitle(AppLocalizations l10n, String? failureCode) {
+  return switch (failureCode) {
+    ProcessingTask.noSpeechDetected => l10n.taskFailureNoSpeechTitle,
+    ProcessingTask.audioNotUploaded => l10n.taskFailureAudioNotUploadedTitle,
+    _ => null,
+  };
 }

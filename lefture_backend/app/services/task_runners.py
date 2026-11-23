@@ -15,6 +15,7 @@ from app.core.r2_storage import storage_service
 from app.services.helpers.helpers import TaskLogger, _parse_detail_contents, _merge_graph_mutation, _get_sentence_review_context, _get_content_language_context, _get_student_profile, _sid_to_int, _int_to_sid, _generate_topic_node_id, _fetch_live_lecture_order_sync, _annotate_nodes_with_live_lecture_num, _prune_lecture_nodes, _course_has_running_job_sync, _try_acquire_reconstruction_lock_sync, _release_reconstruction_lock_sync
 from app.services.helpers.llm_unified import BillingEngine, UnifiedLLM, CostRecord
 from app.services.helpers.credits import record_task_cost, consume_lecture_credits, resolve_duration_tier
+from app.services.helpers.task_errors import PermanentTaskError, NO_SPEECH_DETECTED, AUDIO_NOT_UPLOADED, format_task_error, has_speech
 from app.services.helpers.plan_features import (
     get_user_tier_level,
     has_feature,
@@ -991,6 +992,12 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
         assembler = AssembleTranscriptService(logger)
         assembled_data = assembler.run(completed_chunks)
 
+        # 発話が1文も無ければ、ここで止める。CORE_EXTRACTIONに進めても
+        # 「No valid transcript lines」で必ず落ち、Cloud Tasksのリトライを
+        # 無駄に使い切るだけなので、やり直さない失敗(PermanentTaskError)にする。
+        if not has_speech(assembled_data):
+            raise PermanentTaskError(NO_SPEECH_DETECTED, "No speech was detected in this recording.")
+
         # ---------------------------------------------------------
         # D. Storage保存 ＆ DB更新
         # ---------------------------------------------------------
@@ -1037,7 +1044,7 @@ async def run_check_and_assemble_transcript_task(job_id: str, task_id: str):
         logger.save_to_r2(storage_service)
 
     except Exception as e:
-        error_msg = f"{str(e)}\n{traceback.format_exc()}"
+        error_msg = format_task_error(e, traceback.format_exc())
         logger.log(f"❌ CHECK_AND_ASSEMBLE Failed: {error_msg}")
         await _update_task_status(task_id, "FAILED", error_msg=error_msg)
         logger.save_to_r2(storage_service)
@@ -1086,8 +1093,9 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
         whisper_context = ""
 
         # Fail-fast: audio_path が無い場合は R2 ダウンロード前に検査
+        # 音声が無いのは何度やり直しても変わらないので、リトライさせない。
         if not audio_path:
-            raise ValueError(f"Lecture {lecture_id} is missing audio_path. Cannot transcribe.")
+            raise PermanentTaskError(AUDIO_NOT_UPLOADED, f"Lecture {lecture_id} has no uploaded audio (audio_path is empty).")
 
         # 3. Realtime/PreRecorded に応じて適切な Whisper API を選択
         if is_realtime:
@@ -1137,7 +1145,22 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
         }
         assembler = AssembleTranscriptService(logger)
         assembled_data = assembler.run([single_chunk])
-            
+
+        # 発話が1文も無い(無音・極端に短い録音など)。CHECK_AND_ASSEMBLEと同じく
+        # ここで止める。文字起こし(Modal)の原価は実際に掛かっているので、
+        # 失敗扱いでもusage_recordsには記録する(user_idを渡すと記録される)。
+        if not has_speech(assembled_data):
+            aggregated_records = _aggregate_billing_records(billing.records)
+            await _update_task_status(
+                task_id,
+                "FAILED",
+                payload={"billing_records": [vars(r) for r in aggregated_records]},
+                error_msg=f"{NO_SPEECH_DETECTED}: No speech was detected in this recording.",
+                user_id=uid,
+                job_id=job_id,
+            )
+            raise PermanentTaskError(NO_SPEECH_DETECTED, "No speech was detected in this recording.")
+
         logger.log(f"🎉 Transcription completed! Generated {len(assembled_data)} sentences. Saving to R2...")
 
         # 5. R2に保存
@@ -1202,7 +1225,7 @@ async def run_transcribe_master_task(job_id: str, task_id: str):
         # CancelledError(Python 3.8+はBaseException)を拾わないと、Modal/Cloud Run側の
         # タイムアウトでリクエストが打ち切られた際にFAILEDへの更新がスキップされ、
         # タスクがRUNNINGのまま20分のstale patrolを待つまで詰まってしまう。
-        error_msg = f"{str(e)}\n{traceback.format_exc()}"
+        error_msg = format_task_error(e, traceback.format_exc())
         logger.log(f"❌ TRANSCRIBE_MASTER Failed: {error_msg}")
         await _update_task_status(task_id, "FAILED", error_msg=error_msg)
         logger.save_to_r2(storage_service)
@@ -1321,8 +1344,7 @@ async def run_core_extraction_task(job_id: str, task_id: str):
         logger.save_to_r2(storage_service)
         
     except Exception as e:
-        import traceback
-        error_msg = f"{str(e)}\n{traceback.format_exc()}"
+        error_msg = format_task_error(e, traceback.format_exc())
         logger.log(f"❌ CORE_EXTRACTION Failed: {error_msg}")
         await _update_task_status(task_id, "FAILED", error_msg=error_msg)
         logger.save_to_r2(storage_service)

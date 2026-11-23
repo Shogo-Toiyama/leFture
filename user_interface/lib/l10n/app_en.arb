@@ -1214,6 +1214,22 @@
   "@processingViewFailedTitle": {
     "description": "Headline shown on the processing screen when the lecture's analysis job has failed."
   },
+  "taskFailureNoSpeechTitle": "No speech detected",
+  "@taskFailureNoSpeechTitle": {
+    "description": "Headline on the processing screen when analysis stopped because the recording contains no speech."
+  },
+  "taskFailureNoSpeechMessage": "We couldn't hear anyone speaking in this recording, so there's nothing to analyze. Check that the microphone picked up the lecture.",
+  "@taskFailureNoSpeechMessage": {
+    "description": "Explanation shown when analysis stopped because transcription found no speech. Retrying would give the same result, so no retry button is shown."
+  },
+  "taskFailureAudioNotUploadedTitle": "Audio not uploaded",
+  "@taskFailureAudioNotUploadedTitle": {
+    "description": "Headline on the processing screen when analysis stopped because the lecture's audio file never reached the server."
+  },
+  "taskFailureAudioNotUploadedMessage": "This lecture's audio hasn't reached the server yet. Keep the app open until the upload finishes, then try again.",
+  "@taskFailureAudioNotUploadedMessage": {
+    "description": "Shown when analysis cannot start or stopped because the lecture's audio file has not been uploaded to the server."
+  },
   "processingViewAnalyzingTitle": "Analyzing Lecture...",
   "@processingViewAnalyzingTitle": {
     "description": "Headline shown on the processing screen while the lecture's analysis job is actively running."

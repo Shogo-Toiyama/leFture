@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Circle, AlertCircle, Ban, RefreshCw, RotateCw } from 'lucide-react';
 import { apiFetch } from '../lib/api';
-import { PROCESSING_TASK_ORDER, taskLabel } from '../lib/pipelineSteps';
+import { PROCESSING_TASK_ORDER, TASK_FAILURE_TEXT_KEYS, taskFailureCode, taskLabel } from '../lib/pipelineSteps';
 import { useLanguage } from '../i18n/LanguageContext';
 import { LOCALE_MAP } from '../i18n/translations';
 import type { ProcessingTask } from '../types/lecture';
@@ -133,7 +133,9 @@ export const PipelineStepsList: React.FC<PipelineStepsListProps> = ({ tasks, job
 
           const isFailed = task.status === 'FAILED' || task.status === 'ERROR';
           if (isFailed) {
-            const isStuck = jobFailed || isStaleFailed(task);
+            // やり直しても結果が変わらない失敗(無音・音声なし)は自動リトライもされないので即確定扱い
+            const failureCode = taskFailureCode(task);
+            const isStuck = jobFailed || isStaleFailed(task) || failureCode !== null;
             if (!isStuck) {
               return (
                 <li key={task.id} className="pipeline-step-item is-retrying">
@@ -145,6 +147,21 @@ export const PipelineStepsList: React.FC<PipelineStepsListProps> = ({ tasks, job
                     <span className="pipeline-step-subtitle is-retrying">
                       {t('pipelineStepsRetryingAutomaticallyLabel')}
                     </span>
+                  </div>
+                </li>
+              );
+            }
+
+            if (failureCode) {
+              // 理由を説明し、リトライボタンは出さない(押しても同じ失敗を繰り返すだけ)
+              return (
+                <li key={task.id} className="pipeline-step-item is-failed">
+                  <div className="pipeline-step-icon-wrap">
+                    <AlertCircle size={18} className="pipeline-step-icon is-failed" />
+                  </div>
+                  <div className="pipeline-step-content">
+                    <span className="pipeline-step-label is-failed">{label}</span>
+                    <span className="pipeline-step-subtitle">{t(TASK_FAILURE_TEXT_KEYS[failureCode].message)}</span>
                   </div>
                 </li>
               );

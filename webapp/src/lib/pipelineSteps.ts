@@ -62,3 +62,25 @@ export function taskLabel(taskType: string, lang: 'ja' | 'en' = 'en'): string {
   const dict = lang === 'ja' ? PROCESSING_TASK_LABELS_JA : PROCESSING_TASK_LABELS;
   return dict[taskType] ?? PROCESSING_TASK_LABELS[taskType] ?? taskType;
 }
+
+/**
+ * やり直しても結果が変わらない失敗のコード(バックエンド app/services/helpers/task_errors.py、
+ * Flutter ProcessingTask.failureCode と同じ)。バックエンドはこの種の失敗だけ
+ * error_message を "CODE: message" で書く。該当しなければ null。
+ */
+export const NO_SPEECH_DETECTED = 'NO_SPEECH_DETECTED';
+export const AUDIO_NOT_UPLOADED = 'AUDIO_NOT_UPLOADED';
+export type TaskFailureCode = typeof NO_SPEECH_DETECTED | typeof AUDIO_NOT_UPLOADED;
+
+export function taskFailureCode(task: { status: string; error_message: string | null }): TaskFailureCode | null {
+  if ((task.status !== 'FAILED' && task.status !== 'ERROR') || !task.error_message) return null;
+  for (const code of [NO_SPEECH_DETECTED, AUDIO_NOT_UPLOADED] as const) {
+    if (task.error_message.startsWith(`${code}:`)) return code;
+  }
+  return null;
+}
+
+export const TASK_FAILURE_TEXT_KEYS = {
+  [NO_SPEECH_DETECTED]: { title: 'taskFailureNoSpeechTitle', message: 'taskFailureNoSpeechMessage' },
+  [AUDIO_NOT_UPLOADED]: { title: 'taskFailureAudioNotUploadedTitle', message: 'taskFailureAudioNotUploadedMessage' },
+} as const;

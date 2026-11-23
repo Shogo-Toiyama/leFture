@@ -35,6 +35,9 @@ class AppErrorCode {
   static const noCreditAllocation = 'NO_CREDIT_ALLOCATION';
   static const accountSuspended = 'ACCOUNT_SUSPENDED';
 
+  /// /start-analysis の409。録音済み音声の講義で、音声ファイルがまだサーバーに無い。
+  static const audioNotUploaded = 'AUDIO_NOT_UPLOADED';
+
   // --- クライアント側で判定するもの ---
   static const offline = 'OFFLINE';
   static const timeout = 'TIMEOUT';
@@ -74,6 +77,7 @@ class AppErrorCode {
     insufficientCredits,
     noCreditAllocation,
     accountSuspended,
+    audioNotUploaded,
     invalidCredentials,
     emailNotConfirmed,
     emailAlreadyRegistered,
@@ -304,6 +308,7 @@ class AppError implements Exception {
     AppErrorCode.insufficientCredits,
     AppErrorCode.noCreditAllocation,
     AppErrorCode.accountSuspended,
+    AppErrorCode.audioNotUploaded,
   };
 
   static String _clip(String s) => s.length > 200 ? '${s.substring(0, 200)}…' : s;

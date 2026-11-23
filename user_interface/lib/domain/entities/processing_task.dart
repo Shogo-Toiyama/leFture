@@ -28,6 +28,22 @@ class ProcessingTask {
   bool get isStaleFailed =>
       isFailed && DateTime.now().toUtc().difference(updatedAt.toUtc()) > staleFailedThreshold;
 
+  /// やり直しても結果が変わらない失敗のコード(バックエンドの
+  /// app/services/helpers/task_errors.py)。該当しなければnull。
+  /// バックエンドはこの種の失敗だけ error_message を "CODE: message" で書く。
+  static const noSpeechDetected = 'NO_SPEECH_DETECTED';
+  static const audioNotUploaded = 'AUDIO_NOT_UPLOADED';
+  static const _permanentFailureCodes = [noSpeechDetected, audioNotUploaded];
+
+  String? get failureCode {
+    final message = errorMessage;
+    if (!isFailed || message == null) return null;
+    for (final code in _permanentFailureCodes) {
+      if (message.startsWith('$code:')) return code;
+    }
+    return null;
+  }
+
   factory ProcessingTask.fromMap(Map<String, dynamic> map) {
     return ProcessingTask(
       id: map['id'] as String,

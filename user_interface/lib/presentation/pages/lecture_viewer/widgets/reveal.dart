@@ -284,20 +284,24 @@ class _BlockedBlock extends HookConsumerWidget {
             ),
           ),
           const SizedBox(width: 8),
-          isRetrying.value
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.correctionRed),
-                )
-              : IconButton(
-                  onPressed: retry,
-                  tooltip: l10n.pipelineStepsRetryTooltip,
-                  icon: const Icon(Icons.refresh, size: 18, color: AppColors.correctionRed),
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
+          // やり直しても結果が変わらない失敗(無音・音声なし)にはリトライを出さない。
+          if (task.failureCode != null)
+            const SizedBox.shrink()
+          else if (isRetrying.value)
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.correctionRed),
+            )
+          else
+            IconButton(
+              onPressed: retry,
+              tooltip: l10n.pipelineStepsRetryTooltip,
+              icon: const Icon(Icons.refresh, size: 18, color: AppColors.correctionRed),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
         ],
       ),
     );

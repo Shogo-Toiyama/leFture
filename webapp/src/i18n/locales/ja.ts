@@ -185,6 +185,10 @@ export const ja: Record<keyof typeof en, string> = {
   // Processing View (Flutterと統一)
   processingViewAnalyzingTitle: '講義を解析しています...',
   processingViewFailedTitle: '解析に失敗しました',
+  taskFailureNoSpeechTitle: '音声が検出されませんでした',
+  taskFailureNoSpeechMessage: 'この録音からは話し声を聞き取れなかったため、解析できませんでした。音声ファイルに講義が録音されているか確認してください。',
+  taskFailureAudioNotUploadedTitle: '音声がアップロードされていません',
+  taskFailureAudioNotUploadedMessage: 'この講義の音声がサーバーに届いていません。録音をもう一度アップロードしてから、解析を開始してください。',
   processingViewStepsCompletedLabel: '{completed} / {total} ステップ完了',
   processingViewStopButton: '停止',
   processingViewStoppingLabel: '停止しています...',

@@ -33,6 +33,15 @@ class ProcessingView extends HookConsumerWidget {
         : ref.watch(jobTasksStreamProvider(job.id));
     final tasks = tasksAsync.asData?.value ?? const <ProcessingTask>[];
 
+    // やり直しても結果が変わらない失敗(無音・音声なし)。見出しと説明を専用にする。
+    final failureCode = jobFailed
+        ? tasks.map((t) => t.failureCode).firstWhere((c) => c != null, orElse: () => null)
+        : null;
+    final failureTitle = taskFailureTitle(l10n, failureCode);
+    final failureMessage = taskFailureMessage(l10n, failureCode);
+    // 無音の録音は最初からやり直しても同じ結果になるので、Start Overは出さない。
+    final canStartOver = failureCode != ProcessingTask.noSpeechDetected;
+
     final total = tasks.isEmpty ? processingTaskOrder.length : tasks.length;
     final completed = tasks.where((t) => t.isCompleted).length;
 
@@ -149,13 +158,24 @@ class ProcessingView extends HookConsumerWidget {
               ),
               const SizedBox(height: 28),
               Text(
-                jobFailed ? l10n.processingViewFailedTitle : l10n.processingViewAnalyzingTitle,
+                jobFailed
+                    ? (failureTitle ?? l10n.processingViewFailedTitle)
+                    : l10n.processingViewAnalyzingTitle,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppColors.universe.textStarlight,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              if (failureMessage != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  failureMessage,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.universe.textComet, fontSize: 13, height: 1.4),
+                ),
+              ],
               const SizedBox(height: 8),
               Text(
                 l10n.processingViewStepsCompletedLabel(completed, total),
@@ -195,7 +215,7 @@ class ProcessingView extends HookConsumerWidget {
                     style: TextButton.styleFrom(foregroundColor: AppColors.universe.textComet),
                   ),
                 ),
-              ] else ...[
+              ] else if (canStartOver) ...[
                 Padding(
                   padding: const EdgeInsets.only(top: 14),
                   child: TextButton.icon(

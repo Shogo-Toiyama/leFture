@@ -80,6 +80,7 @@ from app.services.helpers.credits import (
 from app.services.helpers.helpers import _get_audio_duration_seconds
 from app.services.helpers import billing_webhook_log
 from app.services.helpers import store_reconcile
+from app.services.helpers.task_errors import PermanentTaskError, AUDIO_NOT_UPLOADED
 from app.services.helpers.plan_features import get_user_tier_level, has_feature, is_gating_disabled_for_user, FEATURE_REALTIME_TRANSCRIBE
 from app.services.tutorial_content import get_tutorial_content
 from app.services.knowledge_index import drain_knowledge_index_queue
@@ -559,6 +560,30 @@ async def start_analysis(payload: StartAnalysisRequest, request: Request):
             status_code=400,
             detail="Lecture must be assigned to a course before analysis can start."
         )
+
+    # 3.55 録音済み音声(プレレコ)で、音声ファイルがまだサーバーに無い。
+    # ここで受け付けるとTRANSCRIBE_MASTERが必ず失敗し、講義が「文字起こし中」の
+    # まま止まって見える(R2へのPUTが失敗してcomplete-master-audio-uploadが
+    # 呼ばれなかった場合など)。リアルタイム録音はチャンク側に音声があるので対象外。
+    # 別端末からの起動ではリアルタイム講義でもexpected_chunks=0で来ることがある
+    # (下の3.8でチャンク件数から引き上げられる)ので、サーバーにチャンクが
+    # 1つも無い場合だけ弾く。
+    if not lecture_row.get("audio_path") and payload.expected_chunks <= 0:
+        chunk_probe = await asyncio.to_thread(
+            lambda: admin_client.table("lecture_transcripts")
+                .select("id", count="exact")
+                .eq("lecture_id", payload.lecture_id)
+                .limit(1)
+                .execute()
+        )
+        if not (chunk_probe.count or 0):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "error_code": AUDIO_NOT_UPLOADED,
+                    "message": "This lecture's audio hasn't been uploaded yet. Upload the recording, then start the analysis.",
+                },
+            )
 
     # 3.6 同じlecture_idのjobが既にあるか確認する(COMPLETEDも含めて全件見る)。
     old_jobs_res = await asyncio.to_thread(
@@ -3726,9 +3751,24 @@ async def _run_worker_task(request: Request, payload: WorkerPayload, task_fn) ->
     Patrol(30分間隔)を待たずにその場で親ジョブをFAILEDにする。
     processing_tasks側は各task_fn内で既にFAILED記録済みなので、
     ここではjob側の判定だけ行う。
+
+    PermanentTaskError(無音・音声なし等、やり直しても結果が変わらない失敗)は
+    リトライ回数を待たずにその場でジョブをFAILEDにし、200を返して
+    Cloud Tasksの自動リトライを止める。
     """
     try:
         await task_fn(payload.job_id, payload.task_id)
+    except PermanentTaskError as e:
+        print(f"🛑 Permanent failure for job {payload.job_id} task {payload.task_id}: {e}")
+        admin_client = get_supabase_client()
+        await asyncio.to_thread(
+            lambda: admin_client.table("processing_jobs")
+                .update({"status": "FAILED", "updated_at": datetime.now(timezone.utc).isoformat()})
+                .eq("id", payload.job_id)
+                .not_.in_("status", ["COMPLETED", "FAILED"])
+                .execute()
+        )
+        return {"status": "failed", "error_code": e.code}
     except Exception:
         retry_count = int(request.headers.get("X-CloudTasks-TaskRetryCount", "0"))
         if retry_count >= CLOUD_TASKS_MAX_ATTEMPTS - 1:
