@@ -75,3 +75,6 @@ contents_generation/test_codes/funfact_readability/inputs/
 graphify-out/cache/
 graphify-out/.graphify_*
 graphify-out/cost.json
+
+# learning_galaxy named_star_count: raw chat dump
+contents_generation/test_codes/learning_galaxy/experiments/2026-11-22_named_star_count/inputs/
