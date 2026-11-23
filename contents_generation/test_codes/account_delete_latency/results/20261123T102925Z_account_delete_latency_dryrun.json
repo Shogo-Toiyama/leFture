@@ -1,0 +1,65 @@
+{
+ "dry_run": true,
+ "measured_from": "developer PC (not Cloud Run)",
+ "repeat": 1,
+ "sequential_calls_per_lecture": 11,
+ "sequential_calls_user_level_excluding_lectures_and_auth": 22,
+ "per_lecture_ms_median": 1.8,
+ "user_level_ms_median": 1.9,
+ "per_call_ms_median": {
+  "db DELETE ai_memos": 0.0,
+  "db DELETE announcements": 0.0,
+  "db DELETE chat_attachments": 0.0,
+  "db DELETE chat_messages": 0.0,
+  "db DELETE chat_summary_blocks": 0.0,
+  "db DELETE chat_threads": 0.0,
+  "db DELETE courses": 0.0,
+  "db DELETE deep_notes": 0.0,
+  "db DELETE fun_facts": 0.0,
+  "db DELETE keywords": 0.0,
+  "db DELETE knowledge_chunks": 0.0,
+  "db DELETE lecture_topics": 0.0,
+  "db DELETE lecture_transcripts": 0.0,
+  "db DELETE lectures": 0.0,
+  "db DELETE processing_jobs": 0.0,
+  "db DELETE profile_blocked_areas": 0.0,
+  "db DELETE profile_categories": 0.0,
+  "db DELETE profile_cover_proposals": 0.0,
+  "db DELETE profile_extraction_state": 0.0,
+  "db DELETE profile_hypotheses": 0.0,
+  "db DELETE profile_item_evidence": 0.0,
+  "db DELETE profile_item_versions": 0.0,
+  "db DELETE profile_items": 0.0,
+  "db DELETE profile_observations": 0.0,
+  "db DELETE review_cards": 0.0,
+  "db DELETE store_subscription_sync_state": 0.0,
+  "db DELETE topic_maps": 0.0,
+  "db DELETE user_profiles": 0.0,
+  "db GET lectures": 0.0,
+  "db GET processing_jobs": 0.0,
+  "r2 delete_prefix": 0.0
+ },
+ "projection": null,
+ "after_bulk_delete": {
+  "lectures_1": {
+   "sequential_calls": 10,
+   "bulk_lectures_ms_median": 1.1,
+   "projected_total_seconds": 0.0,
+   "before_projected_seconds": 0.0
+  },
+  "lectures_7": {
+   "sequential_calls": 10,
+   "bulk_lectures_ms_median": 1.1,
+   "projected_total_seconds": 0.0,
+   "before_projected_seconds": 0.0
+  },
+  "lectures_84": {
+   "sequential_calls": 10,
+   "bulk_lectures_ms_median": 1.4,
+   "projected_total_seconds": 0.0,
+   "before_projected_seconds": 0.2
+  }
+ },
+ "writes_to_production": "DELETEs matching 0 rows only (random UUIDs); no auth.users delete",
+ "cost_usd": 0
+}

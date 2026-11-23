@@ -497,15 +497,33 @@ class AuthController extends _$AuthController {
       if (jwt == null) throw Exception('No active session.');
 
       // 2. バックエンドの特権削除エンドポイントを呼び出し
-      final response = await http.post(
-        Uri.parse('${AppConfig.backendBaseUrl}/auth/delete-account'),
-        headers: {
-          'Authorization': 'Bearer $jwt',
-        },
-      ).timeout(const Duration(seconds: 30));
+      //
+      // ★ タイムアウトや失敗の応答でも、サーバー側では削除が済んでいる(または
+      //   まだ続いていて、この後で済む)ことがある。2026-11-23 には、30秒で
+      //   タイムアウトした後もサーバーが削除を最後まで終え、アプリはエラーを
+      //   出したままサインイン状態で残り、再試行は401(user_not_found)になった。
+      //   失敗に見えたときは、Authユーザーがもう存在しないかを確かめ、消えて
+      //   いれば成功として後片付け(サインアウト・端末データの削除)へ進む。
+      Object? requestError;
+      http.Response? response;
+      try {
+        response = await http.post(
+          Uri.parse('${AppConfig.backendBaseUrl}/auth/delete-account'),
+          headers: {
+            'Authorization': 'Bearer $jwt',
+          },
+        ).timeout(const Duration(seconds: 30));
+      } catch (e) {
+        requestError = e;
+      }
 
-      if (response.statusCode != 200) {
-        throw Exception('Failed to delete account: ${response.body}');
+      if (response?.statusCode != 200) {
+        final failure = requestError ?? 'HTTP ${response?.statusCode}: ${response?.body}';
+        DevLog.add('⚠️ [AuthController] delete-account did not return 200 ($failure); checking whether the account is gone');
+        if (!await _waitUntilAuthUserIsGone(jwt, waitLonger: requestError is TimeoutException)) {
+          throw Exception('Failed to delete account: $failure');
+        }
+        DevLog.add('🧹 [AuthController] Auth user no longer exists; treating the account as deleted');
       }
 
       // 3. ローカルサインアウト
@@ -537,5 +555,26 @@ class AuthController extends _$AuthController {
     });
     if (ref.mounted) state = result;
     return result;
+  }
+
+  /// 削除リクエストが失敗に見えたときに、サーバー上のAuthユーザーがもう存在しないかを確かめる。
+  /// GoTrueは消えたユーザーのJWTに 403 `user_not_found` を返す。
+  /// タイムアウトの場合はサーバーがまだ削除を続けている可能性があるので、少し待ちながら
+  /// 数回確かめる(最大約20秒)。それ以外の失敗は1回だけ確かめる。
+  Future<bool> _waitUntilAuthUserIsGone(String jwt, {required bool waitLonger}) async {
+    final attempts = waitLonger ? 6 : 1;
+    for (var i = 0; i < attempts; i++) {
+      if (i > 0) await Future<void>.delayed(const Duration(seconds: 4));
+      try {
+        await supabase.auth.getUser(jwt).timeout(const Duration(seconds: 10));
+        // まだ存在する(=削除はまだ終わっていない、または失敗した)
+      } on AuthException catch (e) {
+        if (e.code == 'user_not_found') return true;
+        DevLog.add('⚠️ [AuthController] account existence check failed: $e');
+      } catch (e) {
+        DevLog.add('⚠️ [AuthController] account existence check failed: $e');
+      }
+    }
+    return false;
   }
 }

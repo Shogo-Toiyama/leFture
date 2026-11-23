@@ -1,0 +1,73 @@
+{
+ "dry_run": false,
+ "measured_from": "developer PC (not Cloud Run)",
+ "repeat": 3,
+ "sequential_calls_per_lecture": 11,
+ "sequential_calls_user_level_excluding_lectures_and_auth": 22,
+ "per_lecture_ms_median": 1422.3,
+ "user_level_ms_median": 2640.6,
+ "per_call_ms_median": {
+  "db DELETE ai_memos": 86.8,
+  "db DELETE announcements": 94.1,
+  "db DELETE chat_attachments": 122.2,
+  "db DELETE chat_messages": 115.0,
+  "db DELETE chat_summary_blocks": 100.5,
+  "db DELETE chat_threads": 95.4,
+  "db DELETE courses": 104.6,
+  "db DELETE deep_notes": 141.0,
+  "db DELETE fun_facts": 108.4,
+  "db DELETE keywords": 92.1,
+  "db DELETE knowledge_chunks": 103.1,
+  "db DELETE lecture_topics": 145.0,
+  "db DELETE lecture_transcripts": 93.8,
+  "db DELETE lectures": 88.0,
+  "db DELETE processing_jobs": 134.2,
+  "db DELETE profile_blocked_areas": 90.9,
+  "db DELETE profile_categories": 91.9,
+  "db DELETE profile_cover_proposals": 114.2,
+  "db DELETE profile_extraction_state": 104.3,
+  "db DELETE profile_hypotheses": 128.5,
+  "db DELETE profile_item_evidence": 88.2,
+  "db DELETE profile_item_versions": 96.1,
+  "db DELETE profile_items": 106.9,
+  "db DELETE profile_observations": 93.6,
+  "db DELETE review_cards": 102.0,
+  "db DELETE store_subscription_sync_state": 97.5,
+  "db DELETE topic_maps": 93.4,
+  "db DELETE user_profiles": 102.1,
+  "db GET lectures": 96.1,
+  "db GET processing_jobs": 100.6,
+  "r2 delete_prefix": 324.7
+ },
+ "projection": {
+  "users_with_lectures": 25,
+  "lectures_per_user_median": 7,
+  "lectures_per_user_max": 84,
+  "projected_seconds_median_user": 12.6,
+  "projected_seconds_max_user": 122.1,
+  "lectures_to_exceed_30s": 20,
+  "users_over_30s": 4
+ },
+ "after_bulk_delete": {
+  "lectures_1": {
+   "sequential_calls": 10,
+   "bulk_lectures_ms_median": 1030.9,
+   "projected_total_seconds": 3.7,
+   "before_projected_seconds": 4.1
+  },
+  "lectures_7": {
+   "sequential_calls": 10,
+   "bulk_lectures_ms_median": 1090.6,
+   "projected_total_seconds": 3.7,
+   "before_projected_seconds": 12.6
+  },
+  "lectures_84": {
+   "sequential_calls": 10,
+   "bulk_lectures_ms_median": 1474.2,
+   "projected_total_seconds": 4.1,
+   "before_projected_seconds": 122.1
+  }
+ },
+ "writes_to_production": "DELETEs matching 0 rows only (random UUIDs); no auth.users delete",
+ "cost_usd": 0
+}

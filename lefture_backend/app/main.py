@@ -4301,6 +4301,44 @@ async def _hard_delete_lecture(admin_client, uid: str, lecture_id: str) -> None:
     )
 
 
+_BULK_DELETE_CHUNK = 100  # in_() はURLのクエリに並ぶので、1回あたりのIDの数を抑える
+
+
+async def _hard_delete_lectures_bulk(admin_client, lecture_ids: list) -> None:
+    """
+    複数の講義を、子テーブル→講義本体の順で、テーブルごとに1回(100件ずつ)まとめて削除する。
+    _hard_delete_lecture と同じテーブル・同じ順番。R2のファイルは消さない(呼び出し側で
+    まとめて消す)。
+
+    アカウント削除で講義1件ずつ _hard_delete_lecture を呼ぶと、DBへの往復が講義1件あたり
+    11回 + R2 1回(1件あたり約1.7秒、2026-11-23 計測)順番に走り、講義16件以上でアプリの
+    30秒タイムアウトを超えていた(contents_generation/test_codes/account_delete_latency)。
+    """
+    chunks = [lecture_ids[i:i + _BULK_DELETE_CHUNK] for i in range(0, len(lecture_ids), _BULK_DELETE_CHUNK)]
+    for ids in chunks:
+        jobs_res = await asyncio.to_thread(
+            lambda ids=ids: admin_client.table("processing_jobs").select("id").in_("lecture_id", ids).execute()
+        )
+        job_ids = [j["id"] for j in (jobs_res.data or [])]
+        for i in range(0, len(job_ids), _BULK_DELETE_CHUNK):
+            await asyncio.to_thread(
+                lambda j=job_ids[i:i + _BULK_DELETE_CHUNK]:
+                    admin_client.table("processing_tasks").delete().in_("job_id", j).execute()
+            )
+    for table in (
+        "fun_facts", "review_cards", "deep_notes", "keywords",
+        "lecture_topics", "announcements", "lecture_transcripts", "processing_jobs",
+    ):
+        for ids in chunks:
+            await asyncio.to_thread(
+                lambda t=table, ids=ids: admin_client.table(t).delete().in_("lecture_id", ids).execute()
+            )
+    for ids in chunks:
+        await asyncio.to_thread(
+            lambda ids=ids: admin_client.table("lectures").delete().in_("id", ids).execute()
+        )
+
+
 async def _hard_delete_course(admin_client, uid: str, course_id: str) -> None:
     """
     コース1件を、配下の講義(_hard_delete_lectureで完全削除)・トピックマップ・
@@ -4338,15 +4376,16 @@ async def _hard_delete_user_data(admin_client, uid: str) -> None:
     admin_client.table("support_tickets").delete().eq("user_id", uid).execute()
     を追加する。
     """
-    # 1. ユーザーが所有する講義を全て列挙し、講義単位で完全削除
+    # 1. ユーザーが所有する講義を全て列挙し、テーブルごとにまとめて完全削除
     #    (子テーブル: fun_facts/review_cards/deep_notes/keywords/lecture_topics/
-    #     announcements/lecture_transcripts/processing_jobs/processing_tasks と
-    #     R2上の音声・生成物を _hard_delete_lecture 内で削除済み)
+    #     announcements/lecture_transcripts/processing_jobs/processing_tasks)。
+    #    R2上の音声・生成物({uid}/{lecture_id}/)は、最後の {uid}/ の一括削除で消える。
     lectures_res = await asyncio.to_thread(
         lambda: admin_client.table("lectures").select("id").eq("user_id", uid).execute()
     )
-    for row in (lectures_res.data or []):
-        await _hard_delete_lecture(admin_client, uid, row["id"])
+    lecture_ids = [row["id"] for row in (lectures_res.data or [])]
+    if lecture_ids:
+        await _hard_delete_lectures_bulk(admin_client, lecture_ids)
 
     # 2. 講義に紐づかないユーザー単位のお知らせ(lecture_idがNULLのもの)を削除
     await asyncio.to_thread(
@@ -4383,7 +4422,12 @@ async def _hard_delete_user_data(admin_client, uid: str) -> None:
         lambda: admin_client.table("user_profiles").delete().eq("id", uid).execute()
     )
 
-    # 6. R2上の {uid}/ 配下を丸ごと削除(講義単位の削除で取りこぼしたファイルの安全網)
+    # 5.5 ストア課金の突き合わせ状態(auth.usersへの外部キーが無く、削除後も行が残っていた)
+    await asyncio.to_thread(
+        lambda: admin_client.table("store_subscription_sync_state").delete().eq("user_id", uid).execute()
+    )
+
+    # 6. R2上の {uid}/ 配下を丸ごと削除(講義のファイルもここで消える)
     from app.core.r2_storage import storage_service
     await asyncio.to_thread(storage_service.delete_prefix, f"{uid}/")
 
