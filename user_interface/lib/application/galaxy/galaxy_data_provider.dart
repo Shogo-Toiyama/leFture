@@ -84,6 +84,7 @@ class GalaxyConfig {
     this.innerDiskHoleNorm = 0.14,
     this.nebulaCount = 40,
     this.bgStarCount = 3200,
+    this.stableGrowth = false,
   });
 
   /// 乱数シード。同じ値なら毎回同じ銀河が生成される。
@@ -117,6 +118,11 @@ class GalaxyConfig {
   /// 背景の遠い星の数（銀河そのものとは独立した書き割り）。
   final int bgStarCount;
 
+  /// true にすると、中心と腕の星を別々の乱数列から作る。星の数を増やしても既存の星の
+  /// 位置が入れ替わらず、新しい星が足されるだけになる(成長のシミュレーション用)。
+  /// false(既定)は従来どおりの1本の乱数列で、Homeの銀河の見た目を変えないために残している。
+  final bool stableGrowth;
+
   GalaxyConfig copyWith({
     int? seed,
     int? bulgeStarCount,
@@ -128,6 +134,7 @@ class GalaxyConfig {
     double? innerDiskHoleNorm,
     int? nebulaCount,
     int? bgStarCount,
+    bool? stableGrowth,
   }) {
     return GalaxyConfig(
       seed: seed ?? this.seed,
@@ -140,6 +147,7 @@ class GalaxyConfig {
       innerDiskHoleNorm: innerDiskHoleNorm ?? this.innerDiskHoleNorm,
       nebulaCount: nebulaCount ?? this.nebulaCount,
       bgStarCount: bgStarCount ?? this.bgStarCount,
+      stableGrowth: stableGrowth ?? this.stableGrowth,
     );
   }
 
@@ -156,7 +164,8 @@ class GalaxyConfig {
           bulgeRadiusNorm == other.bulgeRadiusNorm &&
           innerDiskHoleNorm == other.innerDiskHoleNorm &&
           nebulaCount == other.nebulaCount &&
-          bgStarCount == other.bgStarCount);
+          bgStarCount == other.bgStarCount &&
+          stableGrowth == other.stableGrowth);
 
   @override
   int get hashCode => Object.hash(
@@ -170,6 +179,7 @@ class GalaxyConfig {
         innerDiskHoleNorm,
         nebulaCount,
         bgStarCount,
+        stableGrowth,
       );
 }
 
@@ -186,6 +196,7 @@ Future<GalaxyData> galaxyData(Ref ref, GalaxyConfig config) async {
     thickness: config.thickness,
     bulgeRadiusNorm: config.bulgeRadiusNorm,
     innerDiskHoleNorm: config.innerDiskHoleNorm,
+    stableGrowth: config.stableGrowth,
   );
 
   final nebula = _generateNebula(
@@ -198,7 +209,8 @@ Future<GalaxyData> galaxyData(Ref ref, GalaxyConfig config) async {
 
   final bgStars = _generateBgStars(seed: 123, count: config.bgStarCount);
 
-  final sprite = await _generateSpriteTexture();
+  // スプライトはconfigに依存しないので1回だけ作って使い回す(成長シミュレーションで何度も生成するため)
+  final sprite = await (_spriteFuture ??= _generateSpriteTexture());
 
   return GalaxyData(stars: stars, nebula: nebula, bgStars: bgStars, sprite: sprite);
 }
@@ -206,6 +218,8 @@ Future<GalaxyData> galaxyData(Ref ref, GalaxyConfig config) async {
 // ---------------------------------------------------------------------------
 // Generators
 // ---------------------------------------------------------------------------
+
+Future<ui.Image>? _spriteFuture;
 
 Future<ui.Image> _generateSpriteTexture() async {
   const size = 64;
@@ -300,8 +314,9 @@ List<GalaxyStar> _generateSpiralGalaxy({
   required double thickness,
   double bulgeRadiusNorm = 0.2,
   double innerDiskHoleNorm = 0.14,
+  bool stableGrowth = false,
 }) {
-  final rnd = math.Random(seed);
+  var rnd = math.Random(seed);
   final stars = <GalaxyStar>[];
 
   // Helper
@@ -345,6 +360,8 @@ List<GalaxyStar> _generateSpiralGalaxy({
   }
 
   // --- Disk ---
+  // stableGrowth: 中心の星の数が変わっても腕の星が入れ替わらないよう、腕は別の乱数列から作る
+  if (stableGrowth) rnd = math.Random(seed + 7919);
   for (int i = 0; i < diskCount; i++) {
     final t = rnd.nextDouble();
     final rNormRaw = math.pow(t, 0.85).toDouble();

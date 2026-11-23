@@ -8,8 +8,14 @@ import 'package:lefture/application/galaxy/galaxy_state_provider.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 
 // 定数はクラスの外に出しておくとコンパイル時定数として扱われやすい
-const double _minZoom = 1.0;
-const double _maxZoom = 8.0;
+// ピンチで寄れる範囲の既定(成長プレビュー以外の画面はこれまでどおり)。
+// 成長プレビューでは GalaxyView の minZoom / maxZoom で、既定の画角に合わせた範囲を渡す。
+const double _defaultMinZoom = 1.0;
+const double _defaultMaxZoom = 8.0;
+// 星の大きさ・明るさ・もやを倍率に合わせて変える時の基準の範囲(1〜8)。
+// ピンチの範囲を変えても、同じ倍率なら同じ見た目になるよう、ここは固定。
+const double _fadeMinZoom = 1.0;
+const double _fadeMaxZoom = 8.0;
 
 // 慣性(フリック後の減衰回転)関連の定数
 const double _inertiaSmoothing = 0.35; // ドラッグ中の角速度を追跡する指数移動平均の重み
@@ -21,8 +27,11 @@ class GalaxyView extends ConsumerStatefulWidget {
     super.key,
     this.config = defaultGalaxyConfig,
     this.glowScale = 1.0,
+    this.starScale = 1.0,
     this.enableAutoRotate = true,
     this.zoom,
+    this.minZoom = _defaultMinZoom,
+    this.maxZoom = _defaultMaxZoom,
   });
 
   /// 銀河生成パラメーター。
@@ -31,11 +40,20 @@ class GalaxyView extends ConsumerStatefulWidget {
   /// 中心に重ねて光らせている2枚の楕円の倍率。
   final double glowScale;
 
+  /// 星1個ごとの大きさ・明るさの倍率。星の数が少ない小さい銀河を、点でなく星として見せるために使う。
+  final double starScale;
+
   /// 自動回転を有効にするかどうか。
   final bool enableAutoRotate;
 
   /// 銀河のカメラズーム倍率（直接制御用）
   final double? zoom;
+
+  /// ピンチで引ける限界(倍率の下限)。
+  final double minZoom;
+
+  /// ピンチで寄れる限界(倍率の上限)。
+  final double maxZoom;
 
   @override
   ConsumerState<GalaxyView> createState() => GalaxyViewState();
@@ -50,6 +68,9 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
   bool userInteracting = false;
 
 
+
+  // 最後に描画できた銀河データ（config変更中のちらつき防止）
+  GalaxyData? _lastData;
 
   // トラックボール操作用: 現在のウィジェットサイズ（buildのLayoutBuilderで更新）
   Size _viewSize = Size.zero;
@@ -128,7 +149,7 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
     // Zoom
     const zoomSensitivity = 0.05;
     final s = math.pow(d.scale, zoomSensitivity).toDouble();
-    newZoom = (newZoom * s).clamp(_minZoom, _maxZoom);
+    newZoom = (newZoom * s).clamp(widget.minZoom, widget.maxZoom);
 
     // Rotation (トラックボール/アークボール方式)
     // 画面上のドラッグ前後の点を仮想球面上の3D点に投影し、その2点間の回転を
@@ -205,13 +226,20 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
     // watchすることで、初回のみローディングを表示し、以降同じconfigである限り
     // どのGalaxyViewインスタンスも再生成なしに即座に描画できる。
     final galaxyDataAsync = ref.watch(galaxyDataProvider(widget.config));
+    // configが変わった直後(新しい銀河を生成中)は、ローディング表示に戻さず直前の銀河を描き続ける
+    final current = galaxyDataAsync.value;
+    if (current != null) _lastData = current;
+    final shown = current ?? _lastData;
 
-    return galaxyDataAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stack) => Center(
-        child: Icon(Icons.error_outline, color: Colors.white.withValues(alpha: 0.5)),
-      ),
-      data: (galaxyData) {
+    if (shown == null) {
+      return galaxyDataAsync.hasError
+          ? Center(child: Icon(Icons.error_outline, color: Colors.white.withValues(alpha: 0.5)))
+          : const Center(child: CircularProgressIndicator());
+    }
+
+    return Builder(
+      builder: (context) {
+        final galaxyData = shown;
         // プロバイダーから状態を直接読み取る（watchしないことでリビルドを防ぐ）
         final state = ref.read(galaxyStateProvider);
 
@@ -238,6 +266,7 @@ class GalaxyViewState extends ConsumerState<GalaxyView> with SingleTickerProvide
                           onProjected: (_) {},
                           sprite: galaxyData.sprite,
                           glowScale: widget.glowScale,
+                          starScale: widget.starScale,
                         ),
                         isComplex: true,
                         willChange: true,
@@ -284,6 +313,7 @@ class _GalaxyPainter extends CustomPainter {
     required this.onProjected,
     required this.sprite,
     this.glowScale = 1.0,
+    this.starScale = 1.0,
   });
 
   final List<GalaxyStar> stars;
@@ -295,6 +325,7 @@ class _GalaxyPainter extends CustomPainter {
   final _ProjectedCallback onProjected;
   final ui.Image sprite;
   final double glowScale;
+  final double starScale;
 
   // 定数を外に出して再利用可能に
   static final _bgColor = AppColors.universe.voidBackground;
@@ -322,7 +353,7 @@ class _GalaxyPainter extends CustomPainter {
 
     final fov = 1.2;
     final scale = screenMin * 0.38 * zoom;
-    final z01 = ((zoom - _minZoom) / (_maxZoom - _minZoom)).clamp(0.0, 1.0).toDouble();
+    final z01 = ((zoom - _fadeMinZoom) / (_fadeMaxZoom - _fadeMinZoom)).clamp(0.0, 1.0).toDouble();
 
     // Matrix manual expansion
     final rotMatrix = v.Matrix4.identity()..setRotation(camRot.asRotationMatrix());
@@ -500,11 +531,11 @@ class _GalaxyPainter extends CustomPainter {
 
       projList.add(_ProjectedStar(star: s, screen: Offset(x2, y2), depth: z));
 
-      final sizePx = (s.size / z) * zoomBoost * densityScale;
+      final sizePx = (s.size / z) * zoomBoost * densityScale * starScale;
       if (sizePx < 0.2) continue;
 
       // Alpha calc
-      final alpha = (s.bright / math.pow(z, 0.8) * baseAlphaFactor).clamp(0.3, 1.0);
+      final alpha = (s.bright / math.pow(z, 0.8) * baseAlphaFactor * (0.6 + 0.4 * starScale)).clamp(0.3, 1.0);
       if (alpha < 0.01) continue;
 
       final visualScale = 1.2;
@@ -533,6 +564,7 @@ class _GalaxyPainter extends CustomPainter {
     return oldDelegate.camRot != camRot ||
            oldDelegate.zoom != zoom ||
            oldDelegate.time != time ||
-           oldDelegate.glowScale != glowScale;
+           oldDelegate.glowScale != glowScale ||
+           oldDelegate.starScale != starScale;
   }
 }

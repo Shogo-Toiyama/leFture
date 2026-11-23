@@ -4400,4 +4400,121 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get selfPortraitEdit => '編集';
+
+  @override
+  String get galaxyTunerButton => '調整';
+
+  @override
+  String get galaxyTunerTitle => '銀河のパラメーター';
+
+  @override
+  String get galaxyTunerTotalStars => '星の総数';
+
+  @override
+  String galaxyTunerStarsSplit(String bulge, String disk) {
+    return '中心 $bulge・腕 $disk';
+  }
+
+  @override
+  String get galaxyTunerBulgeShare => '中心に置く星の割合';
+
+  @override
+  String get galaxyTunerArms => '腕の本数';
+
+  @override
+  String get galaxyTunerRadius => '半径';
+
+  @override
+  String get galaxyTunerThickness => '円盤の厚み';
+
+  @override
+  String get galaxyTunerBulgeRadius => '中心の大きさ';
+
+  @override
+  String get galaxyTunerInnerHole => '中心と腕のすき間';
+
+  @override
+  String get galaxyTunerNebula => '星雲の数';
+
+  @override
+  String get galaxyTunerBgStars => '背景の星';
+
+  @override
+  String get galaxyTunerGlow => '中心の光';
+
+  @override
+  String galaxyTunerSeed(String seed) {
+    return '形のシード $seed';
+  }
+
+  @override
+  String get galaxyTunerShuffle => '形を変える';
+
+  @override
+  String get galaxyTunerReset => 'リセット';
+
+  @override
+  String get galaxyTunerCopy => '値をコピー';
+
+  @override
+  String get galaxyTunerCopied => '値をコピーしました';
+
+  @override
+  String get galaxyStageNewborn => '生まれたての銀河';
+
+  @override
+  String get galaxyStageSmall => '小さい銀河';
+
+  @override
+  String get galaxyStageMedium => '中くらいの銀河';
+
+  @override
+  String get galaxyStageLarge => '大きい銀河';
+
+  @override
+  String get galaxyStageHuge => '巨大な銀河';
+
+  @override
+  String galaxyGrowthEarned(String count, String days, String perDay) {
+    return '集めた星 $count・1日$perDay個なら約$days日';
+  }
+
+  @override
+  String get galaxyGrowthPlay => '成長を再生';
+
+  @override
+  String get galaxyGrowthPause => '一時停止';
+
+  @override
+  String get galaxyGrowthRestart => '最初から再生';
+
+  @override
+  String get galaxyTunerUseCurrentZoom => '今の画角を既定にする';
+
+  @override
+  String galaxyHomeZoomBadge(String zoom, String saved) {
+    return '画角 $zoom（既定 $saved）';
+  }
+
+  @override
+  String get galaxyHomeZoomSave => '保存';
+
+  @override
+  String galaxyHomeZoomSaved(String zoom) {
+    return 'この大きさの既定の画角を $zoom にしました';
+  }
+
+  @override
+  String get galaxyTunerZoomK => '半径1.0のときの画角（k）';
+
+  @override
+  String get galaxyTunerZoomP => '半径による変化（p、1で反比例）';
+
+  @override
+  String galaxyTunerZoomStages(String zoom, String stages) {
+    return '今の既定の画角 $zoom・段階ごと $stages';
+  }
+
+  @override
+  String get galaxyTunerStarScale => '星の大きさ';
 }

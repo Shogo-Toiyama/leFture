@@ -7975,6 +7975,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Edit'**
   String get selfPortraitEdit;
+
+  /// Label of the HUD button on the Learning Galaxy page that opens the galaxy parameter panel (development builds only).
+  ///
+  /// In en, this message translates to:
+  /// **'TUNE'**
+  String get galaxyTunerButton;
+
+  /// Title of the panel for tuning how the galaxy is drawn (development builds only).
+  ///
+  /// In en, this message translates to:
+  /// **'Galaxy parameters'**
+  String get galaxyTunerTitle;
+
+  /// Slider label: total number of stars drawn in the galaxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Total stars'**
+  String get galaxyTunerTotalStars;
+
+  /// Shows how the total stars are split between the galaxy core and the spiral arms.
+  ///
+  /// In en, this message translates to:
+  /// **'Core {bulge} · Arms {disk}'**
+  String galaxyTunerStarsSplit(String bulge, String disk);
+
+  /// Slider label: fraction of stars placed in the central bulge.
+  ///
+  /// In en, this message translates to:
+  /// **'Share in the core'**
+  String get galaxyTunerBulgeShare;
+
+  /// Slider label: number of spiral arms.
+  ///
+  /// In en, this message translates to:
+  /// **'Spiral arms'**
+  String get galaxyTunerArms;
+
+  /// Slider label: overall galaxy radius.
+  ///
+  /// In en, this message translates to:
+  /// **'Radius'**
+  String get galaxyTunerRadius;
+
+  /// Slider label: thickness of the galaxy disk.
+  ///
+  /// In en, this message translates to:
+  /// **'Disk thickness'**
+  String get galaxyTunerThickness;
+
+  /// Slider label: size of the central bulge relative to the radius.
+  ///
+  /// In en, this message translates to:
+  /// **'Core size'**
+  String get galaxyTunerBulgeRadius;
+
+  /// Slider label: size of the empty gap between the core and the arms.
+  ///
+  /// In en, this message translates to:
+  /// **'Inner gap'**
+  String get galaxyTunerInnerHole;
+
+  /// Slider label: number of colored gas clouds along the arms.
+  ///
+  /// In en, this message translates to:
+  /// **'Nebula clouds'**
+  String get galaxyTunerNebula;
+
+  /// Slider label: number of distant background stars.
+  ///
+  /// In en, this message translates to:
+  /// **'Background stars'**
+  String get galaxyTunerBgStars;
+
+  /// Slider label: strength/size of the glow drawn over the galaxy core.
+  ///
+  /// In en, this message translates to:
+  /// **'Core glow'**
+  String get galaxyTunerGlow;
+
+  /// Shows the random seed that decides the galaxy's shape.
+  ///
+  /// In en, this message translates to:
+  /// **'Shape seed {seed}'**
+  String galaxyTunerSeed(String seed);
+
+  /// Button: pick a new random seed so the galaxy gets a different shape.
+  ///
+  /// In en, this message translates to:
+  /// **'New shape'**
+  String get galaxyTunerShuffle;
+
+  /// Button: restore the default galaxy parameters.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get galaxyTunerReset;
+
+  /// Button: copy the current parameter values to the clipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy values'**
+  String get galaxyTunerCopy;
+
+  /// Snackbar shown after the parameter values were copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied the values'**
+  String get galaxyTunerCopied;
+
+  /// Galaxy growth stage preset: a just-born galaxy (fewest stars).
+  ///
+  /// In en, this message translates to:
+  /// **'Newborn'**
+  String get galaxyStageNewborn;
+
+  /// Galaxy growth stage preset: small galaxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get galaxyStageSmall;
+
+  /// Galaxy growth stage preset: medium galaxy (first looks like a real galaxy).
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get galaxyStageMedium;
+
+  /// Galaxy growth stage preset: large galaxy (about one year of use).
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get galaxyStageLarge;
+
+  /// Galaxy growth stage preset: huge galaxy (several years of use).
+  ///
+  /// In en, this message translates to:
+  /// **'Huge'**
+  String get galaxyStageHuge;
+
+  /// Growth preview label: how many stars the user has collected, and roughly how many days that takes at the expected pace.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} stars collected · about {days} days at {perDay}/day'**
+  String galaxyGrowthEarned(String count, String days, String perDay);
+
+  /// Tooltip: auto-play the galaxy growth simulation (one day every 0.2 seconds, up to two years).
+  ///
+  /// In en, this message translates to:
+  /// **'Play growth'**
+  String get galaxyGrowthPlay;
+
+  /// Tooltip: pause the galaxy growth simulation.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get galaxyGrowthPause;
+
+  /// Tooltip: restart the galaxy growth simulation from day 0.
+  ///
+  /// In en, this message translates to:
+  /// **'Play from the start'**
+  String get galaxyGrowthRestart;
+
+  /// Button: take the zoom the user set by pinching and make it the default view.
+  ///
+  /// In en, this message translates to:
+  /// **'Use current view as default'**
+  String get galaxyTunerUseCurrentZoom;
+
+  /// Development-only badge on the Home galaxy: the current camera zoom and the zoom saved as this galaxy size's Home default.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom {zoom} (default {saved})'**
+  String galaxyHomeZoomBadge(String zoom, String saved);
+
+  /// Development-only button on the Home galaxy: save the current zoom as the Home default for this galaxy size.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get galaxyHomeZoomSave;
+
+  /// Snackbar after saving the Home galaxy zoom (development builds only).
+  ///
+  /// In en, this message translates to:
+  /// **'Set the default view for this size to {zoom}'**
+  String galaxyHomeZoomSaved(String zoom);
+
+  /// Slider label: the default camera zoom when the galaxy radius is 1.0. The default zoom is k × radius^(−p).
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom at radius 1.0 (k)'**
+  String get galaxyTunerZoomK;
+
+  /// Slider label: how strongly the default zoom changes with the galaxy radius. 1 means inversely proportional.
+  ///
+  /// In en, this message translates to:
+  /// **'Change with radius (p, 1 = inverse)'**
+  String get galaxyTunerZoomP;
+
+  /// Shows the current default zoom and the default zoom of each of the five growth stages (newborn / small / medium / large / huge), as a list of numbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Default view now {zoom} · by stage {stages}'**
+  String galaxyTunerZoomStages(String zoom, String stages);
+
+  /// Slider label: size and brightness multiplier of each star in the galaxy. Small galaxies use larger stars so they read as stars, not dots.
+  ///
+  /// In en, this message translates to:
+  /// **'Star size'**
+  String get galaxyTunerStarScale;
 }
 
 class _AppLocalizationsDelegate

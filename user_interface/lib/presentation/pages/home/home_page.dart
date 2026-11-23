@@ -21,6 +21,10 @@ import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/ai_chat/ai_chat_entry_button.dart';
 import 'package:lefture/presentation/widgets/custom_app_bar.dart';
 import 'package:lefture/presentation/widgets/galaxy/galaxy_view.dart';
+import 'package:lefture/presentation/widgets/galaxy/galaxy_home_zoom_badge.dart';
+import 'package:lefture/application/galaxy/galaxy_data_provider.dart' show defaultGalaxyConfig;
+import 'package:lefture/application/galaxy/galaxy_home_preview.dart';
+import 'package:lefture/presentation/pages/learning_galaxy/learning_galaxy_page.dart' show kGalaxyPageEnabled;
 import 'package:lefture/presentation/widgets/spaceship_announcement_modal.dart';
 import 'package:lefture/application/transmission/transmission_provider.dart';
 import 'package:lefture/application/tutorial/tutorial_lecture_seed_provider.dart';
@@ -50,6 +54,9 @@ class HomePage extends HookConsumerWidget {
     final scrollOffset = useState(0.0);
     final isTransitioning = useState(false);
     final showGradients = useState(true);
+
+    // 開発ビルド: Learning Galaxyページで選んだ銀河(成長の段階など)をHomeにも出す。本番では常にnull
+    final galaxyPreview = kGalaxyPageEnabled ? ref.watch(galaxyHomePreviewProvider) : null;
 
     // 銀河のジェスチャーを外部から制御するためのキー
     final galaxyKey = useMemoized(() => GlobalKey<GalaxyViewState>());
@@ -318,7 +325,15 @@ class HomePage extends HookConsumerWidget {
               height: isTransitioning.value ? screenHeight : galaxyHeight,
               child: Hero(
                 tag: 'galaxy',
-                child: GalaxyView(key: galaxyKey),
+                child: GalaxyView(
+                  key: galaxyKey,
+                  config: galaxyPreview?.config ?? defaultGalaxyConfig,
+                  glowScale: galaxyPreview?.look.glow ?? 1.0,
+                  starScale: galaxyPreview?.look.starScale ?? 1.0,
+                  // 成長プレビュー中は、既定の画角に合わせたピンチの範囲にする(出していない時はこれまでどおり)
+                  minZoom: galaxyPreview?.minZoom ?? 1.0,
+                  maxZoom: galaxyPreview?.maxZoom ?? 8.0,
+                ),
               ),
             ),
 
@@ -447,37 +462,37 @@ class HomePage extends HookConsumerWidget {
                               galaxyKey.currentState?.handleScaleUpdate(d),
                           onScaleEnd: (d) =>
                               galaxyKey.currentState?.handleScaleEnd(d),
-                          // 銀河ページ未完成のため一時的にタップ遷移をコメントアウト（回転・ズーム操作は可能）
-                          onTap: null,
-                          // onTap: isTransitioning.value
-                          //     ? null
-                          //     : () async {
-                          //         showGradients.value = false; // 遷移開始時に一瞬で非表示
-                          //         isTransitioning.value = true;
-                          //
-                          //         // アニメーション時間 (600ms) を待ってからページ遷移
-                          //         await Future.delayed(
-                          //           const Duration(milliseconds: 600),
-                          //         );
-                          //         if (context.mounted &&
-                          //             isTransitioning.value) {
-                          //           // 戻り値を待って、戻ってきたら縮小アニメーションを開始する
-                          //           await context.push(
-                          //             AppRoutes.learningGalaxy,
-                          //           );
-                          //           if (context.mounted) {
-                          //             isTransitioning.value = false;
-                          //             // 縮小アニメーション完了 (600ms) を待ってからパッと表示
-                          //             await Future.delayed(
-                          //               const Duration(milliseconds: 600),
-                          //             );
-                          //             if (context.mounted &&
-                          //                 !isTransitioning.value) {
-                          //               showGradients.value = true;
-                          //             }
-                          //           }
-                          //         }
-                          //       },
+                          // 銀河ページは未完成のため、開発ビルド(flutter run / IS_TEST_MODE)でだけタップで開く。
+                          // 本番ビルドでは今までどおり回転・ズームだけ。
+                          onTap: !kGalaxyPageEnabled || isTransitioning.value
+                              ? null
+                              : () async {
+                                  showGradients.value = false; // 遷移開始時に一瞬で非表示
+                                  isTransitioning.value = true;
+
+                                  // アニメーション時間 (600ms) を待ってからページ遷移
+                                  await Future.delayed(
+                                    const Duration(milliseconds: 600),
+                                  );
+                                  if (context.mounted &&
+                                      isTransitioning.value) {
+                                    // 戻り値を待って、戻ってきたら縮小アニメーションを開始する
+                                    await context.push(
+                                      AppRoutes.learningGalaxy,
+                                    );
+                                    if (context.mounted) {
+                                      isTransitioning.value = false;
+                                      // 縮小アニメーション完了 (600ms) を待ってからパッと表示
+                                      await Future.delayed(
+                                        const Duration(milliseconds: 600),
+                                      );
+                                      if (context.mounted &&
+                                          !isTransitioning.value) {
+                                        showGradients.value = true;
+                                      }
+                                    }
+                                  }
+                                },
                           child: SizedBox(height: galaxyHeight),
                         ),
                       ),
@@ -626,6 +641,13 @@ class HomePage extends HookConsumerWidget {
                 ),
               ),
             ),
+            // 開発ビルド: Learning Galaxyで選んだ銀河をHomeに出している時だけ、Homeの画角を合わせて保存するバッジを出す
+            if (kGalaxyPageEnabled && !isTransitioning.value && scrollOffset.value < 8)
+              Positioned(
+                top: topAreaHeight + galaxyHeight - 40,
+                right: 12,
+                child: const GalaxyHomeZoomBadge(),
+              ),
           ],
         ),
       ),

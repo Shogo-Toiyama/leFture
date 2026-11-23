@@ -4605,4 +4605,121 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selfPortraitEdit => 'Edit';
+
+  @override
+  String get galaxyTunerButton => 'TUNE';
+
+  @override
+  String get galaxyTunerTitle => 'Galaxy parameters';
+
+  @override
+  String get galaxyTunerTotalStars => 'Total stars';
+
+  @override
+  String galaxyTunerStarsSplit(String bulge, String disk) {
+    return 'Core $bulge · Arms $disk';
+  }
+
+  @override
+  String get galaxyTunerBulgeShare => 'Share in the core';
+
+  @override
+  String get galaxyTunerArms => 'Spiral arms';
+
+  @override
+  String get galaxyTunerRadius => 'Radius';
+
+  @override
+  String get galaxyTunerThickness => 'Disk thickness';
+
+  @override
+  String get galaxyTunerBulgeRadius => 'Core size';
+
+  @override
+  String get galaxyTunerInnerHole => 'Inner gap';
+
+  @override
+  String get galaxyTunerNebula => 'Nebula clouds';
+
+  @override
+  String get galaxyTunerBgStars => 'Background stars';
+
+  @override
+  String get galaxyTunerGlow => 'Core glow';
+
+  @override
+  String galaxyTunerSeed(String seed) {
+    return 'Shape seed $seed';
+  }
+
+  @override
+  String get galaxyTunerShuffle => 'New shape';
+
+  @override
+  String get galaxyTunerReset => 'Reset';
+
+  @override
+  String get galaxyTunerCopy => 'Copy values';
+
+  @override
+  String get galaxyTunerCopied => 'Copied the values';
+
+  @override
+  String get galaxyStageNewborn => 'Newborn';
+
+  @override
+  String get galaxyStageSmall => 'Small';
+
+  @override
+  String get galaxyStageMedium => 'Medium';
+
+  @override
+  String get galaxyStageLarge => 'Large';
+
+  @override
+  String get galaxyStageHuge => 'Huge';
+
+  @override
+  String galaxyGrowthEarned(String count, String days, String perDay) {
+    return '$count stars collected · about $days days at $perDay/day';
+  }
+
+  @override
+  String get galaxyGrowthPlay => 'Play growth';
+
+  @override
+  String get galaxyGrowthPause => 'Pause';
+
+  @override
+  String get galaxyGrowthRestart => 'Play from the start';
+
+  @override
+  String get galaxyTunerUseCurrentZoom => 'Use current view as default';
+
+  @override
+  String galaxyHomeZoomBadge(String zoom, String saved) {
+    return 'Zoom $zoom (default $saved)';
+  }
+
+  @override
+  String get galaxyHomeZoomSave => 'Save';
+
+  @override
+  String galaxyHomeZoomSaved(String zoom) {
+    return 'Set the default view for this size to $zoom';
+  }
+
+  @override
+  String get galaxyTunerZoomK => 'Zoom at radius 1.0 (k)';
+
+  @override
+  String get galaxyTunerZoomP => 'Change with radius (p, 1 = inverse)';
+
+  @override
+  String galaxyTunerZoomStages(String zoom, String stages) {
+    return 'Default view now $zoom · by stage $stages';
+  }
+
+  @override
+  String get galaxyTunerStarScale => 'Star size';
 }
