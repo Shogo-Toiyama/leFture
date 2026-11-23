@@ -1,5 +1,6 @@
 // lib/presentation/pages/onboarding/onboarding_page.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart' show SchedulerBinding, SchedulerPhase;
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/purchases/purchases_providers.dart';
 import 'package:lefture/core/services/recording_preferences.dart';
+import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/infrastructure/supabase/supabase_client.dart';
 import 'package:lefture/infrastructure/supabase/repositories/user_profile_repository_supabase.dart';
 import 'package:lefture/presentation/pages/onboarding/widgets/onboarding_done_step.dart';
@@ -24,6 +26,19 @@ import 'package:lefture/presentation/widgets/language_header_button.dart';
 
 const _totalSteps = 6;
 const _planStepIndex = 4;
+const _stepNames = ['intro', 'language', 'profile', 'permissions', 'plan', 'done'];
+
+String _stepName(int i) => (i >= 0 && i < _stepNames.length) ? _stepNames[i] : 'step$i';
+
+/// 診断用: next()/back()/finish() を誰が呼んだかを、アプリ自身のコードの
+/// スタックフレームだけ数件残す(プランを選ばずにDoneへ進んだ事例の切り分け用)。
+String _callerFrames() => StackTrace.current
+    .toString()
+    .split('\n')
+    .where((l) => l.contains('package:lefture/') && !l.contains('onboarding_page.dart'))
+    .take(4)
+    .map((l) => l.replaceFirst(RegExp(r'^#\d+\s+'), '').trim())
+    .join(' <- ');
 
 /// Account-creation-directly-after wizard: Intro → Language → Profile →
 /// Permissions → Plan → Done. Each step renders its own back affordance (via
@@ -61,7 +76,9 @@ class OnboardingPage extends HookConsumerWidget {
 
     // 「準備完了です」の完了ページ(Step 6)が表示された瞬間に自動でオンボーディング完了をマークする
     useEffect(() {
+      DevLog.add('🧭 [Onboarding] now showing step ${step.value} (${_stepName(step.value)})');
       if (step.value == _totalSteps - 1) {
+        DevLog.add('🧭 [Onboarding] reached done step -> markOnboardingCompleted');
         ref.read(userProfileRepositoryProvider).markOnboardingCompleted();
         final uid = supabase.auth.currentUser?.id;
         if (uid != null) {
@@ -72,6 +89,7 @@ class OnboardingPage extends HookConsumerWidget {
     }, [step.value]);
 
     Future<void> finish() async {
+      DevLog.add('🧭 [Onboarding] finish() at step ${step.value} (${_stepName(step.value)}) caller=${_callerFrames()}');
       await ref.read(userProfileRepositoryProvider).markOnboardingCompleted();
       final uid = supabase.auth.currentUser?.id;
       if (uid != null) {
@@ -83,6 +101,10 @@ class OnboardingPage extends HookConsumerWidget {
     void next() {
       FocusManager.instance.primaryFocus?.unfocus();
       SystemChannels.textInput.invokeMethod('TextInput.hide');
+      DevLog.add(
+        '🧭 [Onboarding] next() from step ${step.value} (${_stepName(step.value)}) '
+        '-> ${_stepName(step.value + 1)} caller=${_callerFrames()}',
+      );
       if (step.value < _totalSteps - 1) {
         step.value++;
       } else {
@@ -90,18 +112,34 @@ class OnboardingPage extends HookConsumerWidget {
       }
     }
 
+    // 各ステップには「自分が表示中のときだけ次へ進める」next を渡す。画面の
+    // 更新が遅れて古いステップがまだ見えている間に「続ける」を連打されても、
+    // step が2つ以上進んで Plan を飛ばすことがないようにするため
+    // (2026-11-23、Plan を選ばずに Done → ホームへ進んだ事例があった)。
+    VoidCallback nextFrom(int index) => () {
+          if (step.value != index) {
+            DevLog.add(
+              '🧭 [Onboarding] ignored next() from stale step $index (${_stepName(index)}); '
+              'current step is ${step.value} (${_stepName(step.value)})',
+            );
+            return;
+          }
+          next();
+        };
+
     void back() {
       FocusManager.instance.primaryFocus?.unfocus();
       SystemChannels.textInput.invokeMethod('TextInput.hide');
+      DevLog.add('🧭 [Onboarding] back() from step ${step.value} (${_stepName(step.value)})');
       if (step.value > 0) step.value--;
     }
 
     final steps = <Widget>[
-      OnboardingIntroStep(onNext: next),
-      OnboardingLanguageStep(onNext: next, onBack: back),
-      OnboardingProfileStep(onNext: next, onBack: back),
-      OnboardingPermissionsStep(onNext: next, onBack: back),
-      OnboardingPlanStep(onNext: next, onBack: back),
+      OnboardingIntroStep(onNext: nextFrom(0)),
+      OnboardingLanguageStep(onNext: nextFrom(1), onBack: back),
+      OnboardingProfileStep(onNext: nextFrom(2), onBack: back),
+      OnboardingPermissionsStep(onNext: nextFrom(3), onBack: back),
+      OnboardingPlanStep(onNext: nextFrom(4), onBack: back),
       OnboardingDoneStep(onFinish: finish),
     ];
 
@@ -142,7 +180,22 @@ class OnboardingPage extends HookConsumerWidget {
           final pixels = notification.metrics.pixels;
           final shouldBeVisible = pixels <= 15;
           if (isHeaderVisible.value != shouldBeVisible) {
-            isHeaderVisible.value = shouldBeVisible;
+            // ★ スクロール通知はレイアウトの最中にも届く(内容の高さが変わって
+            //   慣性スクロールが止まった時の ScrollEndNotification 等)。そこで直接
+            //   書き換えると、デバッグビルドでは "Build scheduled during frame" の
+            //   assertが markNeedsBuild の途中で投げられ、この画面の Element が
+            //   「dirtyなのに再ビルド待ちの一覧に入っていない」状態で残る。以後は
+            //   step を進めても再ビルドされず、画面が固まったように見える
+            //   (2026-11-23 実機で再現)。フレーム処理中はフレームの後に回す。
+            final schedulerPhase = SchedulerBinding.instance.schedulerPhase;
+            if (schedulerPhase == SchedulerPhase.persistentCallbacks ||
+                schedulerPhase == SchedulerPhase.midFrameMicrotasks) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) isHeaderVisible.value = shouldBeVisible;
+              });
+            } else {
+              isHeaderVisible.value = shouldBeVisible;
+            }
           }
           return false;
         },

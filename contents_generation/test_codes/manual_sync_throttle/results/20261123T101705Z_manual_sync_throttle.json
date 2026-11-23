@@ -1,0 +1,94 @@
+{
+ "dry_run": false,
+ "plans_source": "production subscription_plans (read-only)",
+ "external_api_calls": 0,
+ "cost_usd": 0,
+ "results": {
+  "A_before_fix": {
+   "steps": [
+    [
+     "summary_at_signup",
+     {
+      "at_s": 0.0,
+      "action": "none",
+      "reason": "no_active_subscription",
+      "latency_ms": 5.85
+     }
+    ],
+    [
+     "manual_after_transfer",
+     {
+      "at_s": 20.0,
+      "action": "none",
+      "reason": "throttled",
+      "latency_ms": 0.7
+     }
+    ]
+   ],
+   "db_plan": null
+  },
+  "B_after_fix": {
+   "steps": [
+    [
+     "summary_at_signup",
+     {
+      "at_s": 0.0,
+      "action": "none",
+      "reason": "no_active_subscription",
+      "latency_ms": 0.98
+     }
+    ],
+    [
+     "manual_after_transfer",
+     {
+      "at_s": 20.0,
+      "action": "grant",
+      "reason": "missing_plan",
+      "latency_ms": 1.15
+     }
+    ]
+   ],
+   "db_plan": "cda28090-b33a-42f7-aced-5743e6046d9a"
+  },
+  "C_manual_throttle": [
+   {
+    "at_s": 0.0,
+    "action": "none",
+    "reason": "no_active_subscription",
+    "latency_ms": 0.6
+   },
+   {
+    "at_s": 5.0,
+    "action": "none",
+    "reason": "throttled",
+    "latency_ms": 0.2
+   },
+   {
+    "at_s": 31.0,
+    "action": "none",
+    "reason": "no_active_subscription",
+    "latency_ms": 0.58
+   }
+  ],
+  "D_summary_unchanged": [
+   {
+    "at_s": 0.0,
+    "action": "none",
+    "reason": "no_active_subscription",
+    "latency_ms": 0.65
+   },
+   {
+    "at_s": 0.0,
+    "action": "none",
+    "reason": "no_active_subscription",
+    "latency_ms": 0.65
+   },
+   {
+    "at_s": 60.0,
+    "action": "none",
+    "reason": "throttled",
+    "latency_ms": 0.5
+   }
+  ]
+ }
+}

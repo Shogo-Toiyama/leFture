@@ -1,0 +1,94 @@
+{
+ "dry_run": true,
+ "plans_source": "mock",
+ "external_api_calls": 0,
+ "cost_usd": 0,
+ "results": {
+  "A_before_fix": {
+   "steps": [
+    [
+     "summary_at_signup",
+     {
+      "at_s": 0.0,
+      "action": "none",
+      "reason": "no_active_subscription",
+      "latency_ms": 31.49
+     }
+    ],
+    [
+     "manual_after_transfer",
+     {
+      "at_s": 20.0,
+      "action": "none",
+      "reason": "throttled",
+      "latency_ms": 0.38
+     }
+    ]
+   ],
+   "db_plan": null
+  },
+  "B_after_fix": {
+   "steps": [
+    [
+     "summary_at_signup",
+     {
+      "at_s": 0.0,
+      "action": "none",
+      "reason": "no_active_subscription",
+      "latency_ms": 0.47
+     }
+    ],
+    [
+     "manual_after_transfer",
+     {
+      "at_s": 20.0,
+      "action": "grant",
+      "reason": "missing_plan",
+      "latency_ms": 0.52
+     }
+    ]
+   ],
+   "db_plan": "plan-max"
+  },
+  "C_manual_throttle": [
+   {
+    "at_s": 0.0,
+    "action": "none",
+    "reason": "no_active_subscription",
+    "latency_ms": 0.32
+   },
+   {
+    "at_s": 5.0,
+    "action": "none",
+    "reason": "throttled",
+    "latency_ms": 0.12
+   },
+   {
+    "at_s": 31.0,
+    "action": "none",
+    "reason": "no_active_subscription",
+    "latency_ms": 0.32
+   }
+  ],
+  "D_summary_unchanged": [
+   {
+    "at_s": 0.0,
+    "action": "none",
+    "reason": "no_active_subscription",
+    "latency_ms": 0.34
+   },
+   {
+    "at_s": 0.0,
+    "action": "none",
+    "reason": "no_active_subscription",
+    "latency_ms": 0.33
+   },
+   {
+    "at_s": 60.0,
+    "action": "none",
+    "reason": "throttled",
+    "latency_ms": 0.23
+   }
+  ]
+ }
+}

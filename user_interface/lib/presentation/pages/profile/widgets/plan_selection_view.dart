@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -16,6 +17,7 @@ import 'package:lefture/application/credit/credit_providers.dart';
 import 'package:lefture/application/device/device_identity_service.dart';
 import 'package:lefture/application/purchases/purchases_providers.dart';
 import 'package:lefture/core/utils/dev_log.dart';
+import 'package:lefture/domain/entities/credit_summary.dart';
 import 'package:lefture/domain/entities/plan_option.dart';
 import 'package:lefture/infrastructure/repositories/credit_repository.dart' show DeviceAlreadyClaimedException;
 import 'package:lefture/l10n/generated/app_localizations.dart';
@@ -68,6 +70,14 @@ class PlanSelectionView extends HookConsumerWidget {
     final introEligibilityAsync = ref.watch(revenueCatIntroEligibilityProvider);
 
     final purchasingPlanId = useState<String?>(null);
+
+    // 診断用: onPlanActivated(オンボーディングでは次のステップへ進む)をどの経路が
+    // 呼んだかをログに残す。プランを選ばずにDoneへ進んだ事例の切り分け用。
+    void notifyPlanActivated(String reason) {
+      if (onPlanActivated == null) return;
+      DevLog.add('🧭 [Plans] onPlanActivated reason=$reason');
+      onPlanActivated!.call();
+    }
 
     // 初回表示カードの決定:
     // ダイアログ等からinitialTierLevelが指定されていればそのプランを、
@@ -196,7 +206,7 @@ class PlanSelectionView extends HookConsumerWidget {
         hasClaimedDeviceFree.value = true;
         ref.invalidate(creditSummaryProvider);
         ref.invalidate(claimablePlansProvider);
-        onPlanActivated?.call();
+        notifyPlanActivated('claim_free');
       } on DeviceAlreadyClaimedException {
         hasClaimedDeviceFree.value = true;
         await deviceService.markDeviceFreeClaimed();
@@ -309,7 +319,7 @@ class PlanSelectionView extends HookConsumerWidget {
             case PlanChangeOutcome.upgrade:
               await showUpgradeCelebrationDialog(context: context, l10n: l10n, plan: plan);
           }
-          onPlanActivated?.call();
+          notifyPlanActivated('store_purchase:${outcome.name}');
         }
         // クレジット付与はRevenueCat→バックエンドWebhook経由の非同期処理のため、
         // 即座には反映されない可能性が高い。数回リトライしつつ、最終的には
@@ -341,7 +351,7 @@ class PlanSelectionView extends HookConsumerWidget {
 
     final isRestoringPurchases = useState<bool>(false);
 
-    Future<void> showRestoreResultDialog({required String message}) async {
+    Future<void> showRestoreResultDialog({String? title, required String message}) async {
       if (!context.mounted) return;
       await showDialog<void>(
         context: context,
@@ -349,7 +359,7 @@ class PlanSelectionView extends HookConsumerWidget {
           backgroundColor: const Color(0xFF1E1F29),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
-            l10n.plansRestorePurchasesTitle,
+            title ?? l10n.plansRestorePurchasesTitle,
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           content: Text(
@@ -402,6 +412,193 @@ class PlanSelectionView extends HookConsumerWidget {
         await showRestoreResultDialog(message: l10n.plansRestorePurchasesErrorMessage);
       } finally {
         isRestoringPurchases.value = false;
+      }
+    }
+
+    final isRedeemingCode = useState<bool>(false);
+
+    // Appleのオファーコード引き換えシート(iOSのみ)。ログイン後にアプリ内で
+    // 引き換えるので、購入は最初からSupabaseのuser idに紐づき、uid宛ての
+    // INITIAL_PURCHASE webhookでプランが付与される(URLから引き換えた場合の
+    // 「匿名ID → logInでalias」を経由しない)。
+    //
+    // presentCodeRedemptionSheet()は結果を返さないため、次の2つで新しい契約を検知する:
+    //   1. CustomerInfoの更新通知(SDKがStoreKitの新しい取引を処理した時)
+    //   2. アプリが前面に戻った時のsyncPurchases(RevenueCat公式の推奨手順)
+    // 前面に戻ってから一定時間内に検知できなければ、キャンセル(またはApple側で
+    // コードが使えなかった)とみなして何も表示しない。エラーはAppleのシート内に出る。
+    //
+    // 引き換えの成立からプラン反映までは10秒前後かかる(Sandbox実測: Apple→RevenueCat
+    // が約7秒、webhook処理が約1秒)。その間はシートを閉じた時点から画面中央に
+    // 進行状況のダイアログを出す。キャンセルした場合も確認の間は表示されるため、
+    // 「閉じる」で待つのをやめられるようにしてある(反映中に閉じた場合は裏で続け、
+    // 終わったら結果だけ出す)。
+    Future<void> handleRedeemCode() async {
+      if (!Platform.isIOS || isRedeemingCode.value) return;
+      isRedeemingCode.value = true;
+      // 現在のプラン判定はbuild後半のcurrentPlanと同じ(月間配分の一致)。
+      final plansAtStart = plansAsync.value ?? const <PlanOption>[];
+      PlanOption? planOf(CreditSummary? s) => s == null || !s.hasActivePlan
+          ? null
+          : plansAtStart.where((p) => p.monthlyCreditAmountMicro == s.monthlyAllocationMicro).firstOrNull;
+      final previousPlanId = planOf(summaryAsync.asData?.value)?.id;
+      final detected = Completer<bool>();
+      void complete(bool value) {
+        if (!detected.isCompleted) detected.complete(value);
+      }
+
+      // 進行状況ダイアログ(シートを閉じて戻った時点で表示)。
+      final phase = ValueNotifier<_RedeemProgressPhase>(_RedeemProgressPhase.checking);
+      var progressOpen = false;
+      var progressShown = false;
+      var closedByUser = false;
+      BuildContext? progressContext;
+      void showProgress() {
+        if (progressOpen || !context.mounted) return;
+        progressOpen = true;
+        progressShown = true;
+        unawaited(showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) {
+            progressContext = dialogContext;
+            return _RedeemProgressDialog(
+              phase: phase,
+              l10n: l10n,
+              onClose: () {
+                closedByUser = true;
+                Navigator.of(dialogContext).pop();
+              },
+            );
+          },
+        ).then((_) {
+          progressOpen = false;
+          progressContext = null;
+          // 確認中に閉じられた = 待つのをやめる(反映中なら既に検知済みなので何もしない)。
+          complete(false);
+        }));
+      }
+
+      void closeProgress() {
+        final c = progressContext;
+        if (progressOpen && c != null && c.mounted) Navigator.of(c).pop();
+      }
+
+      Set<String> activeKeys(CustomerInfo info) =>
+          {...info.entitlements.active.keys, ...info.activeSubscriptions};
+      Set<String> before = const {};
+      bool hasNewActive(CustomerInfo info) => activeKeys(info).difference(before).isNotEmpty;
+
+      void onCustomerInfo(CustomerInfo info) {
+        if (hasNewActive(info)) complete(true);
+      }
+
+      Timer? resumeGraceTimer;
+      var resumeHandled = false;
+      final lifecycleListener = AppLifecycleListener(
+        onResume: () {
+          if (resumeHandled || detected.isCompleted) return;
+          resumeHandled = true;
+          showProgress();
+          unawaited(() async {
+            try {
+              await Purchases.syncPurchases();
+              final info = await Purchases.getCustomerInfo();
+              if (hasNewActive(info)) {
+                complete(true);
+                return;
+              }
+            } catch (e) {
+              DevLog.add('⚠️ [Plans] redeem code: syncPurchases on resume failed error=$e');
+            }
+            // 取引の反映がシートを閉じた後に少し遅れて届くことがある(Sandbox実測で
+            // 約7秒、Apple Developer Forumsでも報告あり)ので、更新通知をもう少しだけ待つ。
+            resumeGraceTimer = Timer(const Duration(seconds: 15), () => complete(false));
+          }());
+        },
+      );
+      // 前面復帰が発火しない場合の保険。
+      final overallTimer = Timer(const Duration(minutes: 3), () => complete(false));
+
+      try {
+        before = activeKeys(await Purchases.getCustomerInfo());
+        Purchases.addCustomerInfoUpdateListener(onCustomerInfo);
+        DevLog.add('💳 [Plans] redeem code: presenting sheet (active before=$before)');
+        await Purchases.presentCodeRedemptionSheet();
+
+        final redeemed = await detected.future;
+        DevLog.add(
+          '💳 [Plans] redeem code: new active subscription detected=$redeemed '
+          '(progressShown=$progressShown closedByUser=$closedByUser)',
+        );
+        if (!redeemed) {
+          // 「確認中」を出したまま何も検知できずに終わった場合は、黙って閉じずに
+          // 理由の候補と次の手を伝える(自分で「閉じる」を押した場合は何も出さない)。
+          // 例: このApple IDで既に同じオファーを使っていた、契約が別アカウントから
+          // 移ってきていて「新しい契約」として検知できなかった(→ 購入を復元で直る)。
+          closeProgress();
+          if (progressShown && !closedByUser) {
+            await showRestoreResultDialog(
+              title: l10n.plansRedeemCodeTitle,
+              message: l10n.plansRedeemCodeNotDetectedMessage,
+            );
+          }
+          return;
+        }
+        phase.value = _RedeemProgressPhase.applying;
+        // 前面復帰より先に更新通知で検知した場合も、ここでダイアログを出す。
+        // (確認中に「閉じる」を押した後で検知した場合は出し直さない)
+        if (!resumeHandled) showProgress();
+
+        // webhookが届かない場合に備えてバックエンドにも突き合わせを依頼する
+        // (購入直後10分以内はwebhook待ちで何もしないが、害はない)。
+        final syncAction = await ref.read(creditRepositoryProvider).syncStoreSubscription();
+        DevLog.add('💳 [Plans] redeem code -> backend store sync action=$syncAction');
+
+        // クレジット付与はRevenueCat→バックエンドwebhook経由の非同期処理なので、
+        // プランが切り替わるまで再取得する。webhookは検知とほぼ同時に処理されている
+        // ことが多い(Sandbox実測: 検知の約1秒後)ため、最初は短い間隔で見る。
+        final polling = ref.read(creditPollingProvider);
+        PlanOption? activatedPlan;
+        for (final delaySeconds in const [1, 2, 2, 3, 3, 4]) {
+          await Future.delayed(Duration(seconds: delaySeconds));
+          if (!context.mounted) return;
+          await polling.refreshCreditData();
+          final plan = planOf(await ref.read(creditSummaryProvider.future));
+          if (plan != null && plan.id != previousPlanId) {
+            activatedPlan = plan;
+            break;
+          }
+        }
+        ref.invalidate(claimablePlansProvider);
+        DevLog.add('💳 [Plans] redeem code: activated plan=${activatedPlan?.name}');
+
+        closeProgress();
+        if (!context.mounted) return;
+        if (activatedPlan != null) {
+          await showUpgradeCelebrationDialog(context: context, l10n: l10n, plan: activatedPlan);
+          notifyPlanActivated('redeem_code');
+        } else {
+          // RevenueCatでは有効だがDBへの反映がまだ。webhook/定期更新で後から反映される。
+          await showRestoreResultDialog(
+            title: l10n.plansRedeemCodeTitle,
+            message: l10n.plansRedeemCodePendingMessage,
+          );
+        }
+      } catch (e) {
+        DevLog.add('⚠️ [Plans] redeem code failed error=$e');
+        closeProgress();
+        await showRestoreResultDialog(
+          title: l10n.plansRedeemCodeTitle,
+          message: l10n.plansRedeemCodeErrorMessage,
+        );
+      } finally {
+        closeProgress();
+        Purchases.removeCustomerInfoUpdateListener(onCustomerInfo);
+        lifecycleListener.dispose();
+        resumeGraceTimer?.cancel();
+        overallTimer.cancel();
+        if (context.mounted) isRedeemingCode.value = false;
       }
     }
 
@@ -482,7 +679,7 @@ class PlanSelectionView extends HookConsumerWidget {
           // オンボーディング等: すでにこのプランに加入している場合でも、
           // アップグレードを強制せず「現在のプランで続ける」としてそのまま次へ進める(購入・更新は行わない)。
           continueLabel = l10n.plansContinueWithCurrentPlanButton;
-          onContinue = onPlanActivated;
+          onContinue = () => notifyPlanActivated('continue_with_current_plan');
         } else {
           continueLabel = l10n.plansCurrentPlanButton;
           onContinue = null;
@@ -661,7 +858,7 @@ class PlanSelectionView extends HookConsumerWidget {
                                   label: currentPlan != null
                                       ? l10n.plansContinueWithPlanButton(currentPlan.name)
                                       : l10n.plansContinueWithCurrentPlanButton,
-                                  onPressed: onPlanActivated!,
+                                  onPressed: () => notifyPlanActivated('android_continue_with_current'),
                                 )
                               else if (freePlan != null)
                                 _PlanStartFreeButton(
@@ -696,6 +893,8 @@ class PlanSelectionView extends HookConsumerWidget {
                   l10n: l10n,
                   onRestorePurchases: handleRestorePurchases,
                   isRestoring: isRestoringPurchases.value,
+                  onRedeemCode: handleRedeemCode,
+                  isRedeeming: isRedeemingCode.value,
                 ),
               ),
           ],
@@ -903,6 +1102,8 @@ class _PlanFloatingContinueBar extends StatelessWidget {
     required this.l10n,
     required this.onRestorePurchases,
     required this.isRestoring,
+    required this.onRedeemCode,
+    required this.isRedeeming,
   });
 
   final String label;
@@ -914,6 +1115,8 @@ class _PlanFloatingContinueBar extends StatelessWidget {
   final AppLocalizations l10n;
   final VoidCallback onRestorePurchases;
   final bool isRestoring;
+  final VoidCallback onRedeemCode;
+  final bool isRedeeming;
 
   @override
   Widget build(BuildContext context) {
@@ -1095,51 +1298,130 @@ class _PlanFloatingContinueBar extends StatelessWidget {
                       fontSize: 10,
                     ),
                   ),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: isRestoring ? null : onRestorePurchases,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: isRestoring
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  l10n.plansRestorePurchasesButton,
-                                  style: TextStyle(
-                                    color: AppColors.universe.textComet.withValues(alpha: 0.5),
-                                    fontSize: 11,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: AppColors.universe.textComet.withValues(alpha: 0.5),
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const SizedBox(
-                                  width: 9,
-                                  height: 9,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 1.5,
-                                    color: AppColors.starGold,
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Text(
-                              l10n.plansRestorePurchasesButton,
-                              style: TextStyle(
-                                color: AppColors.universe.textComet,
-                                fontSize: 11,
-                                decoration: TextDecoration.underline,
-                                decorationColor: AppColors.universe.textComet,
-                              ),
-                            ),
+                  _FooterActionLink(
+                    label: l10n.plansRestorePurchasesButton,
+                    isLoading: isRestoring,
+                    // 復元とコード引き換えは同時に走らせない(どちらもRevenueCatの状態を更新する)。
+                    onTap: isRedeeming ? null : onRestorePurchases,
+                  ),
+                  Text(
+                    '•',
+                    style: TextStyle(
+                      color: AppColors.universe.textComet.withValues(alpha: 0.5),
+                      fontSize: 10,
                     ),
+                  ),
+                  _FooterActionLink(
+                    label: l10n.plansRedeemCodeButton,
+                    isLoading: isRedeeming,
+                    onTap: isRestoring ? null : onRedeemCode,
                   ),
                 ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// フッターの小さな下線リンク(「購入を復元」「コードを使う」)。処理中は薄く表示して小さなスピナーを添える。
+class _FooterActionLink extends StatelessWidget {
+  const _FooterActionLink({required this.label, required this.isLoading, required this.onTap});
+
+  final String label;
+  final bool isLoading;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isLoading
+        ? AppColors.universe.textComet.withValues(alpha: 0.5)
+        : AppColors.universe.textComet;
+    final text = Text(
+      label,
+      style: TextStyle(
+        color: color,
+        fontSize: 11,
+        decoration: TextDecoration.underline,
+        decorationColor: color,
+      ),
+    );
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: isLoading ? null : onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: isLoading
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  text,
+                  const SizedBox(width: 4),
+                  const SizedBox(
+                    width: 9,
+                    height: 9,
+                    child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.starGold),
+                  ),
+                ],
+              )
+            : text,
+      ),
+    );
+  }
+}
+
+enum _RedeemProgressPhase { checking, applying }
+
+/// オファーコード引き換え後、プランが反映されるまでの進行状況ダイアログ。
+/// 「確認中」→「反映中」と文言が切り替わる。閉じるボタンは待つのをやめるだけ
+/// (反映中に閉じた場合も、裏で反映を待って結果は別途表示される)。
+class _RedeemProgressDialog extends StatelessWidget {
+  const _RedeemProgressDialog({required this.phase, required this.l10n, required this.onClose});
+
+  final ValueListenable<_RedeemProgressPhase> phase;
+  final AppLocalizations l10n;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      child: AlertDialog(
+        backgroundColor: const Color(0xFF1E1F29),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          l10n.plansRedeemCodeTitle,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: ValueListenableBuilder<_RedeemProgressPhase>(
+          valueListenable: phase,
+          builder: (context, value, _) => Row(
+            children: [
+              const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.starGold),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  value == _RedeemProgressPhase.checking
+                      ? l10n.plansRedeemCodeCheckingMessage
+                      : l10n.plansRedeemCodeApplyingMessage,
+                  style: const TextStyle(color: Colors.white70, height: 1.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: onClose,
+            child: Text(l10n.plansRedeemCodeCloseButton, style: const TextStyle(color: Colors.white60)),
+          ),
+        ],
       ),
     );
   }

@@ -1168,6 +1168,9 @@ async def billing_sync_store_subscription(request: Request):
         admin_client, user_id,
         min_interval_seconds=STORE_RECONCILE_MANUAL_INTERVAL_SECONDS,
         reason="manual",
+        # summary/patrolと共有するDBの枠を使わない(直前のsummaryに間引かれて
+        # 手動同期が捨てられないように。store_reconcile._LOCAL_MANUAL_CHECKED_AT参照)。
+        use_db_slot=False,
     )
     # クライアントには結果の種類だけ返す(内部のevent_id等は返さない)。
     return {"action": result.get("action"), "reason": result.get("reason")}

@@ -1777,6 +1777,34 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t restore purchases. Please try again.';
 
   @override
+  String get plansRedeemCodeButton => 'Redeem Code';
+
+  @override
+  String get plansRedeemCodeTitle => 'Redeem Code';
+
+  @override
+  String get plansRedeemCodePendingMessage =>
+      'Your code was redeemed. It may take a few minutes for your plan to update.';
+
+  @override
+  String get plansRedeemCodeCheckingMessage => 'Checking your code…';
+
+  @override
+  String get plansRedeemCodeApplyingMessage =>
+      'Code accepted. Updating your plan…';
+
+  @override
+  String get plansRedeemCodeNotDetectedMessage =>
+      'We couldn\'t confirm a redeemed code. If you closed the code screen without redeeming, there\'s nothing to do. If you did redeem a code, tap Restore Purchases.';
+
+  @override
+  String get plansRedeemCodeCloseButton => 'Close';
+
+  @override
+  String get plansRedeemCodeErrorMessage =>
+      'Couldn\'t open code redemption. Please try again.';
+
+  @override
   String get plansLoadError => 'Couldn\'t load plans. Please try again.';
 
   @override

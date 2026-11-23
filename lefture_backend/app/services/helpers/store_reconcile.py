@@ -36,6 +36,14 @@ SUPPORTED_RC_STORES = {"app_store", "stripe"}
 _LOCAL_CHECKED_AT: dict[str, float] = {}
 _LOCAL_SKIP_SECONDS = 600
 
+# 手動(/billing/sync-store-subscription)の間引き。DBの checked_at(claim_store_sync_slot)は
+# summary / patrol と共有なので、それで手動を間引くと、サインアップ直後に summary が
+# 枠を使った数十秒後の手動同期(ログイン直後の syncPurchases → TRANSFER の直後など)が
+# 黙って捨てられ、次の summary(6時間後)までDBに反映されない(2026-11-23 Sandboxで再現)。
+# 手動は利用者の操作起点で回数が少なく、付与は event_id で冪等なので、インスタンス内の
+# 時刻だけで間引く(RevenueCat API を連打させないため)。
+_LOCAL_MANUAL_CHECKED_AT: dict[str, float] = {}
+
 
 def _ms_to_dt(ms: Any) -> Optional[datetime]:
     if not isinstance(ms, (int, float)):
@@ -267,8 +275,13 @@ async def reconcile_user(
     min_interval_seconds: int,
     reason: str,
     use_local_skip: bool = False,
+    use_db_slot: bool = True,
 ) -> dict:
-    """1ユーザー分の突き合わせ。例外は外に出さず結果dictで返す。"""
+    """1ユーザー分の突き合わせ。例外は外に出さず結果dictで返す。
+
+    use_db_slot=False(手動)のときは、DBの共有枠ではなくインスタンス内の
+    min_interval_seconds で間引く(_LOCAL_MANUAL_CHECKED_AT の説明を参照)。
+    """
     if not revenuecat_api.is_configured():
         return {"action": "none", "reason": "revenuecat_api_not_configured"}
 
@@ -278,12 +291,18 @@ async def reconcile_user(
             return {"action": "none", "reason": "local_throttle"}
         _LOCAL_CHECKED_AT[user_id] = time.monotonic()
 
-    try:
-        if not await _claim_slot(admin_client, user_id, min_interval_seconds):
+    if use_db_slot:
+        try:
+            if not await _claim_slot(admin_client, user_id, min_interval_seconds):
+                return {"action": "none", "reason": "throttled"}
+        except Exception as e:
+            logger.warning(f"store reconcile: claim failed for {user_id}: {e}")
+            return {"action": "none", "reason": "claim_failed"}
+    else:
+        last = _LOCAL_MANUAL_CHECKED_AT.get(user_id)
+        if last and time.monotonic() - last < min_interval_seconds:
             return {"action": "none", "reason": "throttled"}
-    except Exception as e:
-        logger.warning(f"store reconcile: claim failed for {user_id}: {e}")
-        return {"action": "none", "reason": "claim_failed"}
+        _LOCAL_MANUAL_CHECKED_AT[user_id] = time.monotonic()
 
     decision: dict = {"action": "none", "reason": "unknown"}
     try:

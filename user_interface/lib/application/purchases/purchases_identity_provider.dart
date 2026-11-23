@@ -48,17 +48,25 @@ class PurchasesIdentityService {
   /// 紐付いていればTRANSFERが発生しうる(プロジェクト設定: Transfer to new App User ID)。
   /// バックエンドのTRANSFER処理(transfer_store_subscription)が移動元→移動先へ
   /// プランと残クレジットを移す前提。
+  ///
+  /// ★ logIn の時点で既に有効な場合も、バックエンドへの同期は1回行う。
+  /// アプリ外で引き換えた購入が匿名IDに付いていて、logIn の alias でこのユーザーに
+  /// 移っただけの場合、新しいwebhookは来ない(匿名ID宛ての INITIAL_PURCHASE は
+  /// バックエンドが紐付け先なしとして無視済み)。ここで同期しないと、6時間ごとの
+  /// 突き合わせまでDBはFreeのまま残る。
   Future<void> _logInAndSync(String userId) async {
     try {
       final result = await Purchases.logIn(userId);
-      if (result.customerInfo.entitlements.active.isNotEmpty) return;
       if (!_syncedUserIds.add(userId)) return;
 
-      await Purchases.syncPurchases();
-      final info = await Purchases.getCustomerInfo();
-      if (info.entitlements.active.isEmpty) return;
-
-      DevLog.add('💳 [Purchases] syncPurchases found an active entitlement; refreshing credit data');
+      if (result.customerInfo.entitlements.active.isEmpty) {
+        await Purchases.syncPurchases();
+        final info = await Purchases.getCustomerInfo();
+        if (info.entitlements.active.isEmpty) return;
+        DevLog.add('💳 [Purchases] syncPurchases found an active entitlement; refreshing credit data');
+      } else {
+        DevLog.add('💳 [Purchases] logIn returned an active entitlement; asking backend to sync');
+      }
       // webhookが届かないケース(匿名IDでの購入がaliasされただけ等)に備えて、
       // バックエンドにRevenueCatとの突き合わせを依頼してから再取得する。
       final action = await _ref.read(creditRepositoryProvider).syncStoreSubscription();

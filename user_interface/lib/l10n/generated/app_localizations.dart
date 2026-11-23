@@ -3086,6 +3086,54 @@ abstract class AppLocalizations {
   /// **'Couldn\'t restore purchases. Please try again.'**
   String get plansRestorePurchasesErrorMessage;
 
+  /// iOS-only text link on the Plans page footer (next to Restore Purchases) that opens Apple's offer code redemption sheet, so a user can enter a promotional subscription code.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeem Code'**
+  String get plansRedeemCodeButton;
+
+  /// Title of dialogs shown after the user closes Apple's offer code redemption sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeem Code'**
+  String get plansRedeemCodeTitle;
+
+  /// Dialog message shown when the App Store accepted the offer code but the new plan is not reflected on the account yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Your code was redeemed. It may take a few minutes for your plan to update.'**
+  String get plansRedeemCodePendingMessage;
+
+  /// Progress dialog message shown after the user closes Apple's offer code sheet, while the app waits to see whether a code was redeemed.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking your code…'**
+  String get plansRedeemCodeCheckingMessage;
+
+  /// Progress dialog message shown once the redeemed code is detected, while the new plan is being applied to the account.
+  ///
+  /// In en, this message translates to:
+  /// **'Code accepted. Updating your plan…'**
+  String get plansRedeemCodeApplyingMessage;
+
+  /// Dialog message shown when the code redemption progress dialog finishes without detecting a new subscription (the user may have cancelled, or the purchase may need to be restored).
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t confirm a redeemed code. If you closed the code screen without redeeming, there\'s nothing to do. If you did redeem a code, tap Restore Purchases.'**
+  String get plansRedeemCodeNotDetectedMessage;
+
+  /// Button in the code redemption progress dialog that dismisses it and stops waiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get plansRedeemCodeCloseButton;
+
+  /// Dialog message shown if opening Apple's offer code redemption sheet or checking its result fails with an unexpected error.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open code redemption. Please try again.'**
+  String get plansRedeemCodeErrorMessage;
+
   /// Error message shown on the Plans page when the plan list or store pricing fails to load.
   ///
   /// In en, this message translates to:

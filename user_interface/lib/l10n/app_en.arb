@@ -2318,6 +2318,38 @@
   "@plansRestorePurchasesErrorMessage": {
     "description": "Dialog message shown if restoring purchases fails with an unexpected error."
   },
+  "plansRedeemCodeButton": "Redeem Code",
+  "@plansRedeemCodeButton": {
+    "description": "iOS-only text link on the Plans page footer (next to Restore Purchases) that opens Apple's offer code redemption sheet, so a user can enter a promotional subscription code."
+  },
+  "plansRedeemCodeTitle": "Redeem Code",
+  "@plansRedeemCodeTitle": {
+    "description": "Title of dialogs shown after the user closes Apple's offer code redemption sheet."
+  },
+  "plansRedeemCodePendingMessage": "Your code was redeemed. It may take a few minutes for your plan to update.",
+  "@plansRedeemCodePendingMessage": {
+    "description": "Dialog message shown when the App Store accepted the offer code but the new plan is not reflected on the account yet."
+  },
+  "plansRedeemCodeCheckingMessage": "Checking your code…",
+  "@plansRedeemCodeCheckingMessage": {
+    "description": "Progress dialog message shown after the user closes Apple's offer code sheet, while the app waits to see whether a code was redeemed."
+  },
+  "plansRedeemCodeApplyingMessage": "Code accepted. Updating your plan…",
+  "@plansRedeemCodeApplyingMessage": {
+    "description": "Progress dialog message shown once the redeemed code is detected, while the new plan is being applied to the account."
+  },
+  "plansRedeemCodeNotDetectedMessage": "We couldn't confirm a redeemed code. If you closed the code screen without redeeming, there's nothing to do. If you did redeem a code, tap Restore Purchases.",
+  "@plansRedeemCodeNotDetectedMessage": {
+    "description": "Dialog message shown when the code redemption progress dialog finishes without detecting a new subscription (the user may have cancelled, or the purchase may need to be restored)."
+  },
+  "plansRedeemCodeCloseButton": "Close",
+  "@plansRedeemCodeCloseButton": {
+    "description": "Button in the code redemption progress dialog that dismisses it and stops waiting."
+  },
+  "plansRedeemCodeErrorMessage": "Couldn't open code redemption. Please try again.",
+  "@plansRedeemCodeErrorMessage": {
+    "description": "Dialog message shown if opening Apple's offer code redemption sheet or checking its result fails with an unexpected error."
+  },
   "plansLoadError": "Couldn't load plans. Please try again.",
   "@plansLoadError": {
     "description": "Error message shown on the Plans page when the plan list or store pricing fails to load."

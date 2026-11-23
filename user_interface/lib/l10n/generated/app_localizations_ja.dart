@@ -1696,6 +1696,32 @@ class AppLocalizationsJa extends AppLocalizations {
   String get plansRestorePurchasesErrorMessage => '購入を復元できませんでした。もう一度お試しください。';
 
   @override
+  String get plansRedeemCodeButton => 'コードを使う';
+
+  @override
+  String get plansRedeemCodeTitle => 'コードの引き換え';
+
+  @override
+  String get plansRedeemCodePendingMessage =>
+      'コードを引き換えました。プランに反映されるまで数分かかる場合があります。';
+
+  @override
+  String get plansRedeemCodeCheckingMessage => 'コードを確認しています…';
+
+  @override
+  String get plansRedeemCodeApplyingMessage => 'コードを受け付けました。プランを反映しています…';
+
+  @override
+  String get plansRedeemCodeNotDetectedMessage =>
+      'コードの引き換えを確認できませんでした。引き換えずに閉じた場合は、このままで問題ありません。引き換えた場合は「購入を復元」を押してください。';
+
+  @override
+  String get plansRedeemCodeCloseButton => '閉じる';
+
+  @override
+  String get plansRedeemCodeErrorMessage => 'コードの引き換えを開けませんでした。もう一度お試しください。';
+
+  @override
   String get plansLoadError => 'プランを読み込めませんでした。もう一度お試しください。';
 
   @override
