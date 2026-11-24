@@ -1,0 +1,100 @@
+{
+ "created_at": "2026-11-23T17:45:29",
+ "factors": {
+  "rc": 14.3,
+  "dn": 14.1,
+  "ff": 19.7
+ },
+ "max_net_per_credit": 0.004247875,
+ "tiers": {
+  "60": {
+   "n_haiku_era": 2,
+   "revenue_at_max_net": 0.2548725,
+   "cost_2_5_flash": 0.09471736032636172,
+   "cost_haiku": 0.03607436313966913,
+   "haiku_three_tasks": 0.011511165,
+   "flash_three_tasks": 0.0659313,
+   "parts_haiku": {
+    "rc": 0.0032364625,
+    "dn": 0.0032768525,
+    "ff": 0.00499785
+   },
+   "hydrogen_cost": 0.21550587713966912,
+   "hydrogen_low12": 0.1626971781396691,
+   "hydrogen_high20": 0.25478649813966914,
+   "combos": {
+    "FFのみ": 0.12953415813966912,
+    "RCのみ": 0.07911931438966913,
+    "DNのみ": 0.07900113088966913,
+    "RC+FF": 0.1725791093896691,
+    "DN+FF": 0.1724609258896691,
+    "RC+DN": 0.12204608213966912,
+    "RC+DN+FF": 0.21550587713966912
+   },
+   "breakeven_net_per_credit_hydrogen": 0.0035917646189944853,
+   "breakeven_net_per_credit_haiku": 0.0006012393856611522
+  },
+  "80": {
+   "n_haiku_era": 17,
+   "revenue_at_max_net": 0.33982999999999997,
+   "cost_2_5_flash": 0.1418934538327056,
+   "cost_haiku": 0.08007645425668108,
+   "haiku_three_tasks": 0.025705427941176473,
+   "flash_three_tasks": 0.096334475,
+   "parts_haiku": {
+    "rc": 0.008857426764705884,
+    "dn": 0.013000983529411765,
+    "ff": 0.003847017647058824
+   },
+   "hydrogen_cost": 0.44013234446256344,
+   "hydrogen_low12": 0.3628361616096223,
+   "hydrogen_high20": 0.5684795851390341,
+   "combos": {
+    "FFのみ": 0.15201568425668108,
+    "RCのみ": 0.19788023022726933,
+    "DNのみ": 0.2503893384919752,
+    "RC+FF": 0.2698194602272693,
+    "DN+FF": 0.3223285684919752,
+    "RC+DN": 0.3681931144625634,
+    "RC+DN+FF": 0.44013234446256344
+   },
+   "breakeven_net_per_credit_hydrogen": 0.005501654305782043,
+   "breakeven_net_per_credit_haiku": 0.0010009556782085136
+  },
+  "100": {
+   "n_haiku_era": 10,
+   "revenue_at_max_net": 0.4247875,
+   "cost_2_5_flash": 0.21529897798774378,
+   "cost_haiku": 0.10182994096679081,
+   "haiku_three_tasks": 0.030223146,
+   "flash_three_tasks": 0.14389994117647056,
+   "parts_haiku": {
+    "rc": 0.01149696,
+    "dn": 0.015412816,
+    "ff": 0.0033133700000000004
+   },
+   "hydrogen_cost": 0.5186074175667909,
+   "hydrogen_low12": 0.43428454696679086,
+   "hydrogen_high20": 0.6760697149667907,
+   "combos": {
+    "FFのみ": 0.1637899599667908,
+    "RCのみ": 0.2547395089667909,
+    "DNのみ": 0.3037378305667908,
+    "RC+FF": 0.3166995279667908,
+    "DN+FF": 0.36569784956679086,
+    "RC+DN": 0.4566473985667908,
+    "RC+DN+FF": 0.5186074175667909
+   },
+   "breakeven_net_per_credit_hydrogen": 0.005186074175667909,
+   "breakeven_net_per_credit_haiku": 0.0010182994096679082
+  }
+ },
+ "chat": {
+  "haiku_turn_usd": 0.0033293600000000004,
+  "hydrogen_turn_usd": 0.01937726,
+  "haiku_credits": 1.4982120000000003,
+  "hydrogen_credits": 8.719767000000001,
+  "hydrogen_cost_over_revenue_at_max": 0.5231373856863072,
+  "min_net_per_credit_for_chat_breakeven": 0.0022222222222222222
+ }
+}

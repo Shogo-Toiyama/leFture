@@ -95,7 +95,8 @@ class FunFactGenerationService:
     def __init__(self, llm: UnifiedLLM, logger: TaskLogger):
         self.llm = llm
         self.logger = logger
-        self.model_alias = "anthropic/claude-haiku-5-5"
+        # 2026-11-23 Google課題の提出期間だけ一時的にHydrogen(提出後にHaiku 5.5へ戻す)
+        self.model_alias = "gemini/gemini-4-hydrogen"  # 戻すとき: "anthropic/claude-haiku-5-5"
 
     async def run_from_memory(
         self,

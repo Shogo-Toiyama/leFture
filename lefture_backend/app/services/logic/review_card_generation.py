@@ -21,7 +21,8 @@ def _keyword_strings(topic: Dict[str, Any]) -> List[str]:
     return [kw["keyword"] for kw in (topic.get("keywords") or []) if isinstance(kw, dict) and kw.get("keyword")]
 
 
-REVIEW_CARD_MODEL = "anthropic/claude-haiku-5-5"
+# 2026-11-23 Google課題の提出期間だけ一時的にGemini 4 Hydrogenへ差し替え(提出後にHaiku 5.5へ戻す。ユーザー判断)。
+REVIEW_CARD_MODEL = "gemini/gemini-4-hydrogen"  # 戻すとき: "anthropic/claude-haiku-5-5"
 # max_tokensは思考トークン込み。途中で切れるとJSONが壊れるので高めにとる
 # (2026-11 移行実験 contents_generation/test_codes/haiku_migration_tone で最大でも約5千トークン)。
 REVIEW_CARD_MAX_TOKENS = 32000

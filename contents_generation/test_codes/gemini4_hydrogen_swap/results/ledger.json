@@ -1,0 +1,22 @@
+[
+ {
+  "at": "2026-11-23T16:46:26",
+  "label": "round1:generate in~8982 worst$0.0585",
+  "cost_usd": 0.036634
+ },
+ {
+  "at": "2026-11-23T16:46:49",
+  "label": "round1:generate in~11482 worst$0.0772",
+  "cost_usd": 0.05129
+ },
+ {
+  "at": "2026-11-23T16:47:00",
+  "label": "round1:generate in~2351 worst$0.0335",
+  "cost_usd": 0.013357
+ },
+ {
+  "at": "2026-11-23T16:47:13",
+  "label": "round1:stream in~7009 worst$0.0566",
+  "cost_usd": 0.018373
+ }
+]

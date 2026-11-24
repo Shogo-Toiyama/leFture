@@ -60,6 +60,7 @@ contents_generation/test_codes/chat_inspection_duck_typing/
 # Results that hold content of people outside tools/experiment_privacy/allowlist.json
 # go to the private repo and are listed here instead. See AGENTS.md.
 contents_generation/test_codes/haiku_migration_tone/inputs/
+contents_generation/test_codes/gemini4_hydrogen_swap/inputs/
 
 # router_language_eval: cases/ are raw production chats (inputs). Results are committed after the privacy check.
 contents_generation/test_codes/router_language_eval/cases/

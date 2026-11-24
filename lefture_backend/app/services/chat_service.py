@@ -172,7 +172,8 @@ ROUTER_MODEL = "gemini/gemini-3.1-flash-lite"
 ROUTER_REASONING_EFFORT = "none"
 # 2026-10-02に3.1 Flash Lite(推論なし)から変更。同じ材料で比べると、最初の1文字までの時間は同じくらい
 # (約0.6秒)で、「1文に出典は1つ」「同じ内容を言う出典は1つにまとめる」をよく守った(7回中まとめ付け0回)。
-ANSWER_MODEL = "anthropic/claude-haiku-5-5"
+# 2026-11-23 Google課題の提出期間だけ一時的にGemini 4 Hydrogenへ差し替え(提出後にHaiku 5.5へ戻す。ユーザー判断)。
+ANSWER_MODEL = "gemini/gemini-4-hydrogen"  # 戻すとき: "anthropic/claude-haiku-5-5"
 # 2026-10-07にLunaから変更(ユーザー判断)。Lunaは長さの指示にほとんど従わず、「プログラミング言語の宿題」の
 # スレッドで返答が短すぎた。同じ5ターン+LeetCodeの「できた！」をHaiku 5.5(effort low)で書き直すと、
 # 中身は全部正確で、長さはLunaの約1.2〜1.4倍、口調はLunaよりはっきり温かかった(絵文字・受け止めてから説明)。

@@ -1,0 +1,562 @@
+[
+ {
+  "task": "review_cards",
+  "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+  "language": {
+   "content_language": "Japanese",
+   "transcript_language": "English",
+   "is_bilingual": true
+  },
+  "wall_seconds": 10.6,
+  "cost_usd": 0.002822,
+  "token_cost_usd": 0.002519,
+  "error": null,
+  "output": [
+   {
+    "topic_evaluation": {
+     "micro_topics": [
+      {
+       "idx": 1,
+       "title": "Hello World の謎を予告",
+       "summary": "今は意味が分からないコードも、やがて全部理解できるようになると語られる。",
+       "start_sid": "s000172",
+       "end_sid": "s000179"
+      },
+      {
+       "idx": 2,
+       "title": "データとテキストのセグメント",
+       "summary": "`.data`はデータ、`.text`は命令をメモリに置くセクションであると説明される。",
+       "start_sid": "s000181",
+       "end_sid": "s000183"
+      },
+      {
+       "idx": 3,
+       "title": "即値ロード命令の基本",
+       "summary": "load immediate命令が定数（即値）をレジスタに入れること、10進数がデフォルトであることが示される。",
+       "start_sid": "s000187",
+       "end_sid": "s000222"
+      },
+      {
+       "idx": 4,
+       "title": "命令の実行順序と程序カウンタ",
+       "summary": "プログラムはメモリから命令レジスタに読み込まれ、プログラムカウンタを1ずつ進めながら順に実行される。",
+       "start_sid": "s000275",
+       "end_sid": "s000287"
+      },
+      {
+       "idx": 5,
+       "title": ".text省略時の落とし穴",
+       "summary": "`.text`を書き忘れるとアセンブラが全てをコードとみなさず、データと命令の区別が崩れるバグになる。",
+       "start_sid": "s000300",
+       "end_sid": "s000312"
+      }
+     ],
+     "card_mapping_strategy": "マイクロトピック1はフックに使う。コアは「メモリには命令とデータが分けて置かれ、CPUは命令を順に実行する」。マイクロトピック2と4を『Core Why』にまとめ、3は即値ロードの要点だけに絞る。16進数変換、コメント記法の細部、学生の雑談は省略する。マイクロトピック5を『Gotcha』に使う。省略事項：16進数変換の計算手順、#によるコメント記法の細部、ジャンプや分岐の予告。これらは『Next Action』の自習リストに入れる。",
+     "core_concept_identified": "命令とデータは分けてメモリに置かれる"
+    },
+    "review_cards": [
+     {
+      "card_type": "hook",
+      "hero_emoji": "🧳",
+      "title": "知らないまま詰めたスーツケース",
+      "content_blocks": [
+       {
+        "type": "paragraph",
+        "text": "前回までの流れを思い出すと、ここからはアセンブリ言語の『中身』に入っていきます。"
+       },
+       {
+        "type": "quote",
+        "text": "今は何を詰めたか分からなくても大丈夫。スーツケースを開ければ、中身が全部見えてくる！"
+       },
+       {
+        "type": "paragraph",
+        "text": "Hello World のコードは、まさに何が入っているか分からないまま詰めたスーツケース。⟦s000172-s000179⟧"
+       }
+      ]
+     },
+     {
+      "card_type": "core_why",
+      "hero_emoji": "🗂️",
+      "title": "命令とデータの仕分け部屋",
+      "content_blocks": [
+       {
+        "type": "paragraph",
+        "text": "プログラムの中身は大きく2つに分かれます。`.data` はデータを、`.text` は命令をメモリに置くための区画です。⟦s000181-s000183⟧"
+       },
+       {
+        "type": "callout",
+        "alert_type": "info",
+        "text": "命令もデータもどちらもメモリに入ります。つまり『メモリは何でも詰め込める倉庫』なのです！ ⟦s000183⟧"
+       },
+       {
+        "type": "code",
+        "code_string": "li $t1, 34   # 即値 34 を T1 レジスタにロードする",
+        "language": "asm",
+        "explanation": "load immediate（即値ロード）は、定数を指定したレジスタに直接入れる命令です。10進数として解釈されます。⟦s000188-s000199⟧"
+       }
+      ]
+     },
+     {
+      "card_type": "gotcha",
+      "hero_emoji": "⚠️",
+      "title": "プログラムカウンタが1つずつ進む仕組み",
+      "content_blocks": [
+       {
+        "type": "callout",
+        "alert_type": "warning",
+        "text": "`.text` を書き忘れると、アセンブラは全てをデータとみなし、コードが生成されません。これは実際に学生が出したバグです。⟦s000300-s000302⟧"
+       },
+       {
+        "type": "paragraph",
+        "text": "実行時には、メモリ上の最初の命令が命令レジスタに読み込まれて実行されます。終わるとプログラムカウンタが1増え、次の命令を呼び出します。⟦s000275-s000279⟧"
+       },
+       {
+        "type": "paragraph",
+        "text": "この『読み込み→実行→カウンタ＋1』の繰り返しが、プログラムが順番どおりに動く正体です。⟦s000280-s000282⟧"
+       }
+      ]
+     },
+     {
+      "card_type": "next_action",
+      "hero_emoji": "🚀",
+      "title": "メモリとレジスタの役割を整理",
+      "content_blocks": [
+       {
+        "type": "paragraph",
+        "text": "今回は、プログラムがメモリに置かれ、命令が1つずつ実行されるまでの流れを学びました。"
+       },
+       {
+        "type": "paragraph",
+        "text": "Make sure to cover these:"
+       },
+       {
+        "type": "list",
+        "items": [
+         "16進数への変換の計算手順（34 を 16進数に直す方法）",
+         "`#` によるコメントの書き方と、その他のコメント記法の違い",
+         "ループや分岐によって命令の順番がジャンプする仕組み"
+        ]
+       },
+       {
+        "type": "paragraph",
+        "text": "次の単元『算術命令とオペランド』では、加算命令（add instruction）や即値加算命令（add immediate）を使って、実際に計算を行う方法を見ていきましょう。さらに、オペランド（operand）、オペコード（opcode）、算術論理演算装置（Arithmetic Logic Unit, ALU）といった言葉も登場します。どう動くのか、楽しみにしていてください！"
+       }
+      ]
+     }
+    ],
+    "topic_idx": 2
+   }
+  ],
+  "calls": [
+   {
+    "task": "review_cards",
+    "lecture_id": "a028aad6-07ba-4e3f-ac39-7494e9d7f062",
+    "original_model": "anthropic/claude-haiku-5-5",
+    "model": "anthropic/claude-haiku-5-5",
+    "request_kwargs": {
+     "model": "anthropic/claude-haiku-5-5",
+     "temperature": 0.2,
+     "num_retries": 3,
+     "max_tokens": 32000,
+     "reasoning_effort": "low",
+     "thinking": {
+      "type": "adaptive",
+      "display": "summarized"
+     },
+     "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+       "name": "output",
+       "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+         "topic_evaluation",
+         "review_cards"
+        ],
+        "properties": {
+         "topic_evaluation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+           "micro_topics",
+           "card_mapping_strategy",
+           "core_concept_identified"
+          ],
+          "properties": {
+           "micro_topics": {
+            "type": "array",
+            "items": {
+             "type": "object",
+             "additionalProperties": false,
+             "required": [
+              "idx",
+              "title",
+              "summary",
+              "start_sid",
+              "end_sid"
+             ],
+             "properties": {
+              "idx": {
+               "type": "integer"
+              },
+              "title": {
+               "type": "string"
+              },
+              "summary": {
+               "type": "string"
+              },
+              "start_sid": {
+               "type": "string"
+              },
+              "end_sid": {
+               "type": "string"
+              }
+             }
+            }
+           },
+           "card_mapping_strategy": {
+            "type": "string"
+           },
+           "core_concept_identified": {
+            "type": "string"
+           }
+          }
+         },
+         "review_cards": {
+          "type": "array",
+          "items": {
+           "type": "object",
+           "additionalProperties": false,
+           "required": [
+            "card_type",
+            "hero_emoji",
+            "title",
+            "content_blocks"
+           ],
+           "properties": {
+            "card_type": {
+             "type": "string",
+             "enum": [
+              "hook",
+              "core_why",
+              "gotcha",
+              "next_action"
+             ]
+            },
+            "hero_emoji": {
+             "type": "string"
+            },
+            "title": {
+             "type": "string"
+            },
+            "content_blocks": {
+             "type": "array",
+             "items": {
+              "anyOf": [
+               {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                 "type",
+                 "text"
+                ],
+                "properties": {
+                 "type": {
+                  "type": "string",
+                  "enum": [
+                   "paragraph"
+                  ]
+                 },
+                 "text": {
+                  "type": "string"
+                 }
+                }
+               },
+               {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                 "type",
+                 "text"
+                ],
+                "properties": {
+                 "type": {
+                  "type": "string",
+                  "enum": [
+                   "quote"
+                  ]
+                 },
+                 "text": {
+                  "type": "string"
+                 }
+                }
+               },
+               {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                 "type",
+                 "alert_type",
+                 "text"
+                ],
+                "properties": {
+                 "type": {
+                  "type": "string",
+                  "enum": [
+                   "callout"
+                  ]
+                 },
+                 "alert_type": {
+                  "type": "string",
+                  "enum": [
+                   "info",
+                   "warning",
+                   "error"
+                  ]
+                 },
+                 "text": {
+                  "type": "string"
+                 }
+                }
+               },
+               {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                 "type",
+                 "code_string"
+                ],
+                "properties": {
+                 "type": {
+                  "type": "string",
+                  "enum": [
+                   "code"
+                  ]
+                 },
+                 "code_string": {
+                  "type": "string"
+                 },
+                 "language": {
+                  "type": "string"
+                 },
+                 "explanation": {
+                  "type": "string"
+                 }
+                }
+               },
+               {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                 "type",
+                 "items"
+                ],
+                "properties": {
+                 "type": {
+                  "type": "string",
+                  "enum": [
+                   "list"
+                  ]
+                 },
+                 "items": {
+                  "type": "array",
+                  "items": {
+                   "type": "string"
+                  }
+                 }
+                }
+               }
+              ]
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "system_chars": 20339,
+    "user_chars": 10690,
+    "elapsed_seconds": 10.1,
+    "input_tokens": 13294,
+    "output_tokens": 1908,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 9440,
+    "finish_reason": "stop",
+    "json_parse_error": null,
+    "output_text": "{\"topic_evaluation\":{\"micro_topics\":[{\"idx\":1,\"title\":\"Hello World の謎を予告\",\"summary\":\"今は意味が分からないコードも、やがて全部理解できるようになると語られる。\",\"start_sid\":\"s000172\",\"end_sid\":\"s000179\"},{\"idx\":2,\"title\":\"データとテキストのセグメント\",\"summary\":\"`.data`はデータ、`.text`は命令をメモリに置くセクションであると説明される。\",\"start_sid\":\"s000181\",\"end_sid\":\"s000183\"},{\"idx\":3,\"title\":\"即値ロード命令の基本\",\"summary\":\"load immediate命令が定数（即値）をレジスタに入れること、10進数がデフォルトであることが示される。\",\"start_sid\":\"s000187\",\"end_sid\":\"s000222\"},{\"idx\":4,\"title\":\"命令の実行順序と程序カウンタ\",\"summary\":\"プログラムはメモリから命令レジスタに読み込まれ、プログラムカウンタを1ずつ進めながら順に実行される。\",\"start_sid\":\"s000275\",\"end_sid\":\"s000287\"},{\"idx\":5,\"title\":\".text省略時の落とし穴\",\"summary\":\"`.text`を書き忘れるとアセンブラが全てをコードとみなさず、データと命令の区別が崩れるバグになる。\",\"start_sid\":\"s000300\",\"end_sid\":\"s000312\"}],\"card_mapping_strategy\":\"マイクロトピック1はフックに使う。コアは「メモリには命令とデータが分けて置かれ、CPUは命令を順に実行する」。マイクロトピック2と4を『Core Why』にまとめ、3は即値ロードの要点だけに絞る。16進数変換、コメント記法の細部、学生の雑談は省略する。マイクロトピック5を『Gotcha』に使う。省略事項：16進数変換の計算手順、#によるコメント記法の細部、ジャンプや分岐の予告。これらは『Next Action』の自習リストに入れる。\",\"core_concept_identified\":\"命令とデータは分けてメモリに置かれる\"},\"review_cards\":[{\"card_type\":\"hook\",\"hero_emoji\":\"🧳\",\"title\":\"知らないまま詰めたスーツケース\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"前回までの流れを思い出すと、ここからはアセンブリ言語の『中身』に入っていきます。\"},{\"type\":\"quote\",\"text\":\"今は何を詰めたか分からなくても大丈夫。スーツケースを開ければ、中身が全部見えてくる！\"},{\"type\":\"paragraph\",\"text\":\"Hello World のコードは、まさに何が入っているか分からないまま詰めたスーツケース。⟦s000172-s000179⟧\"}]},{\"card_type\":\"core_why\",\"hero_emoji\":\"🗂️\",\"title\":\"命令とデータの仕分け部屋\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"プログラムの中身は大きく2つに分かれます。`.data` はデータを、`.text` は命令をメモリに置くための区画です。⟦s000181-s000183⟧\"},{\"type\":\"callout\",\"alert_type\":\"info\",\"text\":\"命令もデータもどちらもメモリに入ります。つまり『メモリは何でも詰め込める倉庫』なのです！ ⟦s000183⟧\"},{\"type\":\"code\",\"code_string\":\"li $t1, 34   # 即値 34 を T1 レジスタにロードする\",\"language\":\"asm\",\"explanation\":\"load immediate（即値ロード）は、定数を指定したレジスタに直接入れる命令です。10進数として解釈されます。⟦s000188-s000199⟧\"}]},{\"card_type\":\"gotcha\",\"hero_emoji\":\"⚠️\",\"title\":\"プログラムカウンタが1つずつ進む仕組み\",\"content_blocks\":[{\"type\":\"callout\",\"alert_type\":\"warning\",\"text\":\"`.text` を書き忘れると、アセンブラは全てをデータとみなし、コードが生成されません。これは実際に学生が出したバグです。⟦s000300-s000302⟧\"},{\"type\":\"paragraph\",\"text\":\"実行時には、メモリ上の最初の命令が命令レジスタに読み込まれて実行されます。終わるとプログラムカウンタが1増え、次の命令を呼び出します。⟦s000275-s000279⟧\"},{\"type\":\"paragraph\",\"text\":\"この『読み込み→実行→カウンタ＋1』の繰り返しが、プログラムが順番どおりに動く正体です。⟦s000280-s000282⟧\"}]},{\"card_type\":\"next_action\",\"hero_emoji\":\"🚀\",\"title\":\"メモリとレジスタの役割を整理\",\"content_blocks\":[{\"type\":\"paragraph\",\"text\":\"今回は、プログラムがメモリに置かれ、命令が1つずつ実行されるまでの流れを学びました。\"},{\"type\":\"paragraph\",\"text\":\"Make sure to cover these:\"},{\"type\":\"list\",\"items\":[\"16進数への変換の計算手順（34 を 16進数に直す方法）\",\"`#` によるコメントの書き方と、その他のコメント記法の違い\",\"ループや分岐によって命令の順番がジャンプする仕組み\"]},{\"type\":\"paragraph\",\"text\":\"次の単元『算術命令とオペランド』では、加算命令（add instruction）や即値加算命令（add immediate）を使って、実際に計算を行う方法を見ていきましょう。さらに、オペランド（operand）、オペコード（opcode）、算術論理演算装置（Arithmetic Logic Unit, ALU）といった言葉も登場します。どう動くのか、楽しみにしていてください！\"}]}]}",
+    "cost_usd": 0.0025193999999999998
+   }
+  ],
+  "checks": {
+   "calls": 1,
+   "error": null,
+   "finish_reasons": [
+    "stop"
+   ],
+   "truncated_calls": 0,
+   "json_parse_errors": 0,
+   "chars": 1009,
+   "exclamations": 3,
+   "question_marks": 0,
+   "citations": 7,
+   "malformed_citations": 0,
+   "placeholder_leak": 0,
+   "english_gloss_parens": 5,
+   "input_tokens": 13294,
+   "output_tokens": 1908,
+   "max_output_tokens_single_call": 1908,
+   "sum_call_seconds": 10.1,
+   "max_call_seconds": 10.1,
+   "topics": 1,
+   "topics_with_bad_card_sequence": 0
+  }
+ },
+ {
+  "task": "deep_notes",
+  "lecture_id": "666b2c9d-a997-451b-9318-98f98c9d29fa",
+  "language": {
+   "content_language": "Japanese",
+   "transcript_language": "English",
+   "is_bilingual": true
+  },
+  "wall_seconds": 20.54,
+  "cost_usd": 0.004214,
+  "token_cost_usd": 0.003598,
+  "error": null,
+  "output": [
+   {
+    "topic_idx": 4,
+    "content": "# 4. Haskellの関数定義と型推論\n\nHaskellでは、関数の型を書く行と関数の本体を書く行を分けて記述し、本体は「評価して得られる式」そのものとして書きます。さらにコンパイラが引数や戻り値の型を使い方から推論するため、型を省略しても各値の型は必ず一つに決まり、異なる型同士は自動で変換されません。\n\n## 🖥️ Haskellプログラムの実行の流れ\n\nHaskellのプログラムは、エディタでファイルに書いて保存し、インタラクティブインタプリタ（GHCI）で読み込んで実行します。講義の例では、円の面積を計算する関数を `area.hs` に書き、GHCIで読み込んで呼び出しました。⟦s000518-s000524⟧ GHCIは対話型のREPLインタプリタであり、標準ライブラリを事前に読み込んでいることを `prelude` の表示で知らせます。⟦s000525-s000527⟧ ファイル名の拡張子 `.hs` は省略でき、読み込み時に自動で補完されます。⟦s000528-s000529⟧\n\n関数の呼び出しは、関数名の後に引数を空白で続けるだけで行います。たとえば半径10の面積を求める場合は、括弧なしで関数名と引数を並べます。⟦s000530-s000531⟧ プログラムを変更した場合は、保存したあとにGHCIで `:r` を使って再読み込みします。たとえば `3.14` の代わりに組み込み定数 `pi` を使うよう書き換えると、より高い精度の結果が得られます。⟦s000532-s000537, s000540⟧\n\n## 📐 関数シグネチャの読み方\n\n**関数シグネチャ（function signature）**は、関数が受け取る引数の型と、返す値の型を宣言するものです。Haskellでは、この宣言を関数定義の直前の行に書きます。⟦s000647⟧ 型の並びは「引数の型、引数の型、…、戻り値の型」の順になっており、**最後に並ぶ型が戻り値の型**を表します。⟦s000594-s000600, s000711-s000712⟧\n\n具体例として、\\(f(x) = 3x^2\\) を計算する関数 `poly` を見てみます。C++の式に対応させると、型宣言の最初の `Double` が引数 `x` の型、最後の `Double` が戻り値の型を表します。⟦s000565-s000569, s000594-s000599⟧ ここで `=` は代入ではなく、「`poly` は引数 `x` を受け取り、式 \\(3x^2\\) を評価して返す」という定義を表す記号として読みます。⟦s000566-s000570⟧ 講義では、この読み方をPythonのコロンに近いものとして捉えると分かりやすいと説明されました。⟦s000567-s000569⟧\n\n引数が複数ある場合も同じ規則が使われます。引数の型を次々に並べ、最後の型だけが戻り値になります。⟦s000601-s000603⟧ 例として `isGreater` は2つの引数を比較する関数で、型宣言は `isGreater :: Double -> Double -> Bool` のように読めます。⟦s000658-s000660, s000708-s000710⟧\n\n```haskell\nisGreater :: Double -> Double -> Bool\nisGreater first second = first > second\n```\n\n上の型宣言では、最初の2つの `Double` が引数の型を表し、最後の `Bool` が戻り値の型を表します。⟦s000711-s000712⟧ 型宣言の行で引数の型を縦に揃えて書くことは見やすさのためであり、必須ではありません。⟦s000719-s000727⟧\n\n## ✍️ 関数定義と呼び出しの文法\n\nHaskellの関数本体は、等号の右側に書く式そのものです。`return` の記述は不要で、式の値が自動的に関数の結果になります。これを**暗黙の戻り値（implicit return）**と呼びます。⟦s000617-s000624⟧ 例えば `3x^2` を計算する関数では、`return 3x^2` のようには書かず、数学の式と同じように `3 * x * x` 相当の式をそのまま書きます。⟦s000620-s000622⟧\n\n文法上の区切りとして、Haskellでは**括弧もカンマもセミコロンも使いません**。引数の囲みには括弧を使わず、呼び出しでも引数は空白で区切ります。⟦s000627-s000631, s000650, s000653-s000654, s000714-s000715⟧ 文の区切りは改行と空白、そして字下げ（インデント）によって決まります。⟦s000607-s000615⟧\n\n関数定義を複数行に分けるときは、2行目以降を字下げします。字下げの幅は何スペースでもよく、同じ関数の中で一貫していれば十分です。⟦s000676-s000677⟧ なお、同じ関数名は型宣言と定義の両方で二度書きます。これは言語設計者の選択であり、論理的に必須の決まりではないと説明されました。⟦s000637-s000646⟧\n\n講義では、関数定義と呼び出しの要点として次の点がまとめられました。\n\n- 型宣言は関数定義の上に置く。最初の型は引数の型、最後の型は戻り値の型を表す。⟦s000647-s000649⟧\n- 引数に括弧は不要で、本体は等号の後ろに置く単純な式である。⟦s000650-s000651⟧\n- 呼び出しでは、関数名の後に引数を続けるだけでよい。⟦s000653-s000654⟧\n\n## 🔍 型推論（type inference）による型の決定\n\nHaskellでは型宣言を省略しても動きます。講義の例 `isOld` は、年齢が30より大きいか、または痛みがあれば「年寄り」と判定する関数で、型宣言は書かれていません。⟦s000734-s000738⟧ 実際にGHCIで `isOld 20 True` を評価すると、20歳は年寄りではないが痛みがあるため `True` が返ります。⟦s000739-s000742⟧\n\nGHCIで `:t` を使うと、関数の型を確認できます。`:t` は値や関数の型を調べるコマンドです。⟦s000743, s000746⟧ `isOld` の型は、整数と真偽値を受け取り、真偽値を返すものとして表示されます。⟦s000747⟧ 型宣言を書いていないにもかかわらず、Haskellは各引数と戻り値の型を推論できたことになります。⟦s000748-s000750⟧\n\nこの推論は、関数の本体での値の使われ方から行われます。**型推論（type inference）**とは、プログラム内での値の使い方から、コンパイラが型を導き出す仕組みです。⟦s000844-s000845⟧ `isOld` の場合の推論は次のとおりです。\n\n1. 年齢 `age` を整数と比較しているので、`age` は整数でなければならない。整数と文字列や真偽値を比較することはできないため、この推論が成り立つ。⟦s000756-s000758, s000808-s000812⟧\n2. 痛みを表す引数を `True` と比較しているので、その引数は真偽値でなければならない。⟦s000760-s000761, s000813-s000814⟧\n3. 2つの条件を `||` で結んでいるので、結果は真偽値となり、戻り値の型は `Bool` となる。⟦s000766-s000767, s000815-s000817⟧\n\nこのように、型宣言は省略されていても、すべての変数・関数・値は固定された型を持っています。講義では、Haskellは型を省略させてくれるが、型の厳しさは変わらないと強調されました。⟦s000848-s000852⟧ 型宣言が必要になるのは、プログラムの意図を明確に示したい場合や、型の理解を確認する課題の場合です。⟦s000801-s000807⟧\n\n## 🔒 厳格な型検査と自動変換の禁止\n\nHaskellは**静的型付けと厳密な型検査（static typing and strict type checking）**を採用しており、異なる型の値を暗黙に変換して合わせることは行いません。⟦s000771-s000775⟧ 例えば、整数の `0` と `1` を真偽値の `False` と `True` として扱うことはなく、比較できるのは整数同士、真偽値同士だけです。⟦s000772-s000775, s000839-s000840⟧\n\nこの厳しさは引数の型にも及びます。`isOld` は整数を受け取る設計なので、`isOld 53.5 False` のように浮動小数点数を渡すと、C++では整数に変換されて動くような場面でも、Haskellはエラーを返します。⟦s000857-s000859⟧ 同様に、整数を必要とする関数に浮動小数点数を渡すこともできず、必要なら明示的に変換を書く必要があります。⟦s000777-s000779⟧\n\n型宣言を書いた場合も、その宣言が推論結果と食い違うとエラーになります。⟦s000836-s000837⟧ 型推論により宣言を省略できることと、型の不一致を許さないことは両立しています。⟦s000841-s000843⟧\n\n## 🎯 Key Takeaway\n\n- **型宣言の読み方**：関数シグネチャは引数の型を並べ、最後に戻り値の型を置く。⟦s000600, s000711-s000712⟧\n- **文法の特徴**：括弧やカンマを使わず、空白と字下げで区切る。return文はなく、本体の式が結果となる。⟦s000617-s000631, s000676-s000677⟧\n- **型推論**：関数本体での使われ方から引数と戻り値の型が自動的に決まり、型宣言は省略できる。⟦s000799-s000802, s000844-s000847⟧\n- **厳格さ**：型は必ず固定されており、異なる型の値は自動変換されずエラーになる。⟦s000849-s000854⟧"
+   }
+  ],
+  "calls": [
+   {
+    "task": "deep_notes",
+    "lecture_id": "666b2c9d-a997-451b-9318-98f98c9d29fa",
+    "original_model": "anthropic/claude-haiku-5-5",
+    "model": "anthropic/claude-haiku-5-5",
+    "request_kwargs": {
+     "model": "anthropic/claude-haiku-5-5",
+     "temperature": 0.2,
+     "num_retries": 3,
+     "max_tokens": 32000,
+     "reasoning_effort": "low",
+     "thinking": {
+      "type": "adaptive",
+      "display": "summarized"
+     }
+    },
+    "system_chars": 10872,
+    "user_chars": 25607,
+    "elapsed_seconds": 20.53,
+    "input_tokens": 14098,
+    "output_tokens": 4377,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "finish_reason": "stop",
+    "json_parse_error": null,
+    "output_text": "# 4. Haskellの関数定義と型推論\n\nHaskellでは、関数の型を書く行と関数の本体を書く行を分けて記述し、本体は「評価して得られる式」そのものとして書きます。さらにコンパイラが引数や戻り値の型を使い方から推論するため、型を省略しても各値の型は必ず一つに決まり、異なる型同士は自動で変換されません。\n\n## 🖥️ Haskellプログラムの実行の流れ\n\nHaskellのプログラムは、エディタでファイルに書いて保存し、インタラクティブインタプリタ（GHCI）で読み込んで実行します。講義の例では、円の面積を計算する関数を `area.hs` に書き、GHCIで読み込んで呼び出しました。⟦s000518-s000524⟧ GHCIは対話型のREPLインタプリタであり、標準ライブラリを事前に読み込んでいることを `prelude` の表示で知らせます。⟦s000525-s000527⟧ ファイル名の拡張子 `.hs` は省略でき、読み込み時に自動で補完されます。⟦s000528-s000529⟧\n\n関数の呼び出しは、関数名の後に引数を空白で続けるだけで行います。たとえば半径10の面積を求める場合は、括弧なしで関数名と引数を並べます。⟦s000530-s000531⟧ プログラムを変更した場合は、保存したあとにGHCIで `:r` を使って再読み込みします。たとえば `3.14` の代わりに組み込み定数 `pi` を使うよう書き換えると、より高い精度の結果が得られます。⟦s000532-s000537, s000540⟧\n\n## 📐 関数シグネチャの読み方\n\n**関数シグネチャ（function signature）**は、関数が受け取る引数の型と、返す値の型を宣言するものです。Haskellでは、この宣言を関数定義の直前の行に書きます。⟦s000647⟧ 型の並びは「引数の型、引数の型、…、戻り値の型」の順になっており、**最後に並ぶ型が戻り値の型**を表します。⟦s000594-s000600, s000711-s000712⟧\n\n具体例として、\\(f(x) = 3x^2\\) を計算する関数 `poly` を見てみます。C++の式に対応させると、型宣言の最初の `Double` が引数 `x` の型、最後の `Double` が戻り値の型を表します。⟦s000565-s000569, s000594-s000599⟧ ここで `=` は代入ではなく、「`poly` は引数 `x` を受け取り、式 \\(3x^2\\) を評価して返す」という定義を表す記号として読みます。⟦s000566-s000570⟧ 講義では、この読み方をPythonのコロンに近いものとして捉えると分かりやすいと説明されました。⟦s000567-s000569⟧\n\n引数が複数ある場合も同じ規則が使われます。引数の型を次々に並べ、最後の型だけが戻り値になります。⟦s000601-s000603⟧ 例として `isGreater` は2つの引数を比較する関数で、型宣言は `isGreater :: Double -> Double -> Bool` のように読めます。⟦s000658-s000660, s000708-s000710⟧\n\n```haskell\nisGreater :: Double -> Double -> Bool\nisGreater first second = first > second\n```\n\n上の型宣言では、最初の2つの `Double` が引数の型を表し、最後の `Bool` が戻り値の型を表します。⟦s000711-s000712⟧ 型宣言の行で引数の型を縦に揃えて書くことは見やすさのためであり、必須ではありません。⟦s000719-s000727⟧\n\n## ✍️ 関数定義と呼び出しの文法\n\nHaskellの関数本体は、等号の右側に書く式そのものです。`return` の記述は不要で、式の値が自動的に関数の結果になります。これを**暗黙の戻り値（implicit return）**と呼びます。⟦s000617-s000624⟧ 例えば `3x^2` を計算する関数では、`return 3x^2` のようには書かず、数学の式と同じように `3 * x * x` 相当の式をそのまま書きます。⟦s000620-s000622⟧\n\n文法上の区切りとして、Haskellでは**括弧もカンマもセミコロンも使いません**。引数の囲みには括弧を使わず、呼び出しでも引数は空白で区切ります。⟦s000627-s000631, s000650, s000653-s000654, s000714-s000715⟧ 文の区切りは改行と空白、そして字下げ（インデント）によって決まります。⟦s000607-s000615⟧\n\n関数定義を複数行に分けるときは、2行目以降を字下げします。字下げの幅は何スペースでもよく、同じ関数の中で一貫していれば十分です。⟦s000676-s000677⟧ なお、同じ関数名は型宣言と定義の両方で二度書きます。これは言語設計者の選択であり、論理的に必須の決まりではないと説明されました。⟦s000637-s000646⟧\n\n講義では、関数定義と呼び出しの要点として次の点がまとめられました。\n\n- 型宣言は関数定義の上に置く。最初の型は引数の型、最後の型は戻り値の型を表す。⟦s000647-s000649⟧\n- 引数に括弧は不要で、本体は等号の後ろに置く単純な式である。⟦s000650-s000651⟧\n- 呼び出しでは、関数名の後に引数を続けるだけでよい。⟦s000653-s000654⟧\n\n## 🔍 型推論（type inference）による型の決定\n\nHaskellでは型宣言を省略しても動きます。講義の例 `isOld` は、年齢が30より大きいか、または痛みがあれば「年寄り」と判定する関数で、型宣言は書かれていません。⟦s000734-s000738⟧ 実際にGHCIで `isOld 20 True` を評価すると、20歳は年寄りではないが痛みがあるため `True` が返ります。⟦s000739-s000742⟧\n\nGHCIで `:t` を使うと、関数の型を確認できます。`:t` は値や関数の型を調べるコマンドです。⟦s000743, s000746⟧ `isOld` の型は、整数と真偽値を受け取り、真偽値を返すものとして表示されます。⟦s000747⟧ 型宣言を書いていないにもかかわらず、Haskellは各引数と戻り値の型を推論できたことになります。⟦s000748-s000750⟧\n\nこの推論は、関数の本体での値の使われ方から行われます。**型推論（type inference）**とは、プログラム内での値の使い方から、コンパイラが型を導き出す仕組みです。⟦s000844-s000845⟧ `isOld` の場合の推論は次のとおりです。\n\n1. 年齢 `age` を整数と比較しているので、`age` は整数でなければならない。整数と文字列や真偽値を比較することはできないため、この推論が成り立つ。⟦s000756-s000758, s000808-s000812⟧\n2. 痛みを表す引数を `True` と比較しているので、その引数は真偽値でなければならない。⟦s000760-s000761, s000813-s000814⟧\n3. 2つの条件を `||` で結んでいるので、結果は真偽値となり、戻り値の型は `Bool` となる。⟦s000766-s000767, s000815-s000817⟧\n\nこのように、型宣言は省略されていても、すべての変数・関数・値は固定された型を持っています。講義では、Haskellは型を省略させてくれるが、型の厳しさは変わらないと強調されました。⟦s000848-s000852⟧ 型宣言が必要になるのは、プログラムの意図を明確に示したい場合や、型の理解を確認する課題の場合です。⟦s000801-s000807⟧\n\n## 🔒 厳格な型検査と自動変換の禁止\n\nHaskellは**静的型付けと厳密な型検査（static typing and strict type checking）**を採用しており、異なる型の値を暗黙に変換して合わせることは行いません。⟦s000771-s000775⟧ 例えば、整数の `0` と `1` を真偽値の `False` と `True` として扱うことはなく、比較できるのは整数同士、真偽値同士だけです。⟦s000772-s000775, s000839-s000840⟧\n\nこの厳しさは引数の型にも及びます。`isOld` は整数を受け取る設計なので、`isOld 53.5 False` のように浮動小数点数を渡すと、C++では整数に変換されて動くような場面でも、Haskellはエラーを返します。⟦s000857-s000859⟧ 同様に、整数を必要とする関数に浮動小数点数を渡すこともできず、必要なら明示的に変換を書く必要があります。⟦s000777-s000779⟧\n\n型宣言を書いた場合も、その宣言が推論結果と食い違うとエラーになります。⟦s000836-s000837⟧ 型推論により宣言を省略できることと、型の不一致を許さないことは両立しています。⟦s000841-s000843⟧\n\n## 🎯 Key Takeaway\n\n- **型宣言の読み方**：関数シグネチャは引数の型を並べ、最後に戻り値の型を置く。⟦s000600, s000711-s000712⟧\n- **文法の特徴**：括弧やカンマを使わず、空白と字下げで区切る。return文はなく、本体の式が結果となる。⟦s000617-s000631, s000676-s000677⟧\n- **型推論**：関数本体での使われ方から引数と戻り値の型が自動的に決まり、型宣言は省略できる。⟦s000799-s000802, s000844-s000847⟧\n- **厳格さ**：型は必ず固定されており、異なる型の値は自動変換されずエラーになる。⟦s000849-s000854⟧",
+    "cost_usd": 0.0035983
+   }
+  ],
+  "checks": {
+   "calls": 1,
+   "error": null,
+   "finish_reasons": [
+    "stop"
+   ],
+   "truncated_calls": 0,
+   "json_parse_errors": 0,
+   "chars": 4273,
+   "exclamations": 0,
+   "question_marks": 0,
+   "citations": 44,
+   "malformed_citations": 0,
+   "placeholder_leak": 0,
+   "english_gloss_parens": 6,
+   "input_tokens": 14098,
+   "output_tokens": 4377,
+   "max_output_tokens_single_call": 4377,
+   "sum_call_seconds": 20.5,
+   "max_call_seconds": 20.53
+  }
+ },
+ {
+  "task": "fun_facts",
+  "lecture_id": "ed333ded-2e09-464a-8224-11b7517fb709",
+  "language": {
+   "content_language": "Japanese",
+   "transcript_language": "English",
+   "is_bilingual": true
+  },
+  "wall_seconds": 3.76,
+  "cost_usd": 0.000775,
+  "token_cost_usd": 0.000662,
+  "error": null,
+  "output": {
+   "title": "意味を知らないのに計算できる部品 ⚡",
+   "hook": "CPUの中には「何が起きているか」を一切理解していない小さな部品が何十億個も詰まっていて、それでもスマホは動画を再生できるって知っていましたか？\n\nその正体は、たった1種類の部品を組み合わせるだけで、どんな複雑な計算でも作れてしまう驚きの仕組みなんです。",
+   "body": "授業で学んだ真理関数性は、まさにコンピュータの心臓部がどう動いているかを支える考え方なんです。\n\n高校の教科書にも載っている7400番台のNANDチップは、電圧が高いか低いかという2つの状態だけを見て、0か1かを機械的に出力する小さな回路です。ここでは「その信号が何を意味しているか」は一切関係なく、入力の真理値だけで出力が決まります。\n\n驚くべきことに、このNANDゲートだけを何度も組み合わせれば、足し算も比較も、どんな論理演算も作り出せることが知られています。つまり、このひとつの部品が論理の『万能な材料』になっているわけです。\n\n機械は言葉の意味を理解しているわけではありません。それでも、規則通りに電圧を切り替えるだけで、結果として『判断』に見える処理をこなしていくのです。\n\n意味を理解しなくても正しく計算できる、その静かな仕組みこそが、ソフトウェアを動かす世界の土台なんですね。次の授業で、その土台をさらに深く覗いてみましょう。",
+   "sources": []
+  },
+  "calls": [
+   {
+    "task": "fun_facts",
+    "lecture_id": "ed333ded-2e09-464a-8224-11b7517fb709",
+    "original_model": "anthropic/claude-haiku-5-5",
+    "model": "anthropic/claude-haiku-5-5",
+    "request_kwargs": {
+     "model": "anthropic/claude-haiku-5-5",
+     "temperature": 0.2,
+     "num_retries": 3,
+     "max_tokens": 32000,
+     "reasoning_effort": "low",
+     "thinking": {
+      "type": "adaptive",
+      "display": "summarized"
+     },
+     "response_format": {
+      "type": "json_object"
+     }
+    },
+    "system_chars": 8196,
+    "user_chars": 1300,
+    "elapsed_seconds": 3.76,
+    "input_tokens": 3909,
+    "output_tokens": 543,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "finish_reason": "stop",
+    "json_parse_error": null,
+    "output_text": "{\"title\": \"意味を知らないのに計算できる部品 ⚡\", \"hook\": \"CPUの中には「何が起きているか」を一切理解していない小さな部品が何十億個も詰まっていて、それでもスマホは動画を再生できるって知っていましたか？\\n\\nその正体は、たった1種類の部品を組み合わせるだけで、どんな複雑な計算でも作れてしまう驚きの仕組みなんです。\", \"body\": \"授業で学んだ真理関数性は、まさにコンピュータの心臓部がどう動いているかを支える考え方なんです。\\n\\n高校の教科書にも載っている7400番台のNANDチップは、電圧が高いか低いかという2つの状態だけを見て、0か1かを機械的に出力する小さな回路です。ここでは「その信号が何を意味しているか」は一切関係なく、入力の真理値だけで出力が決まります。\\n\\n驚くべきことに、このNANDゲートだけを何度も組み合わせれば、足し算も比較も、どんな論理演算も作り出せることが知られています。つまり、このひとつの部品が論理の『万能な材料』になっているわけです。\\n\\n機械は言葉の意味を理解しているわけではありません。それでも、規則通りに電圧を切り替えるだけで、結果として『判断』に見える処理をこなしていくのです。\\n\\n意味を理解しなくても正しく計算できる、その静かな仕組みこそが、ソフトウェアを動かす世界の土台なんですね。次の授業で、その土台をさらに深く覗いてみましょう。\"}",
+    "cost_usd": 0.0006624000000000001
+   }
+  ],
+  "checks": {
+   "calls": 1,
+   "error": null,
+   "finish_reasons": [
+    "stop"
+   ],
+   "truncated_calls": 0,
+   "json_parse_errors": 0,
+   "chars": 568,
+   "exclamations": 0,
+   "question_marks": 1,
+   "citations": 0,
+   "malformed_citations": 0,
+   "placeholder_leak": 0,
+   "english_gloss_parens": 0,
+   "input_tokens": 3909,
+   "output_tokens": 543,
+   "max_output_tokens_single_call": 543,
+   "sum_call_seconds": 3.8,
+   "max_call_seconds": 3.76,
+   "fun_fact_sources": 0
+  }
+ }
+]

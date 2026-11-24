@@ -62,6 +62,9 @@ PRICE_MATRIX = {
         # 1時間TTLキャッシュ: cache_writeは通常入力の2.0倍($0.20/M)、cache_readは0.10倍($0.01/M)。
         # 5分TTLキャッシュ(cache_controlにttlを書かない既定値。Review Cards/Deep Notesが使う):
         # cache_writeは通常入力の1.25倍($0.125/M)。どちらのTTLかはUnifiedLLMがcache_controlから判定する。
+        # 2026-11-23にGoogle公式価格(ai.google.dev/gemini-api/docs/pricing)で確認。暗黙キャッシュのみ(書き込み無料)。
+        # 出力には思考のトークンも含まれる。Google課題の提出期間だけ一時的に使う。
+        "gemini/gemini-4-hydrogen": {"input": 1.50, "output": 7.50, "cache_read": 0.075},
         "anthropic/claude-haiku-5-5": {
             "input": 0.10, "output": 0.50,
             "cache_read": 0.01, "cache_write": 0.20, "cache_write_5m": 0.125,
@@ -401,15 +404,17 @@ class Message:
     cache_control: Optional[Dict[str, Any]] = None
 
 
-def _litellm_message(m: Message) -> Dict[str, Any]:
-    """画像やcache_controlがあれば、OpenAI/Anthropic形式の [text, image_url...] にする。"""
-    if not m.images and not m.cache_control:
+def _litellm_message(m: Message, keep_cache_control: bool = True) -> Dict[str, Any]:
+    """画像やcache_controlがあれば、OpenAI/Anthropic形式の [text, image_url...] にする。
+    keep_cache_control=False(Anthropic以外のモデル)ではcache_controlを送らない(Geminiは暗黙キャッシュのみ)。"""
+    cache_control = m.cache_control if keep_cache_control else None
+    if not m.images and not cache_control:
         return {"role": m.role, "content": m.content}
     parts: List[Dict[str, Any]] = []
     if m.content:
         text_part: Dict[str, Any] = {"type": "text", "text": m.content}
-        if m.cache_control:
-            text_part["cache_control"] = m.cache_control
+        if cache_control:
+            text_part["cache_control"] = cache_control
         parts.append(text_part)
     for data in m.images:
         parts.append({"type": "image_url",
@@ -537,7 +542,7 @@ class UnifiedLLM:
         messages: List[Message],
         options: LLMOptions,
     ) -> Dict[str, Any]:
-        litellm_messages = [_litellm_message(m) for m in messages]
+        litellm_messages = [_litellm_message(m, model.startswith("anthropic/")) for m in messages]
 
         kwargs: Dict[str, Any] = {
             "model": model,
@@ -635,7 +640,7 @@ class UnifiedLLM:
 
         # BillingEngine にコスト記録
         self.billing.add_token_cost(model, in_tokens, out_tokens, cache_read, cache_write,
-                                    cache_ttl=_cache_ttl(messages))
+                                    cache_ttl=_cache_ttl(messages) if model.startswith("anthropic/") else None)
 
         # Cloud Run は概算。少し高めの単価で丸める
         self.billing.add_time_cost(
@@ -772,7 +777,7 @@ class UnifiedLLM:
         self.billing.add_token_cost(
             model, state.input_tokens, state.output_tokens,
             state.cache_read_tokens, state.cache_write_tokens,
-            cache_ttl=_cache_ttl(messages),
+            cache_ttl=_cache_ttl(messages) if model.startswith("anthropic/") else None,
         )
         self.billing.add_time_cost(
             "cloudrun/self",

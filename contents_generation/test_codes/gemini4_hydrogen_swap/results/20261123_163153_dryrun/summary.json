@@ -1,0 +1,315 @@
+{
+ "created_at": "20261123_163153",
+ "model": "gemini/gemini-4-hydrogen",
+ "effort": "low",
+ "caps": {
+  "review_cards": 6000,
+  "deep_notes": 8000,
+  "fun_facts": 4000,
+  "chat": 6144
+ },
+ "budget_cap_usd": 0.45,
+ "ledger_spent_usd": 0.0,
+ "checks": {
+  "models_get": {
+   "name": "models/gemini-4-hydrogen",
+   "input_token_limit": 1048576,
+   "output_token_limit": 65536,
+   "thinking": true
+  },
+  "litellm_optional_params": {
+   "max_output_tokens": 1000,
+   "thinkingConfig": {
+    "thinkingLevel": "low",
+    "includeThoughts": true
+   },
+   "temperature": 1.0
+  }
+ },
+ "cases": [
+  {
+   "task": "review_cards",
+   "lecture": "a028aad6",
+   "topic": "2",
+   "input_tokens_exact": 8982,
+   "max_tokens": 6000,
+   "calls_planned": 1,
+   "request_kwargs": {
+    "model": "gemini/gemini-4-hydrogen",
+    "num_retries": 3,
+    "max_tokens": 6000,
+    "reasoning_effort": "low",
+    "response_format": {
+     "type": "json_schema",
+     "json_schema": {
+      "name": "output",
+      "schema": {
+       "type": "object",
+       "additionalProperties": false,
+       "required": [
+        "topic_evaluation",
+        "review_cards"
+       ],
+       "properties": {
+        "topic_evaluation": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [
+          "micro_topics",
+          "card_mapping_strategy",
+          "core_concept_identified"
+         ],
+         "properties": {
+          "micro_topics": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+             "idx",
+             "title",
+             "summary",
+             "start_sid",
+             "end_sid"
+            ],
+            "properties": {
+             "idx": {
+              "type": "integer"
+             },
+             "title": {
+              "type": "string"
+             },
+             "summary": {
+              "type": "string"
+             },
+             "start_sid": {
+              "type": "string"
+             },
+             "end_sid": {
+              "type": "string"
+             }
+            }
+           }
+          },
+          "card_mapping_strategy": {
+           "type": "string"
+          },
+          "core_concept_identified": {
+           "type": "string"
+          }
+         }
+        },
+        "review_cards": {
+         "type": "array",
+         "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+           "card_type",
+           "hero_emoji",
+           "title",
+           "content_blocks"
+          ],
+          "properties": {
+           "card_type": {
+            "type": "string",
+            "enum": [
+             "hook",
+             "core_why",
+             "gotcha",
+             "next_action"
+            ]
+           },
+           "hero_emoji": {
+            "type": "string"
+           },
+           "title": {
+            "type": "string"
+           },
+           "content_blocks": {
+            "type": "array",
+            "items": {
+             "anyOf": [
+              {
+               "type": "object",
+               "additionalProperties": false,
+               "required": [
+                "type",
+                "text"
+               ],
+               "properties": {
+                "type": {
+                 "type": "string",
+                 "enum": [
+                  "paragraph"
+                 ]
+                },
+                "text": {
+                 "type": "string"
+                }
+               }
+              },
+              {
+               "type": "object",
+               "additionalProperties": false,
+               "required": [
+                "type",
+                "text"
+               ],
+               "properties": {
+                "type": {
+                 "type": "string",
+                 "enum": [
+                  "quote"
+                 ]
+                },
+                "text": {
+                 "type": "string"
+                }
+               }
+              },
+              {
+               "type": "object",
+               "additionalProperties": false,
+               "required": [
+                "type",
+                "alert_type",
+                "text"
+               ],
+               "properties": {
+                "type": {
+                 "type": "string",
+                 "enum": [
+                  "callout"
+                 ]
+                },
+                "alert_type": {
+                 "type": "string",
+                 "enum": [
+                  "info",
+                  "warning",
+                  "error"
+                 ]
+                },
+                "text": {
+                 "type": "string"
+                }
+               }
+              },
+              {
+               "type": "object",
+               "additionalProperties": false,
+               "required": [
+                "type",
+                "code_string"
+               ],
+               "properties": {
+                "type": {
+                 "type": "string",
+                 "enum": [
+                  "code"
+                 ]
+                },
+                "code_string": {
+                 "type": "string"
+                },
+                "language": {
+                 "type": "string"
+                },
+                "explanation": {
+                 "type": "string"
+                }
+               }
+              },
+              {
+               "type": "object",
+               "additionalProperties": false,
+               "required": [
+                "type",
+                "items"
+               ],
+               "properties": {
+                "type": {
+                 "type": "string",
+                 "enum": [
+                  "list"
+                 ]
+                },
+                "items": {
+                 "type": "array",
+                 "items": {
+                  "type": "string"
+                 }
+                }
+               }
+              }
+             ]
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "assumed_out_tokens": 2500,
+   "expected_usd": 0.0322,
+   "worst_case_usd": 0.0585
+  },
+  {
+   "task": "deep_notes",
+   "lecture": "666b2c9d",
+   "topic": "4",
+   "input_tokens_exact": 11482,
+   "max_tokens": 8000,
+   "calls_planned": 1,
+   "request_kwargs": {
+    "model": "gemini/gemini-4-hydrogen",
+    "num_retries": 3,
+    "max_tokens": 8000,
+    "reasoning_effort": "low"
+   },
+   "assumed_out_tokens": 4000,
+   "expected_usd": 0.0472,
+   "worst_case_usd": 0.0772
+  },
+  {
+   "task": "fun_facts",
+   "lecture": "ed333ded",
+   "topic": "ff",
+   "input_tokens_exact": 2351,
+   "max_tokens": 4000,
+   "calls_planned": 1,
+   "request_kwargs": {
+    "model": "gemini/gemini-4-hydrogen",
+    "num_retries": 3,
+    "max_tokens": 4000,
+    "reasoning_effort": "low",
+    "response_format": {
+     "type": "json_object"
+    }
+   },
+   "assumed_out_tokens": 1500,
+   "expected_usd": 0.0148,
+   "worst_case_usd": 0.0335
+  },
+  {
+   "task": "chat",
+   "message": "221bde86",
+   "input_tokens_exact": 7009,
+   "est_tokens_by_prod_estimator": 8049,
+   "prod_recorded_input_tokens": 9814,
+   "max_tokens": 6144,
+   "effort": "low",
+   "needs_reasoning": false,
+   "assumed_out_tokens": 1136,
+   "expected_usd": 0.019,
+   "worst_case_usd": 0.0566
+  }
+ ],
+ "round1_expected_usd": 0.1132,
+ "round1_worst_case_usd": 0.2258,
+ "remaining_after_worst_round1_usd": 0.2742
+}
