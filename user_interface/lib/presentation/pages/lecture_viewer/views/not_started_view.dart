@@ -6,9 +6,7 @@ import 'package:lefture/application/audio/diagnostic_audio_player.dart';
 import 'package:lefture/application/errors/client_diagnostics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lefture/app/routes.dart';
 import 'package:lefture/application/lecture/lecture_controller.dart';
 import 'package:lefture/application/lecture/lecture_providers.dart';
 import 'package:lefture/application/lecture_viewer/lecture_content_recovery.dart';
@@ -22,6 +20,7 @@ import 'package:lefture/presentation/widgets/snag_panel.dart';
 import 'package:lefture/domain/exceptions/insufficient_credits_exception.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/pages/course/widgets/lecture_edit_sheet.dart';
+import 'package:lefture/presentation/pages/lecture_viewer/widgets/start_analysis_feedback.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/compact_audio_player.dart';
 
@@ -29,41 +28,6 @@ class NotStartedView extends HookConsumerWidget {
   const NotStartedView({super.key, required this.lecture});
 
   final Lecture lecture;
-
-  void _showInsufficientCreditsDialog(
-    BuildContext context,
-    AppLocalizations l10n,
-    InsufficientCreditsException error,
-  ) {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(
-          error.isNoAllocation
-              ? l10n.notStartedNoActivePlanTitle
-              : l10n.notStartedOutOfCreditsTitle,
-        ),
-        content: Text(
-          error.isNoAllocation
-              ? l10n.notStartedNoAllocationMessage
-              : l10n.notStartedOutOfCreditsMessage,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(l10n.notStartedCancelButton),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              context.push(AppRoutes.creditDetail);
-            },
-            child: Text(l10n.notStartedViewCreditsButton),
-          ),
-        ],
-      ),
-    );
-  }
 
   /// DBに保存された lastError を[AppError]に戻す。
   ///
@@ -115,7 +79,7 @@ class NotStartedView extends HookConsumerWidget {
     ref.listen<AsyncValue<void>>(lectureControllerProvider, (previous, next) {
       final error = next.error;
       if (error is InsufficientCreditsException) {
-        _showInsufficientCreditsDialog(context, l10n, error);
+        showInsufficientCreditsDialog(context, l10n, error);
       }
     });
 
@@ -136,7 +100,7 @@ class NotStartedView extends HookConsumerWidget {
         next.value?.map((j) => j.lastError).firstWhere((e) => e != null, orElse: () => null),
       ));
       if (nextError != null && prevError == null) {
-        _showInsufficientCreditsDialog(context, l10n, nextError);
+        showInsufficientCreditsDialog(context, l10n, nextError);
       }
     });
 

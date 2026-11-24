@@ -7,6 +7,7 @@ import 'package:lefture/core/utils/dev_log.dart';
 import 'package:lefture/domain/entities/processing_task.dart';
 import 'package:lefture/l10n/generated/app_localizations.dart';
 import 'package:lefture/presentation/pages/lecture_viewer/views/pipeline_steps_list.dart';
+import 'package:lefture/presentation/pages/lecture_viewer/widgets/start_analysis_feedback.dart';
 import 'package:lefture/presentation/themes/app_colors.dart';
 import 'package:lefture/presentation/widgets/custom_dialog.dart';
 import 'package:lefture/presentation/widgets/snag_panel.dart';
@@ -64,6 +65,8 @@ class ProcessingView extends HookConsumerWidget {
       restartState.value = true;
       try {
         await ref.read(lectureControllerProvider.notifier).startAnalysis(lectureId, force: true);
+        // startAnalysisは失敗しても投げないので、ここで状態を見て知らせる。
+        if (context.mounted) showStartAnalysisErrorIfAny(context, ref, l10n, origin: 'processing_view.startOver');
       } finally {
         if (context.mounted) restartState.value = false;
       }
